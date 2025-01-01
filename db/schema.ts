@@ -12,6 +12,7 @@ export const horses = pgTable("horses", {
 export const races = pgTable("races", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  venue: text("venue").notNull(), // Added venue field
   startTime: timestamp("start_time").notNull(),
   status: text("status").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
