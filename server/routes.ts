@@ -28,6 +28,30 @@ export function registerRoutes(app: Express): Server {
     res.json(strategies);
   });
 
+  // New endpoint for risk assessment
+  app.get("/api/risk-assessment", async (req, res) => {
+    try {
+      // TODO: Implement actual risk calculation algorithm
+      // For now, return mock data that changes slightly each time
+      const baseRisk = 65 + Math.random() * 10 - 5;
+      const baseVolatility = 72 + Math.random() * 10 - 5;
+
+      res.json({
+        overallRisk: Math.min(100, Math.max(0, baseRisk)),
+        volatilityScore: Math.min(100, Math.max(0, baseVolatility)),
+        potentialReturn: 2.5 + Math.random(),
+        marketTrend: Math.random() > 0.5 ? 'up' : 'down',
+        recommendations: [
+          "Consider diversifying your selections",
+          "High-risk bets detected in current strategy",
+          "Potential for significant returns but with elevated risk"
+        ]
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to calculate risk assessment" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
