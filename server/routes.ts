@@ -3,9 +3,10 @@ import { createServer, type Server } from "http";
 import { db } from "@db";
 import { races, horses, tickets, bettingStrategies } from "@db/schema";
 import { eq } from "drizzle-orm";
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const openai = new OpenAI();
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 export function registerRoutes(app: Express): Server {
   // デモ用の出馬表データを挿入
@@ -214,22 +215,13 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
 3. リスク要因の分析
 `;
 
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content: "あなたは競馬予想のエキスパートです。統計データとオッズを分析し、最適な馬券戦略を提案してください。"
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ]
-      });
+      const result = await model.generateContent([
+        "あなたは競馬予想のエキスパートです。統計データとオッズを分析し、最適な馬券戦略を提案してください。\n\n" + prompt
+      ]);
+      const response = result.response;
 
       const explanation = {
-        mainExplanation: completion.choices[0].message.content,
+        mainExplanation: response.text(),
         confidence: 85 + Math.random() * 10, // デモ用の確信度
         timestamp: new Date().toISOString()
       };
