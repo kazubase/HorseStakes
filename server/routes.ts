@@ -330,6 +330,58 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
     }
   });
 
+  // Add this endpoint after the existing betting explanation endpoints
+  app.get("/api/betting-explanation/:raceId/history", async (req, res) => {
+    try {
+      const raceId = parseInt(req.params.raceId);
+
+      // TODO: 実際のバックテストロジックを実装
+      // 現在はデモデータを返す
+      const backtestResult = {
+        summary: "過去6ヶ月間の類似レースにおける戦略のバックテスト結果です。全体として良好なパフォーマンスを示しており、特に安定した的中率が特徴です。ただし、直近の市場環境の変化による影響には注意が必要です。",
+        performanceMetrics: {
+          totalRaces: 248,
+          winRate: 42.3,
+          roiPercent: 15.8,
+          avgReturnMultiple: 1.158,
+          maxDrawdown: 12.4
+        },
+        monthlyPerformance: [
+          { month: "2023年12月", races: 42, winRate: 45.2, roi: 18.5 },
+          { month: "2023年11月", races: 38, winRate: 42.1, roi: 15.2 },
+          { month: "2023年10月", races: 44, winRate: 40.9, roi: 14.8 },
+          { month: "2023年9月", races: 40, winRate: 43.5, roi: 16.9 },
+          { month: "2023年8月", races: 41, winRate: 41.4, roi: 13.7 },
+          { month: "2023年7月", races: 43, winRate: 40.8, roi: 15.6 }
+        ],
+        strategyAnalysis: [
+          { 
+            description: "オッズ分析に基づく投資判断",
+            effectiveness: 85
+          },
+          { 
+            description: "リスク分散戦略",
+            effectiveness: 78
+          },
+          { 
+            description: "市場変動への対応",
+            effectiveness: 72
+          },
+          { 
+            description: "複数の馬券種の組み合わせ",
+            effectiveness: 68
+          }
+        ],
+        timestamp: new Date().toISOString()
+      };
+
+      res.json(backtestResult);
+    } catch (error) {
+      console.error('Error generating backtest analysis:', error);
+      res.status(500).json({ error: "Failed to generate backtest analysis" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
