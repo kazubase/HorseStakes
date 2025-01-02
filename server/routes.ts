@@ -106,8 +106,8 @@ export function registerRoutes(app: Express): Server {
       const baseVolatility = 72 + Math.random() * 10 - 5;
       const baseWinProb = 45 + Math.random() * 10 - 5;
 
-      const marketSentiment = baseRisk < 50 ? "強気" : 
-                            baseRisk < 70 ? "やや強気" : 
+      const marketSentiment = baseRisk < 50 ? "強気" :
+                            baseRisk < 70 ? "やや強気" :
                             baseRisk < 85 ? "やや弱気" : "弱気";
 
       res.json({
@@ -117,15 +117,15 @@ export function registerRoutes(app: Express): Server {
         winProbability: Math.min(100, Math.max(0, baseWinProb)),
         marketSentiment,
         riskFactors: [
-          { 
-            description: "市場の変動性が高い", 
+          {
+            description: "市場の変動性が高い",
             impact: Math.min(100, Math.max(0, 75 + Math.random() * 10 - 5))
           },
-          { 
+          {
             description: "競合が激しい",
             impact: Math.min(100, Math.max(0, 65 + Math.random() * 10 - 5))
           },
-          { 
+          {
             description: "天候の影響",
             impact: Math.min(100, Math.max(0, 45 + Math.random() * 10 - 5))
           }
@@ -355,19 +355,19 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
           { month: "2023年7月", races: 43, winRate: 40.8, roi: 15.6 }
         ],
         strategyAnalysis: [
-          { 
+          {
             description: "オッズ分析に基づく投資判断",
             effectiveness: 85
           },
-          { 
+          {
             description: "リスク分散戦略",
             effectiveness: 78
           },
-          { 
+          {
             description: "市場変動への対応",
             effectiveness: 72
           },
-          { 
+          {
             description: "複数の馬券種の組み合わせ",
             effectiveness: 68
           }
@@ -379,6 +379,103 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
     } catch (error) {
       console.error('Error generating backtest analysis:', error);
       res.status(500).json({ error: "Failed to generate backtest analysis" });
+    }
+  });
+
+  // Add this endpoint after the existing betting explanation endpoints
+  app.get("/api/betting-explanation/:raceId/alternatives", async (req, res) => {
+    try {
+      const raceId = parseInt(req.params.raceId);
+
+      // TODO: 実際の代替戦略生成ロジックを実装
+      // 現在はデモデータを返す
+      const alternativesResult = {
+        summary: "現行の戦略に対する3つの代替アプローチを提案します。各戦略は異なるリスク・リターンプロファイルを持ち、投資スタイルや予算に応じて選択できます。以下の提案は、現在のマーケット状況と過去のパフォーマンスデータに基づいています。",
+        strategies: [
+          {
+            name: "保守的分散投資戦略",
+            description: "リスクを最小限に抑えながら、安定した収益を目指す戦略です。複数の馬券種を組み合わせることで、リスクを分散します。",
+            expectedReturn: 1.8,
+            winProbability: 65.5,
+            riskLevel: 35,
+            advantages: [
+              "安定した的中率",
+              "損失リスクが低い",
+              "長期的な資金管理が容易"
+            ],
+            disadvantages: [
+              "期待リターンが比較的低い",
+              "大きな利益を得にくい",
+              "市場の好機を活かしきれない可能性"
+            ],
+            requiredBudget: 5000
+          },
+          {
+            name: "高リターン重視戦略",
+            description: "より大きな利益を目指し、やや高めのリスクを取る戦略です。オッズの割安な馬券を中心に投資します。",
+            expectedReturn: 3.2,
+            winProbability: 35.5,
+            riskLevel: 75,
+            advantages: [
+              "高い期待リターン",
+              "市場の非効率性を活用",
+              "大きな利益の可能性"
+            ],
+            disadvantages: [
+              "的中率が比較的低い",
+              "損失リスクが高い",
+              "資金管理が重要"
+            ],
+            requiredBudget: 10000
+          },
+          {
+            name: "バランス型戦略",
+            description: "リスクとリターンのバランスを取りながら、中長期的な収益を目指す戦略です。",
+            expectedReturn: 2.4,
+            winProbability: 48.5,
+            riskLevel: 55,
+            advantages: [
+              "リスクとリターンのバランスが良い",
+              "柔軟な投資が可能",
+              "市場変動への適応力が高い"
+            ],
+            disadvantages: [
+              "特定の状況で機会損失の可能性",
+              "運用の複雑さ",
+              "中程度の資金が必要"
+            ],
+            requiredBudget: 7000
+          }
+        ],
+        comparisonMetrics: [
+          {
+            description: "期待的中率",
+            currentStrategy: 45.5,
+            alternativeStrategy: 48.5
+          },
+          {
+            description: "リスク指標",
+            currentStrategy: 65.0,
+            alternativeStrategy: 55.0
+          },
+          {
+            description: "期待ROI",
+            currentStrategy: 15.5,
+            alternativeStrategy: 18.5
+          }
+        ],
+        recommendations: [
+          "現在の市場環境ではバランス型戦略が最適と考えられます",
+          "保守的な投資から開始し、徐々にリスクを調整することを推奨します",
+          "定期的な戦略の見直しと調整を行うことで、より良い結果が期待できます"
+        ],
+        timestamp: new Date().toISOString()
+      };
+
+      res.json(alternativesResult);
+    } catch (error) {
+      console.error('Error generating alternative strategies:', error);
+      res.status(500).json({ error: "Failed to generate alternative strategies" });
     }
   });
 

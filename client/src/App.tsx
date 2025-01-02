@@ -11,6 +11,7 @@ import Strategy from "@/pages/Strategy";
 import Explain from "@/pages/Explain";
 import ExplainDetail from "@/pages/ExplainDetail";
 import ExplainHistory from "@/pages/ExplainHistory";
+import ExplainAlternatives from "@/pages/ExplainAlternatives";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
       <Route path="/explain/:id" component={Explain} />
       <Route path="/explain/detail/:id" component={ExplainDetail} />
       <Route path="/explain/history/:id" component={ExplainHistory} />
+      <Route path="/explain/alternatives/:id" component={ExplainAlternatives} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
     </Switch>
