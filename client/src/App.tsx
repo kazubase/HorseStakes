@@ -8,6 +8,7 @@ import PlaceProbability from "@/pages/PlaceProbability";
 import Budget from "@/pages/Budget";
 import RiskReward from "@/pages/RiskReward";
 import Strategy from "@/pages/Strategy";
+import Explain from "@/pages/Explain";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
       <Route path="/predict/budget/:id" component={Budget} />
       <Route path="/predict/risk-reward/:id" component={RiskReward} />
       <Route path="/strategy/:id" component={Strategy} />
+      <Route path="/explain/:id" component={Explain} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
     </Switch>

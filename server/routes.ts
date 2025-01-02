@@ -3,6 +3,9 @@ import { createServer, type Server } from "http";
 import { db } from "@db";
 import { races, horses, tickets, bettingStrategies } from "@db/schema";
 import { eq } from "drizzle-orm";
+import OpenAI from "openai";
+
+const openai = new OpenAI();
 
 export function registerRoutes(app: Express): Server {
   // デモ用の出馬表データを挿入
@@ -10,7 +13,7 @@ export function registerRoutes(app: Express): Server {
     try {
       await db.delete(horses);
       await db.delete(races);
-      
+
       const demoRaces = await db.insert(races).values([
         { name: "1R", venue: "tokyo", startTime: new Date("2024-02-04T09:00:00"), status: "upcoming" },
         { name: "2R", venue: "tokyo", startTime: new Date("2024-02-04T09:30:00"), status: "upcoming" },
@@ -154,6 +157,66 @@ export function registerRoutes(app: Express): Server {
       res.json(demoStrategy);
     } catch (error) {
       res.status(500).json({ error: "Failed to calculate betting strategy" });
+    }
+  });
+
+  // AIによる馬券戦略説明を生成するエンドポイント
+  app.get("/api/betting-explanation/:raceId", async (req, res) => {
+    try {
+      const raceId = parseInt(req.params.raceId);
+
+      // レース情報と出走馬を取得
+      const race = await db.query.races.findFirst({
+        where: eq(races.id, raceId),
+      });
+
+      const raceHorses = await db
+        .select()
+        .from(horses)
+        .where(eq(horses.raceId, raceId));
+
+      if (!race || !raceHorses.length) {
+        return res.status(404).json({ message: "Race not found" });
+      }
+
+      // AIによる説明生成
+      const prompt = `
+以下のレース情報を基に、推奨される馬券戦略について説明してください：
+
+レース: ${race.name} (${race.venue})
+出走馬:
+${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n')}
+
+回答は以下の観点を含めてください：
+1. 期待値の高い馬券種の選択理由
+2. 投資配分の根拠
+3. リスク要因の分析
+`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: "あなたは競馬予想のエキスパートです。統計データとオッズを分析し、最適な馬券戦略を提案してください。"
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      });
+
+      const explanation = {
+        mainExplanation: completion.choices[0].message.content,
+        confidence: 85 + Math.random() * 10, // デモ用の確信度
+        timestamp: new Date().toISOString()
+      };
+
+      res.json(explanation);
+    } catch (error) {
+      console.error('Error generating explanation:', error);
+      res.status(500).json({ error: "Failed to generate betting explanation" });
     }
   });
 
