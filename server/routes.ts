@@ -118,6 +118,45 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // 馬券購入戦略を取得するエンドポイント
+  app.get("/api/betting-strategy/:raceId", async (req, res) => {
+    try {
+      const raceId = parseInt(req.params.raceId);
+      const budget = Number(req.query.budget) || 0;
+      const riskRatio = Number(req.query.riskRatio) || 1;
+
+      // TODO: 実際の戦略計算アルゴリズムを実装
+      // 現在はデモデータを返す
+      const demoStrategy = [
+        {
+          type: "単勝",
+          horses: ["ディープインパクト"],
+          stake: Math.floor(budget * 0.4),
+          expectedReturn: Math.floor(budget * 0.4 * 2.4),
+          probability: 0.42
+        },
+        {
+          type: "複勝",
+          horses: ["キタサンブラック"],
+          stake: Math.floor(budget * 0.3),
+          expectedReturn: Math.floor(budget * 0.3 * 1.8),
+          probability: 0.55
+        },
+        {
+          type: "馬連",
+          horses: ["ディープインパクト", "オルフェーヴル"],
+          stake: Math.floor(budget * 0.3),
+          expectedReturn: Math.floor(budget * 0.3 * 3.2),
+          probability: 0.31
+        }
+      ];
+
+      res.json(demoStrategy);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to calculate betting strategy" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
