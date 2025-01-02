@@ -5,6 +5,33 @@ import { races, horses, tickets, bettingStrategies } from "@db/schema";
 import { eq } from "drizzle-orm";
 
 export function registerRoutes(app: Express): Server {
+  // デモ用の出馬表データを挿入
+  app.post("/api/demo-data", async (_req, res) => {
+    try {
+      await db.delete(horses);
+      await db.delete(races);
+      
+      const demoRaces = await db.insert(races).values([
+        { name: "1R", venue: "tokyo", startTime: new Date("2024-02-04T09:00:00"), status: "upcoming" },
+        { name: "2R", venue: "tokyo", startTime: new Date("2024-02-04T09:30:00"), status: "upcoming" },
+        { name: "3R", venue: "nakayama", startTime: new Date("2024-02-04T10:00:00"), status: "upcoming" }
+      ]).returning();
+
+      await db.insert(horses).values([
+        { name: "ディープインパクト", odds: 2.4, raceId: demoRaces[0].id },
+        { name: "キタサンブラック", odds: 3.1, raceId: demoRaces[0].id },
+        { name: "オルフェーヴル", odds: 4.2, raceId: demoRaces[0].id },
+        { name: "テイエムオペラオー", odds: 2.8, raceId: demoRaces[1].id },
+        { name: "スペシャルウィーク", odds: 3.5, raceId: demoRaces[1].id },
+        { name: "トウカイテイオー", odds: 2.9, raceId: demoRaces[2].id },
+        { name: "ウオッカ", odds: 3.7, raceId: demoRaces[2].id }
+      ]);
+
+      res.json({ message: "Demo data inserted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to insert demo data" });
+    }
+  });
   // 全レース一覧を取得
   app.get("/api/races", async (_req, res) => {
     const allRaces = await db.select().from(races);
