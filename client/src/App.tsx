@@ -9,6 +9,7 @@ import Budget from "@/pages/Budget";
 import RiskReward from "@/pages/RiskReward";
 import Strategy from "@/pages/Strategy";
 import Explain from "@/pages/Explain";
+import ExplainDetail from "@/pages/ExplainDetail";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
       <Route path="/predict/risk-reward/:id" component={RiskReward} />
       <Route path="/strategy/:id" component={Strategy} />
       <Route path="/explain/:id" component={Explain} />
+      <Route path="/explain/detail/:id" component={ExplainDetail} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
     </Switch>

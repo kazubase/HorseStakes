@@ -220,6 +220,69 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
     }
   });
 
+  // Add this endpoint after the existing /api/betting-explanation/:raceId endpoint
+  app.get("/api/betting-explanation/:raceId/detail", async (req, res) => {
+    try {
+      const raceId = parseInt(req.params.raceId);
+
+      // レース情報と出走馬を取得
+      const race = await db.query.races.findFirst({
+        where: eq(races.id, raceId),
+      });
+
+      const raceHorses = await db
+        .select()
+        .from(horses)
+        .where(eq(horses.raceId, raceId));
+
+      if (!race || !raceHorses.length) {
+        return res.status(404).json({ message: "Race not found" });
+      }
+
+      // AIによる詳細説明生成
+      const prompt = `
+以下のレース情報を基に、推奨される馬券戦略について詳細な分析を行ってください：
+
+レース: ${race.name} (${race.venue})
+出走馬:
+${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n')}
+
+以下の観点を含めて、できるだけ具体的に説明してください：
+
+1. 各馬の特徴と期待される走り
+2. オッズの妥当性分析
+3. 投資戦略の詳細な根拠
+4. 考えられるリスクシナリオ
+5. 代替の投資アプローチ
+`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: "あなたは競馬予想の専門家です。統計データとオッズを分析し、詳細な戦略分析を提供してください。"
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      });
+
+      const explanation = {
+        detailedExplanation: completion.choices[0].message.content,
+        confidence: 85 + Math.random() * 10, // デモ用の確信度
+        timestamp: new Date().toISOString()
+      };
+
+      res.json(explanation);
+    } catch (error) {
+      console.error('Error generating detailed explanation:', error);
+      res.status(500).json({ error: "Failed to generate detailed betting explanation" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
