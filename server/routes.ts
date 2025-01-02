@@ -241,19 +241,34 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
 
       // AIによる詳細説明生成
       const prompt = `
-以下のレース情報を基に、推奨される馬券戦略について詳細な分析を行ってください：
+以下のレース情報を基に、推奨される馬券戦略について詳細な分析を行ってください。
+各セクションごとに明確に分けて回答してください：
 
 レース: ${race.name} (${race.venue})
 出走馬:
 ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n')}
 
-以下の観点を含めて、できるだけ具体的に説明してください：
+分析項目：
 
-1. 各馬の特徴と期待される走り
-2. オッズの妥当性分析
-3. 投資戦略の詳細な根拠
-4. 考えられるリスクシナリオ
-5. 代替の投資アプローチ
+1. 概要
+全体的な戦略の要約と推奨される投資アプローチについて説明してください。
+
+2. 出走馬の実力分析
+各馬の特徴、適性、コンディション、期待される走りを分析してください。
+
+3. オッズ分析
+現在のオッズが適正か、割高か割安か、期待値の観点から分析してください。
+
+4. 投資判断の根拠
+なぜこの投資戦略が最適なのか、具体的な根拠を示してください。
+
+5. 想定されるリスク
+考えられるリスクシナリオと、それに対する対策を説明してください。
+
+6. 代替アプローチ
+他に考えられる投資戦略とその特徴について説明してください。
+
+各セクションは明確に分かれるように記述し、具体的な数値や根拠を含めてください。
 `;
 
       const completion = await openai.chat.completions.create({
@@ -261,7 +276,7 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
         messages: [
           {
             role: "system",
-            content: "あなたは競馬予想の専門家です。統計データとオッズを分析し、詳細な戦略分析を提供してください。"
+            content: "あなたは競馬予想の専門家です。統計データとオッズを分析し、詳細な戦略分析を提供してください。各セクションを明確に分けて説明し、具体的な数値や根拠を示してください。"
           },
           {
             role: "user",
@@ -270,9 +285,20 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
         ]
       });
 
+      // AIの回答を各セクションに分割
+      const response = completion.choices[0].message.content;
+      const sections = response.split(/\d+\.\s+/);
+
       const explanation = {
-        detailedExplanation: completion.choices[0].message.content,
-        confidence: 85 + Math.random() * 10, // デモ用の確信度
+        detailedExplanation: sections[1]?.trim() || "分析を生成できませんでした。",
+        analysisPoints: {
+          horsePotential: sections[2]?.trim() || "データなし",
+          oddsAnalysis: sections[3]?.trim() || "データなし",
+          investmentLogic: sections[4]?.trim() || "データなし",
+          riskScenarios: sections[5]?.trim() || "データなし",
+          alternativeApproaches: sections[6]?.trim() || "データなし",
+        },
+        confidence: 85 + Math.random() * 10,
         timestamp: new Date().toISOString()
       };
 
