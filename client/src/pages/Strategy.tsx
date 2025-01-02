@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MainLayout from "@/components/layout/MainLayout";
-import { Calculator, Brain, TrendingUp } from "lucide-react";
+import { Calculator, Brain, TrendingUp, Wallet, Target, Scale } from "lucide-react";
 import { Horse } from "@db/schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import RiskAssessment from "@/components/RiskAssessment";
+import { Progress } from "@/components/ui/progress";
 
 interface RecommendedBet {
   type: string;
@@ -40,6 +41,9 @@ export default function Strategy() {
     0
   ) || 0;
 
+  const expectedROI = totalInvestment > 0 ? ((expectedValue - totalInvestment) / totalInvestment) * 100 : 0;
+  const investmentRatio = (totalInvestment / budget) * 100;
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -55,24 +59,46 @@ export default function Strategy() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 投資概要カード */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5" />
+                <Wallet className="h-5 w-5" />
                 投資概要
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">予算</p>
+                  <p className="text-sm text-muted-foreground">設定予算</p>
                   <p className="text-2xl font-bold">¥{budget.toLocaleString()}</p>
+                  <div className="mt-2">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>予算使用率</span>
+                      <span>{investmentRatio.toFixed(1)}%</span>
+                    </div>
+                    <Progress value={investmentRatio} className="h-2" />
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">総投資額</p>
                   <p className="text-2xl font-bold">¥{totalInvestment.toLocaleString()}</p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* リターン予測カード */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                リターン予測
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
                 <div>
                   <p className="text-sm text-muted-foreground">期待値</p>
                   <p className="text-2xl font-bold text-green-500">
@@ -80,20 +106,46 @@ export default function Strategy() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">リスクリワードレシオ</p>
-                  <p className="text-2xl font-bold">{riskRatio.toFixed(1)}</p>
+                  <p className="text-sm text-muted-foreground">期待ROI</p>
+                  <p className="text-2xl font-bold text-green-500">
+                    {expectedROI.toFixed(1)}%
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <RiskAssessment />
+          {/* リスク指標カード */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Scale className="h-5 w-5" />
+                リスク指標
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">リスクリワードレシオ</p>
+                  <p className="text-2xl font-bold">{riskRatio.toFixed(1)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">平均的中率</p>
+                  <p className="text-2xl font-bold">
+                    {(recommendedBets?.reduce((sum, bet) => sum + bet.probability, 0) || 0) / (recommendedBets?.length || 1) * 100}%
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        <RiskAssessment />
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
+              <Target className="h-5 w-5" />
               推奨される馬券
             </CardTitle>
           </CardHeader>
