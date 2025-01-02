@@ -5,16 +5,34 @@ import { races, horses, tickets, bettingStrategies } from "@db/schema";
 import { eq } from "drizzle-orm";
 
 export function registerRoutes(app: Express): Server {
+  // 全レース一覧を取得
   app.get("/api/races", async (_req, res) => {
     const allRaces = await db.select().from(races);
     res.json(allRaces);
   });
 
+  // 特定のレースを取得
+  app.get("/api/races/:id", async (req, res) => {
+    const raceId = parseInt(req.params.id);
+    const race = await db.query.races.findFirst({
+      where: eq(races.id, raceId),
+    });
+
+    if (!race) {
+      return res.status(404).json({ message: "Race not found" });
+    }
+
+    res.json(race);
+  });
+
+  // レースの出馬表を取得
   app.get("/api/horses/:raceId", async (req, res) => {
+    const raceId = parseInt(req.params.raceId);
     const raceHorses = await db
       .select()
       .from(horses)
-      .where(eq(horses.raceId, parseInt(req.params.raceId)));
+      .where(eq(horses.raceId, raceId));
+
     res.json(raceHorses);
   });
 

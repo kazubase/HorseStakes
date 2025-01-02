@@ -1,46 +1,93 @@
+import { useParams } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import RaceSelector from "@/components/RaceSelector";
-import BettingStrategy from "@/components/BettingStrategy";
-import OddsChart from "@/components/OddsChart";
-import TicketBuilder from "@/components/TicketBuilder";
-import RiskAssessment from "@/components/RiskAssessment";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Horse, Race } from "@db/schema";
+import { format } from "date-fns";
+import MainLayout from "@/components/layout/MainLayout";
+import { Trophy, Target } from "lucide-react";
 
 export default function Home() {
+  const { id } = useParams();
+
+  const { data: race } = useQuery<Race>({
+    queryKey: [`/api/races/${id}`],
+  });
+
+  const { data: horses } = useQuery<Horse[]>({
+    queryKey: [`/api/horses/${id}`],
+    enabled: !!id,
+  });
+
+  if (!race || !horses) return null;
+
   return (
-    <div className="min-h-screen bg-background text-foreground p-6">
-      <h1 className="text-3xl font-bold mb-6">Horse Racing Betting Assistant</h1>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="col-span-1">
+    <MainLayout>
+      <div className="space-y-6">
+        {/* レース情報 */}
+        <Card>
           <CardContent className="p-6">
-            <RaceSelector />
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-2xl font-bold mb-2">{race.name}</h1>
+                <p className="text-muted-foreground">
+                  {format(new Date(race.startTime), 'yyyy年M月d日 HH:mm')} 発走
+                </p>
+                <p className="text-muted-foreground">{race.venue}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-semibold">{race.status}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="col-span-1">
+        {/* 出馬表 */}
+        <Card>
           <CardContent className="p-6">
-            <OddsChart />
+            <h2 className="text-xl font-semibold mb-4">出馬表</h2>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>馬番</TableHead>
+                  <TableHead>馬名</TableHead>
+                  <TableHead className="text-right">オッズ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {horses.map((horse, index) => (
+                  <TableRow key={horse.id}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{horse.name}</TableCell>
+                    <TableCell className="text-right">{horse.odds}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
-        <Card className="col-span-1 lg:col-span-2">
-          <CardContent className="p-6">
-            <RiskAssessment />
-          </CardContent>
-        </Card>
-
-        <Card className="col-span-1 lg:col-span-2">
-          <CardContent className="p-6">
-            <BettingStrategy />
-          </CardContent>
-        </Card>
-
-        <Card className="col-span-1 lg:col-span-2">
-          <CardContent className="p-6">
-            <TicketBuilder />
-          </CardContent>
-        </Card>
+        {/* 予想確率入力ボタン */}
+        <div className="grid grid-cols-2 gap-4">
+          <Button 
+            size="lg" 
+            className="w-full h-16"
+            onClick={() => window.location.href = `/predict/win/${id}`}
+          >
+            <Trophy className="mr-2 h-5 w-5" />
+            単勝予想
+          </Button>
+          <Button 
+            size="lg" 
+            className="w-full h-16"
+            onClick={() => window.location.href = `/predict/place/${id}`}
+          >
+            <Target className="mr-2 h-5 w-5" />
+            複勝予想
+          </Button>
+        </div>
       </div>
-    </div>
+    </MainLayout>
   );
 }
