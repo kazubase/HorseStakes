@@ -4,13 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Race } from "@db/schema";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
+import MainLayout from "@/components/layout/MainLayout";
 
 interface RaceVenue {
   id: string;
   name: string;
 }
 
-// Mock venues for now - this should come from API later
 const venues: RaceVenue[] = [
   { id: "tokyo", name: "東京" },
   { id: "nakayama", name: "中山" },
@@ -18,7 +18,7 @@ const venues: RaceVenue[] = [
 
 export default function RaceList() {
   const [_, setLocation] = useLocation();
-  
+
   const { data: races } = useQuery<Race[]>({
     queryKey: ["/api/races"],
   });
@@ -28,9 +28,9 @@ export default function RaceList() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <h1 className="text-3xl font-bold mb-6">本日のレース</h1>
-      
+    <MainLayout>
+      <h1 className="text-2xl font-bold mb-6">本日のレース</h1>
+
       <Tabs defaultValue={venues[0].id} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           {venues.map(venue => (
@@ -72,6 +72,6 @@ export default function RaceList() {
           </TabsContent>
         ))}
       </Tabs>
-    </div>
+    </MainLayout>
   );
 }
