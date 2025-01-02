@@ -97,23 +97,44 @@ export function registerRoutes(app: Express): Server {
     res.json(strategies);
   });
 
-  // New endpoint for risk assessment
+  // Updated risk assessment endpoint
   app.get("/api/risk-assessment", async (req, res) => {
     try {
       // TODO: Implement actual risk calculation algorithm
-      // For now, return mock data that changes slightly each time
+      // For now, return enhanced mock data that changes slightly each time
       const baseRisk = 65 + Math.random() * 10 - 5;
       const baseVolatility = 72 + Math.random() * 10 - 5;
+      const baseWinProb = 45 + Math.random() * 10 - 5;
+
+      const marketSentiment = baseRisk < 50 ? "強気" : 
+                            baseRisk < 70 ? "やや強気" : 
+                            baseRisk < 85 ? "やや弱気" : "弱気";
 
       res.json({
         overallRisk: Math.min(100, Math.max(0, baseRisk)),
         volatilityScore: Math.min(100, Math.max(0, baseVolatility)),
-        potentialReturn: 2.5 + Math.random(),
+        expectedReturn: 2.5 + Math.random(),
+        winProbability: Math.min(100, Math.max(0, baseWinProb)),
+        marketSentiment,
+        riskFactors: [
+          { 
+            description: "市場の変動性が高い", 
+            impact: Math.min(100, Math.max(0, 75 + Math.random() * 10 - 5))
+          },
+          { 
+            description: "競合が激しい",
+            impact: Math.min(100, Math.max(0, 65 + Math.random() * 10 - 5))
+          },
+          { 
+            description: "天候の影響",
+            impact: Math.min(100, Math.max(0, 45 + Math.random() * 10 - 5))
+          }
+        ],
         marketTrend: Math.random() > 0.5 ? 'up' : 'down',
         recommendations: [
-          "Consider diversifying your selections",
-          "High-risk bets detected in current strategy",
-          "Potential for significant returns but with elevated risk"
+          "投資の分散化を検討してください",
+          "高リスクの投資を制限することをお勧めします",
+          "市場の変動に注意を払ってください"
         ]
       });
     } catch (error) {
