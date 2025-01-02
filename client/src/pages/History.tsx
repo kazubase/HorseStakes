@@ -19,19 +19,14 @@ interface InvestmentSummary {
 }
 
 export default function History() {
-  const { data: summary } = useQuery<InvestmentSummary>({
-    queryKey: ["/api/investment-summary"],
-    placeholderData: {
-      totalInvestment: 50000,
-      totalReturn: 65000,
-      winRate: 42.5,
-      roi: 30,
-      recentResults: [
-        { date: "2024-02-04", raceName: "1R", invested: 10000, return: 15000 },
-        { date: "2024-02-04", raceName: "2R", invested: 8000, return: 12000 },
-        { date: "2024-02-04", raceName: "3R", invested: 5000, return: 0 }
-      ]
-    }
+  const { data: summary = {
+    totalInvestment: 0,
+    totalReturn: 0,
+    winRate: 0,
+    roi: 0,
+    recentResults: []
+  } } = useQuery<InvestmentSummary>({
+    queryKey: ["/api/investment-summary"]
   });
 
   return (
