@@ -6,21 +6,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Horse, Race } from "@db/schema";
 import { format } from "date-fns";
 import MainLayout from "@/components/layout/MainLayout";
-import { Trophy, Target } from "lucide-react";
+import { RefreshCw, Trophy, Target } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
   const { id } = useParams();
 
-  const { data: race } = useQuery<Race>({
+  const { data: race, isLoading: raceLoading } = useQuery<Race>({
     queryKey: [`/api/races/${id}`],
   });
 
-  const { data: horses } = useQuery<Horse[]>({
+  const { 
+    data: horses, 
+    isLoading: horsesLoading,
+    refetch: refetchHorses 
+  } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
     enabled: !!id,
+    refetchInterval: 30000, // 30秒ごとに自動更新
   });
 
-  if (!race || !horses) return null;
+  if (!race && !raceLoading) return null;
 
   return (
     <MainLayout>
@@ -30,15 +36,27 @@ export default function Home() {
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-2xl font-bold mb-2">{race.name}</h1>
-                <p className="text-muted-foreground">
-                  {format(new Date(race.startTime), 'yyyy年M月d日 HH:mm')} 発走
-                </p>
-                <p className="text-muted-foreground">{race.venue}</p>
+                {raceLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                ) : (
+                  <>
+                    <h1 className="text-2xl font-bold mb-2">{race?.name}</h1>
+                    <p className="text-muted-foreground">
+                      {format(new Date(race?.startTime!), 'yyyy年M月d日 HH:mm')} 発走
+                    </p>
+                    <p className="text-muted-foreground">{race?.venue}</p>
+                  </>
+                )}
               </div>
-              <div className="text-right">
-                <p className="text-lg font-semibold">{race.status}</p>
-              </div>
+              {!raceLoading && (
+                <div className="text-right">
+                  <p className="text-lg font-semibold">{race?.status}</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -46,25 +64,45 @@ export default function Home() {
         {/* 出馬表 */}
         <Card>
           <CardContent className="p-6">
-            <h2 className="text-xl font-semibold mb-4">出馬表</h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>馬番</TableHead>
-                  <TableHead>馬名</TableHead>
-                  <TableHead className="text-right">オッズ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {horses.map((horse, index) => (
-                  <TableRow key={horse.id}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>{horse.name}</TableCell>
-                    <TableCell className="text-right">{horse.odds}</TableCell>
-                  </TableRow>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">出馬表</h2>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => refetchHorses()}
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                オッズ更新
+              </Button>
+            </div>
+
+            {horsesLoading ? (
+              <div className="space-y-2">
+                {[...Array(8)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>馬番</TableHead>
+                    <TableHead>馬名</TableHead>
+                    <TableHead className="text-right">オッズ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {horses?.map((horse, index) => (
+                    <TableRow key={horse.id}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{horse.name}</TableCell>
+                      <TableCell className="text-right">{horse.odds}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
