@@ -93,7 +93,7 @@ export default function Home() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {horses?.map((horse, index) => (
+                  {horses?.filter(horse => horse.raceId === Number(id)).map((horse, index) => (
                     <TableRow key={horse.id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{horse.name}</TableCell>
