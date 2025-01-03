@@ -17,7 +17,7 @@ export default function Home() {
   });
 
   const { 
-    data: horses, 
+    data: horses = [], 
     isLoading: horsesLoading,
     refetch: refetchHorses 
   } = useQuery<Horse[]>({
@@ -93,7 +93,7 @@ export default function Home() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {horses?.filter(horse => horse.raceId === Number(id)).map((horse, index) => (
+                  {horses.map((horse, index) => (
                     <TableRow key={horse.id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{horse.name}</TableCell>
