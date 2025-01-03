@@ -12,15 +12,18 @@ export function registerRoutes(app: Express): Server {
   // デモ用の出馬表データを挿入
   app.post("/api/demo-data", async (_req, res) => {
     try {
+      // 既存のデータを削除
       await db.delete(horses);
       await db.delete(races);
 
+      // レースを作成
       const demoRaces = await db.insert(races).values([
         { name: "1R", venue: "tokyo", startTime: new Date("2024-02-04T09:00:00"), status: "upcoming" },
         { name: "2R", venue: "tokyo", startTime: new Date("2024-02-04T09:30:00"), status: "upcoming" },
         { name: "3R", venue: "nakayama", startTime: new Date("2024-02-04T10:00:00"), status: "upcoming" }
       ]).returning();
 
+      // 出走馬データを準備
       const demoHorses = [
         { name: "ディープインパクト", odds: "2.4", raceId: demoRaces[0].id },
         { name: "キタサンブラック", odds: "3.1", raceId: demoRaces[0].id },
@@ -41,11 +44,9 @@ export function registerRoutes(app: Express): Server {
         { name: "サイレンススズカ", odds: "6.4", raceId: demoRaces[2].id },
         { name: "ハルウララ", odds: "15.0", raceId: demoRaces[2].id },
         { name: "メイショウドトウ", odds: "8.8", raceId: demoRaces[2].id }
-      ].map(horse => ({
-        ...horse,
-        createdAt: new Date()
-      }));
+      ];
 
+      // 出走馬を挿入
       await db.insert(horses).values(demoHorses);
 
       res.json({ message: "Demo data inserted successfully" });
