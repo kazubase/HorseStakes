@@ -1,24 +1,4 @@
-await db.insert(horses).values([
-  { id: 1, name: "ディープインパクト", odds: 2.4, raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 2, name: "キタサンブラック", odds: 3.1, raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 3, name: "オルフェーヴル", odds: 4.2, raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 4, name: "シンボリルドルフ", odds: 5.6, raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 5, name: "アグネスタキオン", odds: 6.8, raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 6, name: "メジロマックイーン", odds: 8.2, raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 7, name: "ナリタブライアン", odds: 12.4, raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 8, name: "テイエムオペラオー", odds: 2.8, raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 9, name: "スペシャルウィーク", odds: 3.5, raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 10, name: "マルゼンスキー", odds: 4.8, raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 11, name: "アドマイヤベガ", odds: 6.2, raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 12, name: "グラスワンダー", odds: 7.5, raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 13, name: "エアグルーヴ", odds: 9.3, raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 14, name: "トウカイテイオー", odds: 2.9, raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 15, name: "ウオッカ", odds: 3.7, raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 16, name: "タイキシャトル", odds: 5.1, raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 17, name: "サイレンススズカ", odds: 6.4, raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 18, name: "ハルウララ", odds: 15.0, raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() },
-  { id: 19, name: "メイショウドトウ", odds: 8.8, raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() }
-]);import type { Express } from "express";
+import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
 import { races, horses, tickets, bettingStrategies } from "@db/schema";
@@ -41,30 +21,37 @@ export function registerRoutes(app: Express): Server {
         { name: "3R", venue: "nakayama", startTime: new Date("2024-02-04T10:00:00"), status: "upcoming" }
       ]).returning();
 
-      await db.insert(horses).values([
-        { id: 1, name: "ディープインパクト", odds: "2.4", raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 2, name: "キタサンブラック", odds: "3.1", raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 3, name: "オルフェーヴル", odds: "4.2", raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 4, name: "シンボリルドルフ", odds: "5.6", raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 5, name: "アグネスタキオン", odds: "6.8", raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 6, name: "メジロマックイーン", odds: "8.2", raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 7, name: "ナリタブライアン", odds: "12.4", raceId: demoRaces[0].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 8, name: "テイエムオペラオー", odds: "2.8", raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 9, name: "スペシャルウィーク", odds: "3.5", raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 10, name: "マルゼンスキー", odds: "4.8", raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 11, name: "アドマイヤベガ", odds: "6.2", raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 12, name: "グラスワンダー", odds: "7.5", raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 13, name: "エアグルーヴ", odds: "9.3", raceId: demoRaces[1].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 14, name: "トウカイテイオー", odds: "2.9", raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 15, name: "ウオッカ", odds: "3.7", raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 16, name: "タイキシャトル", odds: "5.1", raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 17, name: "サイレンススズカ", odds: "6.4", raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 18, name: "ハルウララ", odds: "15.0", raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() },
-        { id: 19, name: "メイショウドトウ", odds: "8.8", raceId: demoRaces[2].id, createdAt: new Date(), updatedAt: new Date() }
-      ]);
+      const demoHorses = [
+        { name: "ディープインパクト", odds: "2.4", raceId: demoRaces[0].id },
+        { name: "キタサンブラック", odds: "3.1", raceId: demoRaces[0].id },
+        { name: "オルフェーヴル", odds: "4.2", raceId: demoRaces[0].id },
+        { name: "シンボリルドルフ", odds: "5.6", raceId: demoRaces[0].id },
+        { name: "アグネスタキオン", odds: "6.8", raceId: demoRaces[0].id },
+        { name: "メジロマックイーン", odds: "8.2", raceId: demoRaces[0].id },
+        { name: "ナリタブライアン", odds: "12.4", raceId: demoRaces[0].id },
+        { name: "テイエムオペラオー", odds: "2.8", raceId: demoRaces[1].id },
+        { name: "スペシャルウィーク", odds: "3.5", raceId: demoRaces[1].id },
+        { name: "マルゼンスキー", odds: "4.8", raceId: demoRaces[1].id },
+        { name: "アドマイヤベガ", odds: "6.2", raceId: demoRaces[1].id },
+        { name: "グラスワンダー", odds: "7.5", raceId: demoRaces[1].id },
+        { name: "エアグルーヴ", odds: "9.3", raceId: demoRaces[1].id },
+        { name: "トウカイテイオー", odds: "2.9", raceId: demoRaces[2].id },
+        { name: "ウオッカ", odds: "3.7", raceId: demoRaces[2].id },
+        { name: "タイキシャトル", odds: "5.1", raceId: demoRaces[2].id },
+        { name: "サイレンススズカ", odds: "6.4", raceId: demoRaces[2].id },
+        { name: "ハルウララ", odds: "15.0", raceId: demoRaces[2].id },
+        { name: "メイショウドトウ", odds: "8.8", raceId: demoRaces[2].id }
+      ].map(horse => ({
+        ...horse,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+
+      await db.insert(horses).values(demoHorses);
 
       res.json({ message: "Demo data inserted successfully" });
     } catch (error) {
+      console.error('Error inserting demo data:', error);
       res.status(500).json({ error: "Failed to insert demo data" });
     }
   });
@@ -272,7 +259,6 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
 2. 投資配分の根拠
 3. リスク要因の分析
 `;
-
       const result = await model.generateContent([
         "あなたは競馬予想のエキスパートです。統計データとオッズを分析し、最適な馬券戦略を提案してください。\n\n" + prompt
       ]);

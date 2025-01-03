@@ -4,15 +4,16 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 export const horses = pgTable("horses", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  odds: decimal("odds").notNull(),
+  odds: text("odds").notNull(), 
   raceId: integer("race_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
 });
 
 export const races = pgTable("races", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  venue: text("venue").notNull(), // Added venue field
+  venue: text("venue").notNull(),
   startTime: timestamp("start_time").notNull(),
   status: text("status").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
