@@ -25,10 +25,22 @@ export function registerRoutes(app: Express): Server {
         { name: "ディープインパクト", odds: 2.4, raceId: demoRaces[0].id },
         { name: "キタサンブラック", odds: 3.1, raceId: demoRaces[0].id },
         { name: "オルフェーヴル", odds: 4.2, raceId: demoRaces[0].id },
+        { name: "シンボリルドルフ", odds: 5.6, raceId: demoRaces[0].id },
+        { name: "アグネスタキオン", odds: 6.8, raceId: demoRaces[0].id },
+        { name: "メジロマックイーン", odds: 8.2, raceId: demoRaces[0].id },
+        { name: "ナリタブライアン", odds: 12.4, raceId: demoRaces[0].id },
         { name: "テイエムオペラオー", odds: 2.8, raceId: demoRaces[1].id },
         { name: "スペシャルウィーク", odds: 3.5, raceId: demoRaces[1].id },
+        { name: "マルゼンスキー", odds: 4.8, raceId: demoRaces[1].id },
+        { name: "アドマイヤベガ", odds: 6.2, raceId: demoRaces[1].id },
+        { name: "グラスワンダー", odds: 7.5, raceId: demoRaces[1].id },
+        { name: "エアグルーヴ", odds: 9.3, raceId: demoRaces[1].id },
         { name: "トウカイテイオー", odds: 2.9, raceId: demoRaces[2].id },
-        { name: "ウオッカ", odds: 3.7, raceId: demoRaces[2].id }
+        { name: "ウオッカ", odds: 3.7, raceId: demoRaces[2].id },
+        { name: "タイキシャトル", odds: 5.1, raceId: demoRaces[2].id },
+        { name: "サイレンススズカ", odds: 6.4, raceId: demoRaces[2].id },
+        { name: "ハルウララ", odds: 15.0, raceId: demoRaces[2].id },
+        { name: "メイショウドトウ", odds: 8.8, raceId: demoRaces[2].id }
       ]);
 
       res.json({ message: "Demo data inserted successfully" });
