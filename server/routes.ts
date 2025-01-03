@@ -322,8 +322,9 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
 各セクションは明確に分かれるように記述し、具体的な数値や根拠を含めてください。
 `;
 
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4",
+      const completion = await GoogleGenerativeAI.chat.completions.create({
+
+        model: "gemini-1.5-flash",
         messages: [
           {
             role: "system",
