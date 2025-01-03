@@ -149,10 +149,60 @@ export function registerRoutes(app: Express): Server {
       const raceId = parseInt(req.params.raceId);
       const budget = Number(req.query.budget) || 0;
       const riskRatio = Number(req.query.riskRatio) || 1;
+      const winProbs = JSON.parse(req.query.winProbs as string || "{}");
+      const placeProbs = JSON.parse(req.query.placeProbs as string || "{}");
 
-      // TODO: 実際の戦略計算アルゴリズムを実装
-      // 現在はデモデータを返す
-      const demoStrategy = [
+      // レース情報と出走馬を取得
+      const horses = await db
+        .select()
+        .from(horses)
+        .where(eq(horses.raceId, raceId));
+
+      // 期待値計算
+      const strategies = [];
+      
+      // 単勝の期待値計算
+      for (const horse of horses) {
+        const winProb = winProbs[horse.id] / 100;
+        if (winProb > 0) {
+          const ev = winProb * horse.odds;
+          if (ev > 1) {
+            strategies.push({
+              type: "単勝",
+              horses: [horse.name],
+              stake: Math.floor(budget * (ev - 1) / riskRatio),
+              expectedReturn: Math.floor(budget * (ev - 1) / riskRatio * horse.odds),
+              probability: winProb
+            });
+          }
+        }
+      }
+
+      // 複勝の期待値計算
+      for (const horse of horses) {
+        const placeProb = placeProbs[horse.id] / 100;
+        if (placeProb > 0) {
+          // 複勝オッズは単勝の1/2程度と仮定
+          const placeOdds = horse.odds * 0.5;
+          const ev = placeProb * placeOdds;
+          if (ev > 1) {
+            strategies.push({
+              type: "複勝",
+              horses: [horse.name],
+              stake: Math.floor(budget * (ev - 1) / riskRatio),
+              expectedReturn: Math.floor(budget * (ev - 1) / riskRatio * placeOdds),
+              probability: placeProb
+            });
+          }
+        }
+      }
+
+      // 期待値が高い順にソート
+      strategies.sort((a, b) => 
+        (b.expectedReturn * b.probability) - (a.expectedReturn * a.probability)
+      );
+
+      res.json(strategies);
         {
           type: "単勝",
           horses: ["ディープインパクト"],

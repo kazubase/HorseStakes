@@ -24,6 +24,8 @@ export default function Strategy() {
   const params = new URLSearchParams(search);
   const budget = Number(params.get("budget")) || 0;
   const riskRatio = Number(params.get("risk")) || 1;
+  const winProbs = params.get("winProbs") || "{}";
+  const placeProbs = params.get("placeProbs") || "{}";
 
   const { data: horses } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
@@ -31,7 +33,7 @@ export default function Strategy() {
   });
 
   const { data: recommendedBets } = useQuery<RecommendedBet[]>({
-    queryKey: [`/api/betting-strategy/${id}`, { budget, riskRatio }],
+    queryKey: [`/api/betting-strategy/${id}`, { budget, riskRatio, winProbs, placeProbs }],
     enabled: !!id && budget > 0,
   });
 

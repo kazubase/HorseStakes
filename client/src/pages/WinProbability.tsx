@@ -102,7 +102,7 @@ export default function WinProbability() {
           <Button
             size="lg"
             disabled={Math.abs(totalProbability - 100) > 0.1}
-            onClick={() => window.location.href = `/predict/place/${id}`}
+            onClick={() => window.location.href = `/predict/place/${id}?winProbs=${encodeURIComponent(JSON.stringify(probabilities))}`}
           >
             複勝予想へ進む
           </Button>

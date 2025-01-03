@@ -102,7 +102,11 @@ export default function PlaceProbability() {
           <Button
             size="lg"
             disabled={Math.abs(totalProbability - 300) > 0.1}
-            onClick={() => window.location.href = `/predict/budget/${id}`}
+            onClick={() => {
+            const params = new URLSearchParams(window.location.search);
+            const winProbs = params.get('winProbs') || '{}';
+            window.location.href = `/predict/budget/${id}?winProbs=${winProbs}&placeProbs=${encodeURIComponent(JSON.stringify(probabilities))}`;
+          }}
           >
             予算・リスク設定へ進む
           </Button>
