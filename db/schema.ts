@@ -6,8 +6,7 @@ export const horses = pgTable("horses", {
   name: text("name").notNull(),
   odds: text("odds").notNull(), 
   raceId: integer("race_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
+  createdAt: timestamp("created_at").defaultNow()
 });
 
 export const races = pgTable("races", {

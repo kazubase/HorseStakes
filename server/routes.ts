@@ -43,8 +43,7 @@ export function registerRoutes(app: Express): Server {
         { name: "メイショウドトウ", odds: "8.8", raceId: demoRaces[2].id }
       ].map(horse => ({
         ...horse,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date()
       }));
 
       await db.insert(horses).values(demoHorses);
@@ -55,6 +54,7 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ error: "Failed to insert demo data" });
     }
   });
+
   // 全レース一覧を取得
   app.get("/api/races", async (_req, res) => {
     const allRaces = await db.select().from(races);
