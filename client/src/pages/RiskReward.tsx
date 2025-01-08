@@ -1,4 +1,4 @@
-import { useParams, useLocation } from "wouter";
+import { useParams } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -15,8 +15,10 @@ import {
 
 export default function RiskReward() {
   const { id } = useParams();
-  const { search } = useLocation();
-  const budget = new URLSearchParams(search).get("budget") || "0";
+  const params = new URLSearchParams(window.location.search);
+  const budget = params.get("budget") || "0";
+  const winProbs = params.get("winProbs") || "{}";
+  const placeProbs = params.get("placeProbs") || "{}";
   const [riskRatio, setRiskRatio] = useState<number>(1);
   const [error, setError] = useState<string>("");
 
@@ -26,12 +28,12 @@ export default function RiskReward() {
   };
 
   const handleSubmit = () => {
-    if (riskRatio < 0.1) {
-      setError("リスクリワードレシオは0.1以上に設定してください");
+    if (riskRatio < 1.0) {
+      setError("リスクリワードレシオは1.0以上に設定してください");
       return;
     }
-    // 馬券購入戦略画面へ遷移
-    window.location.href = `/strategy/${id}?budget=${budget}&risk=${riskRatio}`;
+    // 全てのパラメータを含めて馬券購入戦略画面へ遷移
+    window.location.href = `/strategy/${id}?budget=${budget}&risk=${riskRatio}&winProbs=${winProbs}&placeProbs=${placeProbs}`;
   };
 
   return (
@@ -69,9 +71,9 @@ export default function RiskReward() {
                 <Slider
                   value={[riskRatio]}
                   onValueChange={handleRiskRatioChange}
-                  min={0.1}
-                  max={5}
-                  step={0.1}
+                  min={1.0}
+                  max={50}
+                  step={0.5}
                   className="my-4"
                 />
                 <p className="text-sm text-muted-foreground text-right">
@@ -94,7 +96,7 @@ export default function RiskReward() {
           <Button
             size="lg"
             onClick={handleSubmit}
-            disabled={riskRatio < 0.1 || !!error}
+            disabled={riskRatio < 1.0 || !!error}
           >
             馬券購入戦略へ進む
           </Button>

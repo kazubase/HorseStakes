@@ -118,11 +118,11 @@ export function registerRoutes(app: Express): Server {
     res.json(strategies);
   });
 
-  // Updated risk assessment endpoint
+  // リスク評価エンドポイント
   app.get("/api/risk-assessment", async (req, res) => {
     try {
-      // TODO: Implement actual risk calculation algorithm
-      // For now, return enhanced mock data that changes slightly each time
+      // TODO: 実際のリスク計算アルゴリズムを実装する
+      // 現在は、毎回少しずつ変わる強化されたモックデータを返す
       const baseRisk = 65 + Math.random() * 10 - 5;
       const baseVolatility = 72 + Math.random() * 10 - 5;
       const baseWinProb = 45 + Math.random() * 10 - 5;
@@ -173,7 +173,7 @@ export function registerRoutes(app: Express): Server {
       const placeProbs = JSON.parse(req.query.placeProbs as string || "{}");
 
       // レース情報と出走馬を取得
-      const horses = await db
+      const raceHorses = await db
         .select()
         .from(horses)
         .where(eq(horses.raceId, raceId));
@@ -182,16 +182,16 @@ export function registerRoutes(app: Express): Server {
       const strategies = [];
       
       // 単勝の期待値計算
-      for (const horse of horses) {
+      for (const horse of raceHorses) {
         const winProb = winProbs[horse.id] / 100;
         if (winProb > 0) {
-          const ev = winProb * horse.odds;
+          const ev = winProb * Number(horse.odds);
           if (ev > 1) {
             strategies.push({
               type: "単勝",
               horses: [horse.name],
               stake: Math.floor(budget * (ev - 1) / riskRatio),
-              expectedReturn: Math.floor(budget * (ev - 1) / riskRatio * horse.odds),
+              expectedReturn: Math.floor(budget * (ev - 1) / riskRatio * Number(horse.odds)),
               probability: winProb
             });
           }
@@ -199,11 +199,11 @@ export function registerRoutes(app: Express): Server {
       }
 
       // 複勝の期待値計算
-      for (const horse of horses) {
+      for (const horse of raceHorses) {
         const placeProb = placeProbs[horse.id] / 100;
         if (placeProb > 0) {
           // 複勝オッズは単勝の1/2程度と仮定
-          const placeOdds = horse.odds * 0.5;
+          const placeOdds = Number(horse.odds) * 0.5;
           const ev = placeProb * placeOdds;
           if (ev > 1) {
             strategies.push({
@@ -278,7 +278,7 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
     }
   });
 
-  // Add this endpoint after the existing /api/betting-explanation/:raceId endpoint
+  // 既存の /api/betting-explanation/:raceId エンドポイントの後にこのエンドポイントを追加してください
   app.get("/api/betting-explanation/:raceId/detail", async (req, res) => {
     try {
       const raceId = parseInt(req.params.raceId);
@@ -368,7 +368,7 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
     }
   });
 
-  // Add this endpoint after the existing betting explanation endpoints
+  // 既存の馬券戦略説明エンドポイントの後にこのエンドポイントを追加
   app.get("/api/betting-explanation/:raceId/history", async (req, res) => {
     try {
       const raceId = parseInt(req.params.raceId);
@@ -420,7 +420,7 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
     }
   });
 
-  // Add this endpoint after the existing betting explanation endpoints
+  // 既存の馬券戦略説明エンドポイントの後にこのエンドポイントを追加
   app.get("/api/betting-explanation/:raceId/alternatives", async (req, res) => {
     try {
       const raceId = parseInt(req.params.raceId);

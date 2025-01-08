@@ -20,8 +20,7 @@ interface RecommendedBet {
 
 export default function Strategy() {
   const { id } = useParams();
-  const { search } = useLocation();
-  const params = new URLSearchParams(search);
+  const params = new URLSearchParams(window.location.search);
   const budget = Number(params.get("budget")) || 0;
   const riskRatio = Number(params.get("risk")) || 1;
   const winProbs = params.get("winProbs") || "{}";
@@ -33,7 +32,12 @@ export default function Strategy() {
   });
 
   const { data: recommendedBets } = useQuery<RecommendedBet[]>({
-    queryKey: [`/api/betting-strategy/${id}`, { budget, riskRatio, winProbs, placeProbs }],
+    queryKey: [`/api/betting-strategy/${id}`, { 
+      budget, 
+      riskRatio, 
+      winProbs: JSON.parse(winProbs), 
+      placeProbs: JSON.parse(placeProbs) 
+    }],
     enabled: !!id && budget > 0,
   });
 
