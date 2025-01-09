@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, decimal, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, decimal, json ,varchar} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 export const horses = pgTable("horses", {
@@ -33,6 +33,13 @@ export const tickets = pgTable("tickets", {
   totalStake: decimal("total_stake").notNull(),
   potential_return: decimal("potential_return").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const oddsHistory = pgTable('odds_history', {
+  id: serial('id').primaryKey(),
+  horseId: integer('horse_id').references(() => horses.id),
+  odds: varchar('odds', { length: 10 }).notNull(),
+  timestamp: timestamp('timestamp').notNull().defaultNow(),
 });
 
 export type Horse = typeof horses.$inferSelect;

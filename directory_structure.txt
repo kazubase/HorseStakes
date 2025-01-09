@@ -1,0 +1,41 @@
+.
+├── client
+│   ├── index.html
+│   ├── public
+│   │   └── horseshoe-icon.png
+│   └── src
+│       ├── App.tsx
+│       ├── components
+│       ├── hooks
+│       ├── index.css
+│       ├── lib
+│       ├── main.tsx
+│       └── pages
+├── components
+│   └── BetProposalForm.tsx
+├── db
+│   ├── index.ts
+│   ├── migrate.ts
+│   └── schema.ts
+├── directory_structure.txt
+├── drizzle.config.ts
+├── migrations
+├── node_modules
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── replit.nix
+├── replit_zip_error_log.txt
+├── server
+│   ├── index.ts
+│   ├── odds-collector.ts
+│   ├── routes.ts
+│   ├── test-odds-collector.ts
+│   └── vite.ts
+├── tailwind.config.ts
+├── theme.json
+├── tsconfig.json
+├── utils
+│   └── betCalculator.ts
+└── vite.config.ts
+

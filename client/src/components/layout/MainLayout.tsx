@@ -1,7 +1,7 @@
 import { Link } from "wouter";
-import { SiJira } from "react-icons/si";
 import { Clock, History, Settings } from "lucide-react";
 import { useState, useEffect } from 'react';
+import { SiJira } from "react-icons/si";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [time, setTime] = useState(new Date());
@@ -17,9 +17,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer">
-              <SiJira className="h-8 w-8" />
-              <span className="font-bold text-lg">競馬投票支援</span>
+            <div className="flex items-center gap-3 cursor-pointer">
+              <img 
+                src="/horseshoe-icon.png" 
+                alt="馬券戦略" 
+                className="h-10 w-10 rounded-lg shadow-sm"
+              />
+              <span className="font-bold text-2xl font-yuji">馬券戦略</span>
             </div>
           </Link>
           <div className="flex items-center gap-2">

@@ -29,7 +29,7 @@ export default function RiskReward() {
 
   const handleSubmit = () => {
     if (riskRatio < 1.0) {
-      setError("リスクリワードレシオは1.0以上に設定してください");
+      setError("リスクリワードは1.0以上に設定してください");
       return;
     }
     // 全てのパラメータを含めて馬券購入戦略画面へ遷移
@@ -39,7 +39,7 @@ export default function RiskReward() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">リスクリワードレシオ設定</h1>
+        <h1 className="text-2xl font-bold">リスクリワード設定</h1>
 
         {error && (
           <Alert variant="destructive">
@@ -54,7 +54,7 @@ export default function RiskReward() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <label className="text-sm font-medium">
-                    リスクリワードレシオ
+                    リスクリワード
                   </label>
                   <TooltipProvider>
                     <Tooltip>
@@ -63,7 +63,7 @@ export default function RiskReward() {
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>リスクに対してどの程度のリターンを求めるかを設定します。</p>
-                        <p>例：1.5は「リスクの1.5倍のリターン」を意味します。</p>
+                        <p>例：5.0は「リスクの5倍のリターン」を意味します。</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -82,10 +82,10 @@ export default function RiskReward() {
               </div>
 
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>※ 高いリスクリワードレシオを設定すると、</p>
+                <p>※ 高いリスクリワードを設定すると</p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>より大きな利益を狙えますが</li>
-                  <li>的中率は低くなる傾向があります</li>
+                  <li>より大きな利益を狙えます</li>
+                  <li>しかし的中率は低くなる傾向があります</li>
                 </ul>
               </div>
             </div>

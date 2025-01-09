@@ -1,8 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { races, horses, tickets, bettingStrategies } from "@db/schema";
+import { races, horses, tickets, bettingStrategies, oddsHistory } from "../db/schema";
 import { eq } from "drizzle-orm";
+import { inArray } from "drizzle-orm/expressions";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
@@ -514,6 +515,24 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
     } catch (error) {
       console.error('Error generating alternative strategies:', error);
       res.status(500).json({ error: "Failed to generate alternative strategies" });
+    }
+  });
+
+  app.get("/api/odds-history/:raceId", async (req, res) => {
+    try {
+      const raceId = parseInt(req.params.raceId);
+      const raceHorses = await db.select()
+        .from(horses)
+        .where(eq(horses.raceId, raceId));
+
+      const oddsHistoryData = await db.select()
+        .from(oddsHistory)
+        .where(inArray(oddsHistory.horseId, raceHorses.map(h => h.id)))
+        .orderBy(oddsHistory.timestamp);
+
+      res.json(oddsHistoryData);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch odds history" });
     }
   });
 

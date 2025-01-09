@@ -31,8 +31,14 @@ export default function Budget() {
       setError("予算は0より大きい値を入力してください");
       return;
     }
-    // 次の画面へ遷移
-    window.location.href = `/predict/risk-reward/${id}?budget=${budget}`;
+
+    // 現在のURLパラメータを保持
+    const currentParams = new URLSearchParams(window.location.search);
+    const winProbs = currentParams.get('winProbs') || '{}';
+    const placeProbs = currentParams.get('placeProbs') || '{}';
+
+    // 全てのパラメータを含めて次のページに遷移
+    window.location.href = `/predict/risk-reward/${id}?budget=${budget}&winProbs=${winProbs}&placeProbs=${placeProbs}`;
   };
 
   return (
@@ -66,7 +72,6 @@ export default function Budget() {
 
               <div className="text-sm text-muted-foreground">
                 <p>※ 予算に応じて最適な馬券購入プランを提案します</p>
-                <p>※ 予算は100円単位で設定することをお勧めします</p>
               </div>
             </div>
           </CardContent>

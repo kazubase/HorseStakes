@@ -20,40 +20,51 @@ export default function PlaceProbability() {
   });
 
   useEffect(() => {
-    // 初期確率を均等に設定（複勝なので合計300%）
     if (horses) {
-      const initialProb = 300 / horses.length;
       const initial = horses.reduce((acc, horse) => {
-        acc[horse.id] = initialProb;
+        acc[horse.id] = 0;
         return acc;
       }, {} as { [key: number]: number });
       setProbabilities(initial);
-      setTotalProbability(300);
     }
   }, [horses]);
 
   const handleProbabilityChange = (horseId: number, newValue: number) => {
-    const oldValue = probabilities[horseId] || 0;
-    const difference = newValue - oldValue;
-    
-    // 他の馬の確率を調整
-    const otherHorses = Object.keys(probabilities)
-      .map(Number)
-      .filter(id => id !== horseId);
-    
-    const adjustmentPerHorse = -difference / otherHorses.length;
-    
     const newProbabilities = { ...probabilities };
     newProbabilities[horseId] = newValue;
-    
-    otherHorses.forEach(id => {
-      newProbabilities[id] = Math.max(0, (probabilities[id] || 0) + adjustmentPerHorse);
-    });
-    
     setProbabilities(newProbabilities);
     setTotalProbability(
       Object.values(newProbabilities).reduce((sum, value) => sum + value, 0)
     );
+  };
+
+  const normalizeAllProbabilities = () => {
+    const factor = 300 / totalProbability;
+    const normalizedProbabilities = Object.fromEntries(
+      Object.entries(probabilities).map(([id, prob]) => [
+        id,
+        Number((prob * factor).toFixed(1))
+      ])
+    );
+    setProbabilities(normalizedProbabilities);
+    setTotalProbability(300);
+  };
+
+  const handleNext = () => {
+    if (!horses || Math.abs(totalProbability - 300) > 0.1) {
+      return;
+    }
+
+    const allProbabilities = horses.reduce((acc, horse) => {
+      acc[horse.id] = probabilities[horse.id] || 0;
+      return acc;
+    }, {} as { [key: number]: number });
+    
+    const params = new URLSearchParams(window.location.search);
+    const winProbs = params.get('winProbs') || '{}';
+    const encodedPlaceProbs = encodeURIComponent(JSON.stringify(allProbabilities));
+    
+    window.location.href = `/predict/budget/${id}?winProbs=${winProbs}&placeProbs=${encodedPlaceProbs}`;
   };
 
   if (!horses) return null;
@@ -66,8 +77,15 @@ export default function PlaceProbability() {
         {Math.abs(totalProbability - 300) > 0.1 && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              全ての確率の合計が300%になるように調整してください（現在: {totalProbability.toFixed(1)}%）
+            <AlertDescription className="flex items-center justify-between">
+              <span>全ての確率の合計が300%になるように調整してください（現在: {totalProbability.toFixed(1)}%）</span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={normalizeAllProbabilities}
+              >
+                一括調整
+              </Button>
             </AlertDescription>
           </Alert>
         )}
@@ -88,8 +106,8 @@ export default function PlaceProbability() {
                   <Slider
                     value={[probabilities[horse.id] || 0]}
                     onValueChange={([value]) => handleProbabilityChange(horse.id, value)}
-                    max={300}
-                    step={0.1}
+                    max={100}
+                    step={5}
                     className="my-2"
                   />
                 </div>
@@ -102,11 +120,7 @@ export default function PlaceProbability() {
           <Button
             size="lg"
             disabled={Math.abs(totalProbability - 300) > 0.1}
-            onClick={() => {
-            const params = new URLSearchParams(window.location.search);
-            const winProbs = params.get('winProbs') || '{}';
-            window.location.href = `/predict/budget/${id}?winProbs=${winProbs}&placeProbs=${encodeURIComponent(JSON.stringify(probabilities))}`;
-          }}
+            onClick={handleNext}
           >
             予算・リスク設定へ進む
           </Button>
