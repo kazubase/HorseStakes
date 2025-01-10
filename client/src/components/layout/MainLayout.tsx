@@ -19,7 +19,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <Link href="/">
             <div className="flex items-center gap-3 cursor-pointer">
               <img 
-                src="/horseshoe-icon.png" 
+                src="/horseshoe-icon2.PNG" 
                 alt="馬券戦略" 
                 className="h-10 w-10 rounded-lg shadow-sm"
               />

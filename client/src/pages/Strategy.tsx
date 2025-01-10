@@ -124,15 +124,46 @@ export default function Strategy() {
   }
 
   const totalInvestment = recommendedBets?.reduce((sum, bet) => sum + bet.stake, 0) || 0;
-  const totalExpectedReturn = recommendedBets?.reduce((sum, bet) => sum + bet.expectedReturn, 0) || 0;
+  
+  const betDetails = recommendedBets?.map(bet => {
+    const weight = bet.stake / totalInvestment;
+    
+    console.log(`馬券詳細:`, {
+      馬名: bet.horses.join(', '),
+      投資額: bet.stake,
+      ウェイト: weight.toFixed(4),
+      期待払戻金: bet.expectedReturn,
+      的中確率: bet.probability
+    });
+    
+    return {
+      weight,
+      expectedPayout: bet.expectedReturn * bet.probability
+    };
+  }) || [];
+
+  const expectedTotalPayout = betDetails.reduce((sum, detail) => 
+    sum + detail.expectedPayout, 0);
+
+  const totalExpectedReturn = totalInvestment > 0 ? 
+    (expectedTotalPayout / totalInvestment) - 1 : 
+    0;
+
+  console.log('ポートフォリオ全体:', {
+    総投資額: totalInvestment,
+    期待払戻金: expectedTotalPayout,
+    期待リターン: `${(totalExpectedReturn * 100).toFixed(2)}%`,
+    馬券数: betDetails.length
+  });
+
   const expectedROI = totalInvestment > 0 ? 
-    ((totalExpectedReturn - totalInvestment) / totalInvestment * 100).toFixed(1) : 
-    "0.0";
+    `+${(totalExpectedReturn * 100).toFixed(1)}%` : 
+    "+0.0%";
   const investmentRatio = (totalInvestment / budget) * 100;
 
   const averageWinRate = recommendedBets ? 
-    ((recommendedBets.reduce((sum, bet) => sum + bet.probability, 0) / recommendedBets.length) * 100).toFixed(1) : 
-    "0.0";
+    `${((recommendedBets.reduce((sum, bet) => sum + bet.probability, 0) / recommendedBets.length) * 100).toFixed(1)}%` : 
+    "0.0%";
 
   return (
     <MainLayout>
@@ -217,15 +248,16 @@ export default function Strategy() {
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">期待値</p>
+                  <p className="text-sm text-muted-foreground">期待リターン（加重平均）</p>
                   <p className="text-2xl font-bold text-green-500">
-                    ¥{totalExpectedReturn.toLocaleString()}
+                    {totalExpectedReturn > 0 ? "+" : ""}
+                    {(totalExpectedReturn * 100).toFixed(1)}%
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">期待ROI</p>
+                  <p className="text-sm text-muted-foreground">期待払戻金</p>
                   <p className="text-2xl font-bold text-green-500">
-                    {expectedROI}
+                    ¥{(expectedTotalPayout).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -242,7 +274,7 @@ export default function Strategy() {
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">リスクリワードレシオ</p>
+                  <p className="text-sm text-muted-foreground">リスクリワード</p>
                   <p className="text-2xl font-bold">{riskRatio.toFixed(1)}</p>
                 </div>
                 <div>

@@ -1,3 +1,11 @@
+interface BettingOption {
+  type: "単勝" | "複勝";
+  horseName: string;
+  odds: number;
+  prob: number;
+  ev: number;
+}
+
 export interface BetProposal {
   type: "単勝" | "複勝";
   horses: string[];
@@ -14,14 +22,6 @@ export interface HorseData {
   placeProbs: { [key: number]: number }; // 馬IDをキーとした複勝確率
 }
 
-interface BettingOption {
-  type: "単勝" | "複勝";
-  horseName: string;
-  odds: number;
-  prob: number;
-  ev: number;
-}
-
 export const calculateBetProposals = (
   horses: { 
     name: string;
@@ -33,17 +33,15 @@ export const calculateBetProposals = (
   riskRatio: number
 ): BetProposal[] => {
   const MIN_STAKE = 100;
-  const MIN_EV = 1;
-
+  
   console.group('馬券購入戦略の計算過程');
   
-  // 全ての馬の期待値を計算
   const allOptions: BettingOption[] = [];
   
   horses.forEach(horse => {
-    // 単勝の分析
+    // 単勝の期待値を計算
     const winEV = horse.winProb * horse.odds;
-    if (winEV > MIN_EV) {
+    if (winEV > 1.0) {  // 期待値が1.0を超える場合のみ選択
       allOptions.push({
         type: "単勝",
         horseName: horse.name,
@@ -53,10 +51,10 @@ export const calculateBetProposals = (
       });
     }
 
-    // 複勝の分析
-    const placeOdds = horse.odds * 0.4; // 複勝オッズの概算
+    // 複勝の期待値を計算
+    const placeOdds = horse.odds * 0.4;
     const placeEV = horse.placeProb * placeOdds;
-    if (placeEV > MIN_EV) {
+    if (placeEV > 1.0) {  // 期待値が1.0を超える場合のみ選択
       allOptions.push({
         type: "複勝",
         horseName: horse.name,
@@ -70,37 +68,19 @@ export const calculateBetProposals = (
   // 期待値の高い順にソート
   allOptions.sort((a, b) => b.ev - a.ev);
 
-  console.log('有効な馬券候補:', allOptions.map(opt => ({
-    馬名: opt.horseName,
-    種類: opt.type,
-    期待値: opt.ev,
-    確率: opt.prob,
-    オッズ: opt.odds
-  })));
-
-  // 期待値超過分の合計を計算
-  const totalExcessEV = allOptions.reduce((sum, opt) => sum + (opt.ev - MIN_EV), 0);
-  console.log('期待値超過分の合計:', totalExcessEV);
-
+  // 予算配分（期待値の高い馬券により多く配分）
+  const totalEV = allOptions.reduce((sum, opt) => sum + opt.ev, 0);
+  
   const proposals: BetProposal[] = [];
   let remainingBudget = totalBudget;
 
-  // 期待値の高い順に予算を配分
   allOptions.forEach(option => {
     if (remainingBudget < MIN_STAKE) return;
 
-    const ratio = (option.ev - MIN_EV) / totalExcessEV;
+    // 期待値の比率で予算を配分
+    const ratio = option.ev / totalEV;
     let stake = Math.floor((totalBudget * ratio) / 100) * 100;
     stake = Math.max(MIN_STAKE, Math.min(stake, remainingBudget));
-
-    console.log('馬券配分計算:', {
-      馬名: option.horseName,
-      種類: option.type,
-      '期待値': option.ev,
-      '配分比率': ratio,
-      '計算された投資額': stake,
-      '残予算': remainingBudget
-    });
 
     if (stake >= MIN_STAKE) {
       remainingBudget -= stake;
@@ -114,14 +94,6 @@ export const calculateBetProposals = (
     }
   });
 
-  console.log('最終提案:', proposals.map(p => ({
-    種類: p.type,
-    馬名: p.horses[0],
-    投資額: p.stake,
-    期待払戻金: p.expectedReturn,
-    的中確率: p.probability
-  })));
-
   console.groupEnd();
   return proposals;
-}; 
+};

@@ -33,12 +33,15 @@ export function registerRoutes(app: Express): Server {
         { name: "アグネスタキオン", odds: "6.8", raceId: demoRaces[0].id },
         { name: "メジロマックイーン", odds: "8.2", raceId: demoRaces[0].id },
         { name: "ナリタブライアン", odds: "12.4", raceId: demoRaces[0].id },
+        { name: "トウカイテイオー", odds: "15.0", raceId: demoRaces[0].id },
+        // 2Rの出走馬
         { name: "テイエムオペラオー", odds: "2.8", raceId: demoRaces[1].id },
         { name: "スペシャルウィーク", odds: "3.5", raceId: demoRaces[1].id },
         { name: "マルゼンスキー", odds: "4.8", raceId: demoRaces[1].id },
         { name: "アドマイヤベガ", odds: "6.2", raceId: demoRaces[1].id },
         { name: "グラスワンダー", odds: "7.5", raceId: demoRaces[1].id },
         { name: "エアグルーヴ", odds: "9.3", raceId: demoRaces[1].id },
+        // 3Rの出走馬
         { name: "トウカイテイオー", odds: "2.9", raceId: demoRaces[2].id },
         { name: "ウオッカ", odds: "3.7", raceId: demoRaces[2].id },
         { name: "タイキシャトル", odds: "5.1", raceId: demoRaces[2].id },

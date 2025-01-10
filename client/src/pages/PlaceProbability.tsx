@@ -14,6 +14,10 @@ export default function PlaceProbability() {
   const [probabilities, setProbabilities] = useState<{ [key: number]: number }>({});
   const [totalProbability, setTotalProbability] = useState(0);
 
+  const getRequiredTotalProbability = (horseCount: number) => {
+    return horseCount >= 8 ? 300 : 200;
+  };
+
   const { data: horses } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
     enabled: !!id,
@@ -39,7 +43,8 @@ export default function PlaceProbability() {
   };
 
   const normalizeAllProbabilities = () => {
-    const factor = 300 / totalProbability;
+    const requiredTotal = getRequiredTotalProbability(horses?.length || 0);
+    const factor = requiredTotal / totalProbability;
     const normalizedProbabilities = Object.fromEntries(
       Object.entries(probabilities).map(([id, prob]) => [
         id,
@@ -47,11 +52,12 @@ export default function PlaceProbability() {
       ])
     );
     setProbabilities(normalizedProbabilities);
-    setTotalProbability(300);
+    setTotalProbability(requiredTotal);
   };
 
   const handleNext = () => {
-    if (!horses || Math.abs(totalProbability - 300) > 0.1) {
+    const requiredTotal = getRequiredTotalProbability(horses?.length || 0);
+    if (!horses || Math.abs(totalProbability - requiredTotal) > 0.1) {
       return;
     }
 
@@ -74,11 +80,14 @@ export default function PlaceProbability() {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">複勝予想確率入力</h1>
 
-        {Math.abs(totalProbability - 300) > 0.1 && (
+        {horses && Math.abs(totalProbability - getRequiredTotalProbability(horses.length)) > 0.1 && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
-              <span>全ての確率の合計が300%になるように調整してください（現在: {totalProbability.toFixed(1)}%）</span>
+              <span>
+                全ての確率の合計が{getRequiredTotalProbability(horses.length)}%になるように調整してください
+                （現在: {totalProbability.toFixed(1)}%）
+              </span>
               <Button 
                 variant="outline" 
                 size="sm"
@@ -119,7 +128,7 @@ export default function PlaceProbability() {
         <div className="flex justify-end">
           <Button
             size="lg"
-            disabled={Math.abs(totalProbability - 300) > 0.1}
+            disabled={Math.abs(totalProbability - getRequiredTotalProbability(horses?.length || 0)) > 0.1}
             onClick={handleNext}
           >
             予算・リスク設定へ進む
