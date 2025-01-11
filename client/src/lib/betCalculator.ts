@@ -36,56 +36,137 @@ export const calculateBetProposals = (
   
   console.group('馬券購入戦略の計算過程');
   
-  const allOptions: BettingOption[] = [];
-  
-  horses.forEach(horse => {
-    // 単勝の期待値を計算
-    const winEV = horse.winProb * horse.odds;
-    if (winEV > 1.0) {  // 期待値が1.0を超える場合のみ選択
-      allOptions.push({
-        type: "単勝",
+  // デバッグ用：入力値の確認
+  console.log('入力パラメータ:', {
+    horses: horses.map(h => ({
+      name: h.name,
+      odds: h.odds,
+      expectedValue: (h.odds * h.winProb - 1).toFixed(2),
+      winProb: (h.winProb * 100).toFixed(1) + '%'
+    })),
+    totalBudget,
+    riskRatio
+  });
+
+  // オッズ行列の作成（期待値がプラスの馬券のみを対象とする）
+  const bettingOptions = horses.flatMap(horse => {
+    const options = [];
+    
+    // 単勝オプション
+    const winEV = horse.odds * horse.winProb - 1;
+    if (horse.winProb > 0 && winEV > 0) {
+      options.push({
+        type: "単勝" as const,
         horseName: horse.name,
         odds: horse.odds,
         prob: horse.winProb,
         ev: winEV
       });
+      console.log(`単勝候補: ${horse.name}, EV: ${winEV.toFixed(2)}`);
     }
-
-    // 複勝の期待値を計算
-    const placeOdds = horse.odds * 0.4;
-    const placeEV = horse.placeProb * placeOdds;
-    if (placeEV > 1.0) {  // 期待値が1.0を超える場合のみ選択
-      allOptions.push({
-        type: "複勝",
+    
+    // 複勝オプション
+    const placeOdds = Math.max(horse.odds * 0.4, 1.1); // 最小払戻率を考慮
+    const placeEV = placeOdds * horse.placeProb - 1;
+    if (horse.placeProb > 0 && placeEV > 0) {
+      options.push({
+        type: "複勝" as const,
         horseName: horse.name,
         odds: placeOdds,
         prob: horse.placeProb,
         ev: placeEV
       });
+      console.log(`複勝候補: ${horse.name}, EV: ${placeEV.toFixed(2)}`);
     }
+    
+    return options;
   });
 
-  // 期待値の高い順にソート
-  allOptions.sort((a, b) => b.ev - a.ev);
+  // デバッグ用：最適化対象の馬券一覧
+  console.log('最適化対象馬券数:', bettingOptions.length);
 
-  // 予算配分（期待値の高い馬券により多く配分）
-  const totalEV = allOptions.reduce((sum, opt) => sum + opt.ev, 0);
-  
+  // Sharpe比の計算過程を表示する関数
+  const calculateSharpeRatio = (weights: number[]) => {
+    // 期待リターンの計算
+    const returns = bettingOptions.map((opt, i) => 
+      weights[i] * (opt.odds - 1) * opt.prob
+    );
+    const expectedReturn = returns.reduce((a, b) => a + b, 0);
+    
+    // リスク（標準偏差）の計算
+    const variance = bettingOptions.map((opt, i) => {
+      const r = (opt.odds - 1) * weights[i];
+      return opt.prob * (1 - opt.prob) * r * r;
+    }).reduce((a, b) => a + b, 0);
+    
+    const risk = Math.sqrt(variance);
+    const sharpeRatio = risk > 0 ? expectedReturn / risk : 0;
+
+    // 目標リターンとの差異を評価
+    const targetReturn = riskRatio; // ユーザーの希望するリターン
+    const returnDifference = Math.abs(expectedReturn - targetReturn);
+        
+    return sharpeRatio;
+  };
+
+  // 最適化過程
+  let bestWeights = new Array(bettingOptions.length).fill(0);
+  let bestSharpe = 0;
+  let iterationsSinceLastImprovement = 0;
+
+  console.log('最適化開始...');
+
+  for (let iterations = 0; iterations < 1000; iterations++) {
+    const weights = bettingOptions.map(() => Math.random());
+    const sum = weights.reduce((a, b) => a + b, 0);
+    const normalizedWeights = weights.map(w => w / sum);
+    
+    const sharpe = calculateSharpeRatio(normalizedWeights);
+    
+    if (sharpe > bestSharpe) {
+      bestSharpe = sharpe;
+      bestWeights = normalizedWeights;
+      iterationsSinceLastImprovement = 0;
+      
+      // 改善があった場合の詳細表示
+      console.log(`改善発見 (${iterations}回目):`, {
+        sharpeRatio: bestSharpe.toFixed(3),
+        allocation: bestWeights.map((w, i) => ({
+          horse: bettingOptions[i].horseName,
+          type: bettingOptions[i].type,
+          weight: (w * 100).toFixed(1) + '%'
+        }))
+      });
+    } else {
+      iterationsSinceLastImprovement++;
+    }
+  }
+
+  console.log('最適化完了:', {
+    finalSharpeRatio: bestSharpe.toFixed(3),
+    finalAllocation: bestWeights.map((w, i) => ({
+      horse: bettingOptions[i].horseName,
+      type: bettingOptions[i].type,
+      weight: (w * 100).toFixed(1) + '%'
+    })),
+    targetReturnAchieved: (bestWeights.reduce((sum, w, i) => 
+      sum + w * (bettingOptions[i].odds - 1) * bettingOptions[i].prob, 0) >= riskRatio)
+  });
+
+  // 結果の変換
   const proposals: BetProposal[] = [];
   let remainingBudget = totalBudget;
 
-  allOptions.forEach(option => {
-    if (remainingBudget < MIN_STAKE) return;
+  bestWeights.forEach((weight, i) => {
+    if (weight < 0.01) return; // 小さすぎる配分は無視
 
-    // 期待値の比率で予算を配分
-    const ratio = option.ev / totalEV;
-    let stake = Math.floor((totalBudget * ratio) / 100) * 100;
-    stake = Math.max(MIN_STAKE, Math.min(stake, remainingBudget));
-
-    if (stake >= MIN_STAKE) {
+    const option = bettingOptions[i];
+    const stake = Math.floor((totalBudget * weight) / 100) * 100;
+    
+    if (stake >= MIN_STAKE && stake <= remainingBudget) {
       remainingBudget -= stake;
       proposals.push({
-        type: option.type,
+        type: option.type as "単勝" | "複勝",
         horses: [option.horseName],
         stake,
         expectedReturn: Math.floor(stake * option.odds),
