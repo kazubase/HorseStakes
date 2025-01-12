@@ -5,61 +5,12 @@ import { races, horses, tickets, bettingStrategies, oddsHistory } from "../db/sc
 import { eq } from "drizzle-orm";
 import { inArray } from "drizzle-orm/expressions";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { OddsCollector } from "./odds-collector";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 export function registerRoutes(app: Express): Server {
-  // デモ用の出馬表データを挿入
-  app.post("/api/demo-data", async (_req, res) => {
-    try {
-      // 既存のデータを削除
-      await db.delete(horses);
-      await db.delete(races);
-
-      // レースを作成
-      const demoRaces = await db.insert(races).values([
-        { name: "1R", venue: "tokyo", startTime: new Date("2024-02-04T09:00:00"), status: "upcoming" },
-        { name: "2R", venue: "tokyo", startTime: new Date("2024-02-04T09:30:00"), status: "upcoming" },
-        { name: "3R", venue: "nakayama", startTime: new Date("2024-02-04T10:00:00"), status: "upcoming" }
-      ]).returning();
-
-      // 出走馬データを準備
-      const demoHorses = [
-        { name: "ディープインパクト", odds: "2.4", raceId: demoRaces[0].id },
-        { name: "キタサンブラック", odds: "3.1", raceId: demoRaces[0].id },
-        { name: "オルフェーヴル", odds: "4.2", raceId: demoRaces[0].id },
-        { name: "シンボリルドルフ", odds: "5.6", raceId: demoRaces[0].id },
-        { name: "アグネスタキオン", odds: "6.8", raceId: demoRaces[0].id },
-        { name: "メジロマックイーン", odds: "8.2", raceId: demoRaces[0].id },
-        { name: "ナリタブライアン", odds: "12.4", raceId: demoRaces[0].id },
-        { name: "トウカイテイオー", odds: "15.0", raceId: demoRaces[0].id },
-        // 2Rの出走馬
-        { name: "テイエムオペラオー", odds: "2.8", raceId: demoRaces[1].id },
-        { name: "スペシャルウィーク", odds: "3.5", raceId: demoRaces[1].id },
-        { name: "マルゼンスキー", odds: "4.8", raceId: demoRaces[1].id },
-        { name: "アドマイヤベガ", odds: "6.2", raceId: demoRaces[1].id },
-        { name: "グラスワンダー", odds: "7.5", raceId: demoRaces[1].id },
-        { name: "エアグルーヴ", odds: "9.3", raceId: demoRaces[1].id },
-        // 3Rの出走馬
-        { name: "トウカイテイオー", odds: "2.9", raceId: demoRaces[2].id },
-        { name: "ウオッカ", odds: "3.7", raceId: demoRaces[2].id },
-        { name: "タイキシャトル", odds: "5.1", raceId: demoRaces[2].id },
-        { name: "サイレンススズカ", odds: "6.4", raceId: demoRaces[2].id },
-        { name: "ハルウララ", odds: "15.0", raceId: demoRaces[2].id },
-        { name: "メイショウドトウ", odds: "8.8", raceId: demoRaces[2].id }
-      ];
-
-      // 出走馬を挿入
-      await db.insert(horses).values(demoHorses);
-
-      res.json({ message: "Demo data inserted successfully" });
-    } catch (error) {
-      console.error('Error inserting demo data:', error);
-      res.status(500).json({ error: "Failed to insert demo data" });
-    }
-  });
-
   // 全レース一覧を取得
   app.get("/api/races", async (_req, res) => {
     const allRaces = await db.select().from(races);
@@ -536,6 +487,98 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
       res.json(oddsHistoryData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch odds history" });
+    }
+  });
+
+  // デモデータのエンドポイントを実際のレースデータ登録用に変更
+  app.post("/api/register-race", async (req, res) => {
+    try {
+      const { raceId, raceName, venue, startTime } = req.body;
+
+      // レースを登録
+      const [race] = await db.insert(races).values({
+        id: raceId,
+        name: raceName,
+        venue: venue,
+        startTime: new Date(startTime),
+        status: "upcoming"
+      }).returning();
+
+      // OddsCollectorを初期化
+      const collector = new OddsCollector();
+      await collector.initialize();
+
+      try {
+        // オッズデータを取得
+        const oddsData = await collector.collectOdds(raceId);
+        
+        // 出走馬を登録
+        const horseInserts = oddsData.map(odds => ({
+          name: odds.horseName,
+          odds: odds.tanOdds.toString(),
+          raceId: raceId
+        }));
+
+        const insertedHorses = await db.insert(horses).values(horseInserts).returning();
+
+        // オッズ履歴を登録
+        await collector.saveOddsHistory(oddsData);
+
+        res.json({
+          message: "Race data registered successfully",
+          race,
+          horsesCount: insertedHorses.length,
+          oddsDataCount: oddsData.length
+        });
+
+      } finally {
+        await collector.cleanup();
+      }
+
+    } catch (error) {
+      console.error('Error registering race data:', error);
+      res.status(500).json({
+        error: "Failed to register race data",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // 定期的なオッズ収集を開始するエンドポイント
+  app.post("/api/start-odds-collection", async (_req, res) => {
+    try {
+      const collector = new OddsCollector();
+      await collector.initialize();
+      await collector.startPeriodicCollection(5); // 5分間隔で収集
+
+      res.json({ message: "Odds collection started successfully" });
+    } catch (error) {
+      console.error('Error starting odds collection:', error);
+      res.status(500).json({
+        error: "Failed to start odds collection",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // レース情報を更新するエンドポイント
+  app.put("/api/races/:id/status", async (req, res) => {
+    try {
+      const raceId = parseInt(req.params.id);
+      const { status } = req.body;
+
+      const [updatedRace] = await db.update(races)
+        .set({ status })
+        .where(eq(races.id, raceId))
+        .returning();
+
+      res.json(updatedRace);
+    } catch (error) {
+      console.error('Error updating race status:', error);
+      res.status(500).json({
+        error: "Failed to update race status",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 

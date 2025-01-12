@@ -1,12 +1,25 @@
+import 'dotenv/config';
 import { Browser, chromium } from 'playwright';
 import { db } from '../db';
 import { horses, races, oddsHistory } from '../db/schema';
 import { eq } from 'drizzle-orm';
+import * as cheerio from 'cheerio';
+
+declare global {
+  interface Window {
+    doAction: (url: string, param: string) => void;
+  }
+}
+
 
 interface OddsData {
   horseId: number;
-  odds: string;
+  horseName: string;
+  tanOdds: number;
+  fukuOddsMin: number;
+  fukuOddsMax: number;
   timestamp: Date;
+  raceId: number;
 }
 
 export class OddsCollector {
@@ -25,141 +38,133 @@ export class OddsCollector {
 
     const context = await this.browser.newContext();
     const page = await context.newPage();
-    const oddsData: OddsData[] = [];
 
     try {
-      // JRAのトップページにアク�ス
-      console.log('Accessing JRA top page...');
-      await page.goto('https://www.jra.go.jp/', { 
-        waitUntil: 'networkidle',
-        timeout: 60000 
-      });
+      // JRAのページにアクセス
+      await page.goto('https://www.jra.go.jp/keiba/');
+      await page.waitForLoadState('networkidle');
       
-      // デバッグ用のスクリーンショット
-      console.log('Taking screenshot of top page...');
-      await page.screenshot({ path: 'debug-top-page.png' });
-
-      // 競馬メニューをクリック - より具体的なセレクタを使用
-      console.log('Clicking race menu...');
-      await page.waitForSelector('.nav-link, a:has-text("競馬メニュー")', { timeout: 30000 });
-      await page.click('.nav-link, a:has-text("競馬メニュー")');
+      // オッズリンクをクリックして待機
+      await page.getByRole('link', { name: 'オッズ', exact: true }).click();
       await page.waitForLoadState('networkidle');
 
-      // オッズページへの遷移 - より具体的なセレクタを使用
-      console.log('Clicking odds link...');
-      await page.waitForSelector('a:has-text("オッズ"), .odds-link', { timeout: 30000 });
-      await Promise.all([
-        page.waitForURL('**/keiba/odds/**'),
-        page.click('a:has-text("オッズ"), .odds-link')
-      ]);
-
-      // デバッグ用のスクリーンショット
-      console.log('Taking screenshot after odds navigation...');
-      await page.screenshot({ path: 'debug-odds-page.png' });
-
-      console.log('Getting race information...');
-      const race = await db.query.races.findFirst({
-        where: eq(races.id, raceId),
-      });
+      // レースIDから開催場所とレース番号を抽出
+      const raceIdStr = raceId.toString();
+      const kaisaiKai = parseInt(raceIdStr.slice(6,8)).toString();
+      const kaisaiNichi = parseInt(raceIdStr.slice(8,10)).toString();
+      const kaisaiName = `${kaisaiKai}回${placeMapping[raceIdStr.slice(4,6)]}${kaisaiNichi}日`;
       
-      console.log('Race data:', race);
+      // 開催選択して待機
+      await page.getByRole('link', { name: kaisaiName }).click();
+      await page.waitForLoadState('networkidle');
       
-      if (!race) {
-        throw new Error('Race not found');
-      }
+      // レース選択（画像を含むリンクを選択）して待機
+      const raceNumber = parseInt(raceIdStr.slice(10,12));
+      await page.locator(`img[alt="${raceNumber}レース"]`).click();
+      await page.waitForLoadState('networkidle');
 
-      console.log('Checking page content...');
-      const pageTitle = await page.title();
-      console.log('Page title:', pageTitle);
+      // セレクタを修正
+      await page.waitForSelector('table.basic.narrow-xy.tanpuku', { timeout: 30000 });
+      await page.waitForTimeout(2000);
 
-      // 会場選択のセレクトボックスの確認
-      console.log('Checking venue selector...');
-      const venueSelector = await page.locator('select[name="jyo"]');
-      const venueSelectorExists = await venueSelector.count() > 0;
-      console.log('Venue selector exists:', venueSelectorExists);
+      const html = await page.content();
+      const $ = cheerio.load(html);
+      
+      // デバッグ情報
+      console.log('Current URL:', page.url());
+      console.log('Page content length:', html.length);
+      console.log('Table exists:', $('table.basic.narrow-xy.tanpuku').length > 0);
+      console.log('Table rows:', $('table.basic.narrow-xy.tanpuku tr').length);
 
-      if (venueSelectorExists) {
-        // 利用可能な会場オプションを確認
-        const venueOptions = await page.$$eval('select[name="jyo"] option', 
-          (options) => options.map((opt) => ({
-            value: (opt as HTMLOptionElement).value,
-            text: opt.textContent
-          }))
-        );
-        console.log('Available venues:', venueOptions);
+      const oddsData: OddsData[] = [];
+      const processedHorseIds = new Set<number>();
 
-        // 開催場所の選択
-        console.log(`Selecting venue: ${race.venue}`);
-        await page.selectOption('select[name="jyo"]', race.venue);
+      // セレクタを修正してテーブルの各行を処理
+      $('table.basic.narrow-xy.tanpuku tr').each((_, element) => {
+        const row = $(element);
+        const cells = row.find('td');
         
-        // レース番号の選択
-        const raceNumber = race.name.replace('R', '');
-        console.log(`Selecting race number: ${raceNumber}`);
-        await page.selectOption('select[name="race"]', raceNumber);
-
-        // 選択後のスクリーンショット
-        await page.screenshot({ path: 'debug-after-selection.png' });
-
-        console.log('Clicking submit button...');
-        await page.click('input[type="submit"]');
-        await page.waitForLoadState('networkidle');
+        // 馬番を取得（num クラスを使用）
+        const horseNumberCell = row.find('td.num');
+        if (!horseNumberCell.length) return;
         
-        // オッズテーブルの取得を試みる
-        console.log('Looking for odds table...');
-        const table = await page.locator('table.odds_table_data');
-        const tableExists = await table.count() > 0;
-        console.log('Odds table exists:', tableExists);
+        const horseNumber = horseNumberCell.text().trim();
+        if (!horseNumber || isNaN(parseInt(horseNumber))) return;
 
-        if (tableExists) {
-          const rows = await table.locator('tr').all();
-          console.log(`Found ${rows.length} rows in odds table`);
-          
-          for (const row of rows) {
-            const horseNumber = await row.locator('td:first-child').innerText();
-            const currentOdds = await row.locator('td:nth-child(2)').innerText();
-            console.log(`Horse ${horseNumber}: Odds ${currentOdds}`);
-            
-            const horse = await db.query.horses.findFirst({
-              where: (horses, { and, eq }) => and(
-                eq(horses.raceId, raceId)
-              )
-            });
+        const horseId = parseInt(horseNumber);
+        if (processedHorseIds.has(horseId)) return;
 
-            if (horse) {
-              oddsData.push({
-                horseId: horse.id,
-                odds: currentOdds,
-                timestamp: new Date()
-              });
-            }
-          }
-        } else {
-          console.log('Could not find odds table');
-          await page.screenshot({ path: 'debug-no-table.png' });
+        // 各セルのクラスを使用してデータを取得
+        const horseName = row.find('td.horse a').text().trim();
+        const tanOddsText = row.find('td.odds_tan').text().trim().replace(/,/g, '');
+        const fukuCell = row.find('td.odds_fuku');
+        const fukuText = fukuCell.text().trim().split('-');
+        const fukuMinText = fukuText[0].trim();
+        const fukuMaxText = fukuText[1]?.trim() || fukuMinText;
+
+        // 数値に変換
+        const tanOdds = parseFloat(tanOddsText);
+        const fukuOddsMin = parseFloat(fukuMinText);
+        const fukuOddsMax = parseFloat(fukuMaxText);
+
+        if (!isNaN(tanOdds) && !isNaN(fukuOddsMin) && !isNaN(fukuOddsMax)) {
+          oddsData.push({
+            horseId,
+            horseName,
+            tanOdds,
+            fukuOddsMin,
+            fukuOddsMax,
+            timestamp: new Date(),
+            raceId
+          });
+          processedHorseIds.add(horseId);
         }
-      } else {
-        console.log('Could not find venue selection element');
-        await page.screenshot({ path: 'debug-no-selector.png' });
-      }
+      });
+
+      console.log(`Collected odds data for ${oddsData.length} horses`);
+      return oddsData;
 
     } catch (error) {
-      console.error('Error collecting odds:', error);
-      // エラー時のスクリーンショット
-      await page.screenshot({ path: 'debug-error.png' });
+      console.error('Error during odds collection:', error);
+      console.error('Error details:', error instanceof Error ? error.message : String(error));
+      throw error;
     } finally {
       await context.close();
     }
-
-    console.log(`Collected ${oddsData.length} odds entries`);
-    return oddsData;
   }
 
   async saveOddsHistory(oddsData: OddsData[]) {
     try {
-      await db.insert(oddsHistory).values(oddsData);
+      // 既存の馬情報を取得
+      const existingHorses = await db.select()
+        .from(horses)
+        .where(eq(horses.raceId, oddsData[0]?.raceId));
+
+      // 馬情報の更新
+      for (const horse of existingHorses) {
+        const newOdds = oddsData.find(o => o.horseName === horse.name);
+        if (newOdds) {
+          await db.update(horses)
+            .set({ odds: newOdds.tanOdds.toString() })
+            .where(eq(horses.id, horse.id));
+        }
+      }
+
+      // オッズ履歴の保存
+      await db.insert(oddsHistory).values(
+        oddsData.map(odds => ({
+          horseId: existingHorses.find(h => h.name === odds.horseName)?.id || 0,
+          tanOdds: odds.tanOdds.toString(),
+          fukuOddsMin: odds.fukuOddsMin.toString(),
+          fukuOddsMax: odds.fukuOddsMax.toString(),
+          timestamp: odds.timestamp
+        }))
+      );
+
       console.log(`Saved ${oddsData.length} odds records`);
     } catch (error) {
       console.error('Error saving odds history:', error);
+      throw error;
     }
   }
 
@@ -186,3 +191,17 @@ export class OddsCollector {
     }
   }
 }
+
+// place_mappingの定義を追加
+const placeMapping: { [key: string]: string } = {
+  "01": "札幌",
+  "02": "函館",
+  "03": "福島",
+  "04": "新潟",
+  "05": "東京",
+  "06": "中山",
+  "07": "中京",
+  "08": "京都",
+  "09": "阪神",
+  "10": "小倉"
+};

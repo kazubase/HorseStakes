@@ -7,8 +7,8 @@ async function testOddsCollection() {
     console.log('Initializing browser...');
     await collector.initialize();
 
-    // デモデータのレースIDを使用（前回のコードで作成したデモデータの1Rを想定）
-    const raceId = 1; // または実際のデータベースに存在するレースID
+    // 中山競馬場の実際のレースID
+    const raceId = 202506010301;
     
     console.log(`Collecting odds for race ID: ${raceId}`);
     const oddsData = await collector.collectOdds(raceId);
@@ -31,5 +31,4 @@ async function testOddsCollection() {
   }
 }
 
-// テストを実行
 testOddsCollection(); 
