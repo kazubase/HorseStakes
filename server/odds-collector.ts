@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { Browser, chromium } from 'playwright';
 import { db } from '../db';
 import { horses, races, oddsHistory } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import * as cheerio from 'cheerio';
 
 declare global {
@@ -135,31 +135,59 @@ export class OddsCollector {
 
   async saveOddsHistory(oddsData: OddsData[]) {
     try {
-      // 既存の馬情報を取得
-      const existingHorses = await db.select()
-        .from(horses)
-        .where(eq(horses.raceId, oddsData[0]?.raceId));
+      // まず、該当するレースの情報を取得
+      const race = await db.query.races.findFirst({
+        where: eq(races.id, oddsData[0]?.raceId)
+      });
 
-      // 馬情報の更新
-      for (const horse of existingHorses) {
-        const newOdds = oddsData.find(o => o.horseName === horse.name);
-        if (newOdds) {
-          await db.update(horses)
-            .set({ odds: newOdds.tanOdds.toString() })
-            .where(eq(horses.id, horse.id));
-        }
+      if (!race) {
+        // レースが存在しない場合は、先にレースを登録
+        await db.insert(races).values({
+          id: oddsData[0].raceId,
+          name: `Race ${oddsData[0].raceId}`, // 仮の名前
+          venue: "Unknown", // 仮の会場名
+          startTime: new Date(), // 仮の開始時間
+          status: "upcoming"
+        });
       }
 
-      // オッズ履歴の保存
-      await db.insert(oddsHistory).values(
-        oddsData.map(odds => ({
-          horseId: existingHorses.find(h => h.name === odds.horseName)?.id || 0,
-          tanOdds: odds.tanOdds.toString(),
-          fukuOddsMin: odds.fukuOddsMin.toString(),
-          fukuOddsMax: odds.fukuOddsMax.toString(),
-          timestamp: odds.timestamp
-        }))
-      );
+      // レースに紐づく馬の情報を取得または登録
+      for (const odds of oddsData) {
+        const existingHorse = await db.query.horses.findFirst({
+          where: and(
+            eq(horses.name, odds.horseName),
+            eq(horses.raceId, odds.raceId)
+          )
+        });
+
+        if (!existingHorse) {
+          // 馬が存在しない場合は登録
+          await db.insert(horses).values({
+            name: odds.horseName,
+            odds: odds.tanOdds.toString(),
+            raceId: odds.raceId
+          });
+        }
+
+        // 最新の馬情報を再取得
+        const horse = await db.query.horses.findFirst({
+          where: and(
+            eq(horses.name, odds.horseName),
+            eq(horses.raceId, odds.raceId)
+          )
+        });
+
+        if (horse) {
+          // オッズ履歴を保存（horse.idを使用）
+          await db.insert(oddsHistory).values({
+            horseId: horse.id,
+            tanOdds: odds.tanOdds.toString(),
+            fukuOddsMin: odds.fukuOddsMin.toString(),
+            fukuOddsMax: odds.fukuOddsMax.toString(),
+            timestamp: odds.timestamp
+          });
+        }
+      }
 
       console.log(`Saved ${oddsData.length} odds records`);
     } catch (error) {

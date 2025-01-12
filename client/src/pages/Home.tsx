@@ -8,10 +8,17 @@ import { format } from "date-fns";
 import MainLayout from "@/components/layout/MainLayout";
 import { RefreshCw, Trophy, Target } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import RaceList from "@/pages/RaceList";
 
 export default function Home() {
   const { id } = useParams();
 
+  // idがない場合はRaceListを表示
+  if (!id) {
+    return <RaceList />;
+  }
+
+  // 以下、既存のコード（レース詳細の表示）
   const { data: race, isLoading: raceLoading } = useQuery<Race>({
     queryKey: [`/api/races/${id}`],
   });
@@ -23,7 +30,7 @@ export default function Home() {
   } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
     enabled: !!id,
-    refetchInterval: 30000, // 30秒ごとに自動更新
+    refetchInterval: 30000,
   });
 
   if (!race && !raceLoading) return null;

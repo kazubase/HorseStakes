@@ -5,6 +5,7 @@ import { Race } from "@db/schema";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import MainLayout from "@/components/layout/MainLayout";
+import { useEffect } from "react";
 
 interface RaceVenue {
   id: string;
@@ -12,18 +13,31 @@ interface RaceVenue {
 }
 
 const venues: RaceVenue[] = [
-  { id: "tokyo", name: "東京" },
-  { id: "nakayama", name: "中山" },
+  { id: "中山", name: "中山" },
+  { id: "東京", name: "東京" },
 ];
 
 export default function RaceList() {
   const [_, setLocation] = useLocation();
 
-  const { data: races } = useQuery<Race[]>({
+  const { data: races, isLoading, error } = useQuery<Race[]>({
     queryKey: ["/api/races"],
+    gcTime: 0,
+    staleTime: 0,
+    retry: false,
+    refetchOnMount: true,
+    select: (data) => {
+      console.log("Fetched races:", data);
+      return data;
+    }
   });
 
+  useEffect(() => {
+    if (error) console.error("Query error:", error);
+  }, [error]);
+
   const getRacesForVenue = (venueId: string) => {
+    console.log(`Filtering races for venue: ${venueId}`, races);
     return races?.filter(race => race.venue === venueId) || [];
   };
 
@@ -43,31 +57,40 @@ export default function RaceList() {
         {venues.map(venue => (
           <TabsContent key={venue.id} value={venue.id}>
             <div className="grid gap-4">
-              {getRacesForVenue(venue.id).map(race => (
-                <Card 
-                  key={race.id}
-                  className="cursor-pointer hover:bg-accent/50 transition-colors"
-                  onClick={() => setLocation(`/race/${race.id}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-semibold">
-                          {race.name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(race.startTime), 'HH:mm')} 発走
-                        </p>
+              {isLoading ? (
+                <div>データを読み込み中...</div>
+              ) : error ? (
+                <div>データの読み込みに失敗しました</div>
+              ) : (
+                getRacesForVenue(venue.id).map(race => (
+                  <Card 
+                    key={race.id}
+                    className="cursor-pointer hover:bg-accent/50 transition-colors"
+                    onClick={() => {
+                      console.log("Navigating to race:", race.id);
+                      setLocation(`/race/${race.id}`);
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-semibold">
+                            {race.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(race.startTime), 'HH:mm')} 発走
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">
+                            {race.status}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">
-                          {race.status}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </TabsContent>
         ))}
