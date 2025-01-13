@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, decimal, json ,varchar, numeric, bigint} from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, decimal, json ,varchar, numeric, bigint, boolean} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 export const horses = pgTable("horses", {
@@ -29,19 +29,36 @@ export const bettingStrategies = pgTable("betting_strategies", {
 export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
   raceId: bigint("race_id", { mode: "number" }).notNull(),
+  betType: varchar('bet_type', { length: 20 }).notNull(),
   selections: json("selections").notNull(),
   totalStake: decimal("total_stake").notNull(),
-  potential_return: decimal("potential_return").notNull(),
+  potentialReturn: decimal("potential_return").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const oddsHistory = pgTable('odds_history', {
   id: serial('id').primaryKey(),
   horseId: bigint('horse_id', { mode: "number" }).notNull(),
-  tanOdds: numeric('tan_odds').notNull(),
-  fukuOddsMin: numeric('fuku_odds_min').notNull(),
-  fukuOddsMax: numeric('fuku_odds_max').notNull(),
+  betType: varchar('bet_type', { length: 20 }).notNull(),
+  oddsMin: numeric('odds_min').notNull(),
+  oddsMax: numeric('odds_max'),
   timestamp: timestamp('timestamp').notNull()
+});
+
+export const betCombinations = pgTable('bet_combinations', {
+  id: serial('id').primaryKey(),
+  oddsHistoryId: integer('odds_history_id').notNull(),
+  horseId: bigint('horse_id', { mode: "number" }).notNull(),
+  position: integer('position').notNull(),
+});
+
+export const betTypes = pgTable('bet_types', {
+  id: serial('id').primaryKey(),
+  code: varchar('code', { length: 20 }).notNull().unique(),
+  name: varchar('name', { length: 50 }).notNull(),
+  description: text('description'),
+  requiredHorses: integer('required_horses').notNull(),
+  orderMatters: boolean('order_matters').notNull(),
 });
 
 export type Horse = typeof horses.$inferSelect;

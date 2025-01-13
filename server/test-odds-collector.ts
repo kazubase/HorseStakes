@@ -22,22 +22,22 @@ async function testOddsCollection() {
       console.log('Registering new race...');
       await db.insert(races).values({
         id: raceId,
-        name: `中山競馬場 第1回 第3日 1R`, // レース名を適切に設定
+        name: `中山競馬場 第1回 第3日 1R`,
         venue: "中山",
-        startTime: new Date('2025-01-12T02:00:00'), // レースの開始時間を適切に設定
+        startTime: new Date('2025-01-12T02:00:00'),
         status: "upcoming"
       });
       console.log('Race registered successfully');
     }
     
-    console.log(`Collecting odds for race ID: ${raceId}`);
-    const oddsData = await collector.collectOdds(raceId);
+    // 単勝・複勝オッズの取得と保存
+    console.log(`Collecting Tanpuku odds for race ID: ${raceId}`);
+    const tanpukuOdds = await collector.collectOddsForBetType(raceId, 'tanpuku');
+    console.log('Collected Tanpuku odds data:', tanpukuOdds);
     
-    console.log('Collected odds data:', oddsData);
-    
-    if (oddsData.length > 0) {
+    if (tanpukuOdds.length > 0) {
       // 馬のデータを先に登録
-      for (const odds of oddsData) {
+      for (const odds of tanpukuOdds) {
         const existingHorse = await db.query.horses.findFirst({
           where: eq(horses.name, odds.horseName)
         });
@@ -52,12 +52,26 @@ async function testOddsCollection() {
         }
       }
 
-      console.log('Saving odds data to database...');
-      await collector.saveOddsHistory(oddsData);
-      console.log('Odds data saved successfully');
-    } else {
-      console.log('No odds data collected');
+      console.log('Saving Tanpuku odds data to database...');
+      await collector.saveOddsHistory(tanpukuOdds);
+      console.log('Tanpuku odds data saved successfully');
     }
+
+    // 枠連オッズの取得と保存
+    console.log(`Collecting Wakuren odds for race ID: ${raceId}`);
+    const wakurenOdds = await collector.collectOddsForBetType(raceId, 'wakuren');
+    console.log('Collected Wakuren odds data:', wakurenOdds);
+    
+    if (wakurenOdds.length > 0) {
+      console.log('Saving Wakuren odds data to database...');
+      await collector.saveWakurenOddsHistory(wakurenOdds);
+      console.log('Wakuren odds data saved successfully');
+    }
+
+    // 収集結果のサマリーを表示
+    console.log('\nCollection Summary:');
+    console.log(`- Tanpuku odds collected: ${tanpukuOdds.length}`);
+    console.log(`- Wakuren odds collected: ${wakurenOdds.length}`);
 
   } catch (error) {
     console.error('Error during test:', error);
