@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, decimal, json ,varchar, numeric, bigint, boolean} from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, decimal, json ,varchar, numeric, bigint, boolean, index} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 export const horses = pgTable("horses", {
@@ -36,21 +36,41 @@ export const tickets = pgTable("tickets", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const oddsHistory = pgTable('odds_history', {
-  id: serial('id').primaryKey(),
-  horseId: bigint('horse_id', { mode: "number" }).notNull(),
-  betType: varchar('bet_type', { length: 20 }).notNull(),
-  oddsMin: numeric('odds_min').notNull(),
-  oddsMax: numeric('odds_max'),
-  timestamp: timestamp('timestamp').notNull()
-});
+export const tanOddsHistory = pgTable("tan_odds_history", {
+  id: serial("id").primaryKey(),
+  horseId: bigint("horse_id", { mode: "number" }).notNull(),
+  odds: numeric("odds").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+  raceId: bigint("race_id", { mode: "number" }).notNull()
+}, (table) => ({
+  horseIdx: index("tan_odds_history_horse_id_idx").on(table.horseId),
+  timestampIdx: index("tan_odds_history_timestamp_idx").on(table.timestamp),
+  raceIdx: index("tan_odds_history_race_id_idx").on(table.raceId)
+}));
 
-export const betCombinations = pgTable('bet_combinations', {
-  id: serial('id').primaryKey(),
-  oddsHistoryId: integer('odds_history_id').notNull(),
-  horseId: bigint('horse_id', { mode: "number" }).notNull(),
-  position: integer('position').notNull(),
-});
+export const fukuOdds = pgTable("fuku_odds", {
+  id: serial("id").primaryKey(),
+  horseId: bigint("horse_id", { mode: "number" }).notNull(),
+  oddsMin: numeric("odds_min").notNull(),
+  oddsMax: numeric("odds_max").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+  raceId: bigint("race_id", { mode: "number" }).notNull()
+}, (table) => ({
+  horseIdx: index("fuku_odds_horse_id_idx").on(table.horseId),
+  raceIdx: index("fuku_odds_race_id_idx").on(table.raceId)
+}));
+
+export const wakurenOdds = pgTable("wakuren_odds", {
+  id: serial("id").primaryKey(),
+  frame1: integer("frame1").notNull(),
+  frame2: integer("frame2").notNull(),
+  odds: numeric("odds").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+  raceId: bigint("race_id", { mode: "number" }).notNull()
+}, (table) => ({
+  raceIdx: index("wakuren_odds_race_id_idx").on(table.raceId),
+  framesIdx: index("wakuren_odds_frames_idx").on(table.frame1, table.frame2)
+}));
 
 export const betTypes = pgTable('bet_types', {
   id: serial('id').primaryKey(),
@@ -65,4 +85,6 @@ export type Horse = typeof horses.$inferSelect;
 export type Race = typeof races.$inferSelect;
 export type BettingStrategy = typeof bettingStrategies.$inferSelect;
 export type Ticket = typeof tickets.$inferSelect;
-export type OddsHistory = typeof oddsHistory.$inferSelect;
+export type TanOddsHistory = typeof tanOddsHistory.$inferSelect;
+export type FukuOdds = typeof fukuOdds.$inferSelect;
+export type WakurenOdds = typeof wakurenOdds.$inferSelect;

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { races, horses, tickets, bettingStrategies, oddsHistory } from "../db/schema";
+import { races, horses, tickets, bettingStrategies, tanOddsHistory, fukuOdds, wakurenOdds } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { inArray } from "drizzle-orm/expressions";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -480,9 +480,9 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
         .where(eq(horses.raceId, raceId));
 
       const oddsHistoryData = await db.select()
-        .from(oddsHistory)
-        .where(inArray(oddsHistory.horseId, raceHorses.map(h => h.id)))
-        .orderBy(oddsHistory.timestamp);
+        .from(tanOddsHistory)
+        .where(inArray(tanOddsHistory.horseId, raceHorses.map(h => h.id)))
+        .orderBy(tanOddsHistory.timestamp);
 
       res.json(oddsHistoryData);
     } catch (error) {
@@ -510,25 +510,31 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
 
       try {
         // オッズデータを取得
-        const oddsData = await collector.collectOdds(raceId);
+        const tanpukuOdds = await collector.collectOddsForBetType(raceId, 'tanpuku');
+        const wakurenOdds = await collector.collectOddsForBetType(raceId, 'wakuren');
         
         // 出走馬を登録
-        const horseInserts = oddsData.map(odds => ({
-          name: odds.horseName,
-          odds: odds.tanOdds.toString(),
-          raceId: raceId
-        }));
+        if (tanpukuOdds.length > 0) {
+          const horseInserts = tanpukuOdds.map(odds => ({
+            name: odds.horseName,
+            odds: odds.tanOdds.toString(),
+            raceId: raceId
+          }));
 
-        const insertedHorses = await db.insert(horses).values(horseInserts).returning();
+          const insertedHorses = await db.insert(horses).values(horseInserts).returning();
 
-        // オッズ履歴を登録
-        await collector.saveOddsHistory(oddsData);
+          // オッズ履歴を保存
+          await collector.saveOddsHistory(tanpukuOdds);
+          if (wakurenOdds.length > 0) {
+            await collector.updateWakurenOdds(wakurenOdds);
+          }
+        }
 
         res.json({
           message: "Race data registered successfully",
           race,
-          horsesCount: insertedHorses.length,
-          oddsDataCount: oddsData.length
+          horsesCount: tanpukuOdds.length,
+          wakurenCount: wakurenOdds.length
         });
 
       } finally {

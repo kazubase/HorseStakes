@@ -11,7 +11,7 @@ async function testOddsCollection() {
     await collector.initialize();
 
     // 中山競馬場の実際のレースID
-    const raceId = 202506010301;
+    const raceId = 202506010411;
     
     // まず、レースが存在するか確認
     const existingRace = await db.query.races.findFirst({
@@ -22,9 +22,9 @@ async function testOddsCollection() {
       console.log('Registering new race...');
       await db.insert(races).values({
         id: raceId,
-        name: `中山競馬場 第1回 第3日 1R`,
+        name: `フェアリーS`,
         venue: "中山",
-        startTime: new Date('2025-01-12T02:00:00'),
+        startTime: new Date('2025-01-12T15:45:00'),
         status: "upcoming"
       });
       console.log('Race registered successfully');
@@ -46,13 +46,13 @@ async function testOddsCollection() {
           console.log(`Registering horse: ${odds.horseName}`);
           await db.insert(horses).values({
             name: odds.horseName,
-            odds: odds.tanOdds.toString(),
-            raceId: raceId
+            raceId: raceId,
+            odds: '0'
           });
         }
       }
 
-      console.log('Saving Tanpuku odds data to database...');
+      console.log('Saving Tanpuku odds data...');
       await collector.saveOddsHistory(tanpukuOdds);
       console.log('Tanpuku odds data saved successfully');
     }
@@ -63,8 +63,8 @@ async function testOddsCollection() {
     console.log('Collected Wakuren odds data:', wakurenOdds);
     
     if (wakurenOdds.length > 0) {
-      console.log('Saving Wakuren odds data to database...');
-      await collector.saveWakurenOddsHistory(wakurenOdds);
+      console.log('Saving Wakuren odds data...');
+      await collector.updateWakurenOdds(wakurenOdds);
       console.log('Wakuren odds data saved successfully');
     }
 
@@ -81,4 +81,4 @@ async function testOddsCollection() {
   }
 }
 
-testOddsCollection(); 
+testOddsCollection();

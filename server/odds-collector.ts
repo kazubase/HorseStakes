@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import { Browser, Page, chromium } from 'playwright';
 import { db } from '../db';
-import { horses, races, oddsHistory, betCombinations } from '../db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { horses, races, tanOddsHistory, fukuOdds, wakurenOdds } from '../db/schema';
+import { eq, sql, and } from 'drizzle-orm';
 import * as cheerio from 'cheerio';
 
 declare global {
@@ -212,71 +212,83 @@ export class OddsCollector {
     return wakurenOddsData;
   }
 
-  async saveOddsHistory(oddsData: OddsData[]) {
-    try {
-      for (const odds of oddsData) {
-        // 単勝オッズを保存
-        await db.insert(oddsHistory).values({
-          horseId: odds.horseId,
-          betType: 'tan',
-          oddsMin: odds.tanOdds.toString(),
-          oddsMax: odds.tanOdds.toString(), // 単勝は最小値=最大値
-          timestamp: odds.timestamp
-        });
+  async saveTanOddsHistory(odds: OddsData) {
+    // 単勝オッズは履歴として保存
+    await db.insert(tanOddsHistory).values({
+      horseId: odds.horseId,
+      odds: odds.tanOdds.toString(),
+      timestamp: odds.timestamp,
+      raceId: odds.raceId
+    });
+  }
 
-        // 複勝オッズを保存
-        await db.insert(oddsHistory).values({
-          horseId: odds.horseId,
-          betType: 'fuku',
+  async updateFukuOdds(odds: OddsData) {
+    // 複勝オッズは更新（なければ挿入）
+    const existing = await db.query.fukuOdds.findFirst({
+      where: eq(fukuOdds.horseId, odds.horseId)
+    });
+
+    if (existing) {
+      await db
+        .update(fukuOdds)
+        .set({
           oddsMin: odds.fukuOddsMin.toString(),
           oddsMax: odds.fukuOddsMax.toString(),
           timestamp: odds.timestamp
-        });
-      }
-      console.log(`Saved odds history for ${oddsData.length} horses (both tan and fuku)`);
-    } catch (error) {
-      console.error('Error saving odds history:', error);
-      throw error;
+        })
+        .where(eq(fukuOdds.id, existing.id));
+    } else {
+      await db.insert(fukuOdds).values({
+        horseId: odds.horseId,
+        oddsMin: odds.fukuOddsMin.toString(),
+        oddsMax: odds.fukuOddsMax.toString(),
+        timestamp: odds.timestamp,
+        raceId: odds.raceId
+      });
     }
   }
 
-  async saveWakurenOddsHistory(oddsData: WakurenOddsData[]) {
+  async updateWakurenOdds(oddsDataArray: WakurenOddsData[]) {
+    for (const odds of oddsDataArray) {
+      const existing = await db.query.wakurenOdds.findFirst({
+        where: and(
+          eq(wakurenOdds.frame1, odds.frame1),
+          eq(wakurenOdds.frame2, odds.frame2),
+          eq(wakurenOdds.raceId, odds.raceId)
+        )
+      });
+
+      if (existing) {
+        await db.update(wakurenOdds)
+          .set({
+            odds: odds.odds.toString(),
+            timestamp: odds.timestamp
+          })
+          .where(eq(wakurenOdds.id, existing.id));
+      } else {
+        await db.insert(wakurenOdds).values({
+          frame1: odds.frame1,
+          frame2: odds.frame2,
+          odds: odds.odds.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
+      }
+    }
+  }
+
+  async saveOddsHistory(oddsData: OddsData[]) {
     try {
       for (const odds of oddsData) {
-        // 枠連オッズをoddsHistoryテーブルに保存
-        await db.insert(oddsHistory).values({
-          horseId: 0, // 枠連の場合は使用しない
-          betType: 'wakuren',
-          oddsMin: odds.odds.toString(),
-          oddsMax: odds.odds.toString(), // odds_maxにも同じ値を設定
-          timestamp: odds.timestamp
-        });
-
-        // 最後に挿入されたoddsHistoryのIDを取得
-        const [lastOddsHistory] = await db
-          .select()
-          .from(oddsHistory)
-          .orderBy(sql`id desc`)
-          .limit(1);
-
-        // 組み合わせ情報を保存
-        await db.insert(betCombinations).values([
-          {
-            oddsHistoryId: lastOddsHistory.id,
-            horseId: odds.frame1,
-            position: 1
-          },
-          {
-            oddsHistoryId: lastOddsHistory.id,
-            horseId: odds.frame2,
-            position: 2
-          }
-        ]);
+        // 単勝オッズを履歴として保存
+        await this.saveTanOddsHistory(odds);
+        
+        // 複勝オッズを更新
+        await this.updateFukuOdds(odds);
       }
-
-      console.log(`Saved ${oddsData.length} wakuren odds records`);
+      console.log(`Saved odds for ${oddsData.length} horses`);
     } catch (error) {
-      console.error('Error saving wakuren odds history:', error);
+      console.error('Error saving odds:', error);
       throw error;
     }
   }
@@ -293,7 +305,7 @@ export class OddsCollector {
             const oddsData = await this.collectOddsForBetType(race.id, betType);
             if (oddsData.length > 0) {
               if (betType === 'wakuren') {
-                await this.saveWakurenOddsHistory(oddsData);
+                await this.updateWakurenOdds(oddsData);
               } else {
                 await this.saveOddsHistory(oddsData);
               }

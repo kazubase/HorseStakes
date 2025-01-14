@@ -5,29 +5,28 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const runMigration = async () => {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is not set");
-  }
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is not set");
+}
 
-  const sql = postgres(process.env.DATABASE_URL, { max: 1 });
-  const db = drizzle(sql);
+const sql = postgres(databaseUrl, { max: 1 });
+const db = drizzle(sql);
 
-  console.log("⏳ Running migrations...");
-  
+async function runMigration() {
   try {
-    await migrate(db, { migrationsFolder: "migrations" });
-    console.log("✅ Migrations completed!");
+    console.log("⏳ Running migrations...");
+    
+    await migrate(db, {
+      migrationsFolder: "./db/migrations",
+    });
+    
+    console.log("✅ Migrations completed");
   } catch (error) {
     console.error("❌ Migration failed:", error);
     process.exit(1);
   }
-
-  await sql.end();
   process.exit(0);
-};
+}
 
-runMigration().catch((err) => {
-  console.error("❌ Migration failed:", err);
-  process.exit(1);
-}); 
+runMigration();
