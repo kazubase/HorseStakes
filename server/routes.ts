@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
 import { races, horses, tickets, bettingStrategies, tanOddsHistory, fukuOdds, wakurenOdds } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { inArray } from "drizzle-orm/expressions";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { OddsCollector } from "./odds-collector";
@@ -482,7 +482,7 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
       const oddsHistoryData = await db.select()
         .from(tanOddsHistory)
         .where(inArray(tanOddsHistory.horseId, raceHorses.map(h => h.id)))
-        .orderBy(tanOddsHistory.timestamp);
+        .orderBy(sql`${tanOddsHistory.timestamp} desc`);
 
       res.json(oddsHistoryData);
     } catch (error) {
@@ -490,7 +490,40 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
     }
   });
 
-  // デモデータのエンドポイントを実際のレースデータ登録用に変更
+  // 新しいエンドポイントを追加
+  app.get("/api/tan-odds-history/latest/:raceId", async (req, res) => {
+    try {
+      const raceId = parseInt(req.params.raceId);
+      
+      // raceIdに基づいて直接オッズを取得
+      const latestOdds = await db.select()
+        .from(tanOddsHistory)
+        .where(eq(tanOddsHistory.raceId, raceId))
+        .orderBy(sql`${tanOddsHistory.timestamp} desc`);
+
+      console.log(`Found ${latestOdds.length} odds records for race ${raceId}`);
+      
+      if (latestOdds.length === 0) {
+        return res.json([]);
+      }
+
+      // horse_idでグループ化して、各馬の最新のオッズのみを取得
+      const latestOddsByHorse = latestOdds.reduce((acc, curr) => {
+        if (!acc[curr.horseId] || 
+            new Date(acc[curr.horseId].timestamp) < new Date(curr.timestamp)) {
+          acc[curr.horseId] = curr;
+        }
+        return acc;
+      }, {} as Record<number, typeof latestOdds[0]>);
+
+      res.json(Object.values(latestOddsByHorse));
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).json({ error: "Failed to fetch latest odds" });
+    }
+  });
+
+  // レース登録部分の更新
   app.post("/api/register-race", async (req, res) => {
     try {
       const { raceId, raceName, venue, startTime } = req.body;
@@ -517,7 +550,6 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
         if (tanpukuOdds.length > 0) {
           const horseInserts = tanpukuOdds.map(odds => ({
             name: odds.horseName,
-            odds: odds.tanOdds.toString(),
             raceId: raceId
           }));
 

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Horse, Race } from "@db/schema";
+import { Horse, Race, TanOddsHistory } from "@db/schema";
 import { format } from "date-fns";
 import MainLayout from "@/components/layout/MainLayout";
 import { RefreshCw, Trophy, Target } from "lucide-react";
@@ -31,6 +31,12 @@ export default function Home() {
     queryKey: [`/api/horses/${id}`],
     enabled: !!id,
     refetchInterval: 30000,
+  });
+
+  // オッズデータを取得する新しいクエリを追加
+  const { data: latestOdds } = useQuery<TanOddsHistory[]>({
+    queryKey: [`/api/tan-odds-history/latest/${id}`],
+    enabled: !!id,
   });
 
   if (!race && !raceLoading) return null;
@@ -100,13 +106,18 @@ export default function Home() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {horses.map((horse, index) => (
-                    <TableRow key={horse.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{horse.name}</TableCell>
-                      <TableCell className="text-right">{horse.odds}</TableCell>
-                    </TableRow>
-                  ))}
+                  {horses.map((horse, index) => {
+                    const latestOdd = latestOdds?.find(odd => odd.horseId === horse.id);
+                    return (
+                      <TableRow key={horse.id}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{horse.name}</TableCell>
+                        <TableCell className="text-right">
+                          {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

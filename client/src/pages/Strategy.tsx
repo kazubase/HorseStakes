@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MainLayout from "@/components/layout/MainLayout";
 import { Calculator, Brain, TrendingUp, Wallet, Target, Scale, AlertCircle } from "lucide-react";
-import { Horse } from "@db/schema";
+import { Horse, TanOddsHistory } from "@db/schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import RiskAssessment from "@/components/RiskAssessment";
 import { Progress } from "@/components/ui/progress";
@@ -50,21 +50,29 @@ export default function Strategy() {
     enabled: !!id,
   });
 
+  const { data: latestOdds } = useQuery<TanOddsHistory[]>({
+    queryKey: [`/api/tan-odds-history/latest/${id}`],
+    enabled: !!id,
+  });
+
   const { data: recommendedBets, isLoading } = useQuery<BetProposal[]>({
     queryKey: [`/api/betting-strategy/${id}`, { budget, riskRatio, winProbs, placeProbs }],
     queryFn: async () => {
-      if (!horses) return [];
+      if (!horses || !latestOdds) return [];
 
-      const horseDataList = horses.map(horse => ({
-        name: horse.name,
-        odds: Number(horse.odds),
-        winProb: winProbs[horse.id] / 100,
-        placeProb: placeProbs[horse.id] / 100
-      }));
+      const horseDataList = horses.map(horse => {
+        const latestOdd = latestOdds.find(odd => odd.horseId === horse.id);
+        return {
+          name: horse.name,
+          odds: latestOdd ? Number(latestOdd.odds) : 0,
+          winProb: winProbs[horse.id] / 100,
+          placeProb: placeProbs[horse.id] / 100
+        };
+      });
 
       return calculateBetProposals(horseDataList, budget, riskRatio);
     },
-    enabled: !!id && !!horses && budget > 0 && Object.keys(winProbs).length > 0
+    enabled: !!id && !!horses && !!latestOdds && budget > 0 && Object.keys(winProbs).length > 0
   });
 
   useEffect(() => {

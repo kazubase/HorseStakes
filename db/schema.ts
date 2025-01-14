@@ -4,7 +4,6 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 export const horses = pgTable("horses", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  odds: text("odds").notNull(), 
   raceId: bigint("race_id", { mode: "number" }).notNull(),
   createdAt: timestamp("created_at").defaultNow()
 });

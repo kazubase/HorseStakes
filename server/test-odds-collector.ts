@@ -46,12 +46,12 @@ async function testOddsCollection() {
           console.log(`Registering horse: ${odds.horseName}`);
           await db.insert(horses).values({
             name: odds.horseName,
-            raceId: raceId,
-            odds: '0'
+            raceId: raceId
           });
         }
       }
 
+      // オッズ履歴を保存
       console.log('Saving Tanpuku odds data...');
       await collector.saveOddsHistory(tanpukuOdds);
       console.log('Tanpuku odds data saved successfully');

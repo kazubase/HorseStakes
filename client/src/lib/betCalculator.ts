@@ -15,20 +15,14 @@ export interface BetProposal {
 }
 
 export interface HorseData {
-  horseName: string;
-  tanOdds: number;
-  fukuOdds: number;
-  winProbs: { [key: number]: number };  // 馬IDをキーとした単勝確率
-  placeProbs: { [key: number]: number }; // 馬IDをキーとした複勝確率
+  name: string;
+  odds: number;  // tanOddsHistoryから取得した最新オッズ
+  winProb: number;
+  placeProb: number;
 }
 
 export const calculateBetProposals = (
-  horses: { 
-    name: string;
-    odds: number;
-    winProb: number;
-    placeProb: number;
-  }[],
+  horses: HorseData[],
   totalBudget: number,
   riskRatio: number
 ): BetProposal[] => {
@@ -52,31 +46,33 @@ export const calculateBetProposals = (
   const bettingOptions = horses.flatMap(horse => {
     const options = [];
     
-    // 単勝オプション
-    const winEV = horse.odds * horse.winProb - 1;
-    if (horse.winProb > 0 && winEV > 0) {
-      options.push({
-        type: "単勝" as const,
-        horseName: horse.name,
-        odds: horse.odds,
-        prob: horse.winProb,
-        ev: winEV
-      });
-      console.log(`単勝候補: ${horse.name}, EV: ${winEV.toFixed(2)}`);
-    }
-    
-    // 複勝オプション
-    const placeOdds = Math.max(horse.odds * 0.4, 1.1); // 最小払戻率を考慮
-    const placeEV = placeOdds * horse.placeProb - 1;
-    if (horse.placeProb > 0 && placeEV > 0) {
-      options.push({
-        type: "複勝" as const,
-        horseName: horse.name,
-        odds: placeOdds,
-        prob: horse.placeProb,
-        ev: placeEV
-      });
-      console.log(`複勝候補: ${horse.name}, EV: ${placeEV.toFixed(2)}`);
+    // 単勝オプション（オッズが0の場合はスキップ）
+    if (horse.odds > 0) {
+      const winEV = horse.odds * horse.winProb - 1;
+      if (horse.winProb > 0 && winEV > 0) {
+        options.push({
+          type: "単勝" as const,
+          horseName: horse.name,
+          odds: horse.odds,
+          prob: horse.winProb,
+          ev: winEV
+        });
+        console.log(`単勝候補: ${horse.name}, EV: ${winEV.toFixed(2)}`);
+      }
+      
+      // 複勝オプション
+      const placeOdds = Math.max(horse.odds * 0.4, 1.1); // 最小払戻率を考慮
+      const placeEV = placeOdds * horse.placeProb - 1;
+      if (horse.placeProb > 0 && placeEV > 0) {
+        options.push({
+          type: "複勝" as const,
+          horseName: horse.name,
+          odds: placeOdds,
+          prob: horse.placeProb,
+          ev: placeEV
+        });
+        console.log(`複勝候補: ${horse.name}, EV: ${placeEV.toFixed(2)}`);
+      }
     }
     
     return options;
