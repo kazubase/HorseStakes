@@ -10,7 +10,8 @@
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "db:migrate": "tsx db/migrate.ts",
-    "test-odds": "tsx server/test-odds-collector.ts"
+    "test-odds": "tsx server/test-odds-collector.ts",
+    "db:seed-bet-types": "dotenv -e .env -- tsx db/migrations/bet-types-seed.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
