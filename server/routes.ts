@@ -43,26 +43,6 @@ export function registerRoutes(app: Express): Server {
     res.json(raceHorses);
   });
 
-  // オッズ履歴を取得
-  app.get("/api/odds-history/:raceId/:horseName", async (req, res) => {
-    try {
-      // TODO: 実際のデータベースからオッズ履歴を取得する実装
-      // 現在はデモデータを返す
-      const currentTime = new Date();
-      const demoData = Array.from({ length: 12 }, (_, i) => {
-        const timestamp = new Date(currentTime.getTime() - (11 - i) * 5 * 60000);
-        return {
-          timestamp: timestamp.toISOString(),
-          odds: 3 + Math.random() * 2
-        };
-      });
-
-      res.json(demoData);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch odds history" });
-    }
-  });
-
   // 既存のエンドポイント
   app.post("/api/tickets", async (req, res) => {
     const ticket = await db.insert(tickets).values(req.body).returning();

@@ -30,11 +30,10 @@ export default function Home() {
   } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
     enabled: !!id,
-    refetchInterval: 30000,
   });
 
   // オッズデータを取得する新しいクエリを追加
-  const { data: latestOdds } = useQuery<TanOddsHistory[]>({
+  const { data: latestOdds = [] } = useQuery<TanOddsHistory[]>({
     queryKey: [`/api/tan-odds-history/latest/${id}`],
     enabled: !!id,
   });
@@ -107,7 +106,10 @@ export default function Home() {
                 </TableHeader>
                 <TableBody>
                   {horses.map((horse, index) => {
-                    const latestOdd = latestOdds?.find(odd => odd.horseId === horse.id);
+                    const latestOdd = latestOdds?.find(odd => 
+                      Number(odd.horseId) === index + 1
+                    );
+                    
                     return (
                       <TableRow key={horse.id}>
                         <TableCell>{index + 1}</TableCell>
