@@ -6,6 +6,7 @@ import { eq, sql } from "drizzle-orm";
 import { inArray } from "drizzle-orm/expressions";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { OddsCollector } from "./odds-collector";
+import { calculateBetProposals } from "@/lib/betCalculator";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -126,57 +127,66 @@ export function registerRoutes(app: Express): Server {
       const riskRatio = Number(req.query.riskRatio) || 1;
       const winProbs = JSON.parse(req.query.winProbs as string || "{}");
       const placeProbs = JSON.parse(req.query.placeProbs as string || "{}");
-
+  
       // レース情報と出走馬を取得
       const raceHorses = await db
         .select()
         .from(horses)
         .where(eq(horses.raceId, raceId));
-
-      // 期待値計算
-      const strategies = [];
-      
-      // 単勝の期待値計算
-      for (const horse of raceHorses) {
-        const winProb = winProbs[horse.id] / 100;
-        if (winProb > 0) {
-          const ev = winProb * Number(horse.odds);
-          if (ev > 1) {
-            strategies.push({
-              type: "単勝",
-              horses: [horse.name],
-              stake: Math.floor(budget * (ev - 1) / riskRatio),
-              expectedReturn: Math.floor(budget * (ev - 1) / riskRatio * Number(horse.odds)),
-              probability: winProb
-            });
-          }
+  
+      // 最新の単勝オッズを取得
+      const latestTanOdds = await db.select()
+        .from(tanOddsHistory)
+        .where(eq(tanOddsHistory.raceId, raceId))
+        .orderBy(sql`${tanOddsHistory.timestamp} desc`);
+  
+      // 最新の複勝オッズを取得
+      const latestFukuOdds = await db.select()
+        .from(fukuOdds)
+        .where(eq(fukuOdds.raceId, raceId))
+        .orderBy(sql`${fukuOdds.timestamp} desc`);
+  
+      // 各馬の最新単勝オッズを取得
+      const latestTanOddsByHorse = latestTanOdds.reduce((acc, curr) => {
+        if (!acc[curr.horseId] || 
+            new Date(acc[curr.horseId].timestamp) < new Date(curr.timestamp)) {
+          acc[curr.horseId] = curr;
         }
-      }
-
-      // 複勝の期待値計算
-      for (const horse of raceHorses) {
-        const placeProb = placeProbs[horse.id] / 100;
-        if (placeProb > 0) {
-          // 複勝オッズは単勝の1/2程度と仮定
-          const placeOdds = Number(horse.odds) * 0.5;
-          const ev = placeProb * placeOdds;
-          if (ev > 1) {
-            strategies.push({
-              type: "複勝",
-              horses: [horse.name],
-              stake: Math.floor(budget * (ev - 1) / riskRatio),
-              expectedReturn: Math.floor(budget * (ev - 1) / riskRatio * placeOdds),
-              probability: placeProb
-            });
-          }
+        return acc;
+      }, {} as Record<number, typeof latestTanOdds[0]>);
+  
+      // 各馬の最新複勝オッズを取得
+      const latestFukuOddsByHorse = latestFukuOdds.reduce((acc, curr) => {
+        if (!acc[curr.horseId] || 
+            new Date(acc[curr.horseId].timestamp) < new Date(curr.timestamp)) {
+          acc[curr.horseId] = curr;
         }
-      }
-
-      // 期待値が高い順にソート
-      strategies.sort((a, b) => 
-        (b.expectedReturn * b.probability) - (a.expectedReturn * a.probability)
-      );
-
+        return acc;
+      }, {} as Record<number, typeof latestFukuOdds[0]>);
+  
+      // betCalculator用のデータを準備
+      const horseDataList = raceHorses.map(horse => {
+        const index = raceHorses.findIndex(h => h.id === horse.id);
+        const tanOdd = latestTanOddsByHorse[index + 1];
+        const fukuOdd = latestFukuOddsByHorse[index + 1];
+        
+        // 複勝オッズは最小値と最大値の平均を使用
+        const fukuOddsAvg = fukuOdd 
+          ? Math.round(((Number(fukuOdd.oddsMin) + Number(fukuOdd.oddsMax)) / 2) * 10) / 10
+          : 0;
+  
+        return {
+          name: horse.name,
+          odds: tanOdd ? Number(tanOdd.odds) : 0,
+          fukuOdds: fukuOddsAvg, // 新しく追加
+          winProb: winProbs[horse.id] / 100,
+          placeProb: placeProbs[horse.id] / 100
+        };
+      });
+  
+      // betCalculatorに計算を委譲
+      const strategies = calculateBetProposals(horseDataList, budget, riskRatio);
+  
       res.json(strategies);
     } catch (error) {
       res.status(500).json({ error: "Failed to calculate betting strategy" });
@@ -472,24 +482,6 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
     }
   });
 
-  app.get("/api/odds-history/:raceId", async (req, res) => {
-    try {
-      const raceId = parseInt(req.params.raceId);
-      const raceHorses = await db.select()
-        .from(horses)
-        .where(eq(horses.raceId, raceId));
-
-      const oddsHistoryData = await db.select()
-        .from(tanOddsHistory)
-        .where(inArray(tanOddsHistory.horseId, raceHorses.map(h => h.id)))
-        .orderBy(sql`${tanOddsHistory.timestamp} desc`);
-
-      res.json(oddsHistoryData);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch odds history" });
-    }
-  });
-
   // 新しいエンドポイントを追加
   app.get("/api/tan-odds-history/latest/:raceId", async (req, res) => {
     try {
@@ -522,6 +514,38 @@ ${raceHorses.map(horse => `- ${horse.name} (オッズ: ${horse.odds})`).join('\n
       res.status(500).json({ error: "Failed to fetch latest odds" });
     }
   });
+
+  // 最新の複勝オッズを取得するエンドポイント
+app.get("/api/fuku-odds/latest/:raceId", async (req, res) => {
+  try {
+    const raceId = parseInt(req.params.raceId);
+    
+    const latestOdds = await db.select()
+      .from(fukuOdds)
+      .where(eq(fukuOdds.raceId, raceId))
+      .orderBy(sql`${fukuOdds.timestamp} desc`);
+
+    console.log(`Found ${latestOdds.length} fuku odds records for race ${raceId}`);
+    
+    if (latestOdds.length === 0) {
+      return res.json([]);
+    }
+
+    // horse_idでグループ化して、各馬の最新のオッズのみを取得
+    const latestOddsByHorse = latestOdds.reduce((acc, curr) => {
+      if (!acc[curr.horseId] || 
+          new Date(acc[curr.horseId].timestamp) < new Date(curr.timestamp)) {
+        acc[curr.horseId] = curr;
+      }
+      return acc;
+    }, {} as Record<number, typeof latestOdds[0]>);
+
+    res.json(Object.values(latestOddsByHorse));
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: "Failed to fetch latest fuku odds" });
+  }
+});
 
   // レース登録部分の更新
   app.post("/api/register-race", async (req, res) => {

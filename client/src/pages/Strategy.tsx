@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MainLayout from "@/components/layout/MainLayout";
 import { Calculator, Brain, TrendingUp, Wallet, Target, Scale, AlertCircle } from "lucide-react";
-import { Horse, TanOddsHistory } from "@db/schema";
+import { Horse, TanOddsHistory, FukuOdds } from "@db/schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import RiskAssessment from "@/components/RiskAssessment";
 import { Progress } from "@/components/ui/progress";
@@ -55,24 +55,49 @@ export default function Strategy() {
     enabled: !!id,
   });
 
+  const { data: latestFukuOdds } = useQuery<FukuOdds[]>({
+    queryKey: [`/api/fuku-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
   const { data: recommendedBets, isLoading } = useQuery<BetProposal[]>({
     queryKey: [`/api/betting-strategy/${id}`, { budget, riskRatio, winProbs, placeProbs }],
     queryFn: async () => {
-      if (!horses || !latestOdds) return [];
-
+      if (!horses || !latestOdds || !latestFukuOdds) return [];
+  
       const horseDataList = horses.map(horse => {
-        const latestOdd = latestOdds.find(odd => odd.horseId === horse.id);
+        const index = horses.findIndex(h => h.id === horse.id);
+        const latestTanOdd = latestOdds.find(odd => Number(odd.horseId) === index + 1);
+        const latestFukuOdd = latestFukuOdds.find(odd => Number(odd.horseId) === index + 1);
+        
+        // 複勝オッズは最小値と最大値の平均を使用
+        const fukuOddsAvg = latestFukuOdd 
+          ? Math.round(((Number(latestFukuOdd.oddsMin) + Number(latestFukuOdd.oddsMax)) / 2) * 10) / 10
+          : 0;
+  
+        console.log(`Horse ${horse.name} data:`, {
+          horseId: horse.id,
+          matchingTanOddId: latestTanOdd?.horseId,
+          matchingFukuOddId: latestFukuOdd?.horseId,
+          tanOdds: latestTanOdd ? Number(latestTanOdd.odds) : 0,
+          fukuOdds: fukuOddsAvg,
+          winProb: winProbs[horse.id] / 100,
+          placeProb: placeProbs[horse.id] / 100
+        });
+  
         return {
           name: horse.name,
-          odds: latestOdd ? Number(latestOdd.odds) : 0,
+          odds: latestTanOdd ? Number(latestTanOdd.odds) : 0,
+          fukuOdds: fukuOddsAvg,
           winProb: winProbs[horse.id] / 100,
           placeProb: placeProbs[horse.id] / 100
         };
       });
-
+  
+      console.log('Horse data for calculation:', horseDataList);
       return calculateBetProposals(horseDataList, budget, riskRatio);
     },
-    enabled: !!id && !!horses && !!latestOdds && budget > 0 && Object.keys(winProbs).length > 0
+    enabled: !!id && !!horses && !!latestOdds && !!latestFukuOdds && budget > 0 && Object.keys(winProbs).length > 0
   });
 
   useEffect(() => {

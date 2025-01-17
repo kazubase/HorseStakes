@@ -16,7 +16,8 @@ export interface BetProposal {
 
 export interface HorseData {
   name: string;
-  odds: number;  // tanOddsHistoryから取得した最新オッズ
+  odds: number;     // 単勝オッズ
+  fukuOdds: number; // 複勝オッズ（最小値と最大値の平均）
   winProb: number;
   placeProb: number;
 }
@@ -35,8 +36,9 @@ export const calculateBetProposals = (
     horses: horses.map(h => ({
       name: h.name,
       odds: h.odds,
-      expectedValue: (h.odds * h.winProb - 1).toFixed(2),
-      winProb: (h.winProb * 100).toFixed(1) + '%'
+      fukuOdds: h.fukuOdds,
+      winProb: (h.winProb * 100).toFixed(1) + '%',
+      placeProb: (h.placeProb * 100).toFixed(1) + '%'
     })),
     totalBudget,
     riskRatio
@@ -61,20 +63,20 @@ export const calculateBetProposals = (
       }
       
       // 複勝オプション
-      const placeOdds = Math.max(horse.odds * 0.4, 1.1); // 最小払戻率を考慮
-      const placeEV = placeOdds * horse.placeProb - 1;
-      if (horse.placeProb > 0 && placeEV > 0) {
-        options.push({
-          type: "複勝" as const,
-          horseName: horse.name,
-          odds: placeOdds,
-          prob: horse.placeProb,
-          ev: placeEV
-        });
-        console.log(`複勝候補: ${horse.name}, EV: ${placeEV.toFixed(2)}`);
+      if (horse.fukuOdds > 0) {  // 実際の複勝オッズを使用
+        const placeEV = horse.fukuOdds * horse.placeProb - 1;
+        if (horse.placeProb > 0 && placeEV > 0) {
+          options.push({
+            type: "複勝" as const,
+            horseName: horse.name,
+            odds: horse.fukuOdds,
+            prob: horse.placeProb,
+            ev: placeEV
+          });
+          console.log(`複勝候補: ${horse.name}, EV: ${placeEV.toFixed(2)}`);
+        }
       }
     }
-    
     return options;
   });
 
