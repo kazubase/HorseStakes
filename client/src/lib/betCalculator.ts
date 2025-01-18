@@ -1,5 +1,5 @@
 interface BettingOption {
-  type: "単勝" | "複勝" | "枠連" | "馬連";
+  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド";
   horseName: string;
   odds: number;
   prob: number;
@@ -11,7 +11,7 @@ interface BettingOption {
 }
 
 export interface BetProposal {
-  type: "単勝" | "複勝" | "枠連" | "馬連";
+  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド";
   horses: string[];
   stake: number;
   expectedReturn: number;
@@ -33,7 +33,8 @@ export const calculateBetProposals = (
   totalBudget: number, 
   riskRatio: number, 
   wakurenData: { frame1: number; frame2: number; odds: number; }[],
-  umarenData: { horse1: number; horse2: number; odds: number; }[]
+  umarenData: { horse1: number; horse2: number; odds: number; }[],
+  wideData: { horse1: number; horse2: number; oddsMin: number; oddsMax: number; }[]
 ): BetProposal[] => {
   const MIN_STAKE = 100;
   
@@ -190,6 +191,40 @@ export const calculateBetProposals = (
     }
   });
 
+  // ワイドオプションの追加
+  wideData.forEach(wide => {
+    const horse1 = horses.find(h => h.number === wide.horse1);
+    const horse2 = horses.find(h => h.number === wide.horse2);
+    
+    if (!horse1 || !horse2) return;
+
+    // ワイド的中確率の計算（両方が複勝圏内に入る確率）
+    const wideProb = horse1.placeProb * horse2.placeProb;
+
+    // オッズは最小値と最大値の平均を使用
+    const avgOdds = (wide.oddsMin + wide.oddsMax) / 2;
+    const wideEV = avgOdds * wideProb - 1;
+
+    if (wideProb > 0 && wideEV > 0) {
+      bettingOptions.push({
+        type: "ワイド",
+        horseName: `${horse1.number}-${horse2.number}`,
+        frame1: horse1.frame,
+        frame2: horse2.frame,
+        horse1: horse1.number,
+        horse2: horse2.number,
+        odds: avgOdds,
+        prob: wideProb,
+        ev: wideEV
+      });
+      console.log(`ワイド候補: ${horse1.number}-${horse2.number}`, {
+        オッズ: avgOdds.toFixed(1),
+        的中確率: (wideProb * 100).toFixed(2) + '%',
+        期待値: wideEV.toFixed(2)
+      });
+    }
+  });
+
   // デバッグ用：最適化対象の馬券一覧
   console.log('最適化対象馬券数:', bettingOptions.length);
 
@@ -274,15 +309,15 @@ export const calculateBetProposals = (
     if (stake >= MIN_STAKE && stake <= remainingBudget) {
       remainingBudget -= stake;
       
-      // 馬連と枠連の場合は馬番または枠番のペアを表示
+      // 馬連、枠連、ワイドの場合は馬番または枠番のペアを表示
       const horses = option.type === "枠連" 
         ? [`${option.frame1}枠-${option.frame2}枠`]
-        : option.type === "馬連"
+        : (option.type === "馬連" || option.type === "ワイド")
         ? [`${option.horse1}番-${option.horse2}番`]
         : [option.horseName];
 
       proposals.push({
-        type: option.type as "単勝" | "複勝" | "枠連" | "馬連",
+        type: option.type as "単勝" | "複勝" | "枠連" | "馬連" | "ワイド",
         horses,
         stake,
         expectedReturn: Math.floor(stake * option.odds),
