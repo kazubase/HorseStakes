@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Browser, Page, chromium } from 'playwright';
 import { db } from '../db';
-import { horses, races, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds } from '../db/schema';
+import { horses, races, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, fuku3Odds } from '../db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import * as cheerio from 'cheerio';
 
@@ -66,6 +66,16 @@ interface UmatanOddsData {
   raceId: number;
 }
 
+// インターフェースの追加
+interface Fuku3OddsData {
+  horse1: number;
+  horse2: number;
+  horse3: number;
+  odds: number;
+  timestamp: Date;
+  raceId: number;
+}
+
 export class OddsCollector {
   private browser: Browser | null = null;
   
@@ -94,6 +104,11 @@ export class OddsCollector {
       tabName: '馬単',
       tableSelector: 'table.basic.narrow-xy.umatan',
       parser: this.parseUmatanOdds.bind(this)
+    },
+    fuku3: {
+      tabName: '3連複',
+      tableSelector: 'table.basic.narrow-xy.fuku3',
+      parser: this.parseFuku3Odds.bind(this)
     },
     // 他の馬券種別も同様に定義
   };
@@ -425,6 +440,54 @@ export class OddsCollector {
     return umatanOddsData;
   }
 
+  // パーサー関数の実装
+  private async parseFuku3Odds(html: string, raceId: number): Promise<Fuku3OddsData[]> {
+    const $ = cheerio.load(html);
+    const fuku3OddsData: Fuku3OddsData[] = [];
+
+    // 全ての3連複テーブルを処理
+    $('table.basic.narrow-xy.fuku3').each((_, table) => {
+      const $table = $(table);
+      
+      // テーブルのcaptionから最初の2頭の馬番を取得 (例: "1-2")
+      const captionText = $table.find('caption').text().trim();
+      const [horse1, horse2] = captionText.split('-').map(num => parseInt(num));
+      
+      if (isNaN(horse1) || isNaN(horse2)) {
+        console.warn('Failed to parse horses from caption:', captionText);
+        return;
+      }
+
+      // 各行を処理
+      $table.find('tbody tr').each((_, row) => {
+        const $row = $(row);
+        const horse3Text = $row.find('th').first().text().trim();
+        const horse3 = parseInt(horse3Text);
+
+        if (!isNaN(horse3)) {
+          const oddsText = $row.find('td').first().text().trim();
+          if (oddsText && oddsText !== '-') {
+            const odds = parseFloat(oddsText.replace(/,/g, ''));
+            
+            if (!isNaN(odds)) {
+              fuku3OddsData.push({
+                horse1,
+                horse2,
+                horse3,
+                odds,
+                timestamp: new Date(),
+                raceId
+              });
+            }
+          }
+        }
+      });
+    });
+
+    console.log(`Collected total ${fuku3OddsData.length} fuku3 odds combinations`);
+    return fuku3OddsData;
+  }
+
   async saveTanOddsHistory(odds: OddsData) {
     // 単勝オッズは履歴として保存
     await db.insert(tanOddsHistory).values({
@@ -571,6 +634,40 @@ export class OddsCollector {
         await db.insert(umatanOdds).values({
           horse1: odds.horse1,
           horse2: odds.horse2,
+          odds: odds.odds.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
+      }
+    }
+  }
+
+  async updateFuku3Odds(oddsDataArray: Fuku3OddsData[]) {
+    for (const odds of oddsDataArray) {
+      // 3頭の馬番を昇順にソートして保存（順不同のため）
+      const horses = [odds.horse1, odds.horse2, odds.horse3].sort((a, b) => a - b);
+      
+      const existing = await db.query.fuku3Odds.findFirst({
+        where: and(
+          eq(fuku3Odds.horse1, horses[0]),
+          eq(fuku3Odds.horse2, horses[1]),
+          eq(fuku3Odds.horse3, horses[2]),
+          eq(fuku3Odds.raceId, odds.raceId)
+        )
+      });
+
+      if (existing) {
+        await db.update(fuku3Odds)
+          .set({
+            odds: odds.odds.toString(),
+            timestamp: odds.timestamp
+          })
+          .where(eq(fuku3Odds.id, existing.id));
+      } else {
+        await db.insert(fuku3Odds).values({
+          horse1: horses[0],
+          horse2: horses[1],
+          horse3: horses[2],
           odds: odds.odds.toString(),
           timestamp: odds.timestamp,
           raceId: odds.raceId

@@ -107,6 +107,17 @@ async function testOddsCollection() {
       console.log('Umatan odds data saved successfully');
     }
 
+    // 3連複オッズの取得と保存を追加
+    console.log(`Collecting Fuku3 odds for race ID: ${raceId}`);
+    const fuku3Odds = await collector.collectOddsForBetType(raceId, 'fuku3');
+    console.log('Collected Fuku3 odds data:', fuku3Odds);
+    
+    if (fuku3Odds.length > 0) {
+      console.log('Saving Fuku3 odds data...');
+      await collector.updateFuku3Odds(fuku3Odds);
+      console.log('Fuku3 odds data saved successfully');
+    }
+
     // 収集結果のサマリーを表示
     console.log('\nCollection Summary:');
     console.log(`- Tanpuku odds collected: ${tanpukuOdds.length}`);
@@ -114,6 +125,7 @@ async function testOddsCollection() {
     console.log(`- Umaren odds collected: ${umarenOdds.length}`);
     console.log(`- Wide odds collected: ${wideOdds.length}`);
     console.log(`- Umatan odds collected: ${umatanOdds.length}`);
+    console.log(`- Fuku3 odds collected: ${fuku3Odds.length}`);
 
   } catch (error) {
     console.error('Error during test:', error);
