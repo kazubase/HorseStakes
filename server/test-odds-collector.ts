@@ -85,7 +85,7 @@ async function testOddsCollection() {
       console.log('Umaren odds data saved successfully');
     }
 
-    // ワイドオッズの取得と保存を追加
+    // ワイドオッズの取得と保存
     console.log(`Collecting Wide odds for race ID: ${raceId}`);
     const wideOdds = await collector.collectOddsForBetType(raceId, 'wide');
     console.log('Collected Wide odds data:', wideOdds);
@@ -96,12 +96,24 @@ async function testOddsCollection() {
       console.log('Wide odds data saved successfully');
     }
 
+    // 馬単オッズの取得と保存を追加
+    console.log(`Collecting Umatan odds for race ID: ${raceId}`);
+    const umatanOdds = await collector.collectOddsForBetType(raceId, 'umatan');
+    console.log('Collected Umatan odds data:', umatanOdds);
+    
+    if (umatanOdds.length > 0) {
+      console.log('Saving Umatan odds data...');
+      await collector.updateUmatanOdds(umatanOdds);
+      console.log('Umatan odds data saved successfully');
+    }
+
     // 収集結果のサマリーを表示
     console.log('\nCollection Summary:');
     console.log(`- Tanpuku odds collected: ${tanpukuOdds.length}`);
     console.log(`- Wakuren odds collected: ${wakurenOdds.length}`);
     console.log(`- Umaren odds collected: ${umarenOdds.length}`);
     console.log(`- Wide odds collected: ${wideOdds.length}`);
+    console.log(`- Umatan odds collected: ${umatanOdds.length}`);
 
   } catch (error) {
     console.error('Error during test:', error);

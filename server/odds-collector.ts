@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Browser, Page, chromium } from 'playwright';
 import { db } from '../db';
-import { horses, races, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds } from '../db/schema';
+import { horses, races, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds } from '../db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import * as cheerio from 'cheerio';
 
@@ -57,6 +57,15 @@ interface WideOddsData {
   raceId: number;
 }
 
+// インターフェースの追加
+interface UmatanOddsData {
+  horse1: number;  // 1着となる馬
+  horse2: number;  // 2着となる馬
+  odds: number;
+  timestamp: Date;
+  raceId: number;
+}
+
 export class OddsCollector {
   private browser: Browser | null = null;
   
@@ -80,6 +89,11 @@ export class OddsCollector {
       tabName: 'ワイド',
       tableSelector: 'table.basic.narrow-xy.wide',
       parser: this.parseWideOdds.bind(this)
+    },
+    umatan: {
+      tabName: '馬単',
+      tableSelector: 'table.basic.narrow-xy.umatan',
+      parser: this.parseUmatanOdds.bind(this)
     },
     // 他の馬券種別も同様に定義
   };
@@ -364,6 +378,53 @@ export class OddsCollector {
     return wideOddsData;
   }
 
+  // パーサー関数の実装
+  private async parseUmatanOdds(html: string, raceId: number): Promise<UmatanOddsData[]> {
+    const $ = cheerio.load(html);
+    const umatanOddsData: UmatanOddsData[] = [];
+
+    // 全ての馬単テーブルを処理
+    $('table.basic.narrow-xy.umatan').each((_, table) => {
+      const $table = $(table);
+      
+      // テーブルのcaptionから1着となる馬番を取得
+      const captionText = $table.find('caption').text().trim();
+      const horse1 = parseInt(captionText);
+      
+      if (isNaN(horse1)) {
+        console.warn('Failed to parse horse1 number from caption:', captionText);
+        return;
+      }
+
+      // 各行を処理
+      $table.find('tbody tr').each((_, row) => {
+        const $row = $(row);
+        const horse2Text = $row.find('th').first().text().trim();
+        const horse2 = parseInt(horse2Text);
+
+        if (!isNaN(horse2)) {
+          const oddsText = $row.find('td').first().text().trim();
+          if (oddsText && oddsText !== '-') {
+            const odds = parseFloat(oddsText.replace(/,/g, ''));
+            
+            if (!isNaN(odds)) {
+              umatanOddsData.push({
+                horse1,  // 1着となる馬
+                horse2,  // 2着となる馬
+                odds,
+                timestamp: new Date(),
+                raceId
+              });
+            }
+          }
+        }
+      });
+    });
+
+    console.log(`Collected total ${umatanOddsData.length} umatan odds combinations`);
+    return umatanOddsData;
+  }
+
   async saveTanOddsHistory(odds: OddsData) {
     // 単勝オッズは履歴として保存
     await db.insert(tanOddsHistory).values({
@@ -489,6 +550,35 @@ export class OddsCollector {
     }
   }
 
+  async updateUmatanOdds(oddsDataArray: UmatanOddsData[]) {
+    for (const odds of oddsDataArray) {
+      const existing = await db.query.umatanOdds.findFirst({
+        where: and(
+          eq(umatanOdds.horse1, odds.horse1),
+          eq(umatanOdds.horse2, odds.horse2),
+          eq(umatanOdds.raceId, odds.raceId)
+        )
+      });
+
+      if (existing) {
+        await db.update(umatanOdds)
+          .set({
+            odds: odds.odds.toString(),
+            timestamp: odds.timestamp
+          })
+          .where(eq(umatanOdds.id, existing.id));
+      } else {
+        await db.insert(umatanOdds).values({
+          horse1: odds.horse1,
+          horse2: odds.horse2,
+          odds: odds.odds.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
+      }
+    }
+  }
+
   async saveOddsHistory(oddsData: OddsData[]) {
     try {
       for (const odds of oddsData) {
@@ -522,6 +612,8 @@ export class OddsCollector {
                 await this.updateUmarenOdds(oddsData);
               } else if (betType === 'wide') {
                 await this.updateWideOdds(oddsData);
+              } else if (betType === 'umatan') {
+                await this.updateUmatanOdds(oddsData);
               } else {
                 await this.saveOddsHistory(oddsData);
               }
