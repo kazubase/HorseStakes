@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { races, horses, tickets, bettingStrategies, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, fuku3Odds } from "../db/schema";
+import { races, horses, tickets, bettingStrategies, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, fuku3Odds, tan3Odds } from "../db/schema";
 import { eq, sql } from "drizzle-orm";
 import { inArray } from "drizzle-orm/expressions";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -287,6 +287,30 @@ export function registerRoutes(app: Express): Server {
         odds: Number(odd.odds)
       }));
 
+      // 最新の3連単オッズを取得
+      const latestSanrentanOdds = await db.select()
+        .from(tan3Odds)
+        .where(eq(tan3Odds.raceId, raceId))
+        .orderBy(sql`${tan3Odds.timestamp} desc`);
+
+      // 最新の3連単オッズをフィルタリング
+      const latestSanrentanOddsByHorses = latestSanrentanOdds.reduce((acc, curr) => {
+        const key = `${curr.horse1}-${curr.horse2}-${curr.horse3}`;
+        if (!acc[key] || 
+            new Date(acc[key].timestamp) < new Date(curr.timestamp)) {
+          acc[key] = curr;
+        }
+        return acc;
+      }, {} as Record<string, typeof latestSanrentanOdds[0]>);
+
+      // 3連単データを追加
+      const sanrentanData = Object.values(latestSanrentanOddsByHorses).map(odd => ({
+        horse1: odd.horse1,
+        horse2: odd.horse2,
+        horse3: odd.horse3,
+        odds: Number(odd.odds)
+      }));
+
       // betCalculatorに計算を委譲
       const strategies = calculateBetProposals(
         horseDataList, 
@@ -296,7 +320,8 @@ export function registerRoutes(app: Express): Server {
         umarenData,
         wideData,
         umatanData,
-        sanrenpukuData
+        sanrenpukuData,
+        sanrentanData
       );
   
       res.json(strategies);
@@ -822,6 +847,39 @@ app.get("/api/sanrenpuku-odds/latest/:raceId", async (req, res) => {
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: "Failed to fetch latest sanrenpuku odds" });
+  }
+});
+
+  // 最新の3連単オッズを取得するエンドポイント
+app.get("/api/sanrentan-odds/latest/:raceId", async (req, res) => {
+  try {
+    const raceId = parseInt(req.params.raceId);
+    
+    const latestOdds = await db.select()
+      .from(tan3Odds)
+      .where(eq(tan3Odds.raceId, raceId))
+      .orderBy(sql`${tan3Odds.timestamp} desc`);
+
+    console.log(`Found ${latestOdds.length} sanrentan odds records for race ${raceId}`);
+    
+    if (latestOdds.length === 0) {
+      return res.json([]);
+    }
+
+    // horse1,2,3の組み合わせでグループ化して、各組み合わせの最新のオッズのみを取得
+    const latestOddsByHorses = latestOdds.reduce((acc, curr) => {
+      const key = `${curr.horse1}-${curr.horse2}-${curr.horse3}`;
+      if (!acc[key] || 
+          new Date(acc[key].timestamp) < new Date(curr.timestamp)) {
+        acc[key] = curr;
+      }
+      return acc;
+    }, {} as Record<string, typeof latestOdds[0]>);
+
+    res.json(Object.values(latestOddsByHorses));
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: "Failed to fetch latest sanrentan odds" });
   }
 });
 

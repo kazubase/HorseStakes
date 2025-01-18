@@ -1,5 +1,5 @@
 interface BettingOption {
-  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複";
+  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複" | "３連単";
   horseName: string;
   odds: number;
   prob: number;
@@ -13,7 +13,7 @@ interface BettingOption {
 }
 
 export interface BetProposal {
-  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複";
+  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複" | "３連単";
   horses: string[];
   stake: number;
   expectedReturn: number;
@@ -38,7 +38,8 @@ export const calculateBetProposals = (
   umarenData: { horse1: number; horse2: number; odds: number; }[],
   wideData: { horse1: number; horse2: number; oddsMin: number; oddsMax: number; }[],
   umaTanData: { horse1: number; horse2: number; odds: number; }[],
-  sanrenpukuData: { horse1: number; horse2: number; horse3: number; odds: number; }[]
+  sanrenpukuData: { horse1: number; horse2: number; horse3: number; odds: number; }[],
+  sanrentanData: { horse1: number; horse2: number; horse3: number; odds: number; }[]
 ): BetProposal[] => {
   const MIN_STAKE = 100;
   
@@ -337,6 +338,42 @@ export const calculateBetProposals = (
     }
   });
 
+  // 3連単オプションの追加
+  sanrentanData.forEach(sanren => {
+    const horse1 = horses.find(h => h.number === sanren.horse1);
+    const horse2 = horses.find(h => h.number === sanren.horse2);
+    const horse3 = horses.find(h => h.number === sanren.horse3);
+    
+    if (!horse1 || !horse2 || !horse3) return;
+
+    // 3連単的中確率の計算（1着2着3着の順番が重要）
+    const sanrentanProb = horse1.winProb * 
+                         ((horse2.placeProb - horse2.winProb) / 2) * 
+                         ((horse3.placeProb - horse3.winProb) / 2);
+
+    const sanrentanEV = sanren.odds * sanrentanProb - 1;
+    if (sanrentanProb > 0 && sanrentanEV > 0) {
+      bettingOptions.push({
+        type: "３連単",
+        horseName: `${horse1.number}→${horse2.number}→${horse3.number}`,
+        frame1: horse1.frame,
+        frame2: horse2.frame,
+        frame3: horse3.frame,
+        horse1: horse1.number,
+        horse2: horse2.number,
+        horse3: horse3.number,
+        odds: sanren.odds,
+        prob: sanrentanProb,
+        ev: sanrentanEV
+      });
+      console.log(`3連単候補: ${horse1.number}→${horse2.number}→${horse3.number}`, {
+        オッズ: sanren.odds.toFixed(1),
+        的中確率: (sanrentanProb * 100).toFixed(2) + '%',
+        期待値: sanrentanEV.toFixed(2)
+      });
+    }
+  });
+
   // デバッグ用：最適化対象の馬券一覧
   console.log('最適化対象馬券数:', bettingOptions.length);
 
@@ -429,10 +466,12 @@ export const calculateBetProposals = (
         ? [`${option.horse1}番→${option.horse2}番`]
         : option.type === "３連複"
         ? [`${option.horse1}番-${option.horse2}番-${option.horse3}番`]
+        : option.type === "３連単"
+        ? [`${option.horse1}番→${option.horse2}番→${option.horse3}番`]
         : [option.horseName];
 
       proposals.push({
-        type: option.type as "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複",
+        type: option.type as "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複" | "３連単",
         horses,
         stake,
         expectedReturn: Math.floor(stake * option.odds),

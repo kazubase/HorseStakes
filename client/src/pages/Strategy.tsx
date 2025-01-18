@@ -85,12 +85,17 @@ export default function Strategy() {
     enabled: !!id,
   });
 
+  const { data: latestSanrentanOdds } = useQuery<Tan3Odds[]>({
+    queryKey: [`/api/sanrentan-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
   const { data: recommendedBets, isLoading } = useQuery<BetProposal[]>({
     queryKey: [`/api/betting-strategy/${id}`, { budget, riskRatio, winProbs, placeProbs }],
     queryFn: async () => {
       if (!horses || !latestOdds || !latestFukuOdds || !latestWakurenOdds || 
           !latestUmarenOdds || !latestWideOdds || !latestUmatanOdds || 
-          !latestSanrenpukuOdds) return [];
+          !latestSanrenpukuOdds || !latestSanrentanOdds) return [];
 
       const horseDataList = horses.map(horse => ({
         name: horse.name,
@@ -134,6 +139,13 @@ export default function Strategy() {
         odds: Number(odd.odds)
       }));
 
+      const sanrentanData = latestSanrentanOdds.map(odd => ({
+        horse1: odd.horse1,
+        horse2: odd.horse2,
+        horse3: odd.horse3,
+        odds: Number(odd.odds)
+      }));
+
       return calculateBetProposals(
         horseDataList, 
         budget, 
@@ -142,12 +154,13 @@ export default function Strategy() {
         umarenData, 
         wideData,
         umatanData,
-        sanrenpukuData
+        sanrenpukuData,
+        sanrentanData
       );
     },
     enabled: !!id && !!horses && !!latestOdds && !!latestFukuOdds && 
              !!latestWakurenOdds && !!latestUmarenOdds && !!latestWideOdds && 
-             !!latestUmatanOdds && !!latestSanrenpukuOdds && 
+             !!latestUmatanOdds && !!latestSanrenpukuOdds && !!latestSanrentanOdds && 
              budget > 0 && Object.keys(winProbs).length > 0
   });
 
