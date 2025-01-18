@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MainLayout from "@/components/layout/MainLayout";
 import { Calculator, Brain, TrendingUp, Wallet, Target, Scale, AlertCircle } from "lucide-react";
-import { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds } from "@db/schema";
+import { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds } from "@db/schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import RiskAssessment from "@/components/RiskAssessment";
 import { Progress } from "@/components/ui/progress";
@@ -75,10 +75,16 @@ export default function Strategy() {
     enabled: !!id,
   });
 
+  const { data: latestUmatanOdds } = useQuery<UmatanOdds[]>({
+    queryKey: [`/api/umatan-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
   const { data: recommendedBets, isLoading } = useQuery<BetProposal[]>({
     queryKey: [`/api/betting-strategy/${id}`, { budget, riskRatio, winProbs, placeProbs }],
     queryFn: async () => {
-      if (!horses || !latestOdds || !latestFukuOdds || !latestWakurenOdds || !latestUmarenOdds || !latestWideOdds) return [];
+      if (!horses || !latestOdds || !latestFukuOdds || !latestWakurenOdds || 
+          !latestUmarenOdds || !latestWideOdds || !latestUmatanOdds) return [];
 
       const horseDataList = horses.map(horse => ({
         name: horse.name,
@@ -109,9 +115,25 @@ export default function Strategy() {
         oddsMax: Number(odd.oddsMax)
       }));
 
-      return calculateBetProposals(horseDataList, budget, riskRatio, wakurenData, umarenData, wideData);
+      const umatanData = latestUmatanOdds.map(odd => ({
+        horse1: odd.horse1,
+        horse2: odd.horse2,
+        odds: Number(odd.odds)
+      }));
+
+      return calculateBetProposals(
+        horseDataList, 
+        budget, 
+        riskRatio, 
+        wakurenData, 
+        umarenData, 
+        wideData,
+        umatanData
+      );
     },
-    enabled: !!id && !!horses && !!latestOdds && !!latestFukuOdds && !!latestWakurenOdds && !!latestUmarenOdds && !!latestWideOdds && budget > 0 && Object.keys(winProbs).length > 0
+    enabled: !!id && !!horses && !!latestOdds && !!latestFukuOdds && 
+             !!latestWakurenOdds && !!latestUmarenOdds && !!latestWideOdds && 
+             !!latestUmatanOdds && budget > 0 && Object.keys(winProbs).length > 0
   });
 
   useEffect(() => {

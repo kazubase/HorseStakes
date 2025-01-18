@@ -1,5 +1,5 @@
 interface BettingOption {
-  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド";
+  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単";
   horseName: string;
   odds: number;
   prob: number;
@@ -11,7 +11,7 @@ interface BettingOption {
 }
 
 export interface BetProposal {
-  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド";
+  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単";
   horses: string[];
   stake: number;
   expectedReturn: number;
@@ -34,7 +34,8 @@ export const calculateBetProposals = (
   riskRatio: number, 
   wakurenData: { frame1: number; frame2: number; odds: number; }[],
   umarenData: { horse1: number; horse2: number; odds: number; }[],
-  wideData: { horse1: number; horse2: number; oddsMin: number; oddsMax: number; }[]
+  wideData: { horse1: number; horse2: number; oddsMin: number; oddsMax: number; }[],
+  umaTanData: { horse1: number; horse2: number; odds: number; }[]
 ): BetProposal[] => {
   const MIN_STAKE = 100;
   
@@ -225,6 +226,37 @@ export const calculateBetProposals = (
     }
   });
 
+  // 馬単オプションの追加
+  umaTanData.forEach(umatan => {
+    const horse1 = horses.find(h => h.number === umatan.horse1);
+    const horse2 = horses.find(h => h.number === umatan.horse2);
+    
+    if (!horse1 || !horse2) return;
+
+    // 馬単的中確率の計算（1着と2着の順番が重要）
+    const umatanProb = horse1.winProb * ((horse2.placeProb - horse2.winProb) / 2);
+
+    const umatanEV = umatan.odds * umatanProb - 1;
+    if (umatanProb > 0 && umatanEV > 0) {
+      bettingOptions.push({
+        type: "馬単",
+        horseName: `${horse1.number}→${horse2.number}`,
+        frame1: horse1.frame,
+        frame2: horse2.frame,
+        horse1: horse1.number,
+        horse2: horse2.number,
+        odds: umatan.odds,
+        prob: umatanProb,
+        ev: umatanEV
+      });
+      console.log(`馬単候補: ${horse1.number}→${horse2.number}`, {
+        オッズ: umatan.odds.toFixed(1),
+        的中確率: (umatanProb * 100).toFixed(2) + '%',
+        期待値: umatanEV.toFixed(2)
+      });
+    }
+  });
+
   // デバッグ用：最適化対象の馬券一覧
   console.log('最適化対象馬券数:', bettingOptions.length);
 
@@ -309,15 +341,17 @@ export const calculateBetProposals = (
     if (stake >= MIN_STAKE && stake <= remainingBudget) {
       remainingBudget -= stake;
       
-      // 馬連、枠連、ワイドの場合は馬番または枠番のペアを表示
+      // 馬連、枠連、ワイド、馬単の場合は馬番または枠番のペアを表示
       const horses = option.type === "枠連" 
         ? [`${option.frame1}枠-${option.frame2}枠`]
         : (option.type === "馬連" || option.type === "ワイド")
         ? [`${option.horse1}番-${option.horse2}番`]
+        : option.type === "馬単"
+        ? [`${option.horse1}番→${option.horse2}番`]
         : [option.horseName];
 
       proposals.push({
-        type: option.type as "単勝" | "複勝" | "枠連" | "馬連" | "ワイド",
+        type: option.type as "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単",
         horses,
         stake,
         expectedReturn: Math.floor(stake * option.odds),

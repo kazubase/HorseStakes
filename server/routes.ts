@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { races, horses, tickets, bettingStrategies, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds } from "../db/schema";
+import { races, horses, tickets, bettingStrategies, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds } from "../db/schema";
 import { eq, sql } from "drizzle-orm";
 import { inArray } from "drizzle-orm/expressions";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -240,6 +240,29 @@ export function registerRoutes(app: Express): Server {
         oddsMax: Number(odd.oddsMax)
       }));
   
+      // 最新の馬単オッズを取得
+      const latestUmatanOdds = await db.select()
+        .from(umatanOdds)
+        .where(eq(umatanOdds.raceId, raceId))
+        .orderBy(sql`${umatanOdds.timestamp} desc`);
+
+      // 最新の馬単オッズをフィルタリング
+      const latestUmatanOddsByHorses = latestUmatanOdds.reduce((acc, curr) => {
+        const key = `${curr.horse1}-${curr.horse2}`;
+        if (!acc[key] || 
+            new Date(acc[key].timestamp) < new Date(curr.timestamp)) {
+          acc[key] = curr;
+        }
+        return acc;
+      }, {} as Record<string, typeof latestUmatanOdds[0]>);
+
+      // 馬単データを追加
+      const umatanData = Object.values(latestUmatanOddsByHorses).map(odd => ({
+        horse1: odd.horse1,
+        horse2: odd.horse2,
+        odds: Number(odd.odds)
+      }));
+
       // betCalculatorに計算を委譲
       const strategies = calculateBetProposals(
         horseDataList, 
@@ -247,7 +270,8 @@ export function registerRoutes(app: Express): Server {
         riskRatio, 
         wakurenData, 
         umarenData,
-        wideData
+        wideData,
+        umatanData
       );
   
       res.json(strategies);
@@ -707,6 +731,39 @@ app.get("/api/wide-odds/latest/:raceId", async (req, res) => {
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: "Failed to fetch latest wide odds" });
+  }
+});
+
+  // 最新の馬単オッズを取得するエンドポイント
+app.get("/api/umatan-odds/latest/:raceId", async (req, res) => {
+  try {
+    const raceId = parseInt(req.params.raceId);
+    
+    const latestOdds = await db.select()
+      .from(umatanOdds)
+      .where(eq(umatanOdds.raceId, raceId))
+      .orderBy(sql`${umatanOdds.timestamp} desc`);
+
+    console.log(`Found ${latestOdds.length} umatan odds records for race ${raceId}`);
+    
+    if (latestOdds.length === 0) {
+      return res.json([]);
+    }
+
+    // horse1とhorse2の組み合わせでグループ化して、各組み合わせの最新のオッズのみを取得
+    const latestOddsByHorses = latestOdds.reduce((acc, curr) => {
+      const key = `${curr.horse1}-${curr.horse2}`;
+      if (!acc[key] || 
+          new Date(acc[key].timestamp) < new Date(curr.timestamp)) {
+        acc[key] = curr;
+      }
+      return acc;
+    }, {} as Record<string, typeof latestOdds[0]>);
+
+    res.json(Object.values(latestOddsByHorses));
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: "Failed to fetch latest umatan odds" });
   }
 });
 
