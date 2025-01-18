@@ -596,24 +596,37 @@ export class OddsCollector {
   }
 
   async updateWakurenOdds(oddsDataArray: WakurenOddsData[]) {
+    const BATCH_SIZE = 100;
+    
+    const existingOdds = await db.query.wakurenOdds.findMany({
+      where: eq(wakurenOdds.raceId, oddsDataArray[0].raceId)
+    });
+    
+    const existingMap = new Map(
+      existingOdds.map(odds => [
+        `${odds.frame1}-${odds.frame2}`,
+        odds
+      ])
+    );
+
+    const updates: typeof wakurenOdds.$inferInsert[] = [];
+    const inserts: typeof wakurenOdds.$inferInsert[] = [];
+
     for (const odds of oddsDataArray) {
-      const existing = await db.query.wakurenOdds.findFirst({
-        where: and(
-          eq(wakurenOdds.frame1, odds.frame1),
-          eq(wakurenOdds.frame2, odds.frame2),
-          eq(wakurenOdds.raceId, odds.raceId)
-        )
-      });
+      const key = `${odds.frame1}-${odds.frame2}`;
+      const existing = existingMap.get(key);
 
       if (existing) {
-        await db.update(wakurenOdds)
-          .set({
-            odds: odds.odds.toString(),
-            timestamp: odds.timestamp
-          })
-          .where(eq(wakurenOdds.id, existing.id));
+        updates.push({
+          id: existing.id,
+          frame1: odds.frame1,
+          frame2: odds.frame2,
+          odds: odds.odds.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
       } else {
-        await db.insert(wakurenOdds).values({
+        inserts.push({
           frame1: odds.frame1,
           frame2: odds.frame2,
           odds: odds.odds.toString(),
@@ -622,27 +635,60 @@ export class OddsCollector {
         });
       }
     }
+
+    for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+      const batch = updates.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(update => {
+          if (!update.id) return Promise.resolve();
+          return db.update(wakurenOdds)
+            .set({
+              odds: update.odds,
+              timestamp: update.timestamp
+            })
+            .where(eq(wakurenOdds.id, update.id));
+        })
+      );
+    }
+
+    for (let i = 0; i < inserts.length; i += BATCH_SIZE) {
+      const batch = inserts.slice(i, i + BATCH_SIZE);
+      await db.insert(wakurenOdds).values(batch);
+    }
   }
 
   async updateUmarenOdds(oddsDataArray: UmarenOddsData[]) {
+    const BATCH_SIZE = 100;
+    
+    const existingOdds = await db.query.umarenOdds.findMany({
+      where: eq(umarenOdds.raceId, oddsDataArray[0].raceId)
+    });
+    
+    const existingMap = new Map(
+      existingOdds.map(odds => [
+        `${odds.horse1}-${odds.horse2}`,
+        odds
+      ])
+    );
+
+    const updates: typeof umarenOdds.$inferInsert[] = [];
+    const inserts: typeof umarenOdds.$inferInsert[] = [];
+
     for (const odds of oddsDataArray) {
-      const existing = await db.query.umarenOdds.findFirst({
-        where: and(
-          eq(umarenOdds.horse1, odds.horse1),
-          eq(umarenOdds.horse2, odds.horse2),
-          eq(umarenOdds.raceId, odds.raceId)
-        )
-      });
+      const key = `${odds.horse1}-${odds.horse2}`;
+      const existing = existingMap.get(key);
 
       if (existing) {
-        await db.update(umarenOdds)
-          .set({
-            odds: odds.odds.toString(),
-            timestamp: odds.timestamp
-          })
-          .where(eq(umarenOdds.id, existing.id));
+        updates.push({
+          id: existing.id,
+          horse1: odds.horse1,
+          horse2: odds.horse2,
+          odds: odds.odds.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
       } else {
-        await db.insert(umarenOdds).values({
+        inserts.push({
           horse1: odds.horse1,
           horse2: odds.horse2,
           odds: odds.odds.toString(),
@@ -651,28 +697,61 @@ export class OddsCollector {
         });
       }
     }
+
+    for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+      const batch = updates.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(update => {
+          if (!update.id) return Promise.resolve();
+          return db.update(umarenOdds)
+            .set({
+              odds: update.odds,
+              timestamp: update.timestamp
+            })
+            .where(eq(umarenOdds.id, update.id));
+        })
+      );
+    }
+
+    for (let i = 0; i < inserts.length; i += BATCH_SIZE) {
+      const batch = inserts.slice(i, i + BATCH_SIZE);
+      await db.insert(umarenOdds).values(batch);
+    }
   }
 
   async updateWideOdds(oddsDataArray: WideOddsData[]) {
+    const BATCH_SIZE = 100;
+    
+    const existingOdds = await db.query.wideOdds.findMany({
+      where: eq(wideOdds.raceId, oddsDataArray[0].raceId)
+    });
+    
+    const existingMap = new Map(
+      existingOdds.map(odds => [
+        `${odds.horse1}-${odds.horse2}`,
+        odds
+      ])
+    );
+
+    const updates: typeof wideOdds.$inferInsert[] = [];
+    const inserts: typeof wideOdds.$inferInsert[] = [];
+
     for (const odds of oddsDataArray) {
-      const existing = await db.query.wideOdds.findFirst({
-        where: and(
-          eq(wideOdds.horse1, odds.horse1),
-          eq(wideOdds.horse2, odds.horse2),
-          eq(wideOdds.raceId, odds.raceId)
-        )
-      });
+      const key = `${odds.horse1}-${odds.horse2}`;
+      const existing = existingMap.get(key);
 
       if (existing) {
-        await db.update(wideOdds)
-          .set({
-            oddsMin: odds.oddsMin.toString(),
-            oddsMax: odds.oddsMax.toString(),
-            timestamp: odds.timestamp
-          })
-          .where(eq(wideOdds.id, existing.id));
+        updates.push({
+          id: existing.id,
+          horse1: odds.horse1,
+          horse2: odds.horse2,
+          oddsMin: odds.oddsMin.toString(),
+          oddsMax: odds.oddsMax.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
       } else {
-        await db.insert(wideOdds).values({
+        inserts.push({
           horse1: odds.horse1,
           horse2: odds.horse2,
           oddsMin: odds.oddsMin.toString(),
@@ -682,27 +761,61 @@ export class OddsCollector {
         });
       }
     }
+
+    for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+      const batch = updates.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(update => {
+          if (!update.id) return Promise.resolve();
+          return db.update(wideOdds)
+            .set({
+              oddsMin: update.oddsMin,
+              oddsMax: update.oddsMax,
+              timestamp: update.timestamp
+            })
+            .where(eq(wideOdds.id, update.id));
+        })
+      );
+    }
+
+    for (let i = 0; i < inserts.length; i += BATCH_SIZE) {
+      const batch = inserts.slice(i, i + BATCH_SIZE);
+      await db.insert(wideOdds).values(batch);
+    }
   }
 
   async updateUmatanOdds(oddsDataArray: UmatanOddsData[]) {
+    const BATCH_SIZE = 100;
+    
+    const existingOdds = await db.query.umatanOdds.findMany({
+      where: eq(umatanOdds.raceId, oddsDataArray[0].raceId)
+    });
+    
+    const existingMap = new Map(
+      existingOdds.map(odds => [
+        `${odds.horse1}-${odds.horse2}`,
+        odds
+      ])
+    );
+
+    const updates: typeof umatanOdds.$inferInsert[] = [];
+    const inserts: typeof umatanOdds.$inferInsert[] = [];
+
     for (const odds of oddsDataArray) {
-      const existing = await db.query.umatanOdds.findFirst({
-        where: and(
-          eq(umatanOdds.horse1, odds.horse1),
-          eq(umatanOdds.horse2, odds.horse2),
-          eq(umatanOdds.raceId, odds.raceId)
-        )
-      });
+      const key = `${odds.horse1}-${odds.horse2}`;
+      const existing = existingMap.get(key);
 
       if (existing) {
-        await db.update(umatanOdds)
-          .set({
-            odds: odds.odds.toString(),
-            timestamp: odds.timestamp
-          })
-          .where(eq(umatanOdds.id, existing.id));
+        updates.push({
+          id: existing.id,
+          horse1: odds.horse1,
+          horse2: odds.horse2,
+          odds: odds.odds.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
       } else {
-        await db.insert(umatanOdds).values({
+        inserts.push({
           horse1: odds.horse1,
           horse2: odds.horse2,
           odds: odds.odds.toString(),
@@ -711,31 +824,62 @@ export class OddsCollector {
         });
       }
     }
+
+    for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+      const batch = updates.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(update => {
+          if (!update.id) return Promise.resolve();
+          return db.update(umatanOdds)
+            .set({
+              odds: update.odds,
+              timestamp: update.timestamp
+            })
+            .where(eq(umatanOdds.id, update.id));
+        })
+      );
+    }
+
+    for (let i = 0; i < inserts.length; i += BATCH_SIZE) {
+      const batch = inserts.slice(i, i + BATCH_SIZE);
+      await db.insert(umatanOdds).values(batch);
+    }
   }
 
   async updateFuku3Odds(oddsDataArray: Fuku3OddsData[]) {
+    const BATCH_SIZE = 100;
+    
+    const existingOdds = await db.query.fuku3Odds.findMany({
+      where: eq(fuku3Odds.raceId, oddsDataArray[0].raceId)
+    });
+    
+    const existingMap = new Map(
+      existingOdds.map(odds => {
+        const horses = [odds.horse1, odds.horse2, odds.horse3].sort((a, b) => a - b);
+        return [`${horses[0]}-${horses[1]}-${horses[2]}`, odds];
+      })
+    );
+
+    const updates: typeof fuku3Odds.$inferInsert[] = [];
+    const inserts: typeof fuku3Odds.$inferInsert[] = [];
+
     for (const odds of oddsDataArray) {
-      // 3頭の馬番を昇順にソートして保存（順不同のため）
       const horses = [odds.horse1, odds.horse2, odds.horse3].sort((a, b) => a - b);
-      
-      const existing = await db.query.fuku3Odds.findFirst({
-        where: and(
-          eq(fuku3Odds.horse1, horses[0]),
-          eq(fuku3Odds.horse2, horses[1]),
-          eq(fuku3Odds.horse3, horses[2]),
-          eq(fuku3Odds.raceId, odds.raceId)
-        )
-      });
+      const key = `${horses[0]}-${horses[1]}-${horses[2]}`;
+      const existing = existingMap.get(key);
 
       if (existing) {
-        await db.update(fuku3Odds)
-          .set({
-            odds: odds.odds.toString(),
-            timestamp: odds.timestamp
-          })
-          .where(eq(fuku3Odds.id, existing.id));
+        updates.push({
+          id: existing.id,
+          horse1: horses[0],
+          horse2: horses[1],
+          horse3: horses[2],
+          odds: odds.odds.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
       } else {
-        await db.insert(fuku3Odds).values({
+        inserts.push({
           horse1: horses[0],
           horse2: horses[1],
           horse3: horses[2],
@@ -745,28 +889,66 @@ export class OddsCollector {
         });
       }
     }
+
+    for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+      const batch = updates.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(update => {
+          if (!update.id) return Promise.resolve();
+          return db.update(fuku3Odds)
+            .set({
+              odds: update.odds,
+              timestamp: update.timestamp
+            })
+            .where(eq(fuku3Odds.id, update.id));
+        })
+      );
+    }
+
+    for (let i = 0; i < inserts.length; i += BATCH_SIZE) {
+      const batch = inserts.slice(i, i + BATCH_SIZE);
+      await db.insert(fuku3Odds).values(batch);
+    }
   }
 
   async updateTan3Odds(oddsDataArray: Tan3OddsData[]) {
+    // バッチサイズの設定
+    const BATCH_SIZE = 100;
+    
+    // 既存データの一括取得
+    const existingOdds = await db.query.tan3Odds.findMany({
+      where: eq(tan3Odds.raceId, oddsDataArray[0].raceId)
+    });
+    
+    // 既存データをマップ化して高速なルックアップを実現
+    const existingMap = new Map(
+      existingOdds.map(odds => [
+        `${odds.horse1}-${odds.horse2}-${odds.horse3}`,
+        odds
+      ])
+    );
+
+    // 更新と挿入のバッチを準備
+    const updates: typeof tan3Odds.$inferInsert[] = [];
+    const inserts: typeof tan3Odds.$inferInsert[] = [];
+
+    // データを振り分け
     for (const odds of oddsDataArray) {
-      const existing = await db.query.tan3Odds.findFirst({
-        where: and(
-          eq(tan3Odds.horse1, odds.horse1),
-          eq(tan3Odds.horse2, odds.horse2),
-          eq(tan3Odds.horse3, odds.horse3),
-          eq(tan3Odds.raceId, odds.raceId)
-        )
-      });
+      const key = `${odds.horse1}-${odds.horse2}-${odds.horse3}`;
+      const existing = existingMap.get(key);
 
       if (existing) {
-        await db.update(tan3Odds)
-          .set({
-            odds: odds.odds.toString(),
-            timestamp: odds.timestamp
-          })
-          .where(eq(tan3Odds.id, existing.id));
+        updates.push({
+          id: existing.id,
+          horse1: odds.horse1,
+          horse2: odds.horse2,
+          horse3: odds.horse3,
+          odds: odds.odds.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
       } else {
-        await db.insert(tan3Odds).values({
+        inserts.push({
           horse1: odds.horse1,
           horse2: odds.horse2,
           horse3: odds.horse3,
@@ -775,6 +957,28 @@ export class OddsCollector {
           raceId: odds.raceId
         });
       }
+    }
+
+    // バッチ処理の実行
+    for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+      const batch = updates.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(update => {
+          if (!update.id) return Promise.resolve(); // idがない場合はスキップ
+          return db.update(tan3Odds)
+            .set({
+              odds: update.odds,
+              timestamp: update.timestamp
+            })
+            .where(eq(tan3Odds.id, update.id));
+        })
+      );
+    }
+
+    // 一括挿入の実行
+    for (let i = 0; i < inserts.length; i += BATCH_SIZE) {
+      const batch = inserts.slice(i, i + BATCH_SIZE);
+      await db.insert(tan3Odds).values(batch);
     }
   }
 
