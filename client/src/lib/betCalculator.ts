@@ -1,13 +1,15 @@
 interface BettingOption {
-  type: "単勝" | "複勝";
+  type: "単勝" | "複勝" | "枠連";
   horseName: string;
   odds: number;
   prob: number;
   ev: number;
+  frame1: number;
+  frame2: number;
 }
 
 export interface BetProposal {
-  type: "単勝" | "複勝";
+  type: "単勝" | "複勝" | "枠連";
   horses: string[];
   stake: number;
   expectedReturn: number;
@@ -16,16 +18,19 @@ export interface BetProposal {
 
 export interface HorseData {
   name: string;
-  odds: number;     // 単勝オッズ
-  fukuOdds: number; // 複勝オッズ（最小値と最大値の平均）
+  odds: number;
+  fukuOdds: number;
   winProb: number;
   placeProb: number;
+  frame: number;
+  number: number;
 }
 
 export const calculateBetProposals = (
-  horses: HorseData[],
-  totalBudget: number,
-  riskRatio: number
+  horses: HorseData[], 
+  totalBudget: number, 
+  riskRatio: number, 
+  wakurenData: { frame1: number; frame2: number; odds: number; }[]
 ): BetProposal[] => {
   const MIN_STAKE = 100;
   
@@ -48,36 +53,66 @@ export const calculateBetProposals = (
   const bettingOptions = horses.flatMap(horse => {
     const options = [];
     
-    // 単勝オプション（オッズが0の場合はスキップ）
+    // 単勝・複勝オプション（既存のコード）
     if (horse.odds > 0) {
       const winEV = horse.odds * horse.winProb - 1;
       if (horse.winProb > 0 && winEV > 0) {
         options.push({
-          type: "単勝" as const,
+          type: "単勝",
           horseName: horse.name,
           odds: horse.odds,
           prob: horse.winProb,
-          ev: winEV
+          ev: winEV,
+          frame1: 0,
+          frame2: 0
         });
-        console.log(`単勝候補: ${horse.name}, EV: ${winEV.toFixed(2)}`);
       }
       
-      // 複勝オプション
-      if (horse.fukuOdds > 0) {  // 実際の複勝オッズを使用
+      if (horse.fukuOdds > 0) {
         const placeEV = horse.fukuOdds * horse.placeProb - 1;
         if (horse.placeProb > 0 && placeEV > 0) {
           options.push({
-            type: "複勝" as const,
+            type: "複勝",
             horseName: horse.name,
             odds: horse.fukuOdds,
             prob: horse.placeProb,
-            ev: placeEV
+            ev: placeEV,
+            frame1: 0,
+            frame2: 0
           });
-          console.log(`複勝候補: ${horse.name}, EV: ${placeEV.toFixed(2)}`);
         }
       }
     }
     return options;
+  });
+
+  // 枠連オプションの追加
+  wakurenData.forEach(wakuren => {
+    // 対象の枠の馬の勝率を計算
+    const frame1Horses = horses.filter(h => h.frame === wakuren.frame1);
+    const frame2Horses = horses.filter(h => h.frame === wakuren.frame2);
+    
+    // 枠連的中確率の計算（各枠の馬の勝率の積の合計）
+    let wakurenProb = 0;
+    frame1Horses.forEach(h1 => {
+      frame2Horses.forEach(h2 => {
+        wakurenProb += h1.winProb * h2.winProb;
+      });
+    });
+
+    const wakurenEV = wakuren.odds * wakurenProb - 1;
+    if (wakurenProb > 0 && wakurenEV > 0) {
+      bettingOptions.push({
+        type: "枠連",
+        horseName: `${wakuren.frame1}-${wakuren.frame2}`,
+        frame1: wakuren.frame1,
+        frame2: wakuren.frame2,
+        odds: wakuren.odds,
+        prob: wakurenProb,
+        ev: wakurenEV
+      });
+      console.log(`枠連候補: ${wakuren.frame1}-${wakuren.frame2}, EV: ${wakurenEV.toFixed(2)}`);
+    }
   });
 
   // デバッグ用：最適化対象の馬券一覧
@@ -156,16 +191,22 @@ export const calculateBetProposals = (
   let remainingBudget = totalBudget;
 
   bestWeights.forEach((weight, i) => {
-    if (weight < 0.01) return; // 小さすぎる配分は無視
+    if (weight < 0.01) return;
 
     const option = bettingOptions[i];
     const stake = Math.floor((totalBudget * weight) / 100) * 100;
     
     if (stake >= MIN_STAKE && stake <= remainingBudget) {
       remainingBudget -= stake;
+      
+      // 枠連の場合は馬名の代わりに枠番を使用
+      const horses = option.type === "枠連" 
+        ? [`${option.frame1}枠-${option.frame2}枠`]
+        : [option.horseName];
+
       proposals.push({
-        type: option.type as "単勝" | "複勝",
-        horses: [option.horseName],
+        type: option.type as "単勝" | "複勝" | "枠連",
+        horses,
         stake,
         expectedReturn: Math.floor(stake * option.odds),
         probability: option.prob

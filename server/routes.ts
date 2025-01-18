@@ -162,11 +162,9 @@ export function registerRoutes(app: Express): Server {
   
       // betCalculator用のデータを準備
       const horseDataList = raceHorses.map(horse => {
-        const index = raceHorses.findIndex(h => h.id === horse.id);
-        const tanOdd = latestTanOddsByHorse[index + 1];
-        const fukuOdd = latestFukuOddsByHorse[index + 1];
+        const tanOdd = latestTanOddsByHorse[horse.number];
+        const fukuOdd = latestFukuOddsByHorse[horse.number];
         
-        // 複勝オッズは最小値と最大値の平均を使用
         const fukuOddsAvg = fukuOdd 
           ? Math.round(((Number(fukuOdd.oddsMin) + Number(fukuOdd.oddsMax)) / 2) * 10) / 10
           : 0;
@@ -177,7 +175,8 @@ export function registerRoutes(app: Express): Server {
           fukuOdds: fukuOddsAvg,
           winProb: winProbs[horse.id] / 100,
           placeProb: placeProbs[horse.id] / 100,
-          frame: horse.frame
+          frame: horse.frame,
+          number: horse.number
         };
       });
   
@@ -193,6 +192,7 @@ export function registerRoutes(app: Express): Server {
   
       res.json(strategies);
     } catch (error) {
+      console.error('Error calculating betting strategy:', error);
       res.status(500).json({ error: "Failed to calculate betting strategy" });
     }
   });
