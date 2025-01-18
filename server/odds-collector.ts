@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Browser, Page, chromium } from 'playwright';
 import { db } from '../db';
-import { horses, races, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, fuku3Odds } from '../db/schema';
+import { horses, races, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, fuku3Odds, tan3Odds } from '../db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import * as cheerio from 'cheerio';
 
@@ -76,6 +76,16 @@ interface Fuku3OddsData {
   raceId: number;
 }
 
+// インターフェースの追加
+interface Tan3OddsData {
+  horse1: number;  // 1着となる馬
+  horse2: number;  // 2着となる馬
+  horse3: number;  // 3着となる馬
+  odds: number;
+  timestamp: Date;
+  raceId: number;
+}
+
 export class OddsCollector {
   private browser: Browser | null = null;
   
@@ -109,6 +119,11 @@ export class OddsCollector {
       tabName: '3連複',
       tableSelector: 'table.basic.narrow-xy.fuku3',
       parser: this.parseFuku3Odds.bind(this)
+    },
+    tan3: {
+      tabName: '3連単',
+      tableSelector: 'table.basic.narrow-xy.tan3',
+      parser: this.parseTan3Odds.bind(this)
     },
     // 他の馬券種別も同様に定義
   };
@@ -488,6 +503,62 @@ export class OddsCollector {
     return fuku3OddsData;
   }
 
+  // パーサー関数の実装
+  private async parseTan3Odds(html: string, raceId: number): Promise<Tan3OddsData[]> {
+    const $ = cheerio.load(html);
+    const tan3OddsData: Tan3OddsData[] = [];
+
+    // 各馬の3連単テーブルを処理
+    $('table.basic.narrow-xy.tan3').each((_, table) => {
+      const $table = $(table);
+      
+      // テーブルの親要素から1着と2着の馬番を取得
+      const $container = $table.closest('li');
+      const $pLines = $container.find('div.p_line');
+      
+      // 1着となる馬番を取得
+      const horse1Text = $pLines.eq(0).find('div.num').text().trim();
+      const horse1 = parseInt(horse1Text);
+      
+      // 2着となる馬番を取得
+      const horse2Text = $pLines.eq(1).find('div.num').text().trim();
+      const horse2 = parseInt(horse2Text);
+      
+      if (isNaN(horse1) || isNaN(horse2)) {
+        console.warn('Failed to parse horse numbers:', { horse1Text, horse2Text });
+        return;
+      }
+
+      // 各行を処理（3着となる馬）
+      $table.find('tbody tr').each((_, row) => {
+        const $row = $(row);
+        const horse3Text = $row.find('th[scope="row"]').text().trim();
+        const horse3 = parseInt(horse3Text);
+
+        if (!isNaN(horse3)) {
+          const oddsText = $row.find('td').first().text().trim();
+          if (oddsText && oddsText !== '-') {
+            const odds = parseFloat(oddsText.replace(/,/g, ''));
+            
+            if (!isNaN(odds)) {
+              tan3OddsData.push({
+                horse1,  // 1着となる馬
+                horse2,  // 2着となる馬
+                horse3,  // 3着となる馬
+                odds,
+                timestamp: new Date(),
+                raceId
+              });
+            }
+          }
+        }
+      });
+    });
+
+    console.log(`Collected total ${tan3OddsData.length} tan3 odds combinations`);
+    return tan3OddsData;
+  }
+
   async saveTanOddsHistory(odds: OddsData) {
     // 単勝オッズは履歴として保存
     await db.insert(tanOddsHistory).values({
@@ -668,6 +739,37 @@ export class OddsCollector {
           horse1: horses[0],
           horse2: horses[1],
           horse3: horses[2],
+          odds: odds.odds.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
+      }
+    }
+  }
+
+  async updateTan3Odds(oddsDataArray: Tan3OddsData[]) {
+    for (const odds of oddsDataArray) {
+      const existing = await db.query.tan3Odds.findFirst({
+        where: and(
+          eq(tan3Odds.horse1, odds.horse1),
+          eq(tan3Odds.horse2, odds.horse2),
+          eq(tan3Odds.horse3, odds.horse3),
+          eq(tan3Odds.raceId, odds.raceId)
+        )
+      });
+
+      if (existing) {
+        await db.update(tan3Odds)
+          .set({
+            odds: odds.odds.toString(),
+            timestamp: odds.timestamp
+          })
+          .where(eq(tan3Odds.id, existing.id));
+      } else {
+        await db.insert(tan3Odds).values({
+          horse1: odds.horse1,
+          horse2: odds.horse2,
+          horse3: odds.horse3,
           odds: odds.odds.toString(),
           timestamp: odds.timestamp,
           raceId: odds.raceId

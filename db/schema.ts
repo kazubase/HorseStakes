@@ -132,6 +132,19 @@ export const fuku3Odds = pgTable("fuku3_odds", {
   horsesIdx: index("fuku3_odds_horses_idx").on(table.horse1, table.horse2, table.horse3)
 }));
 
+export const tan3Odds = pgTable("tan3_odds", {
+  id: serial("id").primaryKey(),
+  horse1: integer("horse1").notNull(),
+  horse2: integer("horse2").notNull(),
+  horse3: integer("horse3").notNull(),
+  odds: numeric("odds").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+  raceId: bigint("race_id", { mode: "number" }).notNull()
+}, (table) => ({
+  raceIdx: index("tan3_odds_race_id_idx").on(table.raceId),
+  horsesIdx: index("tan3_odds_horses_idx").on(table.horse1, table.horse2, table.horse3)
+}));
+
 export type Horse = typeof horses.$inferSelect;
 export type Race = typeof races.$inferSelect;
 export type BettingStrategy = typeof bettingStrategies.$inferSelect;
@@ -143,3 +156,4 @@ export type UmarenOdds = typeof umarenOdds.$inferSelect;
 export type WideOdds = typeof wideOdds.$inferSelect;
 export type UmatanOdds = typeof umatanOdds.$inferSelect;
 export type Fuku3Odds = typeof fuku3Odds.$inferSelect;
+export type Tan3Odds = typeof tan3Odds.$inferSelect;
