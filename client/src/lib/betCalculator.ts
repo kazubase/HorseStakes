@@ -1,17 +1,19 @@
 interface BettingOption {
-  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単";
+  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複";
   horseName: string;
   odds: number;
   prob: number;
   ev: number;
   frame1: number;
   frame2: number;
+  frame3: number;
   horse1: number;
   horse2: number;
+  horse3: number;
 }
 
 export interface BetProposal {
-  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単";
+  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複";
   horses: string[];
   stake: number;
   expectedReturn: number;
@@ -35,7 +37,8 @@ export const calculateBetProposals = (
   wakurenData: { frame1: number; frame2: number; odds: number; }[],
   umarenData: { horse1: number; horse2: number; odds: number; }[],
   wideData: { horse1: number; horse2: number; oddsMin: number; oddsMax: number; }[],
-  umaTanData: { horse1: number; horse2: number; odds: number; }[]
+  umaTanData: { horse1: number; horse2: number; odds: number; }[],
+  sanrenpukuData: { horse1: number; horse2: number; horse3: number; odds: number; }[]
 ): BetProposal[] => {
   const MIN_STAKE = 100;
   
@@ -70,8 +73,10 @@ export const calculateBetProposals = (
           ev: winEV,
           frame1: 0,
           frame2: 0,
+          frame3: 0,
           horse1: 0,
-          horse2: 0
+          horse2: 0,
+          horse3: 0
         });
       }
       
@@ -86,8 +91,10 @@ export const calculateBetProposals = (
             ev: placeEV,
             frame1: 0,
             frame2: 0,
+            frame3: 0,
             horse1: 0,
-            horse2: 0
+            horse2: 0,
+            horse3: 0
           });
         }
       }
@@ -139,11 +146,13 @@ export const calculateBetProposals = (
         horseName: `${wakuren.frame1}-${wakuren.frame2}`,
         frame1: wakuren.frame1,
         frame2: wakuren.frame2,
+        frame3: 0,
         odds: wakuren.odds,
         prob: wakurenProb,
         ev: wakurenEV,
         horse1: 0,
-        horse2: 0
+        horse2: 0,
+        horse3: 0
       });
       console.log(`枠連候補: ${wakuren.frame1}-${wakuren.frame2}`, {
         オッズ: wakuren.odds.toFixed(1),
@@ -178,8 +187,10 @@ export const calculateBetProposals = (
         horseName: `${horse1.number}-${horse2.number}`,
         frame1: horse1.frame,
         frame2: horse2.frame,
+        frame3: 0,
         horse1: horse1.number,
         horse2: horse2.number,
+        horse3: 0,
         odds: umaren.odds,
         prob: umarenProb,
         ev: umarenEV
@@ -212,8 +223,10 @@ export const calculateBetProposals = (
         horseName: `${horse1.number}-${horse2.number}`,
         frame1: horse1.frame,
         frame2: horse2.frame,
+        frame3: 0,
         horse1: horse1.number,
         horse2: horse2.number,
+        horse3: 0,
         odds: avgOdds,
         prob: wideProb,
         ev: wideEV
@@ -243,8 +256,10 @@ export const calculateBetProposals = (
         horseName: `${horse1.number}→${horse2.number}`,
         frame1: horse1.frame,
         frame2: horse2.frame,
+        frame3: 0,
         horse1: horse1.number,
         horse2: horse2.number,
+        horse3: 0,
         odds: umatan.odds,
         prob: umatanProb,
         ev: umatanEV
@@ -253,6 +268,71 @@ export const calculateBetProposals = (
         オッズ: umatan.odds.toFixed(1),
         的中確率: (umatanProb * 100).toFixed(2) + '%',
         期待値: umatanEV.toFixed(2)
+      });
+    }
+  });
+
+  // 3連複オプションの追加
+  sanrenpukuData.forEach(sanren => {
+    const horse1 = horses.find(h => h.number === sanren.horse1);
+    const horse2 = horses.find(h => h.number === sanren.horse2);
+    const horse3 = horses.find(h => h.number === sanren.horse3);
+    
+    if (!horse1 || !horse2 || !horse3) return;
+
+    // 3連複的中確率の計算（順不同で3頭が上位3着以内に入る確率）
+    let sanrenProb = 0;
+
+    // 全ての順列パターンを考慮
+    // 1-2-3のパターン
+    sanrenProb += horse1.winProb * 
+                  ((horse2.placeProb - horse2.winProb) / 2) * 
+                  ((horse3.placeProb - horse3.winProb) / 2);
+
+    // 1-3-2のパターン
+    sanrenProb += horse1.winProb * 
+                  ((horse3.placeProb - horse3.winProb) / 2) * 
+                  ((horse2.placeProb - horse2.winProb) / 2);
+
+    // 2-1-3のパターン
+    sanrenProb += horse2.winProb * 
+                  ((horse1.placeProb - horse1.winProb) / 2) * 
+                  ((horse3.placeProb - horse3.winProb) / 2);
+
+    // 2-3-1のパターン
+    sanrenProb += horse2.winProb * 
+                  ((horse3.placeProb - horse3.winProb) / 2) * 
+                  ((horse1.placeProb - horse1.winProb) / 2);
+
+    // 3-1-2のパターン
+    sanrenProb += horse3.winProb * 
+                  ((horse1.placeProb - horse1.winProb) / 2) * 
+                  ((horse2.placeProb - horse2.winProb) / 2);
+
+    // 3-2-1のパターン
+    sanrenProb += horse3.winProb * 
+                  ((horse2.placeProb - horse2.winProb) / 2) * 
+                  ((horse1.placeProb - horse1.winProb) / 2);
+
+    const sanrenEV = sanren.odds * sanrenProb - 1;
+    if (sanrenProb > 0 && sanrenEV > 0) {
+      bettingOptions.push({
+        type: "３連複",
+        horseName: `${horse1.number}-${horse2.number}-${horse3.number}`,
+        frame1: horse1.frame,
+        frame2: horse2.frame,
+        frame3: horse3.frame,
+        horse1: horse1.number,
+        horse2: horse2.number,
+        horse3: horse3.number,
+        odds: sanren.odds,
+        prob: sanrenProb,
+        ev: sanrenEV
+      });
+      console.log(`3連複候補: ${horse1.number}-${horse2.number}-${horse3.number}`, {
+        オッズ: sanren.odds.toFixed(1),
+        的中確率: (sanrenProb * 100).toFixed(2) + '%',
+        期待値: sanrenEV.toFixed(2)
       });
     }
   });
@@ -341,17 +421,18 @@ export const calculateBetProposals = (
     if (stake >= MIN_STAKE && stake <= remainingBudget) {
       remainingBudget -= stake;
       
-      // 馬連、枠連、ワイド、馬単の場合は馬番または枠番のペアを表示
       const horses = option.type === "枠連" 
         ? [`${option.frame1}枠-${option.frame2}枠`]
         : (option.type === "馬連" || option.type === "ワイド")
         ? [`${option.horse1}番-${option.horse2}番`]
         : option.type === "馬単"
         ? [`${option.horse1}番→${option.horse2}番`]
+        : option.type === "３連複"
+        ? [`${option.horse1}番-${option.horse2}番-${option.horse3}番`]
         : [option.horseName];
 
       proposals.push({
-        type: option.type as "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単",
+        type: option.type as "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複",
         horses,
         stake,
         expectedReturn: Math.floor(stake * option.odds),
