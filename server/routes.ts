@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { races, horses, tickets, bettingStrategies, tanOddsHistory, fukuOdds, wakurenOdds } from "../db/schema";
+import { races, horses, tickets, bettingStrategies, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds } from "../db/schema";
 import { eq, sql } from "drizzle-orm";
 import { inArray } from "drizzle-orm/expressions";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -132,6 +132,12 @@ export function registerRoutes(app: Express): Server {
         .where(eq(wakurenOdds.raceId, raceId))
         .orderBy(sql`${wakurenOdds.timestamp} desc`);
   
+      // 最新の馬連オッズを取得
+      const latestUmarenOdds = await db.select()
+        .from(umarenOdds)
+        .where(eq(umarenOdds.raceId, raceId))
+        .orderBy(sql`${umarenOdds.timestamp} desc`);
+  
       // 各馬の最新単勝オッズを取得
       const latestTanOddsByHorse = latestTanOdds.reduce((acc, curr) => {
         if (!acc[curr.horseId] || 
@@ -159,6 +165,16 @@ export function registerRoutes(app: Express): Server {
         }
         return acc;
       }, {} as Record<string, typeof latestWakurenOdds[0]>);
+  
+      // 最新の馬連オッズをフィルタリング
+      const latestUmarenOddsByHorses = latestUmarenOdds.reduce((acc, curr) => {
+        const key = `${curr.horse1}-${curr.horse2}`;
+        if (!acc[key] || 
+            new Date(acc[key].timestamp) < new Date(curr.timestamp)) {
+          acc[key] = curr;
+        }
+        return acc;
+      }, {} as Record<string, typeof latestUmarenOdds[0]>);
   
       // betCalculator用のデータを準備
       const horseDataList = raceHorses.map(horse => {
@@ -606,6 +622,7 @@ app.get("/api/wakuren-odds/latest/:raceId", async (req, res) => {
         // オッズデータを取得
         const tanpukuOdds = await collector.collectOddsForBetType(raceId, 'tanpuku');
         const wakurenOdds = await collector.collectOddsForBetType(raceId, 'wakuren');
+        const umarenOdds = await collector.collectOddsForBetType(raceId, 'umaren');
         
         // 出走馬を登録
         if (tanpukuOdds.length > 0) {
@@ -620,6 +637,9 @@ app.get("/api/wakuren-odds/latest/:raceId", async (req, res) => {
           await collector.saveOddsHistory(tanpukuOdds);
           if (wakurenOdds.length > 0) {
             await collector.updateWakurenOdds(wakurenOdds);
+          }
+          if (umarenOdds.length > 0) {
+            await collector.updateUmarenOdds(umarenOdds);
           }
         }
 

@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Browser, Page, chromium } from 'playwright';
 import { db } from '../db';
-import { horses, races, tanOddsHistory, fukuOdds, wakurenOdds } from '../db/schema';
+import { horses, races, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds } from '../db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import * as cheerio from 'cheerio';
 
@@ -33,6 +33,14 @@ interface WakurenOddsData {
   raceId: number;
 }
 
+interface UmarenOddsData {
+  horse1: number;
+  horse2: number;
+  odds: number;
+  timestamp: Date;
+  raceId: number;
+}
+
 interface BetTypeConfig {
   tabName: string;          // タブの名前（'枠連'、'馬連'など）
   tableSelector: string;    // テーブルのセレクタ
@@ -52,6 +60,11 @@ export class OddsCollector {
       tabName: '枠連',
       tableSelector: 'table.basic.narrow-xy.waku',
       parser: this.parseWakurenOdds.bind(this)
+    },
+    umaren: {
+      tabName: '馬連',
+      tableSelector: 'table.basic.narrow-xy.umaren',
+      parser: this.parseUmarenOdds.bind(this)
     },
     // 他の馬券種別も同様に定義
   };
@@ -237,6 +250,52 @@ export class OddsCollector {
     return wakurenOddsData;
   }
 
+  private async parseUmarenOdds(html: string, raceId: number): Promise<UmarenOddsData[]> {
+    const $ = cheerio.load(html);
+    const umarenOddsData: UmarenOddsData[] = [];
+
+    // 全ての馬連テーブルを処理
+    $('table.basic.narrow-xy.umaren').each((_, table) => {
+      const $table = $(table);
+      
+      // テーブルのcaptionから軸となる馬番を取得
+      const captionText = $table.find('caption').text().trim();
+      const horse1 = parseInt(captionText); // 数値のみを取得
+      
+      if (isNaN(horse1)) {
+        console.warn('Failed to parse horse1 number from caption:', captionText);
+        return;
+      }
+
+      // 各行を処理
+      $table.find('tbody tr').each((_, row) => {
+        const $row = $(row);
+        const horse2Text = $row.find('th').first().text().trim();
+        const horse2 = parseInt(horse2Text);
+
+        if (!isNaN(horse2)) {
+          const oddsText = $row.find('td').first().text().trim();
+          if (oddsText && oddsText !== '-') {
+            const odds = parseFloat(oddsText.replace(/,/g, ''));
+            
+            if (!isNaN(odds)) {
+              umarenOddsData.push({
+                horse1,
+                horse2,
+                odds,
+                timestamp: new Date(),
+                raceId
+              });
+            }
+          }
+        }
+      });
+    });
+
+    console.log(`Collected total ${umarenOddsData.length} umaren odds combinations`);
+    return umarenOddsData;
+  }
+
   async saveTanOddsHistory(odds: OddsData) {
     // 単勝オッズは履歴として保存
     await db.insert(tanOddsHistory).values({
@@ -302,6 +361,35 @@ export class OddsCollector {
     }
   }
 
+  async updateUmarenOdds(oddsDataArray: UmarenOddsData[]) {
+    for (const odds of oddsDataArray) {
+      const existing = await db.query.umarenOdds.findFirst({
+        where: and(
+          eq(umarenOdds.horse1, odds.horse1),
+          eq(umarenOdds.horse2, odds.horse2),
+          eq(umarenOdds.raceId, odds.raceId)
+        )
+      });
+
+      if (existing) {
+        await db.update(umarenOdds)
+          .set({
+            odds: odds.odds.toString(),
+            timestamp: odds.timestamp
+          })
+          .where(eq(umarenOdds.id, existing.id));
+      } else {
+        await db.insert(umarenOdds).values({
+          horse1: odds.horse1,
+          horse2: odds.horse2,
+          odds: odds.odds.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
+      }
+    }
+  }
+
   async saveOddsHistory(oddsData: OddsData[]) {
     try {
       for (const odds of oddsData) {
@@ -331,6 +419,8 @@ export class OddsCollector {
             if (oddsData.length > 0) {
               if (betType === 'wakuren') {
                 await this.updateWakurenOdds(oddsData);
+              } else if (betType === 'umaren') {
+                await this.updateUmarenOdds(oddsData);
               } else {
                 await this.saveOddsHistory(oddsData);
               }

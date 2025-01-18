@@ -74,10 +74,22 @@ async function testOddsCollection() {
       console.log('Wakuren odds data saved successfully');
     }
 
+    // 馬連オッズの取得と保存を追加
+    console.log(`Collecting Umaren odds for race ID: ${raceId}`);
+    const umarenOdds = await collector.collectOddsForBetType(raceId, 'umaren');
+    console.log('Collected Umaren odds data:', umarenOdds);
+    
+    if (umarenOdds.length > 0) {
+      console.log('Saving Umaren odds data...');
+      await collector.updateUmarenOdds(umarenOdds);
+      console.log('Umaren odds data saved successfully');
+    }
+
     // 収集結果のサマリーを表示
     console.log('\nCollection Summary:');
     console.log(`- Tanpuku odds collected: ${tanpukuOdds.length}`);
     console.log(`- Wakuren odds collected: ${wakurenOdds.length}`);
+    console.log(`- Umaren odds collected: ${umarenOdds.length}`);
 
   } catch (error) {
     console.error('Error during test:', error);

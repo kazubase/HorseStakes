@@ -73,6 +73,18 @@ export const wakurenOdds = pgTable("wakuren_odds", {
   framesIdx: index("wakuren_odds_frames_idx").on(table.frame1, table.frame2)
 }));
 
+export const umarenOdds = pgTable("umaren_odds", {
+  id: serial("id").primaryKey(),
+  horse1: integer("horse1").notNull(),
+  horse2: integer("horse2").notNull(),
+  odds: numeric("odds").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+  raceId: bigint("race_id", { mode: "number" }).notNull()
+}, (table) => ({
+  raceIdx: index("umaren_odds_race_id_idx").on(table.raceId),
+  horsesIdx: index("umaren_odds_horses_idx").on(table.horse1, table.horse2)
+}));
+
 export const betTypes = pgTable('bet_types', {
   id: serial('id').primaryKey(),
   code: varchar('code', { length: 20 }).notNull().unique(),
@@ -89,3 +101,4 @@ export type Ticket = typeof tickets.$inferSelect;
 export type TanOddsHistory = typeof tanOddsHistory.$inferSelect;
 export type FukuOdds = typeof fukuOdds.$inferSelect;
 export type WakurenOdds = typeof wakurenOdds.$inferSelect;
+export type UmarenOdds = typeof umarenOdds.$inferSelect;
