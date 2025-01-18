@@ -94,19 +94,34 @@ export const calculateBetProposals = (
     
     // 枠連的中確率の計算
     let wakurenProb = 0;
-    frame1Horses.forEach(h1 => {
-      // h1が1着、h2が2着のケース
-      frame2Horses.forEach(h2 => {
-        const h2SecondProb = (h2.placeProb - h2.winProb) / 2; // 2着確率
-        wakurenProb += h1.winProb * h2SecondProb;
+
+    // 同じ枠の場合は、片方向の組み合わせのみを計算
+    if (wakuren.frame1 === wakuren.frame2) {
+      frame1Horses.forEach((h1, i) => {
+        frame2Horses.slice(i + 1).forEach(h2 => {
+          // h1が1着、h2が2着のケース
+          const h2SecondProb = (h2.placeProb - h2.winProb) / 2;
+          wakurenProb += h1.winProb * h2SecondProb;
+
+          // h2が1着、h1が2着のケース
+          const h1SecondProb = (h1.placeProb - h1.winProb) / 2;
+          wakurenProb += h2.winProb * h1SecondProb;
+        });
       });
-      
-      // h2が1着、h1が2着のケース
-      frame2Horses.forEach(h2 => {
-        const h1SecondProb = (h1.placeProb - h1.winProb) / 2; // 2着確率
-        wakurenProb += h2.winProb * h1SecondProb;
+    } else {
+      // 異なる枠の場合は、全ての組み合わせを計算
+      frame1Horses.forEach(h1 => {
+        frame2Horses.forEach(h2 => {
+          // h1が1着、h2が2着のケース
+          const h2SecondProb = (h2.placeProb - h2.winProb) / 2;
+          wakurenProb += h1.winProb * h2SecondProb;
+
+          // h2が1着、h1が2着のケース
+          const h1SecondProb = (h1.placeProb - h1.winProb) / 2;
+          wakurenProb += h2.winProb * h1SecondProb;
+        });
       });
-    });
+    }
 
     const wakurenEV = wakuren.odds * wakurenProb - 1;
     if (wakurenProb > 0 && wakurenEV > 0) {
@@ -119,7 +134,11 @@ export const calculateBetProposals = (
         prob: wakurenProb,
         ev: wakurenEV
       });
-      console.log(`枠連候補: ${wakuren.frame1}-${wakuren.frame2}, EV: ${wakurenEV.toFixed(2)}, Prob: ${(wakurenProb * 100).toFixed(2)}%`);
+      console.log(`枠連候補: ${wakuren.frame1}-${wakuren.frame2}`, {
+        オッズ: wakuren.odds.toFixed(1),
+        的中確率: (wakurenProb * 100).toFixed(2) + '%',
+        期待値: wakurenEV.toFixed(2)
+      });
     }
   });
 
