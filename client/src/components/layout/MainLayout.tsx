@@ -1,16 +1,8 @@
 import { Link } from "wouter";
-import { Clock, History, Settings } from "lucide-react";
-import { useState, useEffect } from 'react';
+import { History, Settings } from "lucide-react";
 import { SiJira } from "react-icons/si";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const [time, setTime] = useState(new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -26,12 +18,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <span className="font-bold text-2xl font-yuji">馬券戦略</span>
             </div>
           </Link>
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-muted-foreground" />
-            <span className="text-muted-foreground">
-              {time.toLocaleTimeString()}
-            </span>
-          </div>
         </div>
       </header>
 

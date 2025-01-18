@@ -88,15 +88,23 @@ export const calculateBetProposals = (
 
   // 枠連オプションの追加
   wakurenData.forEach(wakuren => {
-    // 対象の枠の馬の勝率を計算
+    // 対象の枠の馬を取得
     const frame1Horses = horses.filter(h => h.frame === wakuren.frame1);
     const frame2Horses = horses.filter(h => h.frame === wakuren.frame2);
     
-    // 枠連的中確率の計算（各枠の馬の勝率の積の合計）
+    // 枠連的中確率の計算
     let wakurenProb = 0;
     frame1Horses.forEach(h1 => {
+      // h1が1着、h2が2着のケース
       frame2Horses.forEach(h2 => {
-        wakurenProb += h1.winProb * h2.winProb;
+        const h2SecondProb = (h2.placeProb - h2.winProb) / 2; // 2着確率
+        wakurenProb += h1.winProb * h2SecondProb;
+      });
+      
+      // h2が1着、h1が2着のケース
+      frame2Horses.forEach(h2 => {
+        const h1SecondProb = (h1.placeProb - h1.winProb) / 2; // 2着確率
+        wakurenProb += h2.winProb * h1SecondProb;
       });
     });
 
@@ -111,7 +119,7 @@ export const calculateBetProposals = (
         prob: wakurenProb,
         ev: wakurenEV
       });
-      console.log(`枠連候補: ${wakuren.frame1}-${wakuren.frame2}, EV: ${wakurenEV.toFixed(2)}`);
+      console.log(`枠連候補: ${wakuren.frame1}-${wakuren.frame2}, EV: ${wakurenEV.toFixed(2)}, Prob: ${(wakurenProb * 100).toFixed(2)}%`);
     }
   });
 
