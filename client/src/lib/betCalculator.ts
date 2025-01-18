@@ -1,15 +1,17 @@
 interface BettingOption {
-  type: "単勝" | "複勝" | "枠連";
+  type: "単勝" | "複勝" | "枠連" | "馬連";
   horseName: string;
   odds: number;
   prob: number;
   ev: number;
   frame1: number;
   frame2: number;
+  horse1: number;
+  horse2: number;
 }
 
 export interface BetProposal {
-  type: "単勝" | "複勝" | "枠連";
+  type: "単勝" | "複勝" | "枠連" | "馬連";
   horses: string[];
   stake: number;
   expectedReturn: number;
@@ -30,7 +32,8 @@ export const calculateBetProposals = (
   horses: HorseData[], 
   totalBudget: number, 
   riskRatio: number, 
-  wakurenData: { frame1: number; frame2: number; odds: number; }[]
+  wakurenData: { frame1: number; frame2: number; odds: number; }[],
+  umarenData: { horse1: number; horse2: number; odds: number; }[]
 ): BetProposal[] => {
   const MIN_STAKE = 100;
   
@@ -64,7 +67,9 @@ export const calculateBetProposals = (
           prob: horse.winProb,
           ev: winEV,
           frame1: 0,
-          frame2: 0
+          frame2: 0,
+          horse1: 0,
+          horse2: 0
         });
       }
       
@@ -78,7 +83,9 @@ export const calculateBetProposals = (
             prob: horse.placeProb,
             ev: placeEV,
             frame1: 0,
-            frame2: 0
+            frame2: 0,
+            horse1: 0,
+            horse2: 0
           });
         }
       }
@@ -132,12 +139,53 @@ export const calculateBetProposals = (
         frame2: wakuren.frame2,
         odds: wakuren.odds,
         prob: wakurenProb,
-        ev: wakurenEV
+        ev: wakurenEV,
+        horse1: 0,
+        horse2: 0
       });
       console.log(`枠連候補: ${wakuren.frame1}-${wakuren.frame2}`, {
         オッズ: wakuren.odds.toFixed(1),
         的中確率: (wakurenProb * 100).toFixed(2) + '%',
         期待値: wakurenEV.toFixed(2)
+      });
+    }
+  });
+
+  // 馬連オプションの追加
+  umarenData.forEach(umaren => {
+    const horse1 = horses.find(h => h.number === umaren.horse1);
+    const horse2 = horses.find(h => h.number === umaren.horse2);
+    
+    if (!horse1 || !horse2) return;
+
+    // 馬連的中確率の計算
+    let umarenProb = 0;
+
+    // horse1が1着、horse2が2着のケース
+    const h2SecondProb = (horse2.placeProb - horse2.winProb) / 2;
+    umarenProb += horse1.winProb * h2SecondProb;
+
+    // horse2が1着、horse1が2着のケース
+    const h1SecondProb = (horse1.placeProb - horse1.winProb) / 2;
+    umarenProb += horse2.winProb * h1SecondProb;
+
+    const umarenEV = umaren.odds * umarenProb - 1;
+    if (umarenProb > 0 && umarenEV > 0) {
+      bettingOptions.push({
+        type: "馬連",
+        horseName: `${horse1.number}-${horse2.number}`,
+        frame1: horse1.frame,
+        frame2: horse2.frame,
+        horse1: horse1.number,
+        horse2: horse2.number,
+        odds: umaren.odds,
+        prob: umarenProb,
+        ev: umarenEV
+      });
+      console.log(`馬連候補: ${horse1.number}-${horse2.number}`, {
+        オッズ: umaren.odds.toFixed(1),
+        的中確率: (umarenProb * 100).toFixed(2) + '%',
+        期待値: umarenEV.toFixed(2)
       });
     }
   });
@@ -226,13 +274,15 @@ export const calculateBetProposals = (
     if (stake >= MIN_STAKE && stake <= remainingBudget) {
       remainingBudget -= stake;
       
-      // 枠連の場合は馬名の代わりに枠番を使用
+      // 馬連と枠連の場合は馬番または枠番のペアを表示
       const horses = option.type === "枠連" 
         ? [`${option.frame1}枠-${option.frame2}枠`]
+        : option.type === "馬連"
+        ? [`${option.horse1}番-${option.horse2}番`]
         : [option.horseName];
 
       proposals.push({
-        type: option.type as "単勝" | "複勝" | "枠連",
+        type: option.type as "単勝" | "複勝" | "枠連" | "馬連",
         horses,
         stake,
         expectedReturn: Math.floor(stake * option.odds),

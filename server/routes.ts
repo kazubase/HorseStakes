@@ -203,8 +203,15 @@ export function registerRoutes(app: Express): Server {
         odds: Number(odd.odds)
       }));
   
+      // 馬連データを追加
+      const umarenData = Object.values(latestUmarenOddsByHorses).map(odd => ({
+        horse1: odd.horse1,
+        horse2: odd.horse2,
+        odds: Number(odd.odds)
+      }));
+  
       // betCalculatorに計算を委譲
-      const strategies = calculateBetProposals(horseDataList, budget, riskRatio, wakurenData);
+      const strategies = calculateBetProposals(horseDataList, budget, riskRatio, wakurenData, umarenData);
   
       res.json(strategies);
     } catch (error) {
@@ -597,6 +604,39 @@ app.get("/api/wakuren-odds/latest/:raceId", async (req, res) => {
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: "Failed to fetch latest wakuren odds" });
+  }
+});
+
+  // 最新の馬連オッズを取得するエンドポイント
+app.get("/api/umaren-odds/latest/:raceId", async (req, res) => {
+  try {
+    const raceId = parseInt(req.params.raceId);
+    
+    const latestOdds = await db.select()
+      .from(umarenOdds)
+      .where(eq(umarenOdds.raceId, raceId))
+      .orderBy(sql`${umarenOdds.timestamp} desc`);
+
+    console.log(`Found ${latestOdds.length} umaren odds records for race ${raceId}`);
+    
+    if (latestOdds.length === 0) {
+      return res.json([]);
+    }
+
+    // horse1とhorse2の組み合わせでグループ化して、各組み合わせの最新のオッズのみを取得
+    const latestOddsByHorses = latestOdds.reduce((acc, curr) => {
+      const key = `${curr.horse1}-${curr.horse2}`;
+      if (!acc[key] || 
+          new Date(acc[key].timestamp) < new Date(curr.timestamp)) {
+        acc[key] = curr;
+      }
+      return acc;
+    }, {} as Record<string, typeof latestOdds[0]>);
+
+    res.json(Object.values(latestOddsByHorses));
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: "Failed to fetch latest umaren odds" });
   }
 });
 
