@@ -126,6 +126,12 @@ export function registerRoutes(app: Express): Server {
         .where(eq(fukuOdds.raceId, raceId))
         .orderBy(sql`${fukuOdds.timestamp} desc`);
   
+      // 最新の枠連オッズを取得
+      const latestWakurenOdds = await db.select()
+        .from(wakurenOdds)
+        .where(eq(wakurenOdds.raceId, raceId))
+        .orderBy(sql`${wakurenOdds.timestamp} desc`);
+  
       // 各馬の最新単勝オッズを取得
       const latestTanOddsByHorse = latestTanOdds.reduce((acc, curr) => {
         if (!acc[curr.horseId] || 
@@ -144,6 +150,16 @@ export function registerRoutes(app: Express): Server {
         return acc;
       }, {} as Record<number, typeof latestFukuOdds[0]>);
   
+      // 最新の枠連オッズをフィルタリング
+      const latestWakurenOddsByFrames = latestWakurenOdds.reduce((acc, curr) => {
+        const key = `${curr.frame1}-${curr.frame2}`;
+        if (!acc[key] || 
+            new Date(acc[key].timestamp) < new Date(curr.timestamp)) {
+          acc[key] = curr;
+        }
+        return acc;
+      }, {} as Record<string, typeof latestWakurenOdds[0]>);
+  
       // betCalculator用のデータを準備
       const horseDataList = raceHorses.map(horse => {
         const index = raceHorses.findIndex(h => h.id === horse.id);
@@ -158,14 +174,22 @@ export function registerRoutes(app: Express): Server {
         return {
           name: horse.name,
           odds: tanOdd ? Number(tanOdd.odds) : 0,
-          fukuOdds: fukuOddsAvg, // 新しく追加
+          fukuOdds: fukuOddsAvg,
           winProb: winProbs[horse.id] / 100,
-          placeProb: placeProbs[horse.id] / 100
+          placeProb: placeProbs[horse.id] / 100,
+          frame: horse.frame
         };
       });
   
+      // 枠連データを追加
+      const wakurenData = Object.values(latestWakurenOddsByFrames).map(odd => ({
+        frame1: odd.frame1,
+        frame2: odd.frame2,
+        odds: Number(odd.odds)
+      }));
+  
       // betCalculatorに計算を委譲
-      const strategies = calculateBetProposals(horseDataList, budget, riskRatio);
+      const strategies = calculateBetProposals(horseDataList, budget, riskRatio, wakurenData);
   
       res.json(strategies);
     } catch (error) {
@@ -524,6 +548,39 @@ app.get("/api/fuku-odds/latest/:raceId", async (req, res) => {
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: "Failed to fetch latest fuku odds" });
+  }
+});
+
+  // 最新の枠連オッズを取得するエンドポイント
+app.get("/api/wakuren-odds/latest/:raceId", async (req, res) => {
+  try {
+    const raceId = parseInt(req.params.raceId);
+    
+    const latestOdds = await db.select()
+      .from(wakurenOdds)
+      .where(eq(wakurenOdds.raceId, raceId))
+      .orderBy(sql`${wakurenOdds.timestamp} desc`);
+
+    console.log(`Found ${latestOdds.length} wakuren odds records for race ${raceId}`);
+    
+    if (latestOdds.length === 0) {
+      return res.json([]);
+    }
+
+    // frame1とframe2の組み合わせでグループ化して、各組み合わせの最新のオッズのみを取得
+    const latestOddsByFrames = latestOdds.reduce((acc, curr) => {
+      const key = `${curr.frame1}-${curr.frame2}`;
+      if (!acc[key] || 
+          new Date(acc[key].timestamp) < new Date(curr.timestamp)) {
+        acc[key] = curr;
+      }
+      return acc;
+    }, {} as Record<string, typeof latestOdds[0]>);
+
+    res.json(Object.values(latestOddsByFrames));
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: "Failed to fetch latest wakuren odds" });
   }
 });
 

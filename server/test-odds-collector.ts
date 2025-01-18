@@ -11,7 +11,7 @@ async function testOddsCollection() {
     await collector.initialize();
 
     // 中山競馬場の実際のレースID
-    const raceId = 202506010411;
+    const raceId = 202506010711;
     
     // まず、レースが存在するか確認
     const existingRace = await db.query.races.findFirst({
@@ -22,9 +22,9 @@ async function testOddsCollection() {
       console.log('Registering new race...');
       await db.insert(races).values({
         id: raceId,
-        name: `フェアリーS`,
+        name: `京成杯`,
         venue: "中山",
-        startTime: new Date('2025-01-12T15:45:00'),
+        startTime: new Date('2025-01-19T15:45:00'),
         status: "upcoming"
       });
       console.log('Race registered successfully');
@@ -38,16 +38,22 @@ async function testOddsCollection() {
     if (tanpukuOdds.length > 0) {
       // 馬のデータを先に登録
       for (const odds of tanpukuOdds) {
-        const existingHorse = await db.query.horses.findFirst({
-          where: eq(horses.name, odds.horseName)
-        });
-
-        if (!existingHorse) {
-          console.log(`Registering horse: ${odds.horseName}`);
-          await db.insert(horses).values({
-            name: odds.horseName,
-            raceId: raceId
+        try {
+          const existingHorse = await db.query.horses.findFirst({
+            where: eq(horses.name, odds.horseName)
           });
+
+          if (!existingHorse && odds.frame > 0) {  // 枠番が正しく取得できている場合のみ登録
+            console.log(`Registering horse: ${odds.horseName} (Frame: ${odds.frame}, Number: ${odds.number})`);
+            await db.insert(horses).values({
+              name: odds.horseName,
+              raceId: raceId,
+              frame: odds.frame,
+              number: odds.number
+            });
+          }
+        } catch (error) {
+          console.error(`Error registering horse ${odds.horseName}:`, error);
         }
       }
 

@@ -5,6 +5,8 @@ export const horses = pgTable("horses", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   raceId: bigint("race_id", { mode: "number" }).notNull(),
+  frame: integer("frame").notNull(),
+  number: integer("number").notNull(),
   createdAt: timestamp("created_at").defaultNow()
 });
 

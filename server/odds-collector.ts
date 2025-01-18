@@ -15,6 +15,8 @@ declare global {
 interface OddsData {
   horseId: number;
   horseName: string;
+  frame: number;
+  number: number;
   tanOdds: number;
   fukuOddsMin: number;
   fukuOddsMax: number;
@@ -121,14 +123,13 @@ export class OddsCollector {
     const oddsData: OddsData[] = [];
     const processedHorseIds = new Set<number>();
 
-    // デバッグ情報
-    console.log('Table exists:', $('table.basic.narrow-xy.tanpuku').length > 0);
-    console.log('Table rows:', $('table.basic.narrow-xy.tanpuku tr').length);
+    let currentFrame = 0;
+    let remainingRowspan = 0;
 
     $('table.basic.narrow-xy.tanpuku tr').each((_, element) => {
       const row = $(element);
       
-      // 馬番を取得（num クラスを使用）
+      // 馬番を取得
       const horseNumberCell = row.find('td.num');
       if (!horseNumberCell.length) return;
       
@@ -137,6 +138,28 @@ export class OddsCollector {
 
       const horseId = parseInt(horseNumber);
       if (processedHorseIds.has(horseId)) return;
+
+      // 枠番を取得
+      const wakuCell = row.find('td.waku');
+      if (wakuCell.length) {
+        // 新しい枠が始まる場合
+        const rowspanAttr = wakuCell.attr('rowspan');
+        remainingRowspan = rowspanAttr ? parseInt(rowspanAttr) : 1;
+        
+        // imgのsrcから枠番を取得
+        const wakuImg = wakuCell.find('img');
+        const wakuSrc = wakuImg.attr('src') || '';
+        const frameMatch = wakuSrc.match(/waku\/(\d+)\.png/);
+        currentFrame = frameMatch ? parseInt(frameMatch[1]) : 0;
+      } else {
+        // 同じ枠の2頭目以降の場合
+        remainingRowspan--;
+      }
+
+      if (currentFrame === 0) {
+        console.log('Warning: Failed to get frame number for horse:', horseId);
+        return;
+      }
 
       // 各セルのクラスを使用してデータを取得
       const horseName = row.find('td.horse a').text().trim();
@@ -155,6 +178,8 @@ export class OddsCollector {
         oddsData.push({
           horseId,
           horseName,
+          frame: currentFrame,
+          number: horseId,
           tanOdds,
           fukuOddsMin,
           fukuOddsMax,
