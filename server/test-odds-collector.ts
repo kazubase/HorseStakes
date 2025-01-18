@@ -43,7 +43,7 @@ async function testOddsCollection() {
             where: eq(horses.name, odds.horseName)
           });
 
-          if (!existingHorse && odds.frame > 0) {  // 枠番が正しく取得できている場合のみ登録
+          if (!existingHorse && odds.frame > 0) {
             console.log(`Registering horse: ${odds.horseName} (Frame: ${odds.frame}, Number: ${odds.number})`);
             await db.insert(horses).values({
               name: odds.horseName,
@@ -74,7 +74,7 @@ async function testOddsCollection() {
       console.log('Wakuren odds data saved successfully');
     }
 
-    // 馬連オッズの取得と保存を追加
+    // 馬連オッズの取得と保存
     console.log(`Collecting Umaren odds for race ID: ${raceId}`);
     const umarenOdds = await collector.collectOddsForBetType(raceId, 'umaren');
     console.log('Collected Umaren odds data:', umarenOdds);
@@ -85,11 +85,23 @@ async function testOddsCollection() {
       console.log('Umaren odds data saved successfully');
     }
 
+    // ワイドオッズの取得と保存を追加
+    console.log(`Collecting Wide odds for race ID: ${raceId}`);
+    const wideOdds = await collector.collectOddsForBetType(raceId, 'wide');
+    console.log('Collected Wide odds data:', wideOdds);
+    
+    if (wideOdds.length > 0) {
+      console.log('Saving Wide odds data...');
+      await collector.updateWideOdds(wideOdds);
+      console.log('Wide odds data saved successfully');
+    }
+
     // 収集結果のサマリーを表示
     console.log('\nCollection Summary:');
     console.log(`- Tanpuku odds collected: ${tanpukuOdds.length}`);
     console.log(`- Wakuren odds collected: ${wakurenOdds.length}`);
     console.log(`- Umaren odds collected: ${umarenOdds.length}`);
+    console.log(`- Wide odds collected: ${wideOdds.length}`);
 
   } catch (error) {
     console.error('Error during test:', error);

@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Browser, Page, chromium } from 'playwright';
 import { db } from '../db';
-import { horses, races, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds } from '../db/schema';
+import { horses, races, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds } from '../db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import * as cheerio from 'cheerio';
 
@@ -47,6 +47,16 @@ interface BetTypeConfig {
   parser: (html: string, raceId: number) => Promise<any[]>; // パーサー関数
 }
 
+// インターフェースの追加
+interface WideOddsData {
+  horse1: number;
+  horse2: number;
+  oddsMin: number;
+  oddsMax: number;
+  timestamp: Date;
+  raceId: number;
+}
+
 export class OddsCollector {
   private browser: Browser | null = null;
   
@@ -65,6 +75,11 @@ export class OddsCollector {
       tabName: '馬連',
       tableSelector: 'table.basic.narrow-xy.umaren',
       parser: this.parseUmarenOdds.bind(this)
+    },
+    wide: {
+      tabName: 'ワイド',
+      tableSelector: 'table.basic.narrow-xy.wide',
+      parser: this.parseWideOdds.bind(this)
     },
     // 他の馬券種別も同様に定義
   };
@@ -296,6 +311,59 @@ export class OddsCollector {
     return umarenOddsData;
   }
 
+  // パーサー関数の実装
+  private async parseWideOdds(html: string, raceId: number): Promise<WideOddsData[]> {
+    const $ = cheerio.load(html);
+    const wideOddsData: WideOddsData[] = [];
+
+    // 全てのワイドテーブルを処理
+    $('table.basic.narrow-xy.wide').each((_, table) => {
+      const $table = $(table);
+      
+      // テーブルのcaptionから軸となる馬番を取得
+      const captionText = $table.find('caption').text().trim();
+      const horse1 = parseInt(captionText);
+      
+      if (isNaN(horse1)) {
+        console.warn('Failed to parse horse1 number from caption:', captionText);
+        return;
+      }
+
+      // 各行を処理
+      $table.find('tbody tr').each((_, row) => {
+        const $row = $(row);
+        const horse2Text = $row.find('th').first().text().trim();
+        const horse2 = parseInt(horse2Text);
+
+        if (!isNaN(horse2)) {
+          // span.minとspan.maxから値を取得
+          const $odds = $row.find('td.odds');
+          const oddsMinText = $odds.find('span.min').text().trim();
+          const oddsMaxText = $odds.find('span.max').text().trim();
+          
+          if (oddsMinText && oddsMaxText) {
+            const oddsMin = parseFloat(oddsMinText.replace(/,/g, ''));
+            const oddsMax = parseFloat(oddsMaxText.replace(/,/g, ''));
+            
+            if (!isNaN(oddsMin) && !isNaN(oddsMax)) {
+              wideOddsData.push({
+                horse1,
+                horse2,
+                oddsMin,
+                oddsMax,
+                timestamp: new Date(),
+                raceId
+              });
+            }
+          }
+        }
+      });
+    });
+
+    console.log(`Collected total ${wideOddsData.length} wide odds combinations`);
+    return wideOddsData;
+  }
+
   async saveTanOddsHistory(odds: OddsData) {
     // 単勝オッズは履歴として保存
     await db.insert(tanOddsHistory).values({
@@ -390,6 +458,37 @@ export class OddsCollector {
     }
   }
 
+  async updateWideOdds(oddsDataArray: WideOddsData[]) {
+    for (const odds of oddsDataArray) {
+      const existing = await db.query.wideOdds.findFirst({
+        where: and(
+          eq(wideOdds.horse1, odds.horse1),
+          eq(wideOdds.horse2, odds.horse2),
+          eq(wideOdds.raceId, odds.raceId)
+        )
+      });
+
+      if (existing) {
+        await db.update(wideOdds)
+          .set({
+            oddsMin: odds.oddsMin.toString(),
+            oddsMax: odds.oddsMax.toString(),
+            timestamp: odds.timestamp
+          })
+          .where(eq(wideOdds.id, existing.id));
+      } else {
+        await db.insert(wideOdds).values({
+          horse1: odds.horse1,
+          horse2: odds.horse2,
+          oddsMin: odds.oddsMin.toString(),
+          oddsMax: odds.oddsMax.toString(),
+          timestamp: odds.timestamp,
+          raceId: odds.raceId
+        });
+      }
+    }
+  }
+
   async saveOddsHistory(oddsData: OddsData[]) {
     try {
       for (const odds of oddsData) {
@@ -421,6 +520,8 @@ export class OddsCollector {
                 await this.updateWakurenOdds(oddsData);
               } else if (betType === 'umaren') {
                 await this.updateUmarenOdds(oddsData);
+              } else if (betType === 'wide') {
+                await this.updateWideOdds(oddsData);
               } else {
                 await this.saveOddsHistory(oddsData);
               }
