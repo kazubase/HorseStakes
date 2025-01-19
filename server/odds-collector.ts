@@ -572,7 +572,10 @@ export class OddsCollector {
   async updateFukuOdds(odds: OddsData) {
     // 複勝オッズは更新（なければ挿入）
     const existing = await db.query.fukuOdds.findFirst({
-      where: eq(fukuOdds.horseId, odds.horseId)
+      where: and(
+        eq(fukuOdds.horseId, odds.horseId),
+        eq(fukuOdds.raceId, odds.raceId)
+      )
     });
 
     if (existing) {

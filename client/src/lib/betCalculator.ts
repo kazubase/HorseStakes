@@ -63,15 +63,37 @@ export const calculateBetProposals = (
     const options = [];
     
     // 単勝・複勝オプション（既存のコード）
-    if (horse.odds > 0) {
-      const winEV = horse.odds * horse.winProb - 1;
-      if (horse.winProb > 0 && winEV > 0) {
+    const winEV = horse.odds * horse.winProb - 1;
+    if (horse.winProb > 0 && winEV > 0) {
+      options.push({
+        type: "単勝",
+        horseName: `${horse.number} ${horse.name}`,
+        odds: horse.odds,
+        prob: horse.winProb,
+        ev: winEV,
+        frame1: 0,
+        frame2: 0,
+        frame3: 0,
+        horse1: 0,
+        horse2: 0,
+        horse3: 0
+      });
+      console.log(`単勝候補: ${horse.number} ${horse.name}`, {
+        オッズ: horse.odds.toFixed(1),
+        的中確率: (horse.winProb * 100).toFixed(2) + '%',
+        期待値: winEV.toFixed(2)
+      });
+    }
+    
+    if (horse.fukuOdds > 0) {
+      const placeEV = horse.fukuOdds * horse.placeProb - 1;
+      if (horse.placeProb > 0 && placeEV > 0) {
         options.push({
-          type: "単勝",
+          type: "複勝",
           horseName: `${horse.number} ${horse.name}`,
-          odds: horse.odds,
-          prob: horse.winProb,
-          ev: winEV,
+          odds: horse.fukuOdds,
+          prob: horse.placeProb,
+          ev: placeEV,
           frame1: 0,
           frame2: 0,
           frame3: 0,
@@ -79,25 +101,11 @@ export const calculateBetProposals = (
           horse2: 0,
           horse3: 0
         });
-      }
-      
-      if (horse.fukuOdds > 0) {
-        const placeEV = horse.fukuOdds * horse.placeProb - 1;
-        if (horse.placeProb > 0 && placeEV > 0) {
-          options.push({
-            type: "複勝",
-            horseName: `${horse.number} ${horse.name}`,
-            odds: horse.fukuOdds,
-            prob: horse.placeProb,
-            ev: placeEV,
-            frame1: 0,
-            frame2: 0,
-            frame3: 0,
-            horse1: 0,
-            horse2: 0,
-            horse3: 0
-          });
-        }
+        console.log(`複勝候補: ${horse.number} ${horse.name}`, {
+          オッズ: horse.fukuOdds.toFixed(1),
+          的中確率: (horse.placeProb * 100).toFixed(2) + '%',
+          期待値: placeEV.toFixed(2)
+        });
       }
     }
     return options;
