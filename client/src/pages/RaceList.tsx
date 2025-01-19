@@ -14,7 +14,7 @@ interface RaceVenue {
 
 const venues: RaceVenue[] = [
   { id: "中山", name: "中山" },
-  { id: "東京", name: "東京" },
+  { id: "中京", name: "中京" },
 ];
 
 export default function RaceList() {

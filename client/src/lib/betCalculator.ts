@@ -561,7 +561,7 @@ export const calculateBetProposals = (
   const finalBets = selectedBets.filter((_, i) => weights[i] >= MIN_WEIGHT);
   const finalWeights = weights.filter(w => w >= MIN_WEIGHT);
 
-  // 結果を投資額に変換
+  // 結果を投資額に変換し、ソート
   const proposals: BetProposal[] = finalBets.map((opt, i) => {
     const stake = Math.floor(totalBudget * finalWeights[i] / 100) * 100;
     return {
@@ -571,6 +571,27 @@ export const calculateBetProposals = (
       expectedReturn: Math.floor(stake * opt.odds),
       probability: opt.prob
     };
+  }).sort((a, b) => {
+    // 馬券種別の優先順位を定義
+    const typeOrder: Record<BetProposal['type'], number> = {
+      "単勝": 1,
+      "複勝": 2,
+      "枠連": 3,
+      "馬連": 4,
+      "ワイド": 5,
+      "馬単": 6,
+      "３連複": 7,
+      "３連単": 8
+    };
+    
+    // まず馬券種別でソート
+    const typeCompare = typeOrder[a.type] - typeOrder[b.type];
+    if (typeCompare !== 0) return typeCompare;
+    
+    // 同じ馬券種別の場合は馬番で昇順ソート
+    const aNumber = parseInt(a.horses[0].split(/[ →-]/)[0]);
+    const bNumber = parseInt(b.horses[0].split(/[ →-]/)[0]);
+    return aNumber - bNumber;
   });
 
   console.log('最終結果:', {
