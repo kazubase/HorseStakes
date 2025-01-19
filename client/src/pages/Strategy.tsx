@@ -289,7 +289,13 @@ export default function Strategy() {
                 {recommendedBets?.map((bet, index) => (
                   <TableRow key={index}>
                     <TableCell>{bet.type}</TableCell>
-                    <TableCell>{bet.horses.join(", ")}</TableCell>
+                    <TableCell>
+                      {bet.type === "単勝" || bet.type === "複勝" 
+                        ? bet.horses[0].split(" ").map((part, i) => 
+                            i === 0 ? `${part} ` : part
+                          ).join("")
+                        : bet.horses.join(", ")}
+                    </TableCell>
                     <TableCell className="text-right">
                       ¥{bet.stake.toLocaleString()}
                     </TableCell>

@@ -68,7 +68,7 @@ export const calculateBetProposals = (
       if (horse.winProb > 0 && winEV > 0) {
         options.push({
           type: "単勝",
-          horseName: horse.name,
+          horseName: `${horse.number} ${horse.name}`,
           odds: horse.odds,
           prob: horse.winProb,
           ev: winEV,
@@ -86,7 +86,7 @@ export const calculateBetProposals = (
         if (horse.placeProb > 0 && placeEV > 0) {
           options.push({
             type: "複勝",
-            horseName: horse.name,
+            horseName: `${horse.number} ${horse.name}`,
             odds: horse.fukuOdds,
             prob: horse.placeProb,
             ev: placeEV,
@@ -377,112 +377,193 @@ export const calculateBetProposals = (
   // デバッグ用：最適化対象の馬券一覧
   console.log('最適化対象馬券数:', bettingOptions.length);
 
-  // リスクリワード比率に応じた馬券候補の選択と最大選択数の調整
-  const preFilteredOptions = bettingOptions
-    .filter(opt => {
-      const minOdds = Math.max(1.0, riskRatio * 0.5);
-      const maxOdds = Math.min(999.9, riskRatio * 15);
-      
-      // リスクリワード比率に応じて最小確率を調整
-      // 高リスク時は低確率も許容
-      const minProbability = Math.max(0.005, 0.2 - (riskRatio * 0.015));
-      
-      // リスクリワード比率に応じて要求期待値を調整
-      // 高リスク時はより高い期待値を要求
-      const requiredEV = 0.1 + (riskRatio * 0.1);
-
-      return opt.odds >= minOdds && 
-             opt.odds <= maxOdds && 
-             opt.prob >= minProbability && 
-             opt.ev > requiredEV;
-    })
-    .sort((a, b) => b.ev - a.ev)
-    // リスクリワード比率に応じて選択数を制限
-    .slice(0, Math.max(2, Math.min(6, Math.ceil(12 / riskRatio))));
-
-  // 最適な組み合わせを見つける
-  const findOptimalWeights = (options: typeof preFilteredOptions) => {
-    // 最適化の評価関数を定義
-    const calculateSharpeRatio = (weights: number[]) => {
-      const returns = options.map((opt, i) => weights[i] * opt.odds * opt.prob);
-      const expectedReturn = returns.reduce((a, b) => a + b, 0) - weights.reduce((a, b) => a + b, 0);
-      
-      const variance = options.map((opt, i) => {
-        const r = opt.odds * weights[i];
-        return opt.prob * (1 - opt.prob) * r * r;
-      }).reduce((a, b) => a + b, 0);
-      
-      const risk = Math.sqrt(variance);
-
-      // リスクリワード比率に応じてリターンの重要度を調整
-      const returnWeight = Math.min(2.0, riskRatio / 5);
-      
-      // 高リスク時はリターンを重視、低リスク時はリスク調整後リターンを重視
-      return risk > 0 
-        ? (expectedReturn * returnWeight) / (risk * (2 - returnWeight))
-        : 0;
+  // 最適化の評価関数を修正
+  const findOptimalWeights = (options: typeof bettingOptions) => {
+    // 馬券種別ごとのリスク特性を定義
+    const getBetTypeRiskFactor = (type: string) => {
+      switch (type) {
+        case "単勝":
+          return 1.5;  // 単勝のリスク
+        case "複勝":
+          return 1.0;  // 基準
+        case "馬連":
+          return 3.2;  // 馬連のリスク
+        case "馬単":
+          return 3.9;  // 馬単のリスク
+        case "ワイド":
+          return 2.2;  // ワイドのリスク
+        case "３連複":
+          return 6.0;  // 3連複のリスク
+        case "３連単":
+          return 7.5;  // 3連単のリスク
+        default:
+          return 1.0;
+      }
     };
 
-    let bestWeights = options.map(() => 1 / options.length);
-    let bestSharpe = -Infinity;
-
-    // モンテカルロ法による最適化
-    for (let iter = 0; iter < 1000; iter++) {
-      // ランダムな重みを生成
-      const weights = options.map(() => Math.random());
-      const sum = weights.reduce((a, b) => a + b, 0);
-      const normalizedWeights = weights.map(w => w / sum);
-
-      // リターンとリスクの計算
-      const returns = options.map((opt, i) => normalizedWeights[i] * opt.odds * opt.prob);
-      const expectedReturn = returns.reduce((a, b) => a + b, 0) - normalizedWeights.reduce((a, b) => a + b, 0);
+    // ポートフォリオの評価関数
+    const calculatePortfolioMetrics = (bets: typeof options, weights: number[]) => {
+      if (bets.length === 0 || weights.length === 0) return null;
       
-      const variance = options.map((opt, i) => {
-        const r = opt.odds * normalizedWeights[i];
-        return opt.prob * (1 - opt.prob) * r * r;
-      }).reduce((a, b) => a + b, 0);
+      const totalInvestment = weights.reduce((a, b) => a + b, 0);
       
-      const risk = Math.sqrt(variance);
+      // 期待値の評価（馬券種別のリスク特性を考慮）
+      const totalEV = bets.reduce((sum, bet, i) => 
+        sum + weights[i] * bet.ev / getBetTypeRiskFactor(bet.type), 0);
+      
+      // 的中確率の評価
+      const hitProbability = 1 - bets.reduce((missProb, bet, i) => 
+        missProb * (1 - (bet.prob * weights[i])), 1);
 
-      // Sharpe比の計算
-      const sharpe = risk > 0 ? expectedReturn / risk : 0;
+      // 平均オッズ（馬券種別のリスク特性を考慮）
+      const adjustedOdds = bets.reduce((sum, bet, i) => 
+        sum + (bet.odds * weights[i] / getBetTypeRiskFactor(bet.type)), 0) / totalInvestment;
 
-      if (sharpe > bestSharpe) {
-        bestSharpe = sharpe;
-        bestWeights = normalizedWeights;
+      // リスクリワードとの整合性（許容範囲を拡大）
+      const oddsGap = Math.abs(adjustedOdds - riskRatio) / riskRatio;
+      const isWithinRiskRange = adjustedOdds <= riskRatio * 1.5; // 許容範囲を拡大
+
+      // 分散投資効果（馬券種別の多様性も評価）
+      const betTypes = new Set(bets.map(b => b.type));
+      const typeBonus = betTypes.size > 1 ? Math.log(betTypes.size) * 0.1 : 0;
+      const portfolioEffect = Math.log(bets.length) * 0.2 + typeBonus;
+
+      // 総合評価スコア
+      const score = isWithinRiskRange ? (
+        totalEV * 1.5 +           // 期待値（最重要）
+        hitProbability * 1.0 +    // 的中確率
+        portfolioEffect -         // 分散効果
+        oddsGap * 0.3            // リスクリワード整合性
+      ) : -Infinity;
+
+      return { 
+        totalEV,
+        hitProbability,
+        adjustedOdds,
+        portfolioEffect,
+        score,
+        isWithinRiskRange,
+        betTypes: Array.from(betTypes)
+      };
+    };
+
+    // 事前フィルタリング（統合版）
+    const preFilteredOptions = options
+      .filter(opt => {
+        const riskFactor = getBetTypeRiskFactor(opt.type);
         
-        console.log('改善発見:', {
-          iteration: iter,
-          sharpeRatio: sharpe.toFixed(3),
-          expectedReturn: (expectedReturn * 100).toFixed(1) + '%',
-          risk: (risk * 100).toFixed(1) + '%',
-          weights: options.map((opt, i) => ({
-            type: opt.type,
-            horse: opt.horseName,
-            weight: (normalizedWeights[i] * 100).toFixed(1) + '%'
-          }))
-        });
+        // オッズの制限
+        const minOdds = Math.max(1.0, riskRatio * 0.5);
+        const maxOdds = Math.min(99999.9, riskRatio * riskRatio * riskFactor * riskFactor); // 馬券種別に応じて上限を調整
+        
+        // リスクリワード比率に応じて最小確率を調整
+        const minProbability = Math.max(0.005, 0.2 - (riskRatio * 0.015));
+        
+        // 最低期待値
+        const minEV = 0.05;
+
+        return opt.odds >= minOdds && 
+               opt.odds <= maxOdds && 
+               opt.prob >= minProbability && 
+               opt.ev >= minEV;
+      })
+      .sort((a, b) => b.ev - a.ev);
+
+    // 馬券数の範囲設定を馬券種別のリスク特性に応じて調整
+    const getOptimalBetRange = (selectedBets: typeof options) => {
+      // 選択された馬券の平均リスクファクターを計算
+      const avgRiskFactor = selectedBets.reduce((sum, bet) => 
+        sum + getBetTypeRiskFactor(bet.type), 0) / selectedBets.length;
+      
+      // リスクファクターに応じて基準値を調整
+      const baseMinBets = Math.max(2, Math.floor(3 / Math.sqrt(riskRatio)));
+      const baseMaxBets = Math.max(baseMinBets + 1, Math.min(8, Math.ceil(12 / riskRatio)));
+      
+      // リスクファクターに応じて購入点数を増加
+      const riskAdjustment = Math.sqrt(avgRiskFactor);
+      const minBets = Math.max(baseMinBets, Math.floor(baseMinBets * riskAdjustment));
+      const maxBets = Math.max(minBets + 1, Math.floor(baseMaxBets * riskAdjustment));
+
+      return { minBets, maxBets };
+    };
+
+    let bestBets: typeof options = [];
+    let bestWeights: number[] = [];
+    let bestMetrics = null;
+
+    // 選択された馬券に応じて購入点数の範囲を動的に決定
+    const { minBets, maxBets } = getOptimalBetRange(preFilteredOptions);
+    
+    console.log('購入点数範囲:', {
+      最小点数: minBets,
+      最大点数: maxBets,
+      対象馬券数: preFilteredOptions.length,
+      平均リスク: preFilteredOptions.reduce((sum, bet) => 
+        sum + getBetTypeRiskFactor(bet.type), 0) / preFilteredOptions.length
+    });
+
+    for (let size = minBets; size <= maxBets; size++) {
+      for (let startIdx = 0; startIdx <= preFilteredOptions.length - size; startIdx++) {
+        const selectedBets = preFilteredOptions.slice(startIdx, startIdx + size);
+        
+        // 重みの最適化
+        for (let iter = 0; iter < 100; iter++) {
+          // より均一な重みの生成
+          const weights = selectedBets.map(() => 
+            0.6 + (Math.random() * 0.4)
+          );
+          const sum = weights.reduce((a, b) => a + b, 0);
+          const normalizedWeights = weights.map(w => w / sum);
+          
+          const metrics = calculatePortfolioMetrics(selectedBets, normalizedWeights);
+          if (!metrics || !metrics.isWithinRiskRange) continue;
+
+          const isBetter = !bestMetrics || metrics.score > bestMetrics.score;
+
+          if (isBetter) {
+            bestMetrics = metrics;
+            bestBets = selectedBets;
+            bestWeights = normalizedWeights;
+            
+            console.log('改善発見:', {
+              betsCount: size,
+              betTypes: metrics.betTypes,
+              adjustedOdds: metrics.adjustedOdds.toFixed(1) + '倍',
+              expectedValue: metrics.totalEV.toFixed(3),
+              hitProbability: (metrics.hitProbability * 100).toFixed(1) + '%',
+              portfolioEffect: metrics.portfolioEffect.toFixed(3),
+              score: metrics.score.toFixed(3),
+              bets: selectedBets.map((opt, i) => ({
+                type: opt.type,
+                horse: opt.horseName,
+                odds: opt.odds.toFixed(1),
+                prob: (opt.prob * 100).toFixed(1) + '%',
+                weight: (normalizedWeights[i] * 100).toFixed(1) + '%'
+              }))
+            });
+          }
+        }
       }
     }
 
-    return { weights: bestWeights, sharpeRatio: bestSharpe };
+    return {
+      selectedBets: bestBets,
+      weights: bestWeights,
+      sharpeRatio: bestMetrics?.score ?? -Infinity
+    };
   };
 
-  // 最適化の実行
-  const { weights: optimalWeights, sharpeRatio } = findOptimalWeights(preFilteredOptions);
+  // メイン処理
+  const { selectedBets, weights, sharpeRatio } = findOptimalWeights(bettingOptions);
 
   // 最小投資額でフィルタリング
   const MIN_WEIGHT = MIN_STAKE / totalBudget;
-  const finalBets = preFilteredOptions.filter((_, i) => optimalWeights[i] >= MIN_WEIGHT);
-  const finalWeights = optimalWeights.filter(w => w >= MIN_WEIGHT);
-
-  // 重みの再正規化
-  const weightSum = finalWeights.reduce((a, b) => a + b, 0);
-  const normalizedFinalWeights = finalWeights.map(w => w / weightSum);
+  const finalBets = selectedBets.filter((_, i) => weights[i] >= MIN_WEIGHT);
+  const finalWeights = weights.filter(w => w >= MIN_WEIGHT);
 
   // 結果を投資額に変換
   const proposals: BetProposal[] = finalBets.map((opt, i) => {
-    const stake = Math.floor(totalBudget * normalizedFinalWeights[i] / 100) * 100;
+    const stake = Math.floor(totalBudget * finalWeights[i] / 100) * 100;
     return {
       type: opt.type as BetProposal['type'],
       horses: [opt.horseName],
