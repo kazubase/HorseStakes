@@ -127,22 +127,14 @@ export default function Home() {
         </Card>
 
         {/* 予想確率入力ボタン */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="flex justify-center">
           <Button 
             size="lg" 
-            className="w-full h-16"
+            className="w-full max-w-md h-16"
             onClick={() => window.location.href = `/predict/win/${id}`}
           >
             <Trophy className="mr-2 h-5 w-5" />
             単勝予想
-          </Button>
-          <Button 
-            size="lg" 
-            className="w-full h-16"
-            onClick={() => window.location.href = `/predict/place/${id}`}
-          >
-            <Target className="mr-2 h-5 w-5" />
-            複勝予想
           </Button>
         </div>
       </div>
