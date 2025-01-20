@@ -195,28 +195,28 @@ export function registerRoutes(app: Express): Server {
       // betCalculator用のデータを準備
       const horseDataList = raceHorses.map(horse => {
         const tanOdd = latestTanOddsByHorse[horse.number];
-        const fukuOdd = latestFukuOddsByHorse[horse.number];
-        const wideOdd = latestWideOddsByHorses[horse.number];
         
-        const fukuOddsAvg = fukuOdd 
-          ? Math.round(((Number(fukuOdd.oddsMin) + Number(fukuOdd.oddsMax)) / 2) * 10) / 10
-          : 0;
-
-        const wideOddsAvg = wideOdd
-          ? Math.round(((Number(wideOdd.oddsMin) + Number(wideOdd.oddsMax)) / 2) * 10) / 10
-          : 0;
-  
         return {
           name: horse.name,
           odds: tanOdd ? Number(tanOdd.odds) : 0,
-          fukuOdds: fukuOddsAvg,
-          wideOdds: wideOddsAvg,
           winProb: winProbs[horse.id] / 100,
           placeProb: placeProbs[horse.id] / 100,
           frame: horse.frame,
           number: horse.number
         };
       });
+
+      // 複勝データを追加
+      const fukuData = Object.values(latestFukuOddsByHorse).map(odd => {
+        const horse = raceHorses.find(h => h.number === odd.horseId);
+        if (!horse) return null;
+        
+        return {
+          horse1: odd.horseId,
+          oddsMin: Number(odd.oddsMin),
+          oddsMax: Number(odd.oddsMax)
+        };
+      }).filter((odd): odd is NonNullable<typeof odd> => odd !== null);
   
       // 枠連データを追加
       const wakurenData = Object.values(latestWakurenOddsByFrames).map(odd => ({
@@ -316,6 +316,7 @@ export function registerRoutes(app: Express): Server {
         horseDataList, 
         budget, 
         riskRatio, 
+        fukuData,
         wakurenData, 
         umarenData,
         wideData,

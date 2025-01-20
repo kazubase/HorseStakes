@@ -11,7 +11,7 @@ async function testOddsCollection() {
     await collector.initialize();
 
     // 中山競馬場の実際のレースID
-    const raceId = 202507010711;
+    const raceId = 202506010711;
     
     // まず、レースが存在するか確認
     const existingRace = await db.query.races.findFirst({
@@ -22,9 +22,9 @@ async function testOddsCollection() {
       console.log('Registering new race...');
       await db.insert(races).values({
         id: raceId,
-        name: `日経新春杯`,
-        venue: "中京",
-        startTime: new Date('2025-01-19T15:30:00'),
+        name: `京成杯`,
+        venue: "中山",
+        startTime: new Date('2025-01-19T15:45:00'),
         status: "upcoming"
       });
       console.log('Race registered successfully');

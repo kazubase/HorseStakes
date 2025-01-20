@@ -23,7 +23,6 @@ export interface BetProposal {
 export interface HorseData {
   name: string;
   odds: number;
-  fukuOdds: number;
   winProb: number;
   placeProb: number;
   frame: number;
@@ -34,6 +33,7 @@ export const calculateBetProposals = (
   horses: HorseData[], 
   totalBudget: number, 
   riskRatio: number, 
+  fukuData: { horse1: number; oddsMin: number; oddsMax: number; }[],
   wakurenData: { frame1: number; frame2: number; odds: number; }[],
   umarenData: { horse1: number; horse2: number; odds: number; }[],
   wideData: { horse1: number; horse2: number; oddsMin: number; oddsMax: number; }[],
@@ -50,7 +50,6 @@ export const calculateBetProposals = (
     horses: horses.map(h => ({
       name: h.name,
       odds: h.odds,
-      fukuOdds: h.fukuOdds,
       winProb: (h.winProb * 100).toFixed(1) + '%',
       placeProb: (h.placeProb * 100).toFixed(1) + '%'
     })),
@@ -62,7 +61,7 @@ export const calculateBetProposals = (
   const bettingOptions = horses.flatMap(horse => {
     const options = [];
     
-    // 単勝・複勝オプション（既存のコード）
+    // 単勝オプション
     const winEV = horse.odds * horse.winProb - 1;
     if (horse.winProb > 0 && winEV > 0) {
       options.push({
@@ -84,31 +83,37 @@ export const calculateBetProposals = (
         期待値: winEV.toFixed(2)
       });
     }
-    
-    if (horse.fukuOdds > 0) {
-      const placeEV = horse.fukuOdds * horse.placeProb - 1;
-      if (horse.placeProb > 0 && placeEV > 0) {
-        options.push({
-          type: "複勝",
-          horseName: `${horse.number} ${horse.name}`,
-          odds: horse.fukuOdds,
-          prob: horse.placeProb,
-          ev: placeEV,
-          frame1: 0,
-          frame2: 0,
-          frame3: 0,
-          horse1: 0,
-          horse2: 0,
-          horse3: 0
-        });
-        console.log(`複勝候補: ${horse.number} ${horse.name}`, {
-          オッズ: horse.fukuOdds.toFixed(1),
-          的中確率: (horse.placeProb * 100).toFixed(2) + '%',
-          期待値: placeEV.toFixed(2)
-        });
-      }
-    }
     return options;
+  });
+
+  // 複勝オプションの追加
+  fukuData.forEach(fuku => {
+    const horse = horses.find(h => h.number === fuku.horse1);
+    if (!horse) return;
+
+    const avgOdds = (fuku.oddsMin + fuku.oddsMax) / 2;
+    const placeEV = avgOdds * horse.placeProb - 1;
+
+    if (horse.placeProb > 0 && placeEV > 0) {
+      bettingOptions.push({
+        type: "複勝",
+        horseName: `${horse.number} ${horse.name}`,
+        odds: avgOdds,
+        prob: horse.placeProb,
+        ev: placeEV,
+        frame1: 0,
+        frame2: 0,
+        frame3: 0,
+        horse1: 0,
+        horse2: 0,
+        horse3: 0
+      });
+      console.log(`複勝候補: ${horse.number} ${horse.name}`, {
+        オッズ: avgOdds.toFixed(1),
+        的中確率: (horse.placeProb * 100).toFixed(2) + '%',
+        期待値: placeEV.toFixed(2)
+      });
+    }
   });
 
   // 枠連オプションの追加
@@ -415,43 +420,46 @@ export const calculateBetProposals = (
       
       const totalInvestment = weights.reduce((a, b) => a + b, 0);
       
-      // 期待値の評価（馬券種別のリスク特性を考慮）
-      const totalEV = bets.reduce((sum, bet, i) => 
-        sum + weights[i] * bet.ev / getBetTypeRiskFactor(bet.type), 0);
+      // 期待リターンの計算（馬券種別のリスク特性を考慮）
+      const returns = bets.map((bet, i) => 
+        weights[i] * (bet.odds - 1) * bet.prob / getBetTypeRiskFactor(bet.type)
+      );
+      const expectedReturn = returns.reduce((a, b) => a + b, 0);
       
-      // 的中確率の評価
-      const hitProbability = 1 - bets.reduce((missProb, bet, i) => 
-        missProb * (1 - (bet.prob * weights[i])), 1);
+      // リスク（標準偏差）の計算
+      const variance = bets.map((bet, i) => {
+        const r = (bet.odds - 1) * weights[i] / getBetTypeRiskFactor(bet.type);
+        return bet.prob * (1 - bet.prob) * r * r;
+      }).reduce((a, b) => a + b, 0);
+      
+      const risk = Math.sqrt(variance);
+      const sharpeRatio = risk > 0 ? expectedReturn / risk : 0;
 
-      // 平均オッズ（馬券種別のリスク特性を考慮）
-      const adjustedOdds = bets.reduce((sum, bet, i) => 
-        sum + (bet.odds * weights[i] / getBetTypeRiskFactor(bet.type)), 0) / totalInvestment;
+      // 目標リターンとの整合性
+      const returnDifference = Math.abs(expectedReturn - riskRatio) / riskRatio;
+      const isWithinRiskRange = expectedReturn <= riskRatio * 1.5;
 
-      // リスクリワードとの整合性（許容範囲を拡大）
-      const oddsGap = Math.abs(adjustedOdds - riskRatio) / riskRatio;
-      const isWithinRiskRange = adjustedOdds <= riskRatio * 1.5; // 許容範囲を拡大
-
-      // 分散投資効果（馬券種別の多様性も評価）
+      // 分散投資効果（効果を抑制）
       const betTypes = new Set(bets.map(b => b.type));
-      const typeBonus = betTypes.size > 1 ? Math.log(betTypes.size) * 0.1 : 0;
-      const portfolioEffect = Math.log(bets.length) * 0.2 + typeBonus;
+      const typeBonus = betTypes.size > 1 ? Math.log(betTypes.size) * 0.05 : 0;  // 0.1 → 0.05
+      const portfolioEffect = Math.log(bets.length) * 0.1 + typeBonus;  // 0.2 → 0.1
 
-      // 総合評価スコア
+      // 総合評価スコア（Sharpe比の重みを増加）
       const score = isWithinRiskRange ? (
-        totalEV * 1.5 +           // 期待値（最重要）
-        hitProbability * 1.0 +    // 的中確率
-        portfolioEffect -         // 分散効果
-        oddsGap * 0.3            // リスクリワード整合性
+        sharpeRatio * 4.0 +        // 2.0 → 4.0 Sharpe比の重みを倍増
+        portfolioEffect -          // 分散効果を半減
+        returnDifference * 1.0     // 0.5 → 1.0 リターン整合性の重みを増加
       ) : -Infinity;
 
       return { 
-        totalEV,
-        hitProbability,
-        adjustedOdds,
+        sharpeRatio,
+        expectedReturn,
+        risk,
         portfolioEffect,
         score,
         isWithinRiskRange,
-        betTypes: Array.from(betTypes)
+        betTypes: Array.from(betTypes),
+        betsCount: bets.length
       };
     };
 
@@ -477,142 +485,166 @@ export const calculateBetProposals = (
       })
       .sort((a, b) => b.ev - a.ev);
 
-    // 馬券数の範囲設定を馬券種別のリスク特性に応じて調整
-    const getOptimalBetRange = (selectedBets: typeof options) => {
-      // 選択された馬券の平均リスクファクターを計算
-      const avgRiskFactor = selectedBets.reduce((sum, bet) => 
-        sum + getBetTypeRiskFactor(bet.type), 0) / selectedBets.length;
+    // 馬券種別ごとの選択数を調整
+    const adjustBetsByType = (options: typeof preFilteredOptions) => {
+      // 馬券種別ごとの最小・最大点数を定義
+      const betTypeRanges: Record<BetProposal['type'], { min: number; max: number }> = {
+        "複勝": { min: 1, max: 2 },
+        "単勝": { min: 2, max: 3 },
+        "枠連": { min: 2, max: 4 },
+        "馬連": { min: 2, max: 6 },
+        "ワイド": { min: 2, max: 8 },
+        "馬単": { min: 3, max: 12 },
+        "３連複": { min: 3, max: 16 },
+        "３連単": { min: 4, max: 32 }
+      };
       
-      // リスクファクターに応じて基準値を調整
-      const baseMinBets = Math.max(2, Math.floor(3 / Math.sqrt(riskRatio)));
-      const baseMaxBets = Math.max(baseMinBets + 1, Math.min(8, Math.ceil(12 / riskRatio)));
-      
-      // リスクファクターに応じて購入点数を増加
-      const riskAdjustment = Math.sqrt(avgRiskFactor);
-      const minBets = Math.max(baseMinBets, Math.floor(baseMinBets * riskAdjustment));
-      const maxBets = Math.max(minBets + 1, Math.floor(baseMaxBets * riskAdjustment));
+      // 馬券種別にグループ化
+      const betsByType = options.reduce((acc, bet) => {
+        if (!acc[bet.type]) acc[bet.type] = [];
+        acc[bet.type].push(bet);
+        return acc;
+      }, {} as Record<string, typeof options>);
 
-      return { minBets, maxBets };
+      // 各馬券種の選択数を調整
+      let adjustedOptions: typeof options = [];
+      Object.entries(betsByType).forEach(([type, bets]) => {
+        const range = betTypeRanges[type as BetProposal['type']];
+        
+        // 利用可能な候補数と設定された範囲から適切な選択数を決定
+        const selectionCount = Math.min(
+          bets.length,  // 利用可能な候補数を超えない
+          Math.max(
+            range.min,  // 最小点数は必ず確保
+            Math.min(range.max, bets.length)  // 最大点数を超えない
+          )
+        );
+
+        // 期待値順で上位n件を選択
+        adjustedOptions = adjustedOptions.concat(bets.slice(0, selectionCount));
+        
+        console.log(`馬券種別選択数調整: ${type}`, {
+          設定範囲: `${range.min}～${range.max}点`,
+          候補数: bets.length,
+          選択数: selectionCount,
+          選択された馬券: bets.slice(0, selectionCount).map(b => ({
+            馬番組合せ: b.horseName,
+            期待値: b.ev.toFixed(3)
+          }))
+        });
+      });
+
+      return adjustedOptions.sort((a, b) => b.ev - a.ev);
     };
+
+    // 馬券種別ごとの選択数を調整
+    const adjustedOptions = adjustBetsByType(preFilteredOptions);
+
+    console.log('購入点数範囲:', {
+      調整後の対象馬券数: adjustedOptions.length,
+      馬券種別構成: Object.entries(
+        adjustedOptions.reduce((acc, bet) => {
+          acc[bet.type] = (acc[bet.type] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      )
+    });
 
     let bestBets: typeof options = [];
     let bestWeights: number[] = [];
     let bestMetrics = null;
 
-    // 選択された馬券に応じて購入点数の範囲を動的に決定
-    const { minBets, maxBets } = getOptimalBetRange(preFilteredOptions);
-    
-    console.log('購入点数範囲:', {
-      最小点数: minBets,
-      最大点数: maxBets,
-      対象馬券数: preFilteredOptions.length,
-      平均リスク: preFilteredOptions.reduce((sum, bet) => 
-        sum + getBetTypeRiskFactor(bet.type), 0) / preFilteredOptions.length
-    });
+    // 最適な組み合わせを探索（より少ない点数から開始）
+    for (let size = Math.min(5, adjustedOptions.length); size <= adjustedOptions.length; size++) {
+      for (let iter = 0; iter < 100; iter++) {  // イテレーション回数を増加
+        // ランダムに馬券を選択（馬券種別の構成を維持）
+        const selectedBets = adjustedOptions
+          .sort(() => Math.random() - 0.5)
+          .slice(0, size);
 
-    for (let size = minBets; size <= maxBets; size++) {
-      for (let startIdx = 0; startIdx <= preFilteredOptions.length - size; startIdx++) {
-        const selectedBets = preFilteredOptions.slice(startIdx, startIdx + size);
-        
         // 重みの最適化
-        for (let iter = 0; iter < 100; iter++) {
-          // より均一な重みの生成
-          const weights = selectedBets.map(() => 
-            0.6 + (Math.random() * 0.4)
-          );
-          const sum = weights.reduce((a, b) => a + b, 0);
-          const normalizedWeights = weights.map(w => w / sum);
+        const weights = selectedBets.map(() => 0.6 + (Math.random() * 0.4));
+        const sum = weights.reduce((a, b) => a + b, 0);
+        const normalizedWeights = weights.map(w => w / sum);
+        
+        const metrics = calculatePortfolioMetrics(selectedBets, normalizedWeights);
+        if (!metrics || !metrics.isWithinRiskRange) continue;
+
+        const isBetter = !bestMetrics || metrics.score > bestMetrics.score;
+
+        if (isBetter) {
+          bestMetrics = metrics;
+          bestBets = selectedBets;
+          bestWeights = normalizedWeights;
           
-          const metrics = calculatePortfolioMetrics(selectedBets, normalizedWeights);
-          if (!metrics || !metrics.isWithinRiskRange) continue;
-
-          const isBetter = !bestMetrics || metrics.score > bestMetrics.score;
-
-          if (isBetter) {
-            bestMetrics = metrics;
-            bestBets = selectedBets;
-            bestWeights = normalizedWeights;
-            
-            console.log('改善発見:', {
-              betsCount: size,
-              betTypes: metrics.betTypes,
-              adjustedOdds: metrics.adjustedOdds.toFixed(1) + '倍',
-              expectedValue: metrics.totalEV.toFixed(3),
-              hitProbability: (metrics.hitProbability * 100).toFixed(1) + '%',
-              portfolioEffect: metrics.portfolioEffect.toFixed(3),
-              score: metrics.score.toFixed(3),
-              bets: selectedBets.map((opt, i) => ({
-                type: opt.type,
-                horse: opt.horseName,
-                odds: opt.odds.toFixed(1),
-                prob: (opt.prob * 100).toFixed(1) + '%',
-                weight: (normalizedWeights[i] * 100).toFixed(1) + '%'
-              }))
-            });
-          }
+          console.log('改善発見:', {
+            betsCount: selectedBets.length,
+            betTypes: metrics.betTypes,
+            adjustedOdds: metrics.expectedReturn.toFixed(3),
+            sharpeRatio: metrics.sharpeRatio.toFixed(3),
+            risk: metrics.risk.toFixed(3),
+            portfolioEffect: metrics.portfolioEffect.toFixed(3),
+            score: metrics.score.toFixed(3)
+          });
         }
       }
     }
 
-    return {
-      selectedBets: bestBets,
-      weights: bestWeights,
-      sharpeRatio: bestMetrics?.score ?? -Infinity
-    };
+    // 最小投資額でフィルタリング
+    const MIN_WEIGHT = MIN_STAKE / totalBudget;
+    const finalBets = bestBets.filter((_, i) => bestWeights[i] >= MIN_WEIGHT);
+    const finalWeights = bestWeights.filter(w => w >= MIN_WEIGHT);
+
+    // 結果を投資額に変換し、ソート
+    const proposals: BetProposal[] = finalBets.map((opt, i) => {
+      const stake = Math.floor(totalBudget * finalWeights[i] / 100) * 100;
+      return {
+        type: opt.type as BetProposal['type'],
+        horses: [opt.horseName],
+        stake,
+        expectedReturn: Math.floor(stake * opt.odds),
+        probability: opt.prob
+      };
+    }).sort((a, b) => {
+      // 馬券種別の優先順位を定義
+      const typeOrder: Record<BetProposal['type'], number> = {
+        "単勝": 1,
+        "複勝": 2,
+        "枠連": 3,
+        "馬連": 4,
+        "ワイド": 5,
+        "馬単": 6,
+        "３連複": 7,
+        "３連単": 8
+      };
+      
+      // まず馬券種別でソート
+      const typeCompare = typeOrder[a.type] - typeOrder[b.type];
+      if (typeCompare !== 0) return typeCompare;
+      
+      // 同じ馬券種別の場合は馬番で昇順ソート
+      const aNumber = parseInt(a.horses[0].split(/[ →-]/)[0]);
+      const bNumber = parseInt(b.horses[0].split(/[ →-]/)[0]);
+      return aNumber - bNumber;
+    });
+
+    console.log('最終結果:', {
+      sharpeRatio: bestMetrics?.score ?? -Infinity,
+      totalBets: proposals.length,
+      bets: proposals.map(p => ({
+        type: p.type,
+        horses: p.horses,
+        stake: p.stake,
+        expectedReturn: p.expectedReturn,
+        probability: (p.probability * 100).toFixed(1) + '%'
+      }))
+    });
+
+    return proposals;
   };
 
   // メイン処理
-  const { selectedBets, weights, sharpeRatio } = findOptimalWeights(bettingOptions);
-
-  // 最小投資額でフィルタリング
-  const MIN_WEIGHT = MIN_STAKE / totalBudget;
-  const finalBets = selectedBets.filter((_, i) => weights[i] >= MIN_WEIGHT);
-  const finalWeights = weights.filter(w => w >= MIN_WEIGHT);
-
-  // 結果を投資額に変換し、ソート
-  const proposals: BetProposal[] = finalBets.map((opt, i) => {
-    const stake = Math.floor(totalBudget * finalWeights[i] / 100) * 100;
-    return {
-      type: opt.type as BetProposal['type'],
-      horses: [opt.horseName],
-      stake,
-      expectedReturn: Math.floor(stake * opt.odds),
-      probability: opt.prob
-    };
-  }).sort((a, b) => {
-    // 馬券種別の優先順位を定義
-    const typeOrder: Record<BetProposal['type'], number> = {
-      "単勝": 1,
-      "複勝": 2,
-      "枠連": 3,
-      "馬連": 4,
-      "ワイド": 5,
-      "馬単": 6,
-      "３連複": 7,
-      "３連単": 8
-    };
-    
-    // まず馬券種別でソート
-    const typeCompare = typeOrder[a.type] - typeOrder[b.type];
-    if (typeCompare !== 0) return typeCompare;
-    
-    // 同じ馬券種別の場合は馬番で昇順ソート
-    const aNumber = parseInt(a.horses[0].split(/[ →-]/)[0]);
-    const bNumber = parseInt(b.horses[0].split(/[ →-]/)[0]);
-    return aNumber - bNumber;
-  });
-
-  console.log('最終結果:', {
-    sharpeRatio: sharpeRatio.toFixed(3),
-    totalBets: proposals.length,
-    bets: proposals.map(p => ({
-      type: p.type,
-      horses: p.horses,
-      stake: p.stake,
-      expectedReturn: p.expectedReturn,
-      probability: (p.probability * 100).toFixed(1) + '%'
-    }))
-  });
+  const proposals = findOptimalWeights(bettingOptions);
 
   return proposals;
 };

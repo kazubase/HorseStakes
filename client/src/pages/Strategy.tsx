@@ -146,10 +146,17 @@ export default function Strategy() {
         odds: Number(odd.odds)
       }));
 
+      const fukuData = latestFukuOdds?.map(odd => ({
+        horse1: odd.horseId,
+        oddsMin: Number(odd.oddsMin),
+        oddsMax: Number(odd.oddsMax)
+      })) || [];
+
       return calculateBetProposals(
         horseDataList, 
         budget, 
         riskRatio, 
+        fukuData,
         wakurenData, 
         umarenData, 
         wideData,
