@@ -91,7 +91,8 @@ export const calculateBetProposals = (
     const horse = horses.find(h => h.number === fuku.horse1);
     if (!horse) return;
 
-    const avgOdds = (fuku.oddsMin + fuku.oddsMax) / 2;
+    // 複勝の平均オッズ計算
+    const avgOdds = Math.round(((fuku.oddsMin + fuku.oddsMax) / 2) * 10) / 10;
     const placeEV = avgOdds * horse.placeProb - 1;
 
     if (horse.placeProb > 0 && placeEV > 0) {
@@ -227,8 +228,8 @@ export const calculateBetProposals = (
     // ワイド的中確率の計算（両方が複勝圏内に入る確率）
     const wideProb = horse1.placeProb * horse2.placeProb;
 
-    // オッズは最小値と最大値の平均を使用
-    const avgOdds = (wide.oddsMin + wide.oddsMax) / 2;
+    // ワイドの平均オッズ計算
+    const avgOdds = Math.round(((wide.oddsMin + wide.oddsMax) / 2) * 10) / 10;
     const wideEV = avgOdds * wideProb - 1;
 
     if (wideProb > 0 && wideEV > 0) {
@@ -399,12 +400,14 @@ export const calculateBetProposals = (
           return 1.5;  // 単勝のリスク
         case "複勝":
           return 1.0;  // 基準
+        case "枠連":
+          return 2.0;  // 枠連のリスク
         case "馬連":
           return 3.2;  // 馬連のリスク
-        case "馬単":
-          return 3.9;  // 馬単のリスク
         case "ワイド":
           return 2.2;  // ワイドのリスク
+        case "馬単":
+          return 3.9;  // 馬単のリスク
         case "３連複":
           return 6.0;  // 3連複のリスク
         case "３連単":
@@ -489,14 +492,14 @@ export const calculateBetProposals = (
     const adjustBetsByType = (options: typeof preFilteredOptions) => {
       // 馬券種別ごとの最小・最大点数を定義
       const betTypeRanges: Record<BetProposal['type'], { min: number; max: number }> = {
-        "複勝": { min: 1, max: 2 },
-        "単勝": { min: 2, max: 3 },
-        "枠連": { min: 2, max: 4 },
-        "馬連": { min: 2, max: 6 },
-        "ワイド": { min: 2, max: 8 },
-        "馬単": { min: 3, max: 12 },
-        "３連複": { min: 3, max: 16 },
-        "３連単": { min: 4, max: 32 }
+        "複勝": { min: 0, max: 2 },
+        "単勝": { min: 0, max: 3 },
+        "枠連": { min: 0, max: 4 },
+        "馬連": { min: 0, max: 6 },
+        "ワイド": { min: 0, max: 4 },
+        "馬単": { min: 0, max: 8 },
+        "３連複": { min: 0, max: 12 },
+        "３連単": { min: 0, max: 15 }
       };
       
       // 馬券種別にグループ化
