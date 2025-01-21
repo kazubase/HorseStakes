@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,8 +9,10 @@ import { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, Uma
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import RiskAssessment from "@/components/RiskAssessment";
 import { Progress } from "@/components/ui/progress";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { calculateBetProposals, type BetProposal } from '@/lib/betCalculator';
+import { getGeminiStrategy, type BettingCandidate, type GeminiResponse, DetailedGeminiResponse, SummarizedGeminiResponse } from '@/lib/geminiApi';
+import { BettingStrategyTable } from "@/components/BettingStrategyTable";
 
 interface RecommendedBet {
   type: string;
@@ -19,6 +21,180 @@ interface RecommendedBet {
   expectedReturn: number;
   probability: number;
 }
+
+interface GeminiStrategyProps {
+  recommendedBets: BetProposal[] | undefined;
+  budget: number;
+}
+
+interface GeminiStrategyState {
+  detailed: DetailedGeminiResponse | null;
+  summarized: SummarizedGeminiResponse | null;
+  isLoading: boolean;
+  error: string | null;
+  isRequesting: boolean;
+}
+
+const GeminiStrategy = ({ recommendedBets, budget }: GeminiStrategyProps) => {
+  const { id } = useParams();
+  const [state, setState] = useState<GeminiStrategyState>({
+    detailed: null,
+    summarized: null,
+    isLoading: false,
+    error: null,
+    isRequesting: false
+  });
+
+  const { data: horses } = useQuery<Horse[]>({
+    queryKey: [`/api/horses/${id}`],
+    enabled: !!id,
+  });
+
+  const { data: latestOdds } = useQuery<TanOddsHistory[]>({
+    queryKey: [`/api/tan-odds-history/latest/${id}`],
+    enabled: !!id,
+  });
+
+  const winProbsStr = new URLSearchParams(window.location.search).get("winProbs") || "{}";
+  const placeProbsStr = new URLSearchParams(window.location.search).get("placeProbs") || "{}";
+  
+  const winProbs = JSON.parse(winProbsStr);
+  const placeProbs = JSON.parse(placeProbsStr);
+
+  useEffect(() => {
+    const fetchGeminiStrategy = async () => {
+      if (state.isRequesting || !recommendedBets?.length || !horses) return;
+
+      try {
+        setState(prev => ({ ...prev, isRequesting: true, isLoading: true, error: null }));
+        
+        const allBettingOptions = {
+          horses: horses.map((horse: Horse) => ({
+            name: horse.name,
+            odds: Number(latestOdds?.find((odd: TanOddsHistory) => Number(odd.horseId) === horse.number)?.odds || 0),
+            winProb: winProbs[horse.id],
+            placeProb: placeProbs[horse.id]
+          })),
+          winBets: recommendedBets?.filter(bet => bet.type === '単勝'),
+          placeBets: recommendedBets?.filter(bet => bet.type === '複勝'),
+          bracketQuinellaBets: recommendedBets?.filter(bet => bet.type === '枠連'),
+          quinellaBets: recommendedBets?.filter(bet => bet.type === '馬連'),
+          wideBets: recommendedBets?.filter(bet => bet.type === 'ワイド'),
+          exactaBets: recommendedBets?.filter(bet => bet.type === '馬単'),
+          trioBets: recommendedBets?.filter(bet => bet.type === '３連複'),
+          trifectaBets: recommendedBets?.filter(bet => bet.type === '３連単'),
+          bettingOptions: recommendedBets?.map(bet => ({
+            type: bet.type,
+            horseName: bet.horses.join(bet.type.includes('単') ? '→' : '-'),
+            odds: bet.expectedReturn / bet.stake,
+            prob: bet.probability,
+            ev: bet.expectedReturn - bet.stake,
+            frame1: 0,
+            frame2: 0,
+            frame3: 0,
+            horse1: 0,
+            horse2: 0,
+            horse3: 0
+          })) || []
+        };
+
+        const response = await getGeminiStrategy([], budget, allBettingOptions);
+        setState(prev => ({
+          ...prev,
+          detailed: response.detailed,
+          summarized: response.summarized,
+          isLoading: false
+        }));
+      } catch (err) {
+        setState(prev => ({
+          ...prev,
+          error: 'Geminiからの戦略取得に失敗しました',
+          isLoading: false
+        }));
+        console.error('Strategy Error:', err);
+      } finally {
+        setState(prev => ({ ...prev, isRequesting: false }));
+      }
+    };
+
+    fetchGeminiStrategy();
+  }, [budget, horses, recommendedBets]);
+
+  if (state.isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5" />
+            AI戦略分析
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-4">
+            <span className="loading loading-spinner" /> 分析中...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (state.error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{state.error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!state.summarized) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Brain className="h-5 w-5" />
+          AI戦略分析
+        </CardTitle>
+        <CardDescription>
+          Gemini 2.0による馬券購入戦略の提案
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {state.summarized.strategy.description}
+          </p>
+          
+          {state.summarized && (
+            <BettingStrategyTable recommendations={state.summarized.strategy.recommendations} />
+          )}
+
+          <div className="space-y-2">
+            {state.summarized.strategy.recommendations.map((rec, index) => (
+              <div key={index} className="border rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="font-medium">{rec.type}</span>
+                    <span className="text-sm text-muted-foreground ml-2">
+                      {rec.horses.join(rec.type.includes('単') ? '→' : '-')}
+                    </span>
+                  </div>
+                  <span className="font-medium">
+                    ¥{rec.stake.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {rec.reason}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 export default function Strategy() {
   const { id } = useParams();
@@ -99,7 +275,7 @@ export default function Strategy() {
 
       const horseDataList = horses.map(horse => ({
         name: horse.name,
-        odds: Number(latestOdds.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
+        odds: Number(latestOdds.find((odd: TanOddsHistory) => Number(odd.horseId) === horse.number)?.odds || 0),
         fukuOdds: Number(latestFukuOdds.find(odd => Number(odd.horseId) === horse.number)?.oddsMin || 0),
         winProb: winProbs[horse.id] / 100,
         placeProb: placeProbs[horse.id] / 100,
@@ -262,151 +438,53 @@ export default function Strategy() {
 
   const expectedROI = totalInvestment > 0 ? 
     `+${(totalExpectedReturn * 100).toFixed(1)}%` : 
-    "+0.0%";
-  const investmentRatio = (totalInvestment / budget) * 100;
-
-  const averageWinRate = recommendedBets ? 
-    `${((recommendedBets.reduce((sum, bet) => sum + bet.probability, 0) / recommendedBets.length) * 100).toFixed(1)}%` : 
-    "0.0%";
+    '0%';
 
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold">馬券購入戦略</h1>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              推奨される馬券
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>券種</TableHead>
-                  <TableHead>対象馬</TableHead>
-                  <TableHead className="text-right">投資額</TableHead>
-                  <TableHead className="text-right">期待払戻金</TableHead>
-                  <TableHead className="text-right">的中確率</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recommendedBets?.map((bet, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{bet.type}</TableCell>
-                    <TableCell>
-                      {bet.type === "単勝" || bet.type === "複勝" 
-                        ? bet.horses[0].split(" ").map((part, i) => 
-                            i === 0 ? `${part} ` : part
-                          ).join("")
-                        : bet.horses.join(", ")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ¥{bet.stake.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ¥{bet.expectedReturn.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {(bet.probability * 100).toFixed(1)}%
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-6 md:grid-cols-3">
+      <div className="space-y-4">
+        <GeminiStrategy 
+          recommendedBets={recommendedBets} 
+          budget={budget} 
+        />
+        
+        {recommendedBets && recommendedBets.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5" />
-                投資概要
+                <Calculator className="h-5 w-5" />
+                最適化された馬券ポートフォリオ
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">設定予算</p>
-                  <p className="text-2xl font-bold">¥{budget.toLocaleString()}</p>
-                  <div className="mt-2">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>予算使用率</span>
-                      <span>{investmentRatio.toFixed(1)}%</span>
+                {/* 馬券リストの表示 */}
+                {recommendedBets.map((bet, index) => (
+                  <div key={index} className="border rounded-lg p-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-medium">{bet.type}</span>
+                        <span className="text-sm text-muted-foreground ml-2">
+                          {bet.horses.join(bet.type.includes('単') ? '→' : '-')}
+                        </span>
+                      </div>
+                      <span className="font-medium">
+                        ¥{bet.stake.toLocaleString()}
+                      </span>
                     </div>
-                    <Progress value={investmentRatio} className="h-2" />
                   </div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">総投資額</p>
-                  <p className="text-2xl font-bold">¥{totalInvestment.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                リターン予測
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">期待リターン（加重平均）</p>
-                  <p className="text-2xl font-bold text-green-500">
-                    {totalExpectedReturn > 0 ? "+" : ""}
-                    {(totalExpectedReturn * 100).toFixed(1)}%
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">期待払戻金</p>
-                  <p className="text-2xl font-bold text-green-500">
-                    ¥{(expectedTotalPayout).toLocaleString()}
+                ))}
+                
+                {/* 期待収益率の表示 */}
+                <div className="mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    期待収益率: {expectedROI}
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Scale className="h-5 w-5" />
-                リスク指標
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">リスクリワード</p>
-                  <p className="text-2xl font-bold">{riskRatio.toFixed(1)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">平均的中率</p>
-                  <p className="text-2xl font-bold">
-                    {averageWinRate}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <RiskAssessment />
-
-        <Alert>
-          <AlertTitle>投資に関する注意事項</AlertTitle>
-          <AlertDescription>
-            推奨された馬券構成は、入力された予想確率とリスクリワードに基づいて計算されています。
-            実際の投資判断は、各自の責任において行ってください。
-          </AlertDescription>
-        </Alert>
+        )}
       </div>
     </MainLayout>
   );

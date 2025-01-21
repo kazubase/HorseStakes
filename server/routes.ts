@@ -7,8 +7,9 @@ import { inArray } from "drizzle-orm/expressions";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { OddsCollector } from "./odds-collector";
 import { calculateBetProposals } from "@/lib/betCalculator";
+import fetch from 'node-fetch';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 export function registerRoutes(app: Express): Server {
@@ -985,6 +986,102 @@ app.get("/api/sanrentan-odds/latest/:raceId", async (req, res) => {
     }
   });
 
+  // Gemini APIエンドポイント
+  app.post("/api/gemini", async (req, res) => {
+    // リクエストの開始をログ
+    console.log('=== Gemini API Request Start ===');
+    console.log('API Key Check:', {
+      exists: !!process.env.GEMINI_API_KEY,
+      length: process.env.GEMINI_API_KEY?.length || 0,
+      prefix: process.env.GEMINI_API_KEY?.substring(0, 4) + '...'
+    });
+
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('❌ API key is missing');
+      return res.status(500).json({ error: 'APIキーが設定されていません' });
+    }
+
+    try {
+      const { prompt, model = 'gemini-2.0-flash-thinking-exp' } = req.body;
+      console.log('📝 Using model:', model);
+
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const genModel = genAI.getGenerativeModel({ model });
+
+      try {
+        console.log('🚀 Calling Gemini API...');
+        const result = await genModel.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        
+        console.log('✅ API Response received:', {
+          length: text.length,
+          preview: text.substring(0, 100) + '...'
+        });
+
+        const strategy = parseGeminiResponse(text);
+        console.log('=== Gemini API Request End ===');
+        return res.json({ strategy });
+
+      } catch (apiError: any) {
+        console.error('❌ API Call Failed:', {
+          name: apiError.name,
+          message: apiError.message,
+          status: apiError.status,
+          details: apiError.errorDetails
+        });
+        throw apiError;
+      }
+    } catch (error: any) {
+      console.error('❌ Request Failed:', {
+        type: error.constructor.name,
+        message: error.message,
+        stack: error.stack
+      });
+
+      return res.status(500).json({ 
+        error: 'Gemini APIの呼び出しに失敗しました',
+        details: error.message,
+        type: error.constructor.name
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Geminiの応答をパースする補助関数
+function parseGeminiResponse(text: string) {
+  try {
+    // 戦略の説明部分と推奨馬券部分を分離
+    const sections = text.split(/\n(?=推奨馬券:|おすすめの馬券:)/i);
+    const description = sections[0].trim();
+    const recommendationsText = sections[1] || '';
+
+    // 推奨馬券を解析
+    const recommendations = recommendationsText.split('\n')
+      .filter(line => line.includes('→') || line.includes('-'))
+      .map(line => {
+        const match = line.match(/([^:]+):\s*([^\s]+)\s*(\d+)円\s*(.+)/);
+        if (!match) return null;
+        
+        const [_, type, horses, stakeStr, reason] = match;
+        return {
+          type: type.trim(),
+          horses: horses.split(/[→-]/).map(h => h.trim()),
+          stake: parseInt(stakeStr, 10),
+          reason: reason.trim()
+        };
+      })
+      .filter((rec): rec is NonNullable<typeof rec> => rec !== null);
+
+    return {
+      description,
+      recommendations
+    };
+  } catch (error) {
+    console.error('Response parsing error:', error);
+    throw new Error('Failed to parse Gemini response');
+  }
 }
