@@ -140,13 +140,34 @@ function GeminiStrategy({ recommendedBets, budget }: GeminiStrategyProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            AI戦略分析
+            <Brain className="h-5 w-5 animate-pulse" />
+            AI戦略分析中
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center p-4">
-            <span className="loading loading-spinner" /> 分析中...
+          <div className="space-y-4">
+            {recommendedBets?.slice(0, 3).map((bet, index) => (
+              <div 
+                key={index} 
+                className="border rounded-lg p-3 animate-pulse bg-gradient-to-r from-background to-muted"
+                style={{ 
+                  animationDelay: `${index * 200}ms`,
+                  opacity: 1 - (index * 0.2)
+                }}
+              >
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-4 bg-muted rounded animate-pulse" />
+                    <div className="w-24 h-4 bg-muted rounded animate-pulse" />
+                  </div>
+                  <div className="w-16 h-4 bg-muted rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
+            <div className="flex items-center justify-center mt-6 text-muted-foreground">
+              <span className="loading loading-spinner loading-md mr-2" />
+              AIが最適な投資戦略を分析中...
+            </div>
           </div>
         </CardContent>
       </Card>
