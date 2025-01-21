@@ -134,9 +134,10 @@ export const getGeminiStrategy = async (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        prompt: `あなたは競馬の投資アドバイザーです。以下の馬券候補から、予算${totalBudget.toLocaleString()}円での最適な購入戦略を提案してください。
+        prompt: `あなたは競馬の投資アドバイザーです。必ず日本語で推論してください。以下の馬券候補から、予算${totalBudget.toLocaleString()}円での最適な購入戦略を提案してください。
 
 【制約条件】
+- 必ず日本語で分析と提案を行うこと
 - 合計投資額は予算以内に収めること
 - 期待値の高い馬券を優先すること
 - リスク分散を考慮すること
@@ -208,7 +209,8 @@ ${allBettingOptions.bettingOptions
     }
   }
 }`,
-        model: 'gemini-2.0-flash-thinking-exp'
+        model: 'gemini-2.0-flash-thinking-exp',
+        thought: false
       })
     });
 
@@ -277,7 +279,7 @@ ${allBettingOptions.bettingOptions
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        prompt: `以下の競馬投資分析を、表形式で簡潔に要約してください：
+        prompt: `必ず日本語で応答してください。以下の競馬投資分析を、表形式で簡潔に要約してください：
 
 ${JSON.stringify(detailedData, null, 2)}
 
@@ -302,7 +304,8 @@ ${JSON.stringify(detailedData, null, 2)}
     }
   }
 }`,
-        model: 'gemini-2.0-flash-exp'
+        model: 'gemini-2.0-flash-exp',
+        thought: false
       })
     });
 
