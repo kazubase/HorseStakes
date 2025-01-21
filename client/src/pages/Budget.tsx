@@ -104,8 +104,8 @@ export default function Budget() {
                   value={[riskRatio]}
                   onValueChange={handleRiskRatioChange}
                   min={1.0}
-                  max={50}
-                  step={0.5}
+                  max={20.0}
+                  step={1.0}
                   className="my-4"
                 />
                 <p className="text-sm text-muted-foreground text-right">
