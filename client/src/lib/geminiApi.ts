@@ -22,13 +22,23 @@ export interface DetailedGeminiResponse {
   };
 }
 
-// 要約用のインターフェース
+// 戦略テーブルの行データの型
+export interface StrategyTableRow {
+  type: string;
+  horses: string;
+  odds: string;
+  probability: string;
+  stake: string;
+  reason: string;
+}
+
+// 要約用のインターフェースを更新
 export interface SummarizedGeminiResponse {
   strategy: {
     description: string;
     bettingTable: {
       headers: string[];
-      rows: (string | number)[][];
+      rows: [string, string, string, string, string, string][];
     };
     summary: {
       totalInvestment: string;
@@ -46,8 +56,7 @@ export interface SummarizedGeminiResponse {
 
 // 既存のインターフェースを更新
 export interface GeminiResponse {
-  detailed: DetailedGeminiResponse;
-  summarized: SummarizedGeminiResponse;
+  strategy: GeminiStrategy;
 }
 
 interface BettingOption {
@@ -77,6 +86,37 @@ interface CombinationBetOption {
   probability: string;
   expectedValue: string;
 }
+
+export interface GeminiStrategy {
+  description: string;
+  bettingTable: {
+    headers: string[];
+    rows: string[][];
+  };
+  summary: {
+    totalInvestment: string;
+    expectedReturn: string;
+    riskLevel: string;
+  };
+  recommendations: {
+    type: string;
+    horses: string[];
+    stake: number;
+    reason: string;
+  }[];
+}
+
+// 券種の順序を定義
+const betTypeOrder = [
+  '単勝',
+  '複勝',
+  '枠連',
+  '馬連',
+  'ワイド',
+  '馬単',
+  '3連複',
+  '3連単'
+];
 
 export const getGeminiStrategy = async (
   bettingCandidates: BettingCandidate[],
@@ -183,20 +223,52 @@ ${allBettingOptions.bettingOptions
 
     // 既にstrategy形式で返ってきた場合は要約をスキップ
     if (detailedData.strategy) {
+      // JSONの文字列を探して解析
+      const jsonMatch = detailedData.strategy.description.match(/```json\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        try {
+          const parsedJson = JSON.parse(jsonMatch[1]);
+          const sortedRows = parsedJson.strategy.bettingTable.rows.sort((a: string[], b: string[]) => {
+            const typeA = a[0]; // 馬券種別は配列の最初の要素
+            const typeB = b[0];
+            return betTypeOrder.indexOf(typeA) - betTypeOrder.indexOf(typeB);
+          });
+
+          return {
+            strategy: {
+              description: parsedJson.strategy.description,
+              bettingTable: {
+                headers: parsedJson.strategy.bettingTable.headers,
+                rows: sortedRows
+              },
+              summary: {
+                totalInvestment: parsedJson.strategy.summary.totalInvestment,
+                expectedReturn: parsedJson.strategy.summary.expectedReturn,
+                riskLevel: parsedJson.strategy.summary.riskLevel
+              },
+              recommendations: parsedJson.strategy.recommendations || []
+            }
+          };
+        } catch (error) {
+          console.error('JSON parse error:', error);
+        }
+      }
+
+      // JSONの解析に失敗した場合のフォールバック
       return {
-        detailed: {
-          analysis: {
-            thoughtProcess: '',
-            riskAnalysis: '',
-            recommendations: detailedData.strategy.recommendations.map((rec: SummarizedGeminiResponse['strategy']['recommendations'][0]) => ({
-              ...rec,
-              expectedReturn: 0,
-              probability: 0,
-              reasoning: rec.reason
-            }))
-          }
-        },
-        summarized: detailedData
+        strategy: {
+          description: '',
+          bettingTable: {
+            headers: ['馬券種別', '買い目', 'オッズ', '的中率', '投資額', '理由'],
+            rows: []
+          },
+          summary: {
+            totalInvestment: '0円',
+            expectedReturn: '0円',
+            riskLevel: '不明'
+          },
+          recommendations: []
+        }
       };
     }
 
@@ -243,8 +315,24 @@ ${JSON.stringify(detailedData, null, 2)}
     }
 
     return {
-      detailed: detailedData,
-      summarized: summarizedData
+      strategy: {
+        description: summarizedData.strategy.description,
+        bettingTable: {
+          headers: summarizedData.strategy.bettingTable.headers,
+          rows: summarizedData.strategy.bettingTable.rows.map((row: string[]) => row.slice(0, 6))
+        },
+        summary: {
+          totalInvestment: summarizedData.strategy.summary.totalInvestment,
+          expectedReturn: summarizedData.strategy.summary.expectedReturn,
+          riskLevel: summarizedData.strategy.summary.riskLevel
+        },
+        recommendations: summarizedData.strategy.recommendations.map((rec: GeminiStrategy['recommendations'][0]) => ({
+          ...rec,
+          expectedReturn: 0,
+          probability: 0,
+          reason: rec.reason
+        }))
+      }
     };
   } catch (error) {
     console.error('💥 Gemini Strategy Error:', error);

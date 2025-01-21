@@ -1,33 +1,66 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import type { GeminiStrategy } from "@/lib/geminiApi";
 
-interface BettingRecommendation {
-  type: string;
-  horses: string[];
-  stake: number;
-  reason: string;
+interface BettingStrategyTableProps {
+  strategy: GeminiStrategy;
 }
 
-export function BettingStrategyTable({ recommendations }: { recommendations: BettingRecommendation[] }) {
+export function BettingStrategyTable({ strategy }: BettingStrategyTableProps) {
+  if (!strategy?.bettingTable?.headers || !strategy?.bettingTable?.rows) {
+    console.error('Invalid betting table data:', strategy);
+    return null;
+  }
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>馬券種別</TableHead>
-          <TableHead>買い目</TableHead>
-          <TableHead>投資額</TableHead>
-          <TableHead>理由</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {recommendations.map((rec, i) => (
-          <TableRow key={i}>
-            <TableCell>{rec.type}</TableCell>
-            <TableCell>{rec.horses.join('-')}</TableCell>
-            <TableCell>{rec.stake.toLocaleString()}円</TableCell>
-            <TableCell>{rec.reason}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <Card>
+      <CardHeader>
+        <CardTitle>AI戦略分析</CardTitle>
+        <CardDescription>{strategy.description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {strategy.bettingTable.headers.map((header, i) => (
+                  <TableHead key={i} className="whitespace-nowrap">
+                    {header}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {strategy.bettingTable.rows.map((row, i) => (
+                <TableRow key={i}>
+                  {row.map((cell, j) => (
+                    <TableCell key={j} className="whitespace-nowrap">
+                      {cell}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {strategy.summary && (
+            <div className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="font-medium">総投資額:</span>
+                <span>{strategy.summary.totalInvestment}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">期待収益:</span>
+                <span>{strategy.summary.expectedReturn}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">リスクレベル:</span>
+                <span>{strategy.summary.riskLevel}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 } 

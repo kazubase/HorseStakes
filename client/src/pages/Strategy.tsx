@@ -11,7 +11,7 @@ import RiskAssessment from "@/components/RiskAssessment";
 import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
 import { calculateBetProposals, type BetProposal } from '@/lib/betCalculator';
-import { getGeminiStrategy, type BettingCandidate, type GeminiResponse, DetailedGeminiResponse, SummarizedGeminiResponse } from '@/lib/geminiApi';
+import { getGeminiStrategy, type BettingCandidate, type GeminiResponse, DetailedGeminiResponse, SummarizedGeminiResponse, type GeminiStrategy } from '@/lib/geminiApi';
 import { BettingStrategyTable } from "@/components/BettingStrategyTable";
 
 interface RecommendedBet {
@@ -28,18 +28,16 @@ interface GeminiStrategyProps {
 }
 
 interface GeminiStrategyState {
-  detailed: DetailedGeminiResponse | null;
-  summarized: SummarizedGeminiResponse | null;
+  strategy: GeminiStrategy | null;
   isLoading: boolean;
   error: string | null;
   isRequesting: boolean;
 }
 
-const GeminiStrategy = ({ recommendedBets, budget }: GeminiStrategyProps) => {
+function GeminiStrategy({ recommendedBets, budget }: GeminiStrategyProps) {
   const { id } = useParams();
   const [state, setState] = useState<GeminiStrategyState>({
-    detailed: null,
-    summarized: null,
+    strategy: null,
     isLoading: false,
     error: null,
     isRequesting: false
@@ -98,11 +96,28 @@ const GeminiStrategy = ({ recommendedBets, budget }: GeminiStrategyProps) => {
           })) || []
         };
 
+        console.log('Fetching Gemini strategy with:', {
+          recommendedBetsCount: recommendedBets.length,
+          budget,
+          allBettingOptions
+        });
+
         const response = await getGeminiStrategy([], budget, allBettingOptions);
+        
+        console.log('Gemini strategy response:', {
+          hasStrategy: !!response.strategy,
+          strategy: response.strategy,
+          bettingTable: response.strategy?.bettingTable,
+          recommendations: response.strategy?.recommendations
+        });
+
+        if (!response.strategy?.bettingTable) {
+          throw new Error('Invalid strategy response format');
+        }
+
         setState(prev => ({
           ...prev,
-          detailed: response.detailed,
-          summarized: response.summarized,
+          strategy: response.strategy,
           isLoading: false
         }));
       } catch (err) {
@@ -147,54 +162,10 @@ const GeminiStrategy = ({ recommendedBets, budget }: GeminiStrategyProps) => {
     );
   }
 
-  if (!state.summarized) return null;
+  if (!state.strategy) return null;
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Brain className="h-5 w-5" />
-          AI戦略分析
-        </CardTitle>
-        <CardDescription>
-          Gemini 2.0による馬券購入戦略の提案
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {state.summarized.strategy.description}
-          </p>
-          
-          {state.summarized && (
-            <BettingStrategyTable recommendations={state.summarized.strategy.recommendations} />
-          )}
-
-          <div className="space-y-2">
-            {state.summarized.strategy.recommendations.map((rec, index) => (
-              <div key={index} className="border rounded-lg p-3">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="font-medium">{rec.type}</span>
-                    <span className="text-sm text-muted-foreground ml-2">
-                      {rec.horses.join(rec.type.includes('単') ? '→' : '-')}
-                    </span>
-                  </div>
-                  <span className="font-medium">
-                    ¥{rec.stake.toLocaleString()}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {rec.reason}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+  return <BettingStrategyTable strategy={state.strategy} />;
+}
 
 export default function Strategy() {
   const { id } = useParams();
@@ -447,44 +418,6 @@ export default function Strategy() {
           recommendedBets={recommendedBets} 
           budget={budget} 
         />
-        
-        {recommendedBets && recommendedBets.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5" />
-                最適化された馬券ポートフォリオ
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* 馬券リストの表示 */}
-                {recommendedBets.map((bet, index) => (
-                  <div key={index} className="border rounded-lg p-3">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium">{bet.type}</span>
-                        <span className="text-sm text-muted-foreground ml-2">
-                          {bet.horses.join(bet.type.includes('単') ? '→' : '-')}
-                        </span>
-                      </div>
-                      <span className="font-medium">
-                        ¥{bet.stake.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                
-                {/* 期待収益率の表示 */}
-                <div className="mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    期待収益率: {expectedROI}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </MainLayout>
   );
