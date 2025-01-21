@@ -151,42 +151,100 @@ ${allBettingOptions.bettingOptions
   .map(bet => `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${bet.ev.toFixed(2)}]`)
   .join('\n')}
 
-以下の形式で必ず応答してください（改行や余分な空白を含まないこと）：
-{"strategy":{"recommendations":[{"type":"馬券種別","horses":["馬番号"],"stake":投資額,"reason":"理由"}]}}
+以下の形式で簡潔にJSON応答してください：
+{
+  "strategy": {
+    "description": "戦略の要点を1文で",
+    "bettingTable": {
+      "headers": ["馬券種別", "買い目", "オッズ", "的中率", "投資額", "理由"],
+      "rows": [
+        ["馬連", "1-2", "10.5", "15%", "1000", "期待値が高い"]
+      ]
+    },
+    "summary": {
+      "totalInvestment": "合計投資額",
+      "expectedReturn": "期待収益",
+      "riskLevel": "中"
+    }
+  }
+}`,
+        model: 'gemini-2.0-flash-thinking-exp'
+      })
+    });
 
-注意事項：
-- 厳密なJSON形式で出力すること
-- 改行文字を含めないこと
-- 数値は文字列ではなく数値で出力
-- 説明文は出力しない`,
+    const detailedData = await detailedResponse.json();
+    console.log('Detailed Response:', detailedData);
+
+    // レスポンス形式チェックを修正
+    if (!detailedData || (!detailedData.analysis && !detailedData.strategy)) {
+      console.error('Invalid detailed response format:', detailedData);
+      throw new Error('詳細分析のレスポンス形式が不正です');
+    }
+
+    // 既にstrategy形式で返ってきた場合は要約をスキップ
+    if (detailedData.strategy) {
+      return {
+        detailed: {
+          analysis: {
+            thoughtProcess: '',
+            riskAnalysis: '',
+            recommendations: detailedData.strategy.recommendations.map((rec: SummarizedGeminiResponse['strategy']['recommendations'][0]) => ({
+              ...rec,
+              expectedReturn: 0,
+              probability: 0,
+              reasoning: rec.reason
+            }))
+          }
+        },
+        summarized: detailedData
+      };
+    }
+
+    // 2. 要約を取得（必要な場合のみ）
+    const summaryResponse = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        prompt: `以下の競馬投資分析を、表形式で簡潔に要約してください：
+
+${JSON.stringify(detailedData, null, 2)}
+
+以下の形式でJSON応答してください：
+{
+  "strategy": {
+    "description": "戦略の要点を1-2文で",
+    "recommendations": [
+      {
+        "type": "馬券種類",
+        "horses": ["馬名"],
+        "stake": 投資額,
+        "reason": "期待値・確率・リスクの観点から30字以内で",
+        "expectedReturn": 期待収益,
+        "probability": 的中確率
+      }
+    ],
+    "summary": {
+      "totalStake": 合計投資額,
+      "expectedProfit": 期待収益,
+      "riskLevel": "リスクレベル（低/中/高）"
+    }
+  }
+}`,
         model: 'gemini-2.0-flash-exp'
       })
     });
 
-    const rawResponse = await detailedResponse.text();
-    console.log('Raw Response:', rawResponse);
+    const summarizedData = await summaryResponse.json();
+    console.log('Summary Response:', summarizedData);
 
-    let detailedData;
-    try {
-      // 余分な文字を削除してJSONをパース
-      const cleanJson = rawResponse.replace(/[\n\r\t]/g, '').match(/\{.*\}/)?.[0] || '';
-      detailedData = JSON.parse(cleanJson);
-    } catch (error) {
-      console.error('JSON Parse Error:', error);
-      throw new Error('AIの応答をJSONとして解析できません');
-    }
-
-    if (!detailedData?.strategy?.recommendations) {
-      detailedData = {
-        strategy: {
-          recommendations: []
-        }
-      };
+    if (!summarizedData || !summarizedData.strategy) {
+      console.error('Invalid summary response format:', summarizedData);
+      throw new Error('要約のレスポンス形式が不正です');
     }
 
     return {
       detailed: detailedData,
-      summarized: detailedData
+      summarized: summarizedData
     };
   } catch (error) {
     console.error('💥 Gemini Strategy Error:', error);
