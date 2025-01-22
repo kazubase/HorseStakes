@@ -197,7 +197,7 @@ ${allBettingOptions.bettingOptions
   "strategy": {
     "description": "戦略の要点を1文で",
     "bettingTable": {
-      "headers": ["馬券種別", "買い目", "オッズ", "的中率", "投資額", "理由"],
+      "headers": ["券種", "買い目", "オッズ", "的中率", "投資額", "理由"],
       "rows": [
         ["馬連", "1-2", "10.5", "15%", "1000", "期待値が高い"]
       ]
@@ -262,7 +262,7 @@ ${allBettingOptions.bettingOptions
         strategy: {
           description: '',
           bettingTable: {
-            headers: ['馬券種別', '買い目', 'オッズ', '的中率', '投資額', '理由'],
+            headers: ['券種', '買い目', 'オッズ', '的中率', '投資額', '理由'],
             rows: []
           },
           summary: {
