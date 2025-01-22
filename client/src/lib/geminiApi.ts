@@ -210,7 +210,8 @@ ${allBettingOptions.bettingOptions
   }
 }`,
         model: 'gemini-2.0-flash-thinking-exp',
-        thought: false
+        thought: false,
+        apiVersion: 'v1alpha'
       })
     });
 
@@ -304,8 +305,7 @@ ${JSON.stringify(detailedData, null, 2)}
     }
   }
 }`,
-        model: 'gemini-2.0-flash-exp',
-        thought: false
+        model: 'gemini-2.0-flash-exp'
       })
     });
 
