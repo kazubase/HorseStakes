@@ -126,31 +126,32 @@ export const calculateBetProposals = (
     // 枠連的中確率の計算
     let wakurenProb = 0;
 
-    // 同じ枠の場合は、片方向の組み合わせのみを計算
+    // 同じ枠の場合（例：1-1）
     if (wakuren.frame1 === wakuren.frame2) {
-      frame1Horses.forEach((h1, i) => {
-        frame2Horses.slice(i + 1).forEach(h2 => {
+      // 同じ枠内の異なる馬の組み合わせのみを計算
+      for (let i = 0; i < frame1Horses.length; i++) {
+        for (let j = i + 1; j < frame1Horses.length; j++) {
+          const h1 = frame1Horses[i];
+          const h2 = frame1Horses[j];
+
           // h1が1着、h2が2着のケース
-          const h2SecondProb = (h2.placeProb - h2.winProb) / 2;
-          wakurenProb += h1.winProb * h2SecondProb;
+          wakurenProb += h1.winProb * ((h2.placeProb - h2.winProb) / 2);
 
           // h2が1着、h1が2着のケース
-          const h1SecondProb = (h1.placeProb - h1.winProb) / 2;
-          wakurenProb += h2.winProb * h1SecondProb;
-        });
-      });
+          wakurenProb += h2.winProb * ((h1.placeProb - h1.winProb) / 2);
+        }
+      }
     } else {
-      // 異なる枠の場合は、全ての組み合わせを計算
+      // 異なる枠の場合（例：1-2, 7-8）
+      // 全ての組み合わせを計算
       frame1Horses.forEach(h1 => {
         frame2Horses.forEach(h2 => {
           // h1が1着、h2が2着のケース
-          const h2SecondProb = (h2.placeProb - h2.winProb) / 2;
-          wakurenProb += h1.winProb * h2SecondProb;
+          wakurenProb += h1.winProb * ((h2.placeProb - h2.winProb) / 2);
 
           // h2が1着、h1が2着のケース
-          const h1SecondProb = (h1.placeProb - h1.winProb) / 2;
-          wakurenProb += h2.winProb * h1SecondProb;
-        });
+          wakurenProb += h2.winProb * ((h1.placeProb - h1.winProb) / 2);
+        }); 
       });
     }
 
