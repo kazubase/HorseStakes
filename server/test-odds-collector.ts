@@ -1,7 +1,7 @@
 import { OddsCollector } from './odds-collector';
 import { db } from '../db';
 import { races, horses } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 async function testCurrentRaceOddsCollection() {
   const collector = new OddsCollector();
@@ -10,7 +10,7 @@ async function testCurrentRaceOddsCollection() {
     console.log('Initializing browser...');
     await collector.initialize();
 
-    // 今週のレースID（例：中山競馬場のレース）
+    // 今週のレースID入力
     const raceId = 202506010711;
     
     await collectOddsForRace(collector, raceId);
@@ -30,9 +30,9 @@ async function testPastRaceOddsCollection() {
     console.log('Initializing browser...');
     await collector.initialize();
 
-    // 過去のレースID（例：2024年ジャパンカップ）
-    const raceId = 202405050812;
-    const pastRaceUrl = 'https://www.jra.go.jp/JRADB/accessS.html?CNAME=pw01sde1005202405081220241124/19';
+    // 過去のレースID、URL入力
+    const raceId = 202406050811;
+    const pastRaceUrl = 'https://www.jra.go.jp/JRADB/accessS.html?CNAME=pw01sde1006202405081120241222/AF';
     
     await collectOddsForRace(collector, raceId, pastRaceUrl);
 
@@ -49,15 +49,15 @@ async function collectOddsForRace(collector: OddsCollector, raceId: number, past
   const existingRace = await db.query.races.findFirst({
     where: eq(races.id, raceId)
   });
-
+  //レース情報入力
   if (!existingRace) {
     console.log('Registering new race...');
     await db.insert(races).values({
       id: raceId,
-      name: `ジャパンカップ`,
-      venue: "東京",
-      startTime: new Date('2024-11-24T15:40:00'),
-      status: "upcoming"
+      name: `有馬記念`,
+      venue: "中山",
+      startTime: new Date('2024-12-22T15:40:00'),
+      status: "done"
     });
     console.log('Race registered successfully');
   }
@@ -76,20 +76,37 @@ async function collectOddsForRace(collector: OddsCollector, raceId: number, past
         for (const odd of odds) {
           try {
             const existingHorse = await db.query.horses.findFirst({
-              where: eq(horses.name, odd.horseName)
+              where: and(
+                eq(horses.name, odd.horseName),
+                eq(horses.raceId, raceId)
+              )
             });
 
-            if (!existingHorse && odd.frame > 0) {
-              console.log(`Registering horse: ${odd.horseName} (Frame: ${odd.frame}, Number: ${odd.number})`);
+            // 取消馬の場合もframe > 0の条件を外して登録できるようにする
+            if (!existingHorse) {
+              console.log(`Registering horse: ${odd.horseName} (Race: ${raceId}, Frame: ${odd.frame}, Number: ${odd.number}, Status: ${odd.odds === '取消' ? '取消' : '出走'})`);
               await db.insert(horses).values({
                 name: odd.horseName,
                 raceId: raceId,
                 frame: odd.frame,
-                number: odd.number
+                number: odd.number,
+                status: odd.odds === '取消' ? 'scratched' : 'running' // ステータスカラムを追加
               });
+            } else {
+              // 既存の馬のステータスを更新（取消になった場合など）
+              if (odd.odds === '取消' && existingHorse.status !== 'scratched') {
+                console.log(`Updating horse status to scratched: ${odd.horseName} (Race: ${raceId})`);
+                await db.update(horses)
+                  .set({ status: 'scratched' })
+                  .where(and(
+                    eq(horses.name, odd.horseName),
+                    eq(horses.raceId, raceId)
+                  ));
+              }
+              console.log(`Horse ${odd.horseName} already exists for race ${raceId} with status ${existingHorse.status}`);
             }
           } catch (error) {
-            console.error(`Error registering horse ${odd.horseName}:`, error);
+            console.error(`Error handling horse ${odd.horseName} for race ${raceId}:`, error);
           }
         }
         await collector.saveOddsHistory(odds);
@@ -109,15 +126,15 @@ async function collectOddsForRace(collector: OddsCollector, raceId: number, past
       console.log(`${betType} odds data saved successfully`);
     }
   }
-
+  /*
   // 収集結果のサマリーを表示
   console.log('\nCollection Summary:');
   for (const betType of betTypes) {
     const odds = await collector.collectOddsForBetType(raceId, betType, pastRaceUrl);
     console.log(`- ${betType} odds collected: ${odds.length}`);
-  }
+  }*/
 }
 
 // 実行したい方のコメントアウトを外して使用
 // testCurrentRaceOddsCollection();
-// testPastRaceOddsCollection();
+testPastRaceOddsCollection();

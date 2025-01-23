@@ -7,7 +7,8 @@ export const horses = pgTable("horses", {
   raceId: bigint("race_id", { mode: "number" }).notNull(),
   frame: integer("frame").notNull(),
   number: integer("number").notNull(),
-  createdAt: timestamp("created_at").defaultNow()
+  status: text("status").notNull().default("running"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const races = pgTable("races", {

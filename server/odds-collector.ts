@@ -22,6 +22,7 @@ interface OddsData {
   fukuOddsMax: number;
   timestamp: Date;
   raceId: number;
+  status: string;
 }
 
 // 枠連オッズのインターフェースを追加
@@ -210,71 +211,91 @@ export class OddsCollector {
     let currentFrame = 0;
     let remainingRowspan = 0;
 
-    $('table.basic.narrow-xy.tanpuku tr').each((_, element) => {
+    console.log(`Starting to parse odds for race ${raceId}`);
+
+    $('table.basic.narrow-xy.tanpuku tr').each((index, element) => {
       const row = $(element);
       
       // 馬番を取得
       const horseNumberCell = row.find('td.num');
-      if (!horseNumberCell.length) return;
+      if (!horseNumberCell.length) {
+        console.log(`Row ${index}: No horse number cell found`);
+        return;
+      }
       
       const horseNumber = horseNumberCell.text().trim();
-      if (!horseNumber || isNaN(parseInt(horseNumber))) return;
+      if (!horseNumber || isNaN(parseInt(horseNumber))) {
+        console.log(`Row ${index}: Invalid horse number: ${horseNumber}`);
+        return;
+      }
 
       const horseId = parseInt(horseNumber);
-      if (processedHorseIds.has(horseId)) return;
+      if (processedHorseIds.has(horseId)) {
+        console.log(`Row ${index}: Horse ${horseId} already processed`);
+        return;
+      }
 
       // 枠番を取得
       const wakuCell = row.find('td.waku');
       if (wakuCell.length) {
-        // 新しい枠が始まる場合
         const rowspanAttr = wakuCell.attr('rowspan');
         remainingRowspan = rowspanAttr ? parseInt(rowspanAttr) : 1;
         
-        // imgのsrcから枠番を取得
         const wakuImg = wakuCell.find('img');
         const wakuSrc = wakuImg.attr('src') || '';
         const frameMatch = wakuSrc.match(/waku\/(\d+)\.png/);
         currentFrame = frameMatch ? parseInt(frameMatch[1]) : 0;
-      } else {
-        // 同じ枠の2頭目以降の場合
-        remainingRowspan--;
+        console.log(`Row ${index}: New frame ${currentFrame} (rowspan: ${remainingRowspan})`);
       }
 
       if (currentFrame === 0) {
-        console.log('Warning: Failed to get frame number for horse:', horseId);
+        console.log(`Row ${index}: Warning: Failed to get frame number for horse ${horseId}`);
         return;
       }
 
-      // 各セルのクラスを使用してデータを取得
+      // 馬名とオッズの取得
       const horseName = row.find('td.horse a').text().trim();
-      const tanOddsText = row.find('td.odds_tan').text().trim().replace(/,/g, '');
+      const isCanceled = row.find('td.odds_tan_cancel').length > 0;
+      
+      console.log(`Processing horse: ${horseName} (ID: ${horseId}, Frame: ${currentFrame})`);
+      console.log(`Canceled status: ${isCanceled}`);
+      console.log(`HTML for odds cell:`, row.find('td.odds_tan, td.odds_tan_cancel').html());
+
+      let tanOdds = NaN;
+      if (!isCanceled) {
+        const tanOddsText = row.find('td.odds_tan').text().trim().replace(/,/g, '');
+        tanOdds = parseFloat(tanOddsText);
+        console.log(`Tan odds: ${tanOddsText} -> ${tanOdds}`);
+      }
+
       const fukuCell = row.find('td.odds_fuku');
       const fukuText = fukuCell.text().trim().split('-');
       const fukuMinText = fukuText[0].trim();
       const fukuMaxText = fukuText[1]?.trim() || fukuMinText;
-
-      // 数値に変換
-      const tanOdds = parseFloat(tanOddsText);
       const fukuOddsMin = parseFloat(fukuMinText);
       const fukuOddsMax = parseFloat(fukuMaxText);
 
-      if (!isNaN(tanOdds) && !isNaN(fukuOddsMin) && !isNaN(fukuOddsMax)) {
-        oddsData.push({
-          horseId,
-          horseName,
-          frame: currentFrame,
-          number: horseId,
-          tanOdds,
-          fukuOddsMin,
-          fukuOddsMax,
-          timestamp: new Date(),
-          raceId
-        });
-        processedHorseIds.add(horseId);
-      }
+      // データの追加
+      const horseData = {
+        horseId,
+        horseName,
+        frame: currentFrame,
+        number: horseId,
+        tanOdds: isCanceled ? -1 : tanOdds,
+        fukuOddsMin: isCanceled ? 0 : fukuOddsMin,
+        fukuOddsMax: isCanceled ? 0 : fukuOddsMax,
+        timestamp: new Date(),
+        raceId,
+        status: isCanceled ? 'scratched' : 'running'
+      };
+
+      console.log('Adding horse data:', horseData);
+      oddsData.push(horseData);
+      processedHorseIds.add(horseId);
     });
 
-    console.log(`Collected odds data for ${oddsData.length} horses`);
+    console.log(`Parsed ${oddsData.length} horses for race ${raceId}`);
+    console.log('Final odds data:', oddsData);
     return oddsData;
   }
 

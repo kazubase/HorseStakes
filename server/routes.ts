@@ -15,22 +15,43 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 export function registerRoutes(app: Express): Server {
   // 全レース一覧を取得
   app.get("/api/races", async (_req, res) => {
-    const allRaces = await db.select().from(races);
-    res.json(allRaces);
+    try {
+      const allRaces = await db.select().from(races);
+      console.log('Fetched races:', allRaces); // デバッグログ
+      
+      if (!allRaces || allRaces.length === 0) {
+        console.log('No races found in database');
+      }
+      
+      res.json(allRaces);
+    } catch (error) {
+      console.error('Error fetching races:', error);
+      res.status(500).json({ error: 'Failed to fetch races' });
+    }
   });
 
   // 特定のレースを取得
   app.get("/api/races/:id", async (req, res) => {
-    const raceId = parseInt(req.params.id);
-    const race = await db.query.races.findFirst({
-      where: eq(races.id, raceId),
-    });
+    try {
+      const raceId = parseInt(req.params.id);
+      console.log('Fetching race with ID:', raceId); // デバッグログ
+      
+      const race = await db.query.races.findFirst({
+        where: eq(races.id, raceId),
+      });
 
-    if (!race) {
-      return res.status(404).json({ message: "Race not found" });
+      console.log('Found race:', race); // デバッグログ
+
+      if (!race) {
+        console.log('Race not found with ID:', raceId);
+        return res.status(404).json({ message: "Race not found" });
+      }
+
+      res.json(race);
+    } catch (error) {
+      console.error('Error fetching race:', error);
+      res.status(500).json({ error: 'Failed to fetch race' });
     }
-
-    res.json(race);
   });
 
   // レースの出馬表を取得
