@@ -404,15 +404,15 @@ export const calculateBetProposals = (
         case "枠連":
           return 2.0;  // 枠連のリスク
         case "馬連":
-          return 3.2;  // 馬連のリスク
+          return 3.0;  // 馬連のリスク
         case "ワイド":
-          return 2.2;  // ワイドのリスク
+          return 2.0;  // ワイドのリスク
         case "馬単":
-          return 3.9;  // 馬単のリスク
+          return 4.0;  // 馬単のリスク
         case "３連複":
           return 6.0;  // 3連複のリスク
         case "３連単":
-          return 7.5;  // 3連単のリスク
+          return 8.0;  // 3連単のリスク
         default:
           return 1.0;
       }
@@ -473,14 +473,14 @@ export const calculateBetProposals = (
         const riskFactor = getBetTypeRiskFactor(opt.type);
         
         // オッズの制限
-        const minOdds = Math.max(1.0, riskRatio * 0.5);
-        const maxOdds = Math.min(99999.9, riskRatio * riskRatio * riskFactor * riskFactor); // 馬券種別に応じて上限を調整
+        const minOdds = Math.max(1.0, riskRatio * 0.5 * riskFactor);
+        const maxOdds = Math.min(9999.9, riskRatio * riskFactor * riskFactor); // 馬券種別に応じて上限を調整
         
         // リスクリワード比率に応じて最小確率を調整
-        const minProbability = Math.max(0.005, 0.2 - (riskRatio * 0.015));
+        const minProbability = Math.max(0.005, 1 / (riskRatio * riskFactor));
         
         // 最低期待値
-        const minEV = 0.05;
+        const minEV = 0.5;
 
         return opt.odds >= minOdds && 
                opt.odds <= maxOdds && 
@@ -500,7 +500,7 @@ export const calculateBetProposals = (
         "ワイド": { min: 0, max: 4 },
         "馬単": { min: 0, max: 8 },
         "３連複": { min: 0, max: 12 },
-        "３連単": { min: 0, max: 15 }
+        "３連単": { min: 0, max: 16 }
       };
       
       // 馬券種別にグループ化

@@ -193,6 +193,7 @@ ${allBettingOptions.bettingOptions
   .join('\n')}
 
 以下の形式で簡潔にJSON応答してください：
+json
 {
   "strategy": {
     "description": "戦略の要点を1文で",
@@ -285,6 +286,7 @@ ${allBettingOptions.bettingOptions
 ${JSON.stringify(detailedData, null, 2)}
 
 以下の形式でJSON応答してください：
+json
 {
   "strategy": {
     "description": "戦略の要点を1-2文で",
