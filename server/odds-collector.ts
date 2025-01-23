@@ -134,7 +134,7 @@ export class OddsCollector {
     });
   }
 
-  async collectOddsForBetType(raceId: number, betType: string): Promise<any[]> {
+  async collectOddsForBetType(raceId: number, betType: string, pastRaceUrl?: string): Promise<any[]> {
     if (!this.browser || !this.betTypes[betType]) {
       throw new Error('Invalid configuration');
     }
@@ -144,7 +144,7 @@ export class OddsCollector {
 
     try {
       // 共通のページ遷移ロジック
-      await this.navigateToRacePage(page, raceId);
+      await this.navigateToRacePage(page, raceId, pastRaceUrl);
       
       // 馬券種別タブへの遷移
       const config = this.betTypes[betType];
@@ -169,24 +169,36 @@ export class OddsCollector {
     }
   }
 
-  private async navigateToRacePage(page: Page, raceId: number): Promise<void> {
-    await page.goto('https://www.jra.go.jp/keiba/');
-    await page.waitForLoadState('networkidle');
-    
-    await page.getByRole('link', { name: 'オッズ', exact: true }).click();
-    await page.waitForLoadState('networkidle');
+  private async navigateToRacePage(page: Page, raceId: number, pastRaceUrl?: string): Promise<void> {
+    if (pastRaceUrl) {
+      // 過去レースの場合
+      await page.goto(pastRaceUrl);
+      await page.waitForLoadState('networkidle');
 
-    const raceIdStr = raceId.toString();
-    const kaisaiKai = parseInt(raceIdStr.slice(6,8)).toString();
-    const kaisaiNichi = parseInt(raceIdStr.slice(8,10)).toString();
-    const kaisaiName = `${kaisaiKai}回${placeMapping[raceIdStr.slice(4,6)]}${kaisaiNichi}日`;
-    
-    await page.getByRole('link', { name: kaisaiName }).click();
-    await page.waitForLoadState('networkidle');
-    
-    const raceNumber = parseInt(raceIdStr.slice(10,12));
-    await page.locator(`img[alt="${raceNumber}レース"]`).click();
-    await page.waitForLoadState('networkidle');
+      // race_related_linkクラス内の最初のオッズボタンをクリック
+      const oddsButton = await page.locator('div.race_related_link a[href="#"]').first();
+      await oddsButton.click();
+      await page.waitForLoadState('networkidle');
+    } else {
+      // 現在のレースの場合（既存のロジック）
+      await page.goto('https://www.jra.go.jp/keiba/');
+      await page.waitForLoadState('networkidle');
+      
+      await page.getByRole('link', { name: 'オッズ', exact: true }).click();
+      await page.waitForLoadState('networkidle');
+
+      const raceIdStr = raceId.toString();
+      const kaisaiKai = parseInt(raceIdStr.slice(6,8)).toString();
+      const kaisaiNichi = parseInt(raceIdStr.slice(8,10)).toString();
+      const kaisaiName = `${kaisaiKai}回${placeMapping[raceIdStr.slice(4,6)]}${kaisaiNichi}日`;
+      
+      await page.getByRole('link', { name: kaisaiName }).click();
+      await page.waitForLoadState('networkidle');
+      
+      const raceNumber = parseInt(raceIdStr.slice(10,12));
+      await page.locator(`img[alt="${raceNumber}レース"]`).click();
+      await page.waitForLoadState('networkidle');
+    }
   }
 
   // 各馬券種別のパーサー関数

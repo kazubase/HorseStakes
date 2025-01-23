@@ -3,141 +3,17 @@ import { db } from '../db';
 import { races, horses } from '../db/schema';
 import { eq } from 'drizzle-orm';
 
-async function testOddsCollection() {
+async function testCurrentRaceOddsCollection() {
   const collector = new OddsCollector();
   
   try {
     console.log('Initializing browser...');
     await collector.initialize();
 
-    // 中山競馬場の実際のレースID
+    // 今週のレースID（例：中山競馬場のレース）
     const raceId = 202506010711;
     
-    // まず、レースが存在するか確認
-    const existingRace = await db.query.races.findFirst({
-      where: eq(races.id, raceId)
-    });
-
-    if (!existingRace) {
-      console.log('Registering new race...');
-      await db.insert(races).values({
-        id: raceId,
-        name: `京成杯`,
-        venue: "中山",
-        startTime: new Date('2025-01-19T15:45:00'),
-        status: "upcoming"
-      });
-      console.log('Race registered successfully');
-    }
-    
-    // 単勝・複勝オッズの取得と保存
-    console.log(`Collecting Tanpuku odds for race ID: ${raceId}`);
-    const tanpukuOdds = await collector.collectOddsForBetType(raceId, 'tanpuku');
-    console.log('Collected Tanpuku odds data:', tanpukuOdds);
-    
-    if (tanpukuOdds.length > 0) {
-      // 馬のデータを先に登録
-      for (const odds of tanpukuOdds) {
-        try {
-          const existingHorse = await db.query.horses.findFirst({
-            where: eq(horses.name, odds.horseName)
-          });
-
-          if (!existingHorse && odds.frame > 0) {
-            console.log(`Registering horse: ${odds.horseName} (Frame: ${odds.frame}, Number: ${odds.number})`);
-            await db.insert(horses).values({
-              name: odds.horseName,
-              raceId: raceId,
-              frame: odds.frame,
-              number: odds.number
-            });
-          }
-        } catch (error) {
-          console.error(`Error registering horse ${odds.horseName}:`, error);
-        }
-      }
-
-      // オッズ履歴を保存
-      console.log('Saving Tanpuku odds data...');
-      await collector.saveOddsHistory(tanpukuOdds);
-      console.log('Tanpuku odds data saved successfully');
-    }
-
-    // 枠連オッズの取得と保存
-    console.log(`Collecting Wakuren odds for race ID: ${raceId}`);
-    const wakurenOdds = await collector.collectOddsForBetType(raceId, 'wakuren');
-    console.log('Collected Wakuren odds data:', wakurenOdds);
-    
-    if (wakurenOdds.length > 0) {
-      console.log('Saving Wakuren odds data...');
-      await collector.updateWakurenOdds(wakurenOdds);
-      console.log('Wakuren odds data saved successfully');
-    }
-
-    // 馬連オッズの取得と保存
-    console.log(`Collecting Umaren odds for race ID: ${raceId}`);
-    const umarenOdds = await collector.collectOddsForBetType(raceId, 'umaren');
-    console.log('Collected Umaren odds data:', umarenOdds);
-    
-    if (umarenOdds.length > 0) {
-      console.log('Saving Umaren odds data...');
-      await collector.updateUmarenOdds(umarenOdds);
-      console.log('Umaren odds data saved successfully');
-    }
-
-    // ワイドオッズの取得と保存
-    console.log(`Collecting Wide odds for race ID: ${raceId}`);
-    const wideOdds = await collector.collectOddsForBetType(raceId, 'wide');
-    console.log('Collected Wide odds data:', wideOdds);
-    
-    if (wideOdds.length > 0) {
-      console.log('Saving Wide odds data...');
-      await collector.updateWideOdds(wideOdds);
-      console.log('Wide odds data saved successfully');
-    }
-
-    // 馬単オッズの取得と保存を追加
-    console.log(`Collecting Umatan odds for race ID: ${raceId}`);
-    const umatanOdds = await collector.collectOddsForBetType(raceId, 'umatan');
-    console.log('Collected Umatan odds data:', umatanOdds);
-    
-    if (umatanOdds.length > 0) {
-      console.log('Saving Umatan odds data...');
-      await collector.updateUmatanOdds(umatanOdds);
-      console.log('Umatan odds data saved successfully');
-    }
-
-    // 3連複オッズの取得と保存を追加
-    console.log(`Collecting Fuku3 odds for race ID: ${raceId}`);
-    const fuku3Odds = await collector.collectOddsForBetType(raceId, 'fuku3');
-    console.log('Collected Fuku3 odds data:', fuku3Odds);
-    
-    if (fuku3Odds.length > 0) {
-      console.log('Saving Fuku3 odds data...');
-      await collector.updateFuku3Odds(fuku3Odds);
-      console.log('Fuku3 odds data saved successfully');
-    }
-
-    // 3連単オッズの取得と保存を追加
-    console.log(`Collecting Tan3 odds for race ID: ${raceId}`);
-    const tan3Odds = await collector.collectOddsForBetType(raceId, 'tan3');
-    console.log('Collected Tan3 odds data:', tan3Odds);
-    
-    if (tan3Odds.length > 0) {
-      console.log('Saving Tan3 odds data...');
-      await collector.updateTan3Odds(tan3Odds);
-      console.log('Tan3 odds data saved successfully');
-    }
-
-    // 収集結果のサマリーを表示
-    console.log('\nCollection Summary:');
-    console.log(`- Tanpuku odds collected: ${tanpukuOdds.length}`);
-    console.log(`- Wakuren odds collected: ${wakurenOdds.length}`);
-    console.log(`- Umaren odds collected: ${umarenOdds.length}`);
-    console.log(`- Wide odds collected: ${wideOdds.length}`);
-    console.log(`- Umatan odds collected: ${umatanOdds.length}`);
-    console.log(`- Fuku3 odds collected: ${fuku3Odds.length}`);
-    console.log(`- Tan3 odds collected: ${tan3Odds.length}`);
+    await collectOddsForRace(collector, raceId);
 
   } catch (error) {
     console.error('Error during test:', error);
@@ -147,4 +23,101 @@ async function testOddsCollection() {
   }
 }
 
-testOddsCollection();
+async function testPastRaceOddsCollection() {
+  const collector = new OddsCollector();
+  
+  try {
+    console.log('Initializing browser...');
+    await collector.initialize();
+
+    // 過去のレースID（例：2024年ジャパンカップ）
+    const raceId = 202405050812;
+    const pastRaceUrl = 'https://www.jra.go.jp/JRADB/accessS.html?CNAME=pw01sde1005202405081220241124/19';
+    
+    await collectOddsForRace(collector, raceId, pastRaceUrl);
+
+  } catch (error) {
+    console.error('Error during test:', error);
+  } finally {
+    await collector.cleanup();
+    console.log('Test completed');
+  }
+}
+
+async function collectOddsForRace(collector: OddsCollector, raceId: number, pastRaceUrl?: string) {
+  // まず、レースが存在するか確認
+  const existingRace = await db.query.races.findFirst({
+    where: eq(races.id, raceId)
+  });
+
+  if (!existingRace) {
+    console.log('Registering new race...');
+    await db.insert(races).values({
+      id: raceId,
+      name: `ジャパンカップ`,
+      venue: "東京",
+      startTime: new Date('2024-11-24T15:40:00'),
+      status: "upcoming"
+    });
+    console.log('Race registered successfully');
+  }
+
+  // 各種オッズの取得と保存
+  const betTypes = ['tanpuku', 'wakuren', 'umaren', 'wide', 'umatan', 'fuku3', 'tan3'] as const;
+  
+  for (const betType of betTypes) {
+    console.log(`Collecting ${betType} odds for race ID: ${raceId}`);
+    const odds = await collector.collectOddsForBetType(raceId, betType, pastRaceUrl);
+    console.log(`Collected ${betType} odds data:`, odds);
+    
+    if (odds.length > 0) {
+      if (betType === 'tanpuku') {
+        // 馬のデータを先に登録（単複オッズの場合のみ）
+        for (const odd of odds) {
+          try {
+            const existingHorse = await db.query.horses.findFirst({
+              where: eq(horses.name, odd.horseName)
+            });
+
+            if (!existingHorse && odd.frame > 0) {
+              console.log(`Registering horse: ${odd.horseName} (Frame: ${odd.frame}, Number: ${odd.number})`);
+              await db.insert(horses).values({
+                name: odd.horseName,
+                raceId: raceId,
+                frame: odd.frame,
+                number: odd.number
+              });
+            }
+          } catch (error) {
+            console.error(`Error registering horse ${odd.horseName}:`, error);
+          }
+        }
+        await collector.saveOddsHistory(odds);
+      } else {
+        // 他の馬券種別の保存
+        const updateMethod = {
+          wakuren: collector.updateWakurenOdds.bind(collector),
+          umaren: collector.updateUmarenOdds.bind(collector),
+          wide: collector.updateWideOdds.bind(collector),
+          umatan: collector.updateUmatanOdds.bind(collector),
+          fuku3: collector.updateFuku3Odds.bind(collector),
+          tan3: collector.updateTan3Odds.bind(collector)
+        }[betType];
+
+        await updateMethod(odds);
+      }
+      console.log(`${betType} odds data saved successfully`);
+    }
+  }
+
+  // 収集結果のサマリーを表示
+  console.log('\nCollection Summary:');
+  for (const betType of betTypes) {
+    const odds = await collector.collectOddsForBetType(raceId, betType, pastRaceUrl);
+    console.log(`- ${betType} odds collected: ${odds.length}`);
+  }
+}
+
+// 実行したい方のコメントアウトを外して使用
+// testCurrentRaceOddsCollection();
+// testPastRaceOddsCollection();
