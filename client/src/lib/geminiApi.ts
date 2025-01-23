@@ -121,7 +121,8 @@ const betTypeOrder = [
 export const getGeminiStrategy = async (
   bettingCandidates: BettingCandidate[],
   totalBudget: number,
-  allBettingOptions: { bettingOptions: BettingOption[] }
+  allBettingOptions: { bettingOptions: BettingOption[] },
+  riskRatio: number
 ): Promise<GeminiResponse> => {
   try {
     console.log('🎯 Gemini API Request:', {
@@ -136,12 +137,17 @@ export const getGeminiStrategy = async (
       body: JSON.stringify({ 
         prompt: `あなたは競馬の投資アドバイザーです。必ず日本語で推論してください。以下の馬券候補から、予算${totalBudget.toLocaleString()}円での最適な購入戦略を提案してください。
 
+【リスク選好】
+- リスク選好度: ${riskRatio}（1～20の範囲で、1が最もローリスク、20が最もハイリスク）
+- リスク選好度に応じて、高配当馬券の比率と投資金額を調整してください
+
 【制約条件】
 - 必ず日本語で分析と提案を行うこと
 - 合計投資額は予算以内に収めること
 - 期待値の高い馬券を優先すること
 - リスク分散を考慮すること
 - 各馬券の投資額は100円単位とすること
+- リスク選好度に応じた馬券種と配分を選択すること
 
 【馬券候補一覧】
 単勝候補:

@@ -25,6 +25,7 @@ interface RecommendedBet {
 interface GeminiStrategyProps {
   recommendedBets: BetProposal[] | undefined;
   budget: number;
+  riskRatio: number;
 }
 
 interface GeminiStrategyState {
@@ -34,7 +35,7 @@ interface GeminiStrategyState {
   isRequesting: boolean;
 }
 
-function GeminiStrategy({ recommendedBets, budget }: GeminiStrategyProps) {
+function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyProps) {
   const { id } = useParams();
   const [state, setState] = useState<GeminiStrategyState>({
     strategy: null,
@@ -102,7 +103,7 @@ function GeminiStrategy({ recommendedBets, budget }: GeminiStrategyProps) {
           allBettingOptions
         });
 
-        const response = await getGeminiStrategy([], budget, allBettingOptions);
+        const response = await getGeminiStrategy([], budget, allBettingOptions, riskRatio);
         
         console.log('Gemini strategy response:', {
           hasStrategy: !!response.strategy,
@@ -438,6 +439,7 @@ export default function Strategy() {
         <GeminiStrategy 
           recommendedBets={recommendedBets} 
           budget={budget} 
+          riskRatio={riskRatio}
         />
       </div>
     </MainLayout>
