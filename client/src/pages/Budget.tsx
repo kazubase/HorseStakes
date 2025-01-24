@@ -15,7 +15,7 @@ export default function Budget() {
   const [riskRatio, setRiskRatio] = useState<number>(1);
   const [error, setError] = useState<string>("");
 
-  const handleBudgetChange = (value: string) => {
+  const handleBudgetBlur = (value: string) => {
     const numValue = Number(value);
     if (isNaN(numValue)) {
       setError("有効な数値を入力してください");
@@ -73,7 +73,8 @@ export default function Budget() {
                 <Input
                   type="number"
                   value={budget}
-                  onChange={(e) => handleBudgetChange(e.target.value)}
+                  onChange={(e) => setBudget(Number(e.target.value))}
+                  onBlur={(e) => handleBudgetBlur(e.target.value)}
                   min={0}
                   step={100}
                   className="text-lg"
