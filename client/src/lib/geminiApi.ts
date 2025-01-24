@@ -140,7 +140,8 @@ export const getGeminiStrategy = async (
 
 【リスク選好】
 - リスク選好度: ${riskRatio}（1～20の範囲で、1が最もローリスク、20が最もハイリスク）
-- リスク選好度に応じて、高配当馬券の比率を調整してください
+- リスク選好度に応じて、的中率と期待値のバランスをとって下さい。ローリスクの場合は的中率を高くし、ハイリスクの場合は期待値を高くして下さい。
+
 
 【分析の観点】
 1. 各馬券の期待値と的中確率
@@ -162,49 +163,73 @@ export const getGeminiStrategy = async (
 単勝候補:
 ${allBettingOptions.bettingOptions
   .filter(opt => opt.type === "単勝")
-  .map(bet => `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${bet.ev.toFixed(2)}]`)
+  .map(bet => {
+    const expectedValue = bet.odds * bet.prob - 1;
+    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
+  })
   .join('\n')}
 
 複勝候補:
 ${allBettingOptions.bettingOptions
   .filter(opt => opt.type === "複勝")
-  .map(bet => `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${bet.ev.toFixed(2)}]`)
+  .map(bet => {
+    const expectedValue = bet.odds * bet.prob - 1;
+    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
+  })
   .join('\n')}
 
 枠連候補:
 ${allBettingOptions.bettingOptions
   .filter(opt => opt.type === "枠連")
-  .map(bet => `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${bet.ev.toFixed(2)}]`)
+  .map(bet => {
+    const expectedValue = bet.odds * bet.prob - 1;
+    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
+  })
   .join('\n')}
 
 馬連候補:
 ${allBettingOptions.bettingOptions
   .filter(opt => opt.type === "馬連")
-  .map(bet => `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${bet.ev.toFixed(2)}]`)
+  .map(bet => {
+    const expectedValue = bet.odds * bet.prob - 1;
+    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
+  })
   .join('\n')}
 
 ワイド候補:
 ${allBettingOptions.bettingOptions
   .filter(opt => opt.type === "ワイド")
-  .map(bet => `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${bet.ev.toFixed(2)}]`)
+  .map(bet => {
+    const expectedValue = bet.odds * bet.prob - 1;
+    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
+  })
   .join('\n')}
 
 馬単候補:
 ${allBettingOptions.bettingOptions
   .filter(opt => opt.type === "馬単")
-  .map(bet => `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${bet.ev.toFixed(2)}]`)
+  .map(bet => {
+    const expectedValue = bet.odds * bet.prob - 1;
+    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
+  })
   .join('\n')}
 
 3連複候補:
 ${allBettingOptions.bettingOptions
   .filter(opt => opt.type === "３連複")
-  .map(bet => `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${bet.ev.toFixed(2)}]`)
+  .map(bet => {
+    const expectedValue = bet.odds * bet.prob - 1;
+    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
+  })
   .join('\n')}
 
 3連単候補:
 ${allBettingOptions.bettingOptions
   .filter(opt => opt.type === "３連単")
-  .map(bet => `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${bet.ev.toFixed(2)}]`)
+  .map(bet => {
+    const expectedValue = bet.odds * bet.prob - 1;
+    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
+  })
   .join('\n')}
 
 以下の形式でJSON応答してください：
