@@ -87,13 +87,12 @@ interface CombinationBetOption {
   expectedValue: string;
 }
 
-interface GeminiRecommendation {
+export interface GeminiRecommendation {
   type: string;
   horses: string[];
-  stake: number;
-  reason: string;
-  expectedReturn: string | number;
+  odds: number;
   probability: string | number;
+  reason: string;
 }
 
 export interface GeminiStrategy {
@@ -104,9 +103,7 @@ export interface GeminiStrategy {
     rows: string[][];
   };
   summary: {
-    totalInvestment: string | number;
-    expectedReturn: string;
-    riskLevel: string;
+    riskLevel: string;  // リスクレベルのみを保持
   };
 }
 
@@ -219,15 +216,12 @@ json
       {
         "type": "馬券種類",
         "horses": ["馬番"],
-        "stake": 投資推奨額,
-        "reason": "期待値・確率・相関関係の観点から選択理由を説明",
-        "expectedReturn": 期待収益,
-        "probability": 的中確率
+        "odds": オッズ,
+        "probability": 的中確率,
+        "reason": "選択理由を説明"
       }
     ],
     "summary": {
-      "totalInvestment": "合計投資額",
-      "expectedReturn": "期待収益",
       "riskLevel": "リスクレベル（低/中/高）"
     }
   }
@@ -249,37 +243,33 @@ json
 
     // 既にstrategy形式で返ってきた場合は要約をスキップ
     if (detailedData.strategy) {
-      // descriptionからJSONを抽出してパース
       const jsonMatch = detailedData.strategy.description.match(/```json\n([\s\S]*?)\n```/);
       if (jsonMatch) {
         const parsedStrategy = JSON.parse(jsonMatch[1]);
         return {
           strategy: {
             description: parsedStrategy.strategy.description,
-            recommendations: parsedStrategy.strategy.recommendations.map((rec: GeminiStrategy['recommendations'][0]) => ({
+            recommendations: parsedStrategy.strategy.recommendations.map((rec: GeminiRecommendation) => ({
               type: rec.type,
               horses: rec.horses,
-              stake: rec.stake,
-              reason: rec.reason,
-              expectedReturn: rec.expectedReturn,
-              probability: rec.probability
+              odds: rec.odds,
+              probability: rec.probability,
+              reason: rec.reason
             })),
             bettingTable: {
-              headers: ['券種', '買い目', 'オッズ', '的中率', '投資額', '理由'],
+              headers: ['券種', '買い目', 'オッズ', '的中率', '投資額', '期待収益'],
               rows: parsedStrategy.strategy.recommendations.map((rec: GeminiRecommendation) => [
                 rec.type,
                 rec.horses.join('-'),
-                String(rec.expectedReturn),
+                String(rec.odds),
                 typeof rec.probability === 'number' 
                   ? (rec.probability * 100).toFixed(1) + '%'
                   : rec.probability,
-                String(rec.stake),
-                rec.reason
+                '0円', // 投資額は後で最適化
+                '0円'  // 期待収益は後で計算
               ])
             },
             summary: {
-              totalInvestment: parsedStrategy.strategy.summary.totalInvestment,
-              expectedReturn: parsedStrategy.strategy.summary.expectedReturn,
               riskLevel: parsedStrategy.strategy.summary.riskLevel
             }
           }
@@ -338,8 +328,6 @@ json
           rows: summarizedData.strategy.bettingTable.rows.map((row: string[]) => row.slice(0, 6))
         },
         summary: {
-          totalInvestment: summarizedData.strategy.summary.totalInvestment,
-          expectedReturn: summarizedData.strategy.summary.expectedReturn,
           riskLevel: summarizedData.strategy.summary.riskLevel
         },
         recommendations: summarizedData.strategy.recommendations.map((rec: GeminiStrategy['recommendations'][0]) => ({

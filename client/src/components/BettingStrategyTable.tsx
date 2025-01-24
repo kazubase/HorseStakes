@@ -12,22 +12,54 @@ export function BettingStrategyTable({ strategy, totalBudget }: BettingStrategyT
   // Sharpe比最大化による最適化
   const optimizedBets = optimizeBetAllocation(strategy.recommendations, totalBudget);
   
+  // ソート済みの馬券リストを作成
+  const sortedBets = [...optimizedBets].sort((a, b) => {
+    const typeOrder: Record<string, number> = {
+      "単勝": 1,
+      "複勝": 2,
+      "枠連": 3,
+      "馬連": 4,
+      "ワイド": 5,
+      "馬単": 6,
+      "3連複": 7,
+      "3連単": 8
+    };
+    
+    // 馬券種別でソート
+    const typeCompare = typeOrder[a.type] - typeOrder[b.type];
+    if (typeCompare !== 0) return typeCompare;
+    
+    // 同じ馬券種別なら投資額の大きい順
+    return b.stake - a.stake;
+  });
+
   // 最適化された結果からテーブルデータを生成
   const tableData = {
     headers: ['券種', '買い目', 'オッズ', '的中率', '最適投資額', '期待収益'],
-    rows: optimizedBets.map(bet => [
+    rows: sortedBets.map(bet => [
       bet.type,
-      bet.horses.join('-'),
+      (() => {
+        if (["馬単", "3連単"].includes(bet.type)) {
+          // 馬単と3連単は矢印区切り
+          return bet.horses.join('→');
+        } else if (bet.horses.length === 1) {
+          // 単勝・複勝は馬番のみ
+          return bet.horses[0];
+        } else {
+          // その他は単純なハイフン区切り
+          return bet.horses.join('-');
+        }
+      })(),
       Number(bet.expectedReturn / bet.stake).toFixed(1),
-      (Number(bet.probability) * 100).toFixed(1) + '%',
+      (bet.probability * 100).toFixed(1) + '%',
       bet.stake.toLocaleString() + '円',
-      (Number(bet.expectedReturn)).toLocaleString() + '円'
+      bet.expectedReturn.toLocaleString() + '円'
     ])
   };
 
   // 合計値の計算
-  const totalInvestment = optimizedBets.reduce((sum, bet) => sum + bet.stake, 0);
-  const totalExpectedReturn = optimizedBets.reduce((sum, bet) => sum + bet.expectedReturn, 0);
+  const totalInvestment = sortedBets.reduce((sum, bet) => sum + bet.stake, 0);
+  const totalExpectedReturn = sortedBets.reduce((sum, bet) => sum + bet.expectedReturn, 0);
 
   return (
     <Card>

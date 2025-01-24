@@ -1,4 +1,5 @@
 import { GeminiStrategy, getGeminiStrategy } from './geminiApi';
+import type { GeminiRecommendation } from './geminiApi';
 
 interface BettingOption {
   type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複" | "３連単";
@@ -17,6 +18,7 @@ interface BettingOption {
 export interface BetProposal {
   type: string;
   horses: string[];
+  horseName: string;  // 表示用の馬番組み合わせ
   stake: number;
   expectedReturn: number;
   probability: number;
@@ -607,13 +609,13 @@ export const calculateBetProposals = (
       return {
         type: opt.type as BetProposal['type'],
         horses: [opt.horseName],
+        horseName: opt.horseName,
         stake,
         expectedReturn: Math.floor(stake * opt.odds),
         probability: opt.prob
       };
     }).sort((a, b) => {
-      // 馬券種別の優先順位を定義
-      const typeOrder: Record<BetProposal['type'], number> = {
+      const typeOrder: Record<string, number> = {
         "単勝": 1,
         "複勝": 2,
         "枠連": 3,
@@ -624,14 +626,12 @@ export const calculateBetProposals = (
         "３連単": 8
       };
       
-      // まず馬券種別でソート
+      // 馬券種別でソート
       const typeCompare = typeOrder[a.type] - typeOrder[b.type];
       if (typeCompare !== 0) return typeCompare;
       
-      // 同じ馬券種別の場合は馬番で昇順ソート
-      const aNumber = parseInt(a.horses[0].split(/[ →-]/)[0]);
-      const bNumber = parseInt(b.horses[0].split(/[ →-]/)[0]);
-      return aNumber - bNumber;
+      // 同じ馬券種別なら投資額の大きい順
+      return b.stake - a.stake;
     });
 
     console.log('最終結果:', {
@@ -640,6 +640,7 @@ export const calculateBetProposals = (
       bets: proposals.map(p => ({
         type: p.type,
         horses: p.horses,
+        horseName: p.horseName,
         stake: p.stake,
         expectedReturn: p.expectedReturn,
         probability: (p.probability * 100).toFixed(1) + '%'
@@ -656,82 +657,87 @@ export const calculateBetProposals = (
 };
 
 export const optimizeBetAllocation = (
-  recommendations: GeminiStrategy['recommendations'],
+  recommendations: GeminiRecommendation[],
   totalBudget: number
 ): BetProposal[] => {
   console.group('Sharpe比最大化による資金配分の最適化');
-  console.log('入力データ:', { recommendations, totalBudget });
-
-  // 数値に変換
+  
+  // 確率を文字列から数値に変換
   const processedRecs = recommendations.map(rec => ({
     ...rec,
-    expectedReturn: Number(typeof rec.expectedReturn === 'string' 
-      ? rec.expectedReturn.replace(/[^0-9]/g, '')
-      : rec.expectedReturn),
-    probability: Number(typeof rec.probability === 'string'
-      ? rec.probability.replace(/[^0-9.]/g, '')
-      : rec.probability) / 100
+    probability: typeof rec.probability === 'string' 
+      ? parseFloat(rec.probability.replace('%', '')) / 100 
+      : rec.probability
   }));
-  console.log('数値変換後のデータ:', processedRecs);
 
-  // 相関行列の作成
-  const correlationMatrix = processedRecs.map((bet1, i) => 
-    processedRecs.map((bet2, j) => {
-      if (i === j) return 1;
-      const commonHorses = bet1.horses.filter(h => bet2.horses.includes(h));
-      return commonHorses.length > 0 ? 0.5 : -0.2;
-    })
-  );
-  console.log('相関行列:', correlationMatrix);
+  const calculateSharpeRatio = (weights: number[]) => {
+    const returns = weights.map((w, i) => 
+      w * (processedRecs[i].odds - 1) * processedRecs[i].probability
+    );
+    const expectedReturn = returns.reduce((a, b) => a + b, 0);
+    
+    const variance = weights.map((w, i) => {
+      const r = (processedRecs[i].odds - 1) * w;
+      return processedRecs[i].probability * 
+        (1 - processedRecs[i].probability) * r * r;
+    }).reduce((a, b) => a + b, 0);
+    
+    const risk = Math.sqrt(variance);
+    return { sharpeRatio: risk > 0 ? expectedReturn / risk : 0, expectedReturn, risk };
+  };
 
-  // Sharpe比最大化
   let bestWeights: number[] = [];
-  let bestSharpe = -Infinity;
+  let bestMetrics = { sharpeRatio: -Infinity, expectedReturn: 0, risk: 0 };
 
-  for (let iter = 0; iter < 10000; iter++) {
+  for (let iter = 0; iter < 2000; iter++) {
     const weights = Array(processedRecs.length).fill(0)
       .map(() => Math.random())
       .map((w, _, arr) => w / arr.reduce((a, b) => a + b, 0));
-
-    const expectedReturn = weights.reduce((sum, w, i) => 
-      sum + w * processedRecs[i].expectedReturn, 0);
-
-    let portfolioVariance = 0;
-    for (let i = 0; i < weights.length; i++) {
-      for (let j = 0; j < weights.length; j++) {
-        portfolioVariance += weights[i] * weights[j] * 
-          correlationMatrix[i][j] * processedRecs[i].probability * processedRecs[j].probability;
-      }
-    }
     
-    const portfolioRisk = Math.sqrt(portfolioVariance);
-    const sharpeRatio = portfolioRisk > 0 ? expectedReturn / portfolioRisk : 0;
-
-    if (sharpeRatio > bestSharpe) {
-      bestSharpe = sharpeRatio;
+    const metrics = calculateSharpeRatio(weights);
+    if (metrics.sharpeRatio > bestMetrics.sharpeRatio) {
+      bestMetrics = metrics;
       bestWeights = weights;
+      console.log('改善:', {
+        iteration: iter,
+        sharpeRatio: metrics.sharpeRatio.toFixed(3),
+        expectedReturn: metrics.expectedReturn.toFixed(3),
+        risk: metrics.risk.toFixed(3)
+      });
     }
   }
 
-  console.log('最適化結果:', {
-    bestSharpe,
-    bestWeights,
-    allocations: bestWeights.map(w => Math.floor(totalBudget * w / 100) * 100)
-  });
-
-  // 最適化された投資配分を100円単位に調整
-  const result = processedRecs.map((rec, i) => ({
+  console.groupEnd();
+  return processedRecs.map((rec, i) => ({
     type: rec.type,
     horses: rec.horses,
+    horseName: ["馬単", "３連単"].includes(rec.type) 
+      ? rec.horses.join('→')
+      : rec.horses.join('-'),
     stake: Math.floor(totalBudget * bestWeights[i] / 100) * 100,
-    expectedReturn: rec.expectedReturn,
+    expectedReturn: rec.odds * Math.floor(totalBudget * bestWeights[i] / 100) * 100,
     probability: rec.probability
-  })).filter(bet => bet.stake >= 100);
-
-  console.log('最終結果:', result);
-  console.groupEnd();
-
-  return result;
+  }))
+  .filter(bet => bet.stake >= 100)
+  .sort((a, b) => {
+    const typeOrder: Record<string, number> = {
+      "単勝": 1,
+      "複勝": 2,
+      "枠連": 3,
+      "馬連": 4,
+      "ワイド": 5,
+      "馬単": 6,
+      "３連複": 7,
+      "３連単": 8
+    };
+    
+    // 馬券種別でソート
+    const typeCompare = typeOrder[a.type] - typeOrder[b.type];
+    if (typeCompare !== 0) return typeCompare;
+    
+    // 同じ馬券種別なら投資額の大きい順
+    return b.stake - a.stake;
+  });
 };
 
 export const calculateBetProposalsWithGemini = async (
