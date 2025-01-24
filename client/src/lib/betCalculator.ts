@@ -1,3 +1,5 @@
+import { GeminiStrategy, getGeminiStrategy } from './geminiApi';
+
 interface BettingOption {
   type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複" | "３連単";
   horseName: string;
@@ -13,7 +15,7 @@ interface BettingOption {
 }
 
 export interface BetProposal {
-  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複" | "３連単";
+  type: string;
   horses: string[];
   stake: number;
   expectedReturn: number;
@@ -651,4 +653,101 @@ export const calculateBetProposals = (
   const proposals = findOptimalWeights(bettingOptions);
 
   return proposals;
+};
+
+export const optimizeBetAllocation = (
+  recommendations: GeminiStrategy['recommendations'],
+  totalBudget: number
+): BetProposal[] => {
+  console.group('Sharpe比最大化による資金配分の最適化');
+  console.log('入力データ:', { recommendations, totalBudget });
+
+  // 数値に変換
+  const processedRecs = recommendations.map(rec => ({
+    ...rec,
+    expectedReturn: Number(typeof rec.expectedReturn === 'string' 
+      ? rec.expectedReturn.replace(/[^0-9]/g, '')
+      : rec.expectedReturn),
+    probability: Number(typeof rec.probability === 'string'
+      ? rec.probability.replace(/[^0-9.]/g, '')
+      : rec.probability) / 100
+  }));
+  console.log('数値変換後のデータ:', processedRecs);
+
+  // 相関行列の作成
+  const correlationMatrix = processedRecs.map((bet1, i) => 
+    processedRecs.map((bet2, j) => {
+      if (i === j) return 1;
+      const commonHorses = bet1.horses.filter(h => bet2.horses.includes(h));
+      return commonHorses.length > 0 ? 0.5 : -0.2;
+    })
+  );
+  console.log('相関行列:', correlationMatrix);
+
+  // Sharpe比最大化
+  let bestWeights: number[] = [];
+  let bestSharpe = -Infinity;
+
+  for (let iter = 0; iter < 10000; iter++) {
+    const weights = Array(processedRecs.length).fill(0)
+      .map(() => Math.random())
+      .map((w, _, arr) => w / arr.reduce((a, b) => a + b, 0));
+
+    const expectedReturn = weights.reduce((sum, w, i) => 
+      sum + w * processedRecs[i].expectedReturn, 0);
+
+    let portfolioVariance = 0;
+    for (let i = 0; i < weights.length; i++) {
+      for (let j = 0; j < weights.length; j++) {
+        portfolioVariance += weights[i] * weights[j] * 
+          correlationMatrix[i][j] * processedRecs[i].probability * processedRecs[j].probability;
+      }
+    }
+    
+    const portfolioRisk = Math.sqrt(portfolioVariance);
+    const sharpeRatio = portfolioRisk > 0 ? expectedReturn / portfolioRisk : 0;
+
+    if (sharpeRatio > bestSharpe) {
+      bestSharpe = sharpeRatio;
+      bestWeights = weights;
+    }
+  }
+
+  console.log('最適化結果:', {
+    bestSharpe,
+    bestWeights,
+    allocations: bestWeights.map(w => Math.floor(totalBudget * w / 100) * 100)
+  });
+
+  // 最適化された投資配分を100円単位に調整
+  const result = processedRecs.map((rec, i) => ({
+    type: rec.type,
+    horses: rec.horses,
+    stake: Math.floor(totalBudget * bestWeights[i] / 100) * 100,
+    expectedReturn: rec.expectedReturn,
+    probability: rec.probability
+  })).filter(bet => bet.stake >= 100);
+
+  console.log('最終結果:', result);
+  console.groupEnd();
+
+  return result;
+};
+
+export const calculateBetProposalsWithGemini = async (
+  horses: HorseData[], 
+  totalBudget: number, 
+  allBettingOptions: { bettingOptions: BettingOption[] },
+  riskRatio: number
+): Promise<BetProposal[]> => {
+  try {
+    // Geminiから推奨馬券を取得
+    const geminiResponse = await getGeminiStrategy([], totalBudget, allBettingOptions, riskRatio);
+    
+    // 資金配分の最適化
+    return optimizeBetAllocation(geminiResponse.strategy.recommendations, totalBudget);
+  } catch (error) {
+    console.error('Bet calculation error:', error);
+    return [];
+  }
 };

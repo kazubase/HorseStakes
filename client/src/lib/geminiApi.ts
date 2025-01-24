@@ -87,23 +87,27 @@ interface CombinationBetOption {
   expectedValue: string;
 }
 
+interface GeminiRecommendation {
+  type: string;
+  horses: string[];
+  stake: number;
+  reason: string;
+  expectedReturn: string | number;
+  probability: string | number;
+}
+
 export interface GeminiStrategy {
   description: string;
+  recommendations: GeminiRecommendation[];
   bettingTable: {
     headers: string[];
     rows: string[][];
   };
   summary: {
-    totalInvestment: string;
+    totalInvestment: string | number;
     expectedReturn: string;
     riskLevel: string;
   };
-  recommendations: {
-    type: string;
-    horses: string[];
-    stake: number;
-    reason: string;
-  }[];
 }
 
 // 券種の順序を定義
@@ -139,15 +143,23 @@ export const getGeminiStrategy = async (
 
 【リスク選好】
 - リスク選好度: ${riskRatio}（1～20の範囲で、1が最もローリスク、20が最もハイリスク）
-- リスク選好度に応じて、高配当馬券の比率と投資金額を調整してください
+- リスク選好度に応じて、高配当馬券の比率を調整してください
+
+【分析の観点】
+1. 各馬券の期待値と的中確率
+2. 馬券間の相関関係
+   - 同じ馬を含む馬券の組み合わせは正の相関
+   - 異なる馬の組み合わせは負の相関
+   - 単勝と複勝など、関連する馬券種の相関
+3. リスク分散効果
+   - 異なる馬券種の組み合わせ
+   - 的中確率の異なる馬券の組み合わせ
+   - 相関の低い馬券の組み合わせ
 
 【制約条件】
 - 必ず日本語で分析と提案を行うこと
-- 合計投資額は予算以内に収めること
-- 期待値の高い馬券を優先すること
-- リスク分散を考慮すること
-- 各馬券の投資額は100円単位とすること
-- リスク選好度に応じた馬券種と配分を選択すること
+- 各馬券について、他の馬券との相関関係を理由に含めること
+- リスク選好度に応じた馬券種と組み合わせを選択すること
 
 【馬券候補一覧】
 単勝候補:
@@ -198,21 +210,25 @@ ${allBettingOptions.bettingOptions
   .map(bet => `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${bet.ev.toFixed(2)}]`)
   .join('\n')}
 
-以下の形式で簡潔にJSON応答してください：
+以下の形式でJSON応答してください：
 json
 {
   "strategy": {
     "description": "戦略の要点を1文で",
-    "bettingTable": {
-      "headers": ["券種", "買い目", "オッズ", "的中率", "投資額", "理由"],
-      "rows": [
-        ["馬連", "1-2", "10.5", "15%", "1000", "期待値が高い"]
-      ]
-    },
+    "recommendations": [
+      {
+        "type": "馬券種類",
+        "horses": ["馬番"],
+        "stake": 投資推奨額,
+        "reason": "期待値・確率・相関関係の観点から選択理由を説明",
+        "expectedReturn": 期待収益,
+        "probability": 的中確率
+      }
+    ],
     "summary": {
       "totalInvestment": "合計投資額",
       "expectedReturn": "期待収益",
-      "riskLevel": "中"
+      "riskLevel": "リスクレベル（低/中/高）"
     }
   }
 }`,
@@ -233,53 +249,42 @@ json
 
     // 既にstrategy形式で返ってきた場合は要約をスキップ
     if (detailedData.strategy) {
-      // JSONの文字列を探して解析
+      // descriptionからJSONを抽出してパース
       const jsonMatch = detailedData.strategy.description.match(/```json\n([\s\S]*?)\n```/);
       if (jsonMatch) {
-        try {
-          const parsedJson = JSON.parse(jsonMatch[1]);
-          const sortedRows = parsedJson.strategy.bettingTable.rows.sort((a: string[], b: string[]) => {
-            const typeA = a[0]; // 馬券種別は配列の最初の要素
-            const typeB = b[0];
-            return betTypeOrder.indexOf(typeA) - betTypeOrder.indexOf(typeB);
-          });
-
-          return {
-            strategy: {
-              description: parsedJson.strategy.description,
-              bettingTable: {
-                headers: parsedJson.strategy.bettingTable.headers,
-                rows: sortedRows
-              },
-              summary: {
-                totalInvestment: parsedJson.strategy.summary.totalInvestment,
-                expectedReturn: parsedJson.strategy.summary.expectedReturn,
-                riskLevel: parsedJson.strategy.summary.riskLevel
-              },
-              recommendations: parsedJson.strategy.recommendations || []
+        const parsedStrategy = JSON.parse(jsonMatch[1]);
+        return {
+          strategy: {
+            description: parsedStrategy.strategy.description,
+            recommendations: parsedStrategy.strategy.recommendations.map((rec: GeminiStrategy['recommendations'][0]) => ({
+              type: rec.type,
+              horses: rec.horses,
+              stake: rec.stake,
+              reason: rec.reason,
+              expectedReturn: rec.expectedReturn,
+              probability: rec.probability
+            })),
+            bettingTable: {
+              headers: ['券種', '買い目', 'オッズ', '的中率', '投資額', '理由'],
+              rows: parsedStrategy.strategy.recommendations.map((rec: GeminiRecommendation) => [
+                rec.type,
+                rec.horses.join('-'),
+                String(rec.expectedReturn),
+                typeof rec.probability === 'number' 
+                  ? (rec.probability * 100).toFixed(1) + '%'
+                  : rec.probability,
+                String(rec.stake),
+                rec.reason
+              ])
+            },
+            summary: {
+              totalInvestment: parsedStrategy.strategy.summary.totalInvestment,
+              expectedReturn: parsedStrategy.strategy.summary.expectedReturn,
+              riskLevel: parsedStrategy.strategy.summary.riskLevel
             }
-          };
-        } catch (error) {
-          console.error('JSON parse error:', error);
-        }
+          }
+        };
       }
-
-      // JSONの解析に失敗した場合のフォールバック
-      return {
-        strategy: {
-          description: '',
-          bettingTable: {
-            headers: ['券種', '買い目', 'オッズ', '的中率', '投資額', '理由'],
-            rows: []
-          },
-          summary: {
-            totalInvestment: '0円',
-            expectedReturn: '0円',
-            riskLevel: '不明'
-          },
-          recommendations: []
-        }
-      };
     }
 
     // 2. 要約を取得（必要な場合のみ）

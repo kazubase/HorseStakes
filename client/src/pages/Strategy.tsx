@@ -11,7 +11,7 @@ import RiskAssessment from "@/components/RiskAssessment";
 import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
 import { calculateBetProposals, type BetProposal } from '@/lib/betCalculator';
-import { getGeminiStrategy, type BettingCandidate, type GeminiResponse, DetailedGeminiResponse, SummarizedGeminiResponse, type GeminiStrategy } from '@/lib/geminiApi';
+import { getGeminiStrategy, type BettingCandidate, type GeminiResponse, DetailedGeminiResponse, type GeminiStrategy } from '@/lib/geminiApi';
 import { BettingStrategyTable } from "@/components/BettingStrategyTable";
 
 interface RecommendedBet {
@@ -186,7 +186,7 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
 
   if (!state.strategy) return null;
 
-  return <BettingStrategyTable strategy={state.strategy} />;
+  return <BettingStrategyTable strategy={state.strategy} totalBudget={budget} />;
 }
 
 export default function Strategy() {
