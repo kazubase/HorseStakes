@@ -477,9 +477,8 @@ export const calculateBetProposals = (
       .filter(opt => {
         const riskFactor = getBetTypeRiskFactor(opt.type);
         
-        // オッズの制限
+        // オッズの下限のみを設定
         const minOdds = Math.max(1.0, riskRatio * 0.5 * riskFactor);
-        const maxOdds = Math.min(9999.9, riskRatio * riskFactor * riskFactor); // 馬券種別に応じて上限を調整
         
         // リスクリワード比率に応じて最小確率を調整
         const minProbability = Math.max(0.005, 1 / (riskRatio * riskFactor));
@@ -488,7 +487,6 @@ export const calculateBetProposals = (
         const minEV = 0.5;
 
         return opt.odds >= minOdds && 
-               opt.odds <= maxOdds && 
                opt.prob >= minProbability && 
                opt.ev >= minEV;
       })
