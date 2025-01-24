@@ -217,7 +217,7 @@ json
         "type": "馬券種類",
         "horses": ["馬番"],
         "odds": オッズ,
-        "probability": 的中確率,
+        "probability": 的中確率(少数で表示：50%なら0.5),
         "reason": "選択理由を説明"
       }
     ],
@@ -290,20 +290,17 @@ ${JSON.stringify(detailedData, null, 2)}
 json
 {
   "strategy": {
-    "description": "戦略の要点を1-2文で",
+    "description": "戦略の要点を1文で",
     "recommendations": [
       {
         "type": "馬券種類",
-        "horses": ["馬名"],
-        "stake": 投資額,
-        "reason": "期待値・確率・リスクの観点から30字以内で",
-        "expectedReturn": 期待収益,
-        "probability": 的中確率
+        "horses": ["馬番"],
+        "odds": オッズ,
+        "probability": 的中確率(少数で表示：50%なら0.5),
+        "reason": "選択理由を説明"
       }
     ],
     "summary": {
-      "totalStake": 合計投資額,
-      "expectedProfit": 期待収益,
       "riskLevel": "リスクレベル（低/中/高）"
     }
   }
