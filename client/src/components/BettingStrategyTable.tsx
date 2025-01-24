@@ -2,6 +2,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { GeminiStrategy } from "@/lib/geminiApi";
 import { optimizeBetAllocation } from "@/lib/betCalculator";
+import * as Popover from '@radix-ui/react-popover';
+import { InfoCircledIcon } from "@radix-ui/react-icons";
+import { Button } from "@/components/ui/button";
 
 interface BettingStrategyTableProps {
   strategy: GeminiStrategy;
@@ -35,7 +38,7 @@ export function BettingStrategyTable({ strategy, totalBudget }: BettingStrategyT
 
   // 最適化された結果からテーブルデータを生成
   const tableData = {
-    headers: ['券種', '買い目', 'オッズ', '的中率', '最適投資額', '期待収益'],
+    headers: ['券種', '買い目', 'オッズ', '的中率', '最適投資額', '期待収益', ''],  // 最後の列をアイコン用に追加
     rows: sortedBets.map(bet => [
       bet.type,
       (() => {
@@ -53,7 +56,23 @@ export function BettingStrategyTable({ strategy, totalBudget }: BettingStrategyT
       Number(bet.expectedReturn / bet.stake).toFixed(1),
       (bet.probability * 100).toFixed(1) + '%',
       bet.stake.toLocaleString() + '円',
-      bet.expectedReturn.toLocaleString() + '円'
+      bet.expectedReturn.toLocaleString() + '円',
+      // 情報アイコンとポップオーバーを追加
+      <Popover.Popover key={bet.horses.join('-')}>
+        <Popover.PopoverTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-6 w-6">
+            <InfoCircledIcon className="h-4 w-4" />
+          </Button>
+        </Popover.PopoverTrigger>
+        <Popover.PopoverContent className="w-80 rounded-lg border bg-card p-4 shadow-lg" sideOffset={5}>
+          <div className="space-y-2">
+            <h4 className="font-semibold text-base border-b pb-2 text-white">選択理由</h4>
+            <p className="text-sm text-gray-200 leading-relaxed whitespace-normal break-words">
+              {bet.reason || '理由なし'}
+            </p>
+          </div>
+        </Popover.PopoverContent>
+      </Popover.Popover>
     ])
   };
 
@@ -65,7 +84,6 @@ export function BettingStrategyTable({ strategy, totalBudget }: BettingStrategyT
     <Card>
       <CardHeader>
         <CardTitle>AI最適化戦略</CardTitle>
-        <CardDescription>Sharpe比を最大化する最適な資金配分</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

@@ -22,6 +22,7 @@ export interface BetProposal {
   stake: number;
   expectedReturn: number;
   probability: number;
+  reason?: string;  // reasonを追加
 }
 
 export interface HorseData {
@@ -716,7 +717,8 @@ export const optimizeBetAllocation = (
       : rec.horses.join('-'),
     stake: Math.floor(totalBudget * bestWeights[i] / 100) * 100,
     expectedReturn: rec.odds * Math.floor(totalBudget * bestWeights[i] / 100) * 100,
-    probability: rec.probability
+    probability: rec.probability,
+    reason: rec.reason
   }))
   .filter(bet => bet.stake >= 100)
   .sort((a, b) => {
