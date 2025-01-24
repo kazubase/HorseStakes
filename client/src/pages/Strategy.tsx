@@ -1,7 +1,7 @@
 import { useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MainLayout from "@/components/layout/MainLayout";
 import { Calculator, Brain, TrendingUp, Wallet, Target, Scale, AlertCircle } from "lucide-react";
@@ -124,7 +124,7 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
       } catch (err) {
         setState(prev => ({
           ...prev,
-          error: 'Geminiからの戦略取得に失敗しました',
+          error: 'AIからの戦略取得に失敗しました',
           isLoading: false
         }));
         console.error('Strategy Error:', err);
@@ -184,7 +184,25 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
     );
   }
 
-  if (!state.strategy) return null;
+  if (!state.strategy) {
+    if (recommendedBets?.length === 0) {
+      return (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>最適な馬券が見つかりませんでした</AlertTitle>
+          <AlertDescription>
+            予算とリスク設定を調整して、再度試してください。
+            <ul className="list-disc list-inside mt-2 text-sm">
+              <li>予算を増やす</li>
+              <li>リスク設定を下げる</li>
+              <li>的中確率の見直し</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
+      );
+    }
+    return null;
+  }
 
   return <BettingStrategyTable strategy={state.strategy} totalBudget={budget} />;
 }
@@ -259,7 +277,7 @@ export default function Strategy() {
     enabled: !!id,
   });
 
-  const { data: recommendedBets, isLoading } = useQuery<BetProposal[]>({
+  const { data: recommendedBets, isLoading } = useQuery<BetProposal[], Error>({
     queryKey: [`/api/betting-strategy/${id}`, { budget, riskRatio, winProbs, placeProbs }],
     queryFn: async () => {
       if (!horses || !latestOdds || !latestFukuOdds || !latestWakurenOdds || 
@@ -337,8 +355,11 @@ export default function Strategy() {
     enabled: !!id && !!horses && !!latestOdds && !!latestFukuOdds && 
              !!latestWakurenOdds && !!latestUmarenOdds && !!latestWideOdds && 
              !!latestUmatanOdds && !!latestSanrenpukuOdds && !!latestSanrentanOdds && 
-             budget > 0 && Object.keys(winProbs).length > 0
-  });
+             budget > 0 && Object.keys(winProbs).length > 0,
+    onError: (error: Error) => {
+      console.error('馬券計算エラー:', error);
+    }
+  } as UseQueryOptions<BetProposal[], Error>);
 
   useEffect(() => {
     console.log('Strategy params:', {
@@ -432,6 +453,33 @@ export default function Strategy() {
   const expectedROI = totalInvestment > 0 ? 
     `+${(totalExpectedReturn * 100).toFixed(1)}%` : 
     '0%';
+
+  if (recommendedBets?.length === 0) {
+    return (
+      <MainLayout>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>最適な馬券が見つかりませんでした</AlertTitle>
+          <AlertDescription>
+            以下の点を確認して、再度試してください：
+            <ul className="list-disc list-inside mt-2">
+              <li>予算: {budget.toLocaleString()}円</li>
+              <li>リスク設定: {riskRatio}</li>
+            </ul>
+            <div className="mt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => window.history.back()}
+                className="mt-2"
+              >
+                戻る
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

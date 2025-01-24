@@ -599,43 +599,62 @@ export const calculateBetProposals = (
 
     // 最小投資額でフィルタリング
     const MIN_WEIGHT = MIN_STAKE / totalBudget;
-    const finalBets = bestBets.filter((_, i) => bestWeights[i] >= MIN_WEIGHT);
-    const finalWeights = bestWeights.filter(w => w >= MIN_WEIGHT);
+    
+    // 重みの再正規化を行う
+    let normalizedWeights = [...bestWeights];
+    if (bestWeights.length > 0) {
+      // 最小重みでフィルタリングする前に、重みの合計を計算
+      const totalWeight = bestWeights.reduce((sum, w) => sum + w, 0);
+      
+      // 各重みを調整して、合計が1になるようにする
+      normalizedWeights = bestWeights.map(w => w / totalWeight);
+    }
+
+    // フィルタリングと投資額の計算
+    const finalBetsWithWeights = bestBets.map((bet, i) => ({
+      bet,
+      weight: normalizedWeights[i],
+      stake: Math.floor(totalBudget * normalizedWeights[i] / 100) * 100
+    }))
+    .filter(({ stake }) => stake >= MIN_STAKE);
 
     // 結果を投資額に変換し、ソート
-    const proposals: BetProposal[] = finalBets.map((opt, i) => {
-      const stake = Math.floor(totalBudget * finalWeights[i] / 100) * 100;
-      return {
-        type: opt.type as BetProposal['type'],
-        horses: [opt.horseName],
-        horseName: opt.horseName,
+    const proposals: BetProposal[] = finalBetsWithWeights
+      .map(({ bet, stake }) => ({
+        type: bet.type as BetProposal['type'],
+        horses: [bet.horseName],
+        horseName: bet.horseName,
         stake,
-        expectedReturn: Math.floor(stake * opt.odds),
-        probability: opt.prob
-      };
-    }).sort((a, b) => {
-      const typeOrder: Record<string, number> = {
-        "単勝": 1,
-        "複勝": 2,
-        "枠連": 3,
-        "馬連": 4,
-        "ワイド": 5,
-        "馬単": 6,
-        "３連複": 7,
-        "３連単": 8
-      };
-      
-      // 馬券種別でソート
-      const typeCompare = typeOrder[a.type] - typeOrder[b.type];
-      if (typeCompare !== 0) return typeCompare;
-      
-      // 同じ馬券種別なら投資額の大きい順
-      return b.stake - a.stake;
-    });
+        expectedReturn: Math.floor(stake * bet.odds),
+        probability: bet.prob
+      }))
+      .sort((a, b) => {
+        const typeOrder: Record<string, number> = {
+          "単勝": 1,
+          "複勝": 2,
+          "枠連": 3,
+          "馬連": 4,
+          "ワイド": 5,
+          "馬単": 6,
+          "３連複": 7,
+          "３連単": 8
+        };
+        
+        // 馬券種別でソート
+        const typeCompare = typeOrder[a.type] - typeOrder[b.type];
+        if (typeCompare !== 0) return typeCompare;
+        
+        // 同じ馬券種別なら投資額の大きい順
+        return b.stake - a.stake;
+      });
 
+    // 最終結果のログ出力を改善
     console.log('最終結果:', {
-      sharpeRatio: bestMetrics?.score ?? -Infinity,
+      sharpeRatio: bestMetrics?.sharpeRatio.toFixed(3) ?? -Infinity,
+      expectedReturn: bestMetrics?.expectedReturn.toFixed(3) ?? 0,
+      risk: bestMetrics?.risk.toFixed(3) ?? 0,
       totalBets: proposals.length,
+      totalInvestment: proposals.reduce((sum, p) => sum + p.stake, 0),
       bets: proposals.map(p => ({
         type: p.type,
         horses: p.horses,
