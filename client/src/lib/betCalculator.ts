@@ -707,7 +707,7 @@ export const optimizeBetAllocation = (
   let bestWeights: number[] = [];
   let bestMetrics = { sharpeRatio: -Infinity, expectedReturn: 0, risk: 0 };
 
-  for (let iter = 0; iter < 2000; iter++) {
+  for (let iter = 0; iter < 1000; iter++) {
     const weights = Array(processedRecs.length).fill(0)
       .map(() => Math.random())
       .map((w, _, arr) => w / arr.reduce((a, b) => a + b, 0));
