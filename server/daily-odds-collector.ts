@@ -173,6 +173,7 @@ class DailyOddsCollector {
 
   // オッズ収集のスケジュール設定
   async scheduleOddsCollection(race: RaceInfo) {
+    console.log('Setting up schedule for race:', race);
     const raceTime = race.startTime;
     const morningCollection = new Date(raceTime);
     morningCollection.setHours(9, 0, 0, 0);
@@ -185,6 +186,8 @@ class DailyOddsCollector {
     // 30分毎の更新スケジュール
     const thirtyMinRule = new schedule.RecurrenceRule();
     thirtyMinRule.minute = [0, 30];
+    console.log('Setting up 30-min schedule:', thirtyMinRule);
+
     schedule.scheduleJob(thirtyMinRule, () => {
       const now = new Date();
       const timeToRace = raceTime.getTime() - now.getTime();
@@ -195,6 +198,7 @@ class DailyOddsCollector {
           this.collectOdds(race.id);
         } else {
           // 通常の30分毎更新
+          console.log('30-min schedule triggered for race:', race.id);
           this.collectOdds(race.id);
         }
       }
@@ -203,9 +207,12 @@ class DailyOddsCollector {
     // レース30分前からの10分毎更新用
     const tenMinRule = new schedule.RecurrenceRule();
     tenMinRule.minute = new Array(6).fill(0).map((_, i) => i * 10);
+    console.log('Setting up 10-min schedule:', tenMinRule);
+
     schedule.scheduleJob(tenMinRule, () => {
       const now = new Date();
       const timeToRace = raceTime.getTime() - now.getTime();
+      console.log('10-min schedule check:', { timeToRace, raceId: race.id });
       
       if (timeToRace > 0 && timeToRace <= 30 * 60 * 1000) {
         this.collectOdds(race.id);
@@ -273,6 +280,26 @@ class DailyOddsCollector {
     if (this.browser) await this.browser.close();
     await this.collector.cleanup();
   }
+
+  async checkUpcomingRaces() {
+    // DBからupcomingステータスのレースを取得
+    const upcomingRaces = await db.query.races.findMany({
+      where: eq(races.status, 'upcoming')
+    });
+
+    console.log('Found upcoming races:', upcomingRaces);
+
+    // 各レースのオッズ収集をスケジュール
+    for (const race of upcomingRaces) {
+      await this.scheduleOddsCollection({
+        id: race.id,
+        name: race.name,
+        venue: race.venue,
+        startTime: race.startTime,
+        isGrade: true
+      });
+    }
+  }
 }
 
 // メイン実行関数
@@ -282,6 +309,11 @@ async function main() {
   try {
     await dailyCollector.initialize();
     
+    // 定期的にupcomingレースをチェック（5分ごと）
+    schedule.scheduleJob('*/5 * * * *', async () => {
+      await dailyCollector.checkUpcomingRaces();
+    });
+
     if (process.env.NODE_ENV === 'development') {
       // 開発環境：即時実行
       console.log('Starting immediate collection...');
