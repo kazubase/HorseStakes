@@ -597,35 +597,24 @@ export const calculateBetProposals = (
       }
     }
 
-    // 最小投資額でフィルタリング
-    const MIN_WEIGHT = MIN_STAKE / totalBudget;
-    
-    // 重みの再正規化を行う
+    // 重みの正規化を行う
     let normalizedWeights = [...bestWeights];
     if (bestWeights.length > 0) {
-      // 最小重みでフィルタリングする前に、重みの合計を計算
+      // 重みの合計を計算
       const totalWeight = bestWeights.reduce((sum, w) => sum + w, 0);
       
       // 各重みを調整して、合計が1になるようにする
       normalizedWeights = bestWeights.map(w => w / totalWeight);
     }
 
-    // フィルタリングと投資額の計算
-    const finalBetsWithWeights = bestBets.map((bet, i) => ({
-      bet,
-      weight: normalizedWeights[i],
-      stake: Math.floor(totalBudget * normalizedWeights[i] / 100) * 100
-    }))
-    .filter(({ stake }) => stake >= MIN_STAKE);
-
     // 結果を投資額に変換し、ソート
-    const proposals: BetProposal[] = finalBetsWithWeights
-      .map(({ bet, stake }) => ({
+    const proposals: BetProposal[] = bestBets
+      .map((bet, i) => ({
         type: bet.type as BetProposal['type'],
         horses: [bet.horseName],
         horseName: bet.horseName,
-        stake,
-        expectedReturn: Math.floor(stake * bet.odds),
+        stake: Number((totalBudget * normalizedWeights[i]).toFixed(1)),  // 小数点1桁に制限
+        expectedReturn: Number((totalBudget * normalizedWeights[i] * bet.odds).toFixed(1)),  // 小数点1桁に制限
         probability: bet.prob
       }))
       .sort((a, b) => {
