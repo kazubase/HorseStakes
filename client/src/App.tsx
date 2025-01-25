@@ -12,11 +12,15 @@ import Explain from "@/pages/Explain";
 import ExplainDetail from "@/pages/ExplainDetail";
 import ExplainHistory from "@/pages/ExplainHistory";
 import ExplainAlternatives from "@/pages/ExplainAlternatives";
+import Guide from "@/pages/Guide";
+import Algorithm from "@/pages/Algorithm";
 
 function App() {
   return (
     <Switch>
       <Route path="/" component={RaceList} />
+      <Route path="/guide" component={Guide} />
+      <Route path="/algorithm" component={Algorithm} />
       <Route path="/race/:id" component={Home} />
       <Route path="/predict/win/:id" component={WinProbability} />
       <Route path="/predict/place/:id" component={PlaceProbability} />
