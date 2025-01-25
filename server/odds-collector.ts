@@ -87,6 +87,16 @@ interface Tan3OddsData {
   raceId: number;
 }
 
+const BATCH_SIZES = {
+  tanpuku: 20,    // 単複（比較的少量）
+  wakuren: 40,    // 枠連（中程度）
+  umaren: 200,     // 馬連（中程度）
+  wide: 200,       // ワイド（中程度）
+  umatan: 400,     // 馬単（多め）
+  fuku3: 1000,     // 3連複（大量）
+  tan3: 1000       // 3連単（大量）
+} as const;
+
 export class OddsCollector {
   private browser: Browser | null = null;
   
@@ -131,7 +141,7 @@ export class OddsCollector {
 
   async initialize() {
     this.browser = await chromium.launch({
-      headless: false  // デバッグ用にheadlessをfalseに設定
+      headless: true  // デバッグ用にheadlessをfalseに設定
     });
   }
 
@@ -632,7 +642,7 @@ export class OddsCollector {
   }
 
   async updateWakurenOdds(oddsDataArray: WakurenOddsData[]) {
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = BATCH_SIZES.wakuren;
     
     const existingOdds = await db.query.wakurenOdds.findMany({
       where: eq(wakurenOdds.raceId, oddsDataArray[0].raceId)
@@ -694,7 +704,7 @@ export class OddsCollector {
   }
 
   async updateUmarenOdds(oddsDataArray: UmarenOddsData[]) {
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = BATCH_SIZES.umaren;
     
     const existingOdds = await db.query.umarenOdds.findMany({
       where: eq(umarenOdds.raceId, oddsDataArray[0].raceId)
@@ -756,7 +766,7 @@ export class OddsCollector {
   }
 
   async updateWideOdds(oddsDataArray: WideOddsData[]) {
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = BATCH_SIZES.wide;
     
     const existingOdds = await db.query.wideOdds.findMany({
       where: eq(wideOdds.raceId, oddsDataArray[0].raceId)
@@ -821,7 +831,7 @@ export class OddsCollector {
   }
 
   async updateUmatanOdds(oddsDataArray: UmatanOddsData[]) {
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = BATCH_SIZES.umatan;
     
     const existingOdds = await db.query.umatanOdds.findMany({
       where: eq(umatanOdds.raceId, oddsDataArray[0].raceId)
@@ -883,7 +893,7 @@ export class OddsCollector {
   }
 
   async updateFuku3Odds(oddsDataArray: Fuku3OddsData[]) {
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = BATCH_SIZES.fuku3;
     
     const existingOdds = await db.query.fuku3Odds.findMany({
       where: eq(fuku3Odds.raceId, oddsDataArray[0].raceId)
@@ -949,7 +959,7 @@ export class OddsCollector {
 
   async updateTan3Odds(oddsDataArray: Tan3OddsData[]) {
     // バッチサイズの設定
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = BATCH_SIZES.tan3;
     
     // 既存データの一括取得
     const existingOdds = await db.query.tan3Odds.findMany({

@@ -24,7 +24,7 @@ class DailyOddsCollector {
 
   async initialize() {
     this.browser = await chromium.launch({ 
-      headless: false,
+      headless: true,
       args: ['--no-sandbox']
     });
     await this.collector.initialize();
