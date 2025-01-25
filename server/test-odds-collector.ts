@@ -11,7 +11,7 @@ async function testCurrentRaceOddsCollection() {
     await collector.initialize();
 
     // 今週のレースID入力
-    const raceId = 202506010711;
+    const raceId = 202510010111;
     
     await collectOddsForRace(collector, raceId);
 
@@ -54,10 +54,10 @@ async function collectOddsForRace(collector: OddsCollector, raceId: number, past
     console.log('Registering new race...');
     await db.insert(races).values({
       id: raceId,
-      name: `有馬記念`,
-      venue: "中山",
-      startTime: new Date('2024-12-22T15:40:00'),
-      status: "done"
+      name: `小倉牝馬ステークス`,
+      venue: "小倉",
+      startTime: new Date('2025-01-25T15:25:00'),
+      status: "upcoming"
     });
     console.log('Race registered successfully');
   }
@@ -136,5 +136,5 @@ async function collectOddsForRace(collector: OddsCollector, raceId: number, past
 }
 
 // 実行したい方のコメントアウトを外して使用
-// testCurrentRaceOddsCollection();
-testPastRaceOddsCollection();
+testCurrentRaceOddsCollection();
+// testPastRaceOddsCollection();
