@@ -6,5 +6,8 @@ vite.config.ts.*
 *.tar.gz
 .env
 .env.local
-logs/*.log
-logs/*.log.*
+# Logs
+/logs/
+/logs/*.log
+/logs/*.log.*
+*.log
