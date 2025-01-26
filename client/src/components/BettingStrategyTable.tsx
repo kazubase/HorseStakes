@@ -33,6 +33,15 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     return optimizeBetAllocation(strategy.recommendations, totalBudget);
   }, [strategy.recommendations, totalBudget]);
 
+  // 馬券種別の表記を統一する関数
+  const normalizeTicketType = (type: string): string => {
+    const typeMap: Record<string, string> = {
+      "３連複": "3連複",
+      "３連単": "3連単"
+    };
+    return typeMap[type] || type;
+  };
+
   // ソート済みの馬券リストをメモ化
   const sortedBets = useMemo(() => {
     const typeOrder: Record<string, number> = {
@@ -46,7 +55,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       "3連単": 8
     };
     return [...optimizationResult].sort((a, b) => {
-      return (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0);
+      const typeA = normalizeTicketType(a.type);
+      const typeB = normalizeTicketType(b.type);
+      return (typeOrder[typeA] || 0) - (typeOrder[typeB] || 0);
     });
   }, [optimizationResult]);
 
@@ -133,10 +144,10 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   const tableData = useMemo(() => ({
     headers: ['券種', '買い目', 'オッズ', '的中率', '最適投資額', '想定払戻金', ''],
     rows: sortedBets.map(bet => [
-      bet.type,
+      normalizeTicketType(bet.type),
       (() => {
-        if (["馬単", "3連単"].includes(bet.type)) {
-          // 馬単と3連単は矢印区切り
+        if (["馬単", "3連単"].includes(normalizeTicketType(bet.type))) {
+          // 馬単と3連単は矢印区切り（配列を使用して結合）
           return bet.horses.join('→');
         } else if (bet.horses.length === 1) {
           // 単勝・複勝は馬番のみ
