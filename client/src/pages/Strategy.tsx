@@ -9,7 +9,7 @@ import { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, Uma
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import RiskAssessment from "@/components/RiskAssessment";
 import { Progress } from "@/components/ui/progress";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { calculateBetProposals, type BetProposal } from '@/lib/betCalculator';
 import { getGeminiStrategy, type BettingCandidate, type GeminiResponse, DetailedGeminiResponse, type GeminiStrategy } from '@/lib/geminiApi';
 import { BettingStrategyTable } from "@/components/BettingStrategyTable";
@@ -37,12 +37,25 @@ interface GeminiStrategyState {
 
 function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyProps) {
   const { id } = useParams();
+  const renderCount = useRef(0);
   const [state, setState] = useState<GeminiStrategyState>({
     strategy: null,
     isLoading: false,
     error: null,
     isRequesting: false
   });
+
+  // デバッグ用のレンダリングカウント
+  useEffect(() => {
+    renderCount.current += 1;
+    console.log('GeminiStrategy render:', {
+      count: renderCount.current,
+      recommendedBetsLength: recommendedBets?.length,
+      budget,
+      riskRatio,
+      timestamp: new Date().toISOString()
+    });
+  }, []); // 初回レンダリング時のみ実行
 
   const { data: horses } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
@@ -60,81 +73,119 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
   const winProbs = JSON.parse(winProbsStr);
   const placeProbs = JSON.parse(placeProbsStr);
 
-  useEffect(() => {
-    const fetchGeminiStrategy = async () => {
-      if (state.isRequesting || !recommendedBets?.length || !horses) return;
+  const fetchGeminiStrategy = useCallback(async () => {
+    if (state.isRequesting || !recommendedBets?.length || !horses) return;
 
-      try {
-        setState(prev => ({ ...prev, isRequesting: true, isLoading: true, error: null }));
-        
-        const allBettingOptions = {
-          horses: horses.map((horse: Horse) => ({
-            name: horse.name,
-            odds: Number(latestOdds?.find((odd: TanOddsHistory) => Number(odd.horseId) === horse.number)?.odds || 0),
-            winProb: winProbs[horse.id],
-            placeProb: placeProbs[horse.id]
-          })),
-          winBets: recommendedBets?.filter(bet => bet.type === '単勝'),
-          placeBets: recommendedBets?.filter(bet => bet.type === '複勝'),
-          bracketQuinellaBets: recommendedBets?.filter(bet => bet.type === '枠連'),
-          quinellaBets: recommendedBets?.filter(bet => bet.type === '馬連'),
-          wideBets: recommendedBets?.filter(bet => bet.type === 'ワイド'),
-          exactaBets: recommendedBets?.filter(bet => bet.type === '馬単'),
-          trioBets: recommendedBets?.filter(bet => bet.type === '３連複'),
-          trifectaBets: recommendedBets?.filter(bet => bet.type === '３連単'),
-          bettingOptions: recommendedBets?.map(bet => ({
-            type: bet.type,
-            horseName: bet.horses.join(bet.type.includes('単') ? '→' : '-'),
-            odds: bet.expectedReturn / bet.stake,
-            prob: bet.probability,
-            ev: bet.expectedReturn - bet.stake,
-            frame1: 0,
-            frame2: 0,
-            frame3: 0,
-            horse1: 0,
-            horse2: 0,
-            horse3: 0
-          })) || []
-        };
+    try {
+      setState(prev => ({ ...prev, isRequesting: true, isLoading: true, error: null }));
+      
+      const allBettingOptions = {
+        horses: horses.map((horse: Horse) => ({
+          name: horse.name,
+          odds: Number(latestOdds?.find((odd: TanOddsHistory) => Number(odd.horseId) === horse.number)?.odds || 0),
+          winProb: winProbs[horse.id],
+          placeProb: placeProbs[horse.id]
+        })),
+        winBets: recommendedBets?.filter(bet => bet.type === '単勝'),
+        placeBets: recommendedBets?.filter(bet => bet.type === '複勝'),
+        bracketQuinellaBets: recommendedBets?.filter(bet => bet.type === '枠連'),
+        quinellaBets: recommendedBets?.filter(bet => bet.type === '馬連'),
+        wideBets: recommendedBets?.filter(bet => bet.type === 'ワイド'),
+        exactaBets: recommendedBets?.filter(bet => bet.type === '馬単'),
+        trioBets: recommendedBets?.filter(bet => bet.type === '３連複'),
+        trifectaBets: recommendedBets?.filter(bet => bet.type === '３連単'),
+        bettingOptions: recommendedBets?.map(bet => ({
+          type: bet.type,
+          horseName: bet.horses.join(bet.type.includes('単') ? '→' : '-'),
+          odds: bet.expectedReturn / bet.stake,
+          prob: bet.probability,
+          ev: bet.expectedReturn - bet.stake,
+          frame1: 0,
+          frame2: 0,
+          frame3: 0,
+          horse1: 0,
+          horse2: 0,
+          horse3: 0
+        })) || []
+      };
 
-        console.log('Fetching Gemini strategy with:', {
-          recommendedBetsCount: recommendedBets.length,
-          budget,
-          allBettingOptions
-        });
+      console.log('Fetching Gemini strategy:', {
+        timestamp: new Date().toISOString(),
+        recommendedBetsCount: recommendedBets.length
+      });
 
-        const response = await getGeminiStrategy([], budget, allBettingOptions, riskRatio);
-        
-        console.log('Gemini strategy response:', {
-          hasStrategy: !!response.strategy,
-          strategy: response.strategy,
-          bettingTable: response.strategy?.bettingTable,
-          recommendations: response.strategy?.recommendations
-        });
+      const response = await getGeminiStrategy([], budget, allBettingOptions, riskRatio);
+      
+      console.log('Gemini strategy response:', {
+        hasStrategy: !!response.strategy,
+        strategy: response.strategy,
+        bettingTable: response.strategy?.bettingTable,
+        recommendations: response.strategy?.recommendations
+      });
 
-        if (!response.strategy?.bettingTable) {
-          throw new Error('Invalid strategy response format');
-        }
-
-        setState(prev => ({
-          ...prev,
-          strategy: response.strategy,
-          isLoading: false
-        }));
-      } catch (err) {
-        setState(prev => ({
-          ...prev,
-          error: 'AIからの戦略取得に失敗しました',
-          isLoading: false
-        }));
-        console.error('Strategy Error:', err);
-      } finally {
-        setState(prev => ({ ...prev, isRequesting: false }));
+      if (!response.strategy?.bettingTable) {
+        throw new Error('Invalid strategy response format');
       }
-    };
 
-    fetchGeminiStrategy();
-  }, [budget, horses, recommendedBets]);
+      sessionStorage.setItem(`strategy-${id}`, JSON.stringify(response.strategy));
+      sessionStorage.setItem(`strategy-params-${id}`, JSON.stringify({
+        budget,
+        riskRatio,
+        recommendedBets
+      }));
+
+      setState(prev => ({
+        ...prev,
+        strategy: response.strategy,
+        isLoading: false,
+        isRequesting: false
+      }));
+    } catch (err) {
+      setState(prev => ({
+        ...prev,
+        error: 'AIからの戦略取得に失敗しました',
+        isLoading: false,
+        isRequesting: false
+      }));
+      console.error('Strategy Error:', err);
+    }
+  }, [id, budget, riskRatio, recommendedBets, horses]);
+
+  // 初期化とstrategy復元
+  useEffect(() => {
+    if (!recommendedBets?.length) return;
+
+    const savedStrategy = sessionStorage.getItem(`strategy-${id}`);
+    const savedParams = sessionStorage.getItem(`strategy-params-${id}`);
+    
+    if (savedStrategy && savedParams) {
+      const params = JSON.parse(savedParams);
+      if (params.budget === budget && 
+          params.riskRatio === riskRatio && 
+          JSON.stringify(params.recommendedBets) === JSON.stringify(recommendedBets)) {
+        setState(prev => ({
+          ...prev,
+          strategy: JSON.parse(savedStrategy)
+        }));
+        return;
+      }
+    }
+
+    if (!state.strategy && !state.isRequesting) {
+      fetchGeminiStrategy();
+    }
+  }, [id, budget, riskRatio, recommendedBets]); // state.strategyとstate.isRequestingを依存配列から削除
+
+  // BettingStrategyTableコンポーネントをメモ化
+  const strategyTable = useMemo(() => {
+    if (!state.strategy) return null;
+    return (
+      <BettingStrategyTable 
+        strategy={state.strategy} 
+        totalBudget={budget} 
+      />
+    );
+  }, [state.strategy, budget]);
 
   if (state.isLoading) {
     return (
@@ -177,10 +228,22 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
 
   if (state.error) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>{state.error}</AlertDescription>
-      </Alert>
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{state.error}</AlertDescription>
+        </Alert>
+        <div className="flex justify-end">
+          <Button
+            onClick={fetchGeminiStrategy}
+            disabled={state.isLoading || state.isRequesting}
+            className="gap-2"
+          >
+            <Brain className="h-4 w-4" />
+            戦略を再分析
+          </Button>
+        </div>
+      </div>
     );
   }
 
@@ -204,7 +267,30 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
     return null;
   }
 
-  return <BettingStrategyTable strategy={state.strategy} totalBudget={budget} />;
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          onClick={fetchGeminiStrategy}
+          disabled={state.isLoading || state.isRequesting}
+          className="gap-2"
+        >
+          {state.isLoading ? (
+            <>
+              <Brain className="h-4 w-4 animate-pulse" />
+              分析中...
+            </>
+          ) : (
+            <>
+              <Brain className="h-4 w-4" />
+              戦略を再分析
+            </>
+          )}
+        </Button>
+      </div>
+      {strategyTable}
+    </div>
+  );
 }
 
 export default function Strategy() {
@@ -215,22 +301,24 @@ export default function Strategy() {
 
   const winProbsStr = params.get("winProbs") || "{}";
   const placeProbsStr = params.get("placeProbs") || "{}";
-  const winProbs = (() => {
+  
+  const winProbs = useMemo(() => {
     try {
       return JSON.parse(winProbsStr);
     } catch (e) {
       console.error('単勝確率のパース失敗:', e);
       return {};
     }
-  })();
-  const placeProbs = (() => {
+  }, [winProbsStr]);
+
+  const placeProbs = useMemo(() => {
     try {
       return JSON.parse(placeProbsStr);
     } catch (e) {
       console.error('複勝確率のパース失敗:', e);
       return {};
     }
-  })();
+  }, [placeProbsStr]);
 
   const { data: horses } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
@@ -277,8 +365,13 @@ export default function Strategy() {
     enabled: !!id,
   });
 
+  const queryKey = useMemo(() => 
+    [`/api/betting-strategy/${id}`, { budget, riskRatio, winProbs, placeProbs }], 
+    [id, budget, riskRatio, winProbs, placeProbs]
+  );
+
   const { data: recommendedBets, isLoading } = useQuery<BetProposal[], Error>({
-    queryKey: [`/api/betting-strategy/${id}`, { budget, riskRatio, winProbs, placeProbs }],
+    queryKey,
     queryFn: async () => {
       if (!horses || !latestOdds || !latestFukuOdds || !latestWakurenOdds || 
           !latestUmarenOdds || !latestWideOdds || !latestUmatanOdds || 
@@ -339,7 +432,14 @@ export default function Strategy() {
         oddsMax: Number(odd.oddsMax)
       })) || [];
 
-      return calculateBetProposals(
+      console.log('馬券計算開始:', {
+        queryKey,
+        horseCount: horseDataList.length,
+        budget,
+        riskRatio
+      });
+
+      const result = calculateBetProposals(
         horseDataList, 
         budget, 
         riskRatio, 
@@ -351,18 +451,24 @@ export default function Strategy() {
         sanrenpukuData,
         sanrentanData
       );
+
+      console.log('馬券計算完了:', {
+        queryKey,
+        resultCount: result.length
+      });
+
+      return result;
     },
     enabled: !!id && !!horses && !!latestOdds && !!latestFukuOdds && 
              !!latestWakurenOdds && !!latestUmarenOdds && !!latestWideOdds && 
              !!latestUmatanOdds && !!latestSanrenpukuOdds && !!latestSanrentanOdds && 
              budget > 0 && Object.keys(winProbs).length > 0,
-    onError: (error: Error) => {
-      console.error('馬券計算エラー:', error);
-    }
+    staleTime: 30000,
+    cacheTime: 60000,
   } as UseQueryOptions<BetProposal[], Error>);
 
   useEffect(() => {
-    console.log('Strategy params:', {
+    console.log('Strategy params updated:', {
       budget,
       riskRatio,
       winProbs,
