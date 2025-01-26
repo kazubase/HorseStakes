@@ -6,6 +6,8 @@ import { optimizeBetAllocation } from "@/lib/betCalculator";
 import * as Popover from '@radix-ui/react-popover';
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
+import html2canvas from 'html2canvas';
+import { Camera } from 'lucide-react';
 
 interface BettingStrategyTableProps {
   strategy: GeminiStrategy;
@@ -109,13 +111,58 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     ])
   }), [sortedBets]);
 
+  // テーブルのref追加
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  // スクリーンショット機能の追加
+  const captureTable = async () => {
+    if (!tableRef.current) return;
+    
+    try {
+      // キャプチャ前に余白を追加
+      const originalPadding = tableRef.current.style.padding;
+      tableRef.current.style.padding = '16px'; // 余白を追加
+
+      const canvas = await html2canvas(tableRef.current, {
+        backgroundColor: '#000000',
+        scale: 1,
+        useCORS: true,
+        logging: false,
+        // キャプチャ範囲を少し広げる
+        width: tableRef.current.scrollWidth + 32, // 左右の余白を含む
+        height: tableRef.current.scrollHeight + 32, // 上下の余白を含む
+      });
+      
+      // 元の余白に戻す
+      tableRef.current.style.padding = originalPadding;
+      
+      const link = document.createElement('a');
+      link.download = `betting-strategy-${new Date().toISOString()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('スクリーンショットの作成に失敗:', error);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>AI最適化戦略</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>AI最適化戦略</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={captureTable}
+            className="gap-2"
+          >
+            <Camera className="h-4 w-4" />
+            買い目を保存
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-4" ref={tableRef}>
           <Table>
             <TableHeader>
               <TableRow>
