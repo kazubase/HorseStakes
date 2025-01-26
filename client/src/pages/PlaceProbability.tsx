@@ -13,10 +13,16 @@ export default function PlaceProbability() {
   const { id } = useParams();
   const [probabilities, setProbabilities] = useState<{ [key: number]: number }>({});
   const [totalProbability, setTotalProbability] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const getRequiredTotalProbability = (horseCount: number) => {
     return horseCount >= 8 ? 300 : 200;
   };
+
+  // URLから単勝確率を取得
+  const winProbabilities = JSON.parse(
+    decodeURIComponent(new URLSearchParams(window.location.search).get('winProbs') || '{}')
+  );
 
   const { data: horses } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
@@ -24,16 +30,24 @@ export default function PlaceProbability() {
   });
 
   useEffect(() => {
-    if (horses) {
+    if (horses && !isInitialized) {
+      // 初期値を単勝確率に設定
       const initial = horses.reduce((acc, horse) => {
-        acc[horse.id] = 0;
+        acc[horse.id] = winProbabilities[horse.id] || 0;
         return acc;
       }, {} as { [key: number]: number });
       setProbabilities(initial);
+      setTotalProbability(Object.values(initial).reduce((sum, value) => sum + value, 0));
+      setIsInitialized(true);
     }
-  }, [horses]);
+  }, [horses, isInitialized]);
 
   const handleProbabilityChange = (horseId: number, newValue: number) => {
+    // 単勝確率より小さい値は設定できないようにする
+    if (newValue < (winProbabilities[horseId] || 0)) {
+      return;
+    }
+
     const newProbabilities = { ...probabilities };
     newProbabilities[horseId] = newValue;
     setProbabilities(newProbabilities);
@@ -110,11 +124,17 @@ export default function PlaceProbability() {
                     </label>
                     <span className="text-sm text-muted-foreground">
                       {probabilities[horse.id]?.toFixed(1)}%
+                      {probabilities[horse.id] < (winProbabilities[horse.id] || 0) && (
+                        <span className="text-red-500 ml-2">
+                          （単勝確率以上にしてください）
+                        </span>
+                      )}
                     </span>
                   </div>
                   <Slider
                     value={[probabilities[horse.id] || 0]}
                     onValueChange={([value]) => handleProbabilityChange(horse.id, value)}
+                    min={0}
                     max={100}
                     step={5}
                     className="my-2"
