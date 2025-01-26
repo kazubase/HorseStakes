@@ -12,6 +12,9 @@ module.exports = {
     },
     output: './logs/odds-collector-out.log',
     error: './logs/odds-collector-error.log',
-    time: true
+    time: true,
+    max_size: '10M',
+    rotate_interval: '1d',
+    retain: '7',
   }]
 }; 

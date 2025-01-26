@@ -17,6 +17,7 @@ interface RaceInfo {
 class DailyOddsCollector {
   private browser: Browser | null = null;
   private collector: OddsCollector;
+  private activeJobs: Map<number, schedule.Job> = new Map();
 
   constructor() {
     this.collector = new OddsCollector();
@@ -38,7 +39,7 @@ class DailyOddsCollector {
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     });
     const page = await context.newPage();
-    const races: RaceInfo[] = [];
+    const raceInfos: RaceInfo[] = [];
 
     try {
       // JRAトップページからオッズページへ遷移
@@ -89,7 +90,8 @@ class DailyOddsCollector {
               const $races = cheerio.load(raceListHtml);
 
               console.log('Checking races for:', kaisaiName);
-              $races('tr').each((_, row) => {
+              const rows = $races('tr').toArray();
+              for (const row of rows) {
                 const $row = $races(row);
                 const $raceName = $row.find('.race_name');
                 const $raceNum = $row.find('.race_num');
@@ -108,11 +110,31 @@ class DailyOddsCollector {
                   
                   // 時刻を日本語形式から変換（15時25分 → 15:25）
                   const timeText = $raceTime.text().trim();
+                  console.log('Race time text:', timeText);  // デバッグ用
+
+                  // 「発走済」の場合はステータスを更新
+                  if (timeText === '発走済') {
+                    const year = today.getFullYear();
+                    const venueCode = this.getVenueCode(venue);
+                    const raceId = parseInt(
+                      `${year}${venueCode}${kai.padStart(2, '0')}${nichi.padStart(2, '0')}${raceNumber.toString().padStart(2, '0')}`
+                    );
+
+                    console.log(`Race ${raceName} has already started, updating status to done for ID: ${raceId}`);
+                    await db.update(races)
+                      .set({ status: 'done' })
+                      .where(eq(races.id, raceId));
+                    continue;
+                  }
+
                   const [hours, minutes] = timeText.replace(/[時分]/g, ':').split(':').map(Number);
 
                   // レース時刻を設定
-                  const raceTime = new Date(today);
-                  raceTime.setHours(hours, minutes, 0, 0);
+                  const raceTime = new Date();
+                  raceTime.setHours(hours, minutes, 0, 0);  // 日本時間で設定
+
+                  // UTCに変換（データベース保存用）
+                  const utcRaceTime = new Date(raceTime.getTime() - (9 * 60 * 60 * 1000));
 
                   const year = today.getFullYear();  // 年を100で割らない
                   const venueCode = this.getVenueCode(venue);
@@ -120,19 +142,19 @@ class DailyOddsCollector {
                     `${year}${venueCode}${kai.padStart(2, '0')}${nichi.padStart(2, '0')}${raceNumber.toString().padStart(2, '0')}`
                   );
 
-                  races.push({
+                  raceInfos.push({
                     id: raceId,
                     name: raceName,
                     venue,
-                    startTime: raceTime,
+                    startTime: utcRaceTime,  // UTC時間で保存
                     isGrade: true
                   });
                   
                   console.log('Found grade race:', { raceName, raceId, timeText, raceNumber });
                 }
-              });
+              }
 
-              console.log('Found races for venue:', venue, races);
+              console.log('Found races for venue:', venue, raceInfos);
 
               // 開催選択ページに戻る
               await page.goto('https://www.jra.go.jp/keiba/');
@@ -150,8 +172,8 @@ class DailyOddsCollector {
       await context.close();
     }
 
-    console.log('Found grade races:', races);
-    return races;
+    console.log('Found grade races:', raceInfos);
+    return raceInfos;
   }
 
   // レース情報をDBに登録
@@ -173,41 +195,60 @@ class DailyOddsCollector {
 
   // オッズ収集のスケジュール設定
   async scheduleOddsCollection(race: RaceInfo) {
-    console.log('Setting up schedule for race:', race);
+    // 既存のジョブがあれば削除
+    if (this.activeJobs.has(race.id)) {
+      const existingJob = this.activeJobs.get(race.id);
+      existingJob?.cancel();
+      this.activeJobs.delete(race.id);
+    }
+
+    console.log(`Setting up schedule for race: ${race.id}`);
     
     // 単一のスケジュールで管理
     const rule = new schedule.RecurrenceRule();
     rule.minute = new Array(6).fill(0).map((_, i) => i * 10); // 10分間隔
 
-    schedule.scheduleJob(rule, () => {
+    const job = schedule.scheduleJob(rule, async () => {
       const now = new Date();
       const timeToRace = race.startTime.getTime() - now.getTime();
       
       if (timeToRace > 0) {
-        // レース30分前は毎回収集
+        // レース30分前は10分間隔で収集
         if (timeToRace <= 30 * 60 * 1000) {
-          this.collectOdds(race.id);
+          await this.collectOdds(race.id);
         } 
         // それ以外は30分間隔で収集
         else if (now.getMinutes() % 30 === 0) {
-          this.collectOdds(race.id);
+          await this.collectOdds(race.id);
         }
+      } else {
+        // レース終了後はジョブをキャンセル
+        job.cancel();
+        this.activeJobs.delete(race.id);
       }
     });
+
+    this.activeJobs.set(race.id, job);
   }
 
   // オッズ収集実行
   public async collectOdds(raceId: number) {
     try {
-      // レースのステータスをチェック
       const race = await db.query.races.findFirst({
         where: eq(races.id, raceId)
       });
 
       if (!race || race.status === 'done') return;
 
-      // レース発走時刻を過ぎていたらステータスを更新
-      if (race.startTime < new Date() && race.status === 'upcoming') {
+      // 日本時間で比較
+      const now = new Date();
+      const jstNow = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+      const jstStartTime = new Date(race.startTime.getTime() + (9 * 60 * 60 * 1000));
+
+      console.log(`Checking race ${raceId} - Start time (JST): ${jstStartTime.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`);
+      
+      if (jstStartTime < jstNow && race.status === 'upcoming') {
+        console.log(`Race ${raceId} has finished. Updating status to done`);
         await db.update(races)
           .set({ status: 'done' })
           .where(eq(races.id, raceId));
@@ -295,8 +336,9 @@ class DailyOddsCollector {
   }
 
   async cleanup() {
-    if (this.browser) await this.browser.close();
     await this.collector.cleanup();
+    Array.from(this.activeJobs.values()).forEach(job => job.cancel());
+    this.activeJobs.clear();
   }
 
   async checkUpcomingRaces() {
