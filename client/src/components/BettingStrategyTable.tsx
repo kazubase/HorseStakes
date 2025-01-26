@@ -52,7 +52,10 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   // 集計値の計算をメモ化
   const totals = useMemo(() => {
     const totalInvestment = sortedBets.reduce((sum, bet) => sum + bet.stake, 0);
-    const totalExpectedReturn = sortedBets.reduce((sum, bet) => sum + bet.expectedReturn, 0);
+    const totalExpectedReturn = sortedBets.reduce((sum, bet) => {
+      // E[R] = Σ(Ri * Pi) の計算
+      return sum + (bet.expectedReturn * bet.probability);
+    }, 0);
     
     return {
       totalInvestment,
@@ -74,7 +77,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 
   // テーブルデータの生成をメモ化
   const tableData = useMemo(() => ({
-    headers: ['券種', '買い目', 'オッズ', '的中率', '最適投資額', '期待収益', ''],
+    headers: ['券種', '買い目', 'オッズ', '的中率', '最適投資額', '想定払戻金', ''],
     rows: sortedBets.map(bet => [
       bet.type,
       (() => {
@@ -196,7 +199,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               <span>{totals.totalExpectedReturn.toLocaleString()}円</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-medium">期待リターン:</span>
+              <span className="font-medium">期待収益率:</span>
               <span>{totals.expectedReturnRate}%</span>
             </div>
           </div>
