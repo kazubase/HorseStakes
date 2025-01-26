@@ -669,7 +669,6 @@ export const optimizeBetAllocation = (
 ): BetProposal[] => {
   console.group('Sharpe比最大化による資金配分の最適化');
   
-  // 確率を文字列から数値に変換
   const processedRecs = recommendations.map(rec => ({
     ...rec,
     probability: typeof rec.probability === 'string' 
@@ -677,16 +676,84 @@ export const optimizeBetAllocation = (
       : rec.probability
   }));
 
+  // 馬券間の排反関係を計算する関数
+  const calculateMutualExclusivity = (bet1: GeminiRecommendation, bet2: GeminiRecommendation): number => {
+    // 同じ馬券種別の場合
+    if (bet1.type === bet2.type) {
+      // 単勝・枠連・馬連・馬単・3連複・3連単は完全に排反
+      if (["単勝","枠連","馬連","馬単","３連複","３連単"].includes(bet1.type)) {
+        return 1.0;
+      }
+      
+      // 複勝の場合
+      if (bet1.type === "複勝") {
+        // 同じ馬を含む場合
+        if (bet1.horses.some(h => bet2.horses.includes(h))) {
+          return 1.0;  // 同じ馬の複勝を重複購入することはないため
+        }
+        // 異なる馬の場合は、3着以内に入る確率の関係で部分的に排反
+        return 0.4;  // 簡略化した近似値
+      }
+      
+      // ワイドの場合
+      if (bet1.type === "ワイド") {
+        const commonHorses = bet1.horses.filter(h => bet2.horses.includes(h));
+        if (commonHorses.length === 2) {
+          return 1.0;  // 完全に同じ組み合わせ
+        }
+        if (commonHorses.length === 1) {
+          return 0.5;  // 1頭共通
+        }
+        return 0.2;  // 共通馬なし
+      }
+    }
+    
+    // 異なる馬券種別の場合
+    const commonHorses = bet1.horses.filter(h => bet2.horses.includes(h));
+    if (commonHorses.length === 0) return 0;
+    
+    // 共通する馬がいる場合、券種の組み合わせに応じて排反度を設定
+    if (bet1.type === "単勝" || bet2.type === "単勝") {
+      return 0.8;  // 単勝が絡む場合は強い排反関係
+    }
+    if (bet1.type === "複勝" || bet2.type === "複勝") {
+      return 0.4;  // 複勝が絡む場合は弱い排反関係
+    }
+    return 0.6;  // その他の組み合わせは中程度の排反関係
+  };
+
   const calculateSharpeRatio = (weights: number[]) => {
-    const returns = weights.map((w, i) => 
-      w * (processedRecs[i].odds - 1) * processedRecs[i].probability
-    );
+    // 期待リターンの計算（排反事象を考慮）
+    const returns = weights.map((w, i) => {
+      let adjustedProb = processedRecs[i].probability;
+      
+      // 他の馬券との排反関係を考慮して確率を調整
+      weights.forEach((otherW, j) => {
+        if (i !== j && otherW > 0) {
+          const exclusivity = calculateMutualExclusivity(processedRecs[i], processedRecs[j]);
+          adjustedProb *= (1 - exclusivity * processedRecs[j].probability);
+        }
+      });
+      
+      return w * (processedRecs[i].odds - 1) * adjustedProb;
+    });
+    
     const expectedReturn = returns.reduce((a, b) => a + b, 0);
     
+    // 分散の計算（排反事象を考慮）
     const variance = weights.map((w, i) => {
       const r = (processedRecs[i].odds - 1) * w;
-      return processedRecs[i].probability * 
-        (1 - processedRecs[i].probability) * r * r;
+      let adjustedProb = processedRecs[i].probability;
+      
+      // 他の馬券との排反関係を考慮
+      weights.forEach((otherW, j) => {
+        if (i !== j && otherW > 0) {
+          const exclusivity = calculateMutualExclusivity(processedRecs[i], processedRecs[j]);
+          adjustedProb *= (1 - exclusivity * processedRecs[j].probability);
+        }
+      });
+      
+      return adjustedProb * (1 - adjustedProb) * r * r;
     }).reduce((a, b) => a + b, 0);
     
     const risk = Math.sqrt(variance);

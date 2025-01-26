@@ -8,6 +8,7 @@ import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import html2canvas from 'html2canvas';
 import { Camera } from 'lucide-react';
+import type { BetProposal } from "@/lib/betCalculator";
 
 interface BettingStrategyTableProps {
   strategy: GeminiStrategy;
@@ -49,18 +50,71 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     });
   }, [optimizationResult]);
 
-  // 集計値の計算をメモ化
+  // 馬券間の排反関係を計算する関数
+  const calculateMutualExclusivity = (bet1: BetProposal, bet2: BetProposal): number => {
+    // 同じ馬券種別の場合
+    if (bet1.type === bet2.type) {
+      // 複勝・ワイド以外の同じ券種は完全排反
+      if (bet1.type !== "複勝" && bet1.type !== "ワイド") {
+        return 1.0;
+      }
+      
+      // 複勝の場合
+      if (bet1.type === "複勝") {
+        // 同じ馬を含む場合
+        if (bet1.horses.some(h => bet2.horses.includes(h))) {
+          return 1.0;  // 同じ馬の複勝を重複購入することはないため
+        }
+        return 0.4;  // 異なる馬の場合は部分的に排反
+      }
+      
+      // ワイドの場合
+      if (bet1.type === "ワイド") {
+        const commonHorses = bet1.horses.filter(h => bet2.horses.includes(h));
+        if (commonHorses.length === 2) return 1.0;  // 完全に同じ組み合わせ
+        if (commonHorses.length === 1) return 0.5;  // 1頭共通
+        return 0.2;  // 共通馬なし
+      }
+    }
+    
+    // 異なる馬券種別の場合
+    const commonHorses = bet1.horses.filter(h => bet2.horses.includes(h));
+    if (commonHorses.length === 0) return 0;
+    
+    // 共通する馬がいる場合、券種の組み合わせに応じて排反度を設定
+    if (bet1.type === "単勝" || bet2.type === "単勝") {
+      return 0.8;  // 単勝が絡む場合は強い排反関係
+    }
+    if (bet1.type === "複勝" || bet2.type === "複勝") {
+      return 0.4;  // 複勝が絡む場合は弱い排反関係
+    }
+    return 0.6;  // その他の組み合わせは中程度の排反関係
+  };
+
+  // 集計値の計算をメモ化（排反事象を考慮）
   const totals = useMemo(() => {
     const totalInvestment = sortedBets.reduce((sum, bet) => sum + bet.stake, 0);
-    const totalExpectedReturn = sortedBets.reduce((sum, bet) => {
-      // E[R] = Σ(Ri * Pi) の計算
-      return sum + (bet.expectedReturn * bet.probability);
-    }, 0);
+
+    // 排反事象を考慮した期待収益の計算
+    const adjustedExpectedReturn = sortedBets.map(bet => {
+      let adjustedProb = bet.probability;
+      
+      // 他の馬券との排反関係を考慮して確率を調整
+      sortedBets.forEach(otherBet => {
+        if (bet !== otherBet) {
+          const exclusivity = calculateMutualExclusivity(bet, otherBet);
+          const otherStakeRatio = otherBet.stake / totalInvestment;
+          adjustedProb *= (1 - exclusivity * otherBet.probability * otherStakeRatio);
+        }
+      });
+      
+      return bet.expectedReturn * adjustedProb;
+    }).reduce((sum, return_) => sum + return_, 0);
     
     return {
       totalInvestment,
-      totalExpectedReturn,
-      expectedReturnRate: ((totalExpectedReturn / totalInvestment - 1) * 100).toFixed(1)
+      totalExpectedReturn: adjustedExpectedReturn,
+      expectedReturnRate: ((adjustedExpectedReturn / totalInvestment - 1) * 100).toFixed(1)
     };
   }, [sortedBets]);
 
@@ -195,11 +249,11 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               <span>{totals.totalInvestment.toLocaleString()}円</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-medium">期待収益:</span>
-              <span>{totals.totalExpectedReturn.toLocaleString()}円</span>
+              <span className="font-medium">推定期待収益:</span>
+              <span>{Math.round(totals.totalExpectedReturn).toLocaleString()}円</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-medium">期待収益率:</span>
+              <span className="font-medium">推定期待収益率:</span>
               <span>{totals.expectedReturnRate}%</span>
             </div>
           </div>
