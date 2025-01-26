@@ -174,96 +174,114 @@ class DailyOddsCollector {
   // オッズ収集のスケジュール設定
   async scheduleOddsCollection(race: RaceInfo) {
     console.log('Setting up schedule for race:', race);
-    const raceTime = race.startTime;
-    const morningCollection = new Date(raceTime);
-    morningCollection.setHours(9, 0, 0, 0);
+    
+    // 単一のスケジュールで管理
+    const rule = new schedule.RecurrenceRule();
+    rule.minute = new Array(6).fill(0).map((_, i) => i * 10); // 10分間隔
 
-    // 朝9時の初回収集
-    if (morningCollection > new Date()) {
-      schedule.scheduleJob(morningCollection, () => this.collectOdds(race.id));
-    }
-
-    // 30分毎の更新スケジュール
-    const thirtyMinRule = new schedule.RecurrenceRule();
-    thirtyMinRule.minute = [0, 30];
-    console.log('Setting up 30-min schedule:', thirtyMinRule);
-
-    schedule.scheduleJob(thirtyMinRule, () => {
+    schedule.scheduleJob(rule, () => {
       const now = new Date();
-      const timeToRace = raceTime.getTime() - now.getTime();
+      const timeToRace = race.startTime.getTime() - now.getTime();
       
-      // レース30分前からは10分毎に更新
       if (timeToRace > 0) {
+        // レース30分前は毎回収集
         if (timeToRace <= 30 * 60 * 1000) {
           this.collectOdds(race.id);
-        } else {
-          // 通常の30分毎更新
-          console.log('30-min schedule triggered for race:', race.id);
+        } 
+        // それ以外は30分間隔で収集
+        else if (now.getMinutes() % 30 === 0) {
           this.collectOdds(race.id);
         }
-      }
-    });
-
-    // レース30分前からの10分毎更新用
-    const tenMinRule = new schedule.RecurrenceRule();
-    tenMinRule.minute = new Array(6).fill(0).map((_, i) => i * 10);
-    console.log('Setting up 10-min schedule:', tenMinRule);
-
-    schedule.scheduleJob(tenMinRule, () => {
-      const now = new Date();
-      const timeToRace = raceTime.getTime() - now.getTime();
-      console.log('10-min schedule check:', { timeToRace, raceId: race.id });
-      
-      if (timeToRace > 0 && timeToRace <= 30 * 60 * 1000) {
-        this.collectOdds(race.id);
       }
     });
   }
 
   // オッズ収集実行
   public async collectOdds(raceId: number) {
-    // レースのステータスをチェック
-    const race = await db.query.races.findFirst({
-      where: eq(races.id, raceId)
-    });
+    try {
+      // レースのステータスをチェック
+      const race = await db.query.races.findFirst({
+        where: eq(races.id, raceId)
+      });
 
-    if (!race) return;
+      if (!race || race.status === 'done') return;
 
-    // レース発走時刻を過ぎていたらステータスを更新
-    if (race.startTime < new Date() && race.status === 'upcoming') {
-      await db.update(races)
-        .set({ status: 'done' })
-        .where(eq(races.id, raceId));
-      return;
-    }
-
-    // レースが終了していたらオッズ収集をスキップ
-    if (race.status === 'done') return;
-
-    const betTypes = ['tanpuku', 'wakuren', 'umaren', 'wide', 'umatan', 'fuku3', 'tan3'] as const;
-    
-    for (const betType of betTypes) {
-      try {
-        const odds = await this.collector.collectOddsForBetType(raceId, betType);
-        if (odds.length > 0) {
-          if (betType === 'tanpuku') {
-            await this.collector.saveOddsHistory(odds);
-          } else {
-            const updateMethod = {
-              wakuren: this.collector.updateWakurenOdds.bind(this.collector),
-              umaren: this.collector.updateUmarenOdds.bind(this.collector),
-              wide: this.collector.updateWideOdds.bind(this.collector),
-              umatan: this.collector.updateUmatanOdds.bind(this.collector),
-              fuku3: this.collector.updateFuku3Odds.bind(this.collector),
-              tan3: this.collector.updateTan3Odds.bind(this.collector)
-            }[betType];
-
-            await updateMethod(odds);
-          }
-        }
-      } catch (error) {
-        console.error(`Error collecting ${betType} odds for race ${raceId}:`, error);
+      // レース発走時刻を過ぎていたらステータスを更新
+      if (race.startTime < new Date() && race.status === 'upcoming') {
+        await db.update(races)
+          .set({ status: 'done' })
+          .where(eq(races.id, raceId));
+        return;
       }
+
+      console.log(`Collecting odds for race ${raceId}`);
+      const betTypes = ['tanpuku', 'wakuren', 'umaren', 'wide', 'umatan', 'fuku3', 'tan3'] as const;
+      
+      for (const betType of betTypes) {
+        try {
+          console.log(`Collecting ${betType} odds for race ID: ${raceId}`);
+          const odds = await this.collector.collectOddsForBetType(raceId, betType);
+          console.log(`Collected ${betType} odds data:`, odds);
+          
+          if (odds.length > 0) {
+            if (betType === 'tanpuku') {
+              // 馬のデータを先に登録（単複オッズの場合のみ）
+              for (const odd of odds) {
+                try {
+                  const existingHorse = await db.query.horses.findFirst({
+                    where: and(
+                      eq(horses.name, odd.horseName),
+                      eq(horses.raceId, raceId)
+                    )
+                  });
+
+                  if (!existingHorse) {
+                    console.log(`Registering horse: ${odd.horseName} (Race: ${raceId}, Frame: ${odd.frame}, Number: ${odd.number})`);
+                    await db.insert(horses).values({
+                      name: odd.horseName,
+                      raceId: raceId,
+                      frame: odd.frame,
+                      number: odd.number,
+                      status: odd.odds === '取消' ? 'scratched' : 'running'
+                    });
+                  } else {
+                    // 既存の馬のステータスを更新（取消になった場合など）
+                    if (odd.odds === '取消' && existingHorse.status !== 'scratched') {
+                      console.log(`Updating horse status to scratched: ${odd.horseName} (Race: ${raceId})`);
+                      await db.update(horses)
+                        .set({ status: 'scratched' })
+                        .where(and(
+                          eq(horses.name, odd.horseName),
+                          eq(horses.raceId, raceId)
+                        ));
+                    }
+                  }
+                } catch (error) {
+                  console.error(`Error handling horse ${odd.horseName} for race ${raceId}:`, error);
+                }
+              }
+              await this.collector.saveOddsHistory(odds);
+            } else {
+              // 他の馬券種別の保存
+              const updateMethod = {
+                wakuren: this.collector.updateWakurenOdds.bind(this.collector),
+                umaren: this.collector.updateUmarenOdds.bind(this.collector),
+                wide: this.collector.updateWideOdds.bind(this.collector),
+                umatan: this.collector.updateUmatanOdds.bind(this.collector),
+                fuku3: this.collector.updateFuku3Odds.bind(this.collector),
+                tan3: this.collector.updateTan3Odds.bind(this.collector)
+              }[betType];
+
+              await updateMethod(odds);
+            }
+            console.log(`${betType} odds data saved successfully`);
+          }
+        } catch (error) {
+          console.error(`Error collecting ${betType} odds for race ${raceId}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('Error in collectOdds:', error);
     }
   }
 
@@ -307,27 +325,39 @@ async function main() {
   const dailyCollector = new DailyOddsCollector();
   
   try {
+    console.log('Starting odds collector with NODE_ENV:', process.env.NODE_ENV);
     await dailyCollector.initialize();
     
     // 定期的にupcomingレースをチェック（5分ごと）
+    console.log('Setting up 5-min check schedule');
     schedule.scheduleJob('*/5 * * * *', async () => {
+      console.log('Running upcoming races check...');
       await dailyCollector.checkUpcomingRaces();
     });
 
     if (process.env.NODE_ENV === 'development') {
-      // 開発環境：即時実行
-      console.log('Starting immediate collection...');
-      const races = await dailyCollector.getTodayGradeRaces();
-      console.log('Found races:', races);
-      
-      for (const race of races) {
-        await dailyCollector.registerRace(race);
-        await dailyCollector.scheduleOddsCollection(race);
-        await dailyCollector.collectOdds(race.id);
-      }
-    } else {
-      // 本番環境：スケジュール実行
+      console.log('Development mode: Starting immediate collection...');
+    }
+
+    // 初回実行（開発・本番共通）
+    console.log('Running initial race collection...');
+    const races = await dailyCollector.getTodayGradeRaces();
+    console.log('Found races:', races);
+    
+    // 直列処理に変更
+    for (const race of races) {
+      console.log('Processing race:', race);
+      await dailyCollector.registerRace(race);
+      await dailyCollector.scheduleOddsCollection(race);
+      // 各レースの処理完了を待つ
+      await new Promise(resolve => setTimeout(resolve, 5000)); // 5秒の間隔を設ける
+    }
+
+    // 本番環境のみ：毎日8:55に再取得
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Production mode: Setting up 8:55 schedule');
       schedule.scheduleJob('55 8 * * *', async () => {
+        console.log('Running 8:55 race collection...');
         const races = await dailyCollector.getTodayGradeRaces();
         for (const race of races) {
           await dailyCollector.registerRace(race);
@@ -338,11 +368,6 @@ async function main() {
 
   } catch (error) {
     console.error('Error in main process:', error);
-  } finally {
-    if (process.env.NODE_ENV === 'development') {
-      await dailyCollector.cleanup();
-      process.exit(0);
-    }
   }
 }
 
