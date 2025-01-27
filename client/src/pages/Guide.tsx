@@ -48,7 +48,7 @@ export default function Guide() {
               <CardContent className="space-y-2">
                 <p>1. AIが提案する馬券の組み合わせを確認</p>
                 <p>2. オッズ、的中率、資金配分が確認できます</p>
-                <p className="text-sm text-muted-foreground">※出力されるオッズ、的中率は必ずしも正確な値ではないことに注意して下さい</p>
+                <p className="text-sm text-muted-foreground">※AIが出力する内容は必ずしも正確ではないことに注意して下さい</p>
               </CardContent>
             </Card>
           </div>
