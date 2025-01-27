@@ -13,7 +13,7 @@
     "test-odds": "tsx server/test-odds-collector.ts",
     "db:seed-bet-types": "dotenv -e .env -- tsx db/migrations/bet-types-seed.ts",
     "collect": "npx tsx server/daily-odds-collector.ts",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build && npx playwright install chromium --with-deps"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

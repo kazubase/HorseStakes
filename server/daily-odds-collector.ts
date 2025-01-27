@@ -26,7 +26,11 @@ class DailyOddsCollector {
   async initialize() {
     this.browser = await chromium.launch({ 
       headless: true,
-      args: ['--no-sandbox']
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage'
+      ]
     });
     await this.collector.initialize();
   }
