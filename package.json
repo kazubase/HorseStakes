@@ -6,13 +6,13 @@
   "scripts": {
     "dev": "dotenv -e .env -- tsx server/index.ts",
     "build": "rm -rf dist && tsc",
-    "start": "node dist/server/index.js",
+    "start": "tsx server/index.ts",
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "db:migrate": "tsx db/migrate.ts",
     "test-odds": "tsx server/test-odds-collector.ts",
     "db:seed-bet-types": "dotenv -e .env -- tsx db/migrations/bet-types-seed.ts",
-    "collect": "node dist/server/daily-odds-collector.js",
+    "collect": "tsx server/daily-odds-collector.ts",
     "postinstall": "npm run build"
   },
   "dependencies": {
@@ -93,8 +93,8 @@
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
     "zod": "^3.23.8",
-    "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "tsx": "^4.7.0",
+    "typescript": "^5.0.2"
   },
   "devDependencies": {
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
