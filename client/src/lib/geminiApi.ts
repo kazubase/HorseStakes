@@ -119,6 +119,55 @@ const betTypeOrder = [
   '3連単'
 ];
 
+const getCsrfToken = (): string => {
+  const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+  if (!token) {
+    throw new Error('CSRFトークンが見つかりません');
+  }
+  return token;
+};
+
+// リクエストにリトライロジックを追加
+const fetchWithRetry = async (
+  url: string, 
+  options: RequestInit, 
+  maxRetries = 5
+): Promise<Response> => {
+  const backoffDelay = (attempt: number) => {
+    const baseDelay = Math.min(1000 * Math.pow(2, attempt), 10000);
+    return baseDelay + Math.random() * 1000;
+  };
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+
+      if (response.status === 503) {
+        console.log(`Retry attempt ${i + 1} after ${backoffDelay(i)}ms due to 503 error`);
+        await new Promise(resolve => setTimeout(resolve, backoffDelay(i)));
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return response;
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      console.log(`Retry attempt ${i + 1} after ${backoffDelay(i)}ms`);
+      await new Promise(resolve => setTimeout(resolve, backoffDelay(i)));
+    }
+  }
+  throw new Error('リクエストが失敗しました');
+};
+
 export const getGeminiStrategy = async (
   bettingCandidates: BettingCandidate[],
   totalBudget: number,
@@ -262,16 +311,20 @@ json
 }`;
 
     // 1. 詳細な分析を取得
-    const detailedResponse = await fetch('/api/gemini', {
+    const detailedResponse = await fetchWithRetry('/api/gemini', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrfToken(),
+      },
+      credentials: 'same-origin',
       body: JSON.stringify({ 
         prompt: prompt,
         model: 'gemini-2.0-flash-thinking-exp',
         thought: false,
         apiVersion: 'v1alpha'
       })
-    });
+    }) ?? throwError('詳細分析の取得に失敗しました');
 
     const detailedData = await detailedResponse.json();
 
@@ -317,9 +370,13 @@ json
     }
 
     // 2. 要約を取得（必要な場合のみ）
-    const summaryResponse = await fetch('/api/gemini', {
+    const summaryResponse = await fetchWithRetry('/api/gemini', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrfToken(),
+      },
+      credentials: 'same-origin',
       body: JSON.stringify({ 
         prompt: `必ず日本語で応答してください。以下の競馬投資分析を、表形式で簡潔に要約してください：
 
@@ -346,7 +403,7 @@ json
 }`,
         model: 'gemini-2.0-flash-exp'
       })
-    });
+    }) ?? throwError('要約の取得に失敗しました');
 
     const summarizedData = await summaryResponse.json();
 
@@ -375,4 +432,9 @@ json
   } catch (error) {
     throw new Error(`Gemini APIエラー: ${(error as Error).message}`);
   }
-}; 
+};
+
+// ヘルパー関数
+function throwError(message: string): never {
+  throw new Error(message);
+} 

@@ -4,6 +4,10 @@ import { setupVite, serveStatic, log } from "./vite";
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import csrf from 'csurf';
+import cookieParser from 'cookie-parser';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,8 +18,82 @@ dotenv.config({
 });
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false }));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "blob:"],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        manifestSrc: ["'self'"],
+        workerSrc: ["'none'"],
+        childSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: true,
+    crossOriginOpenerPolicy: true,
+    crossOriginResourcePolicy: { policy: "same-site" },
+    dnsPrefetchControl: true,
+    frameguard: { action: "deny" },
+    hsts: true,
+    noSniff: true,
+    originAgentCluster: true,
+    permittedCrossDomainPolicies: true,
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  })
+);
+
+// 開発環境かどうかをチェック
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+// Gemini API用のレート制限
+const geminiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDevelopment ? Infinity : 200,  // 開発環境では制限なし
+  skip: (req) => !req.path.includes('/api/gemini')
+});
+
+// Gemini APIルートにのみ適用
+app.use('/api/gemini', geminiLimiter);
+
+// 一般的なレート制限
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDevelopment ? Infinity : 2000  // 開発環境では制限なし
+});
+
+app.use(generalLimiter);
+
+// Cookie parserを追加（csurfの前に必要）
+app.use(cookieParser());
+
+// CSRFミドルウェアを追加
+app.use(csrf({ 
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  } 
+}));
+
+// CSRFトークンをレスポンスヘッダーに含める
+app.use((req, res, next) => {
+  res.cookie('XSRF-TOKEN', req.csrfToken(), {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -44,6 +122,9 @@ app.use((req, res, next) => {
     }
   });
 
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  // 明示的にDOCTYPEを設定
+  res.setHeader('X-UA-Compatible', 'IE=edge');
   next();
 });
 
@@ -74,3 +155,18 @@ app.use((req, res, next) => {
     log(`serving on port ${PORT}`);
   });
 })();
+
+// HTMLテンプレートにDOCTYPEを追加
+const htmlTemplate = `
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HorseStakes</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+`;
