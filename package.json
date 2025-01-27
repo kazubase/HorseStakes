@@ -5,14 +5,14 @@
   "license": "MIT",
   "scripts": {
     "dev": "dotenv -e .env -- tsx server/index.ts",
-    "build": "rm -rf dist && tsc",
-    "start": "node dist/server/index.js",
+    "build": "tsc",
+    "start": "node server/index.ts",
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "db:migrate": "tsx db/migrate.ts",
     "test-odds": "tsx server/test-odds-collector.ts",
     "db:seed-bet-types": "dotenv -e .env -- tsx db/migrations/bet-types-seed.ts",
-    "collect": "tsx server/daily-odds-collector.ts",
+    "collect": "node server/daily-odds-collector.ts",
     "postinstall": "npm run build"
   },
   "dependencies": {
@@ -92,7 +92,9 @@
     "vaul": "^1.1.0",
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
   },
   "devDependencies": {
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
