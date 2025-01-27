@@ -5,14 +5,15 @@
   "license": "MIT",
   "scripts": {
     "dev": "dotenv -e .env -- tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "start": "NODE_ENV=production node dist/index.js",
+    "build": "tsc",
+    "start": "node dist/server/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "db:migrate": "tsx db/migrate.ts",
     "test-odds": "tsx server/test-odds-collector.ts",
     "db:seed-bet-types": "dotenv -e .env -- tsx db/migrations/bet-types-seed.ts",
-    "collect": "tsx server/daily-odds-collector.ts"
+    "collect": "tsx server/daily-odds-collector.ts",
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
@@ -124,5 +125,8 @@
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
