@@ -29,10 +29,11 @@ interface GeminiStrategyProps {
 }
 
 interface GeminiStrategyState {
-  strategy: GeminiStrategy | null;
+  strategy: any;
   isLoading: boolean;
   error: string | null;
   isRequesting: boolean;
+  requestId?: string;
 }
 
 function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyProps) {
@@ -42,8 +43,12 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
     strategy: null,
     isLoading: false,
     error: null,
-    isRequesting: false
+    isRequesting: false,
+    requestId: undefined
   });
+  const [lastRequestTime, setLastRequestTime] = useState<number>(0);
+  const MIN_REQUEST_INTERVAL = 5000;
+  const [countdown, setCountdown] = useState<number>(0);
 
   // デバッグ用のレンダリングカウント
   useEffect(() => {
@@ -74,10 +79,28 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
   const placeProbs = JSON.parse(placeProbsStr);
 
   const fetchGeminiStrategy = useCallback(async () => {
+    const now = Date.now();
+    // 連続リクエストの制限チェックのみを行い、カウントダウンは開始しない
+    if (now - lastRequestTime < MIN_REQUEST_INTERVAL) {
+      setState(prev => ({
+        ...prev,
+        error: '再分析は5秒以上の間隔を空けてください'
+      }));
+      return;
+    }
+
     if (state.isRequesting || !recommendedBets?.length || !horses) return;
 
+    const currentRequestId = crypto.randomUUID();
+
     try {
-      setState(prev => ({ ...prev, isRequesting: true, isLoading: true, error: null }));
+      setState(prev => ({ 
+        ...prev, 
+        isRequesting: true, 
+        isLoading: true, 
+        error: null,
+        requestId: currentRequestId 
+      }));
       
       const allBettingOptions = {
         horses: horses.map((horse: Horse) => ({
@@ -121,45 +144,55 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
         throw new Error('Invalid strategy response format');
       }
 
-      sessionStorage.setItem(`strategy-${id}`, JSON.stringify(response.strategy));
-      sessionStorage.setItem(`strategy-params-${id}`, JSON.stringify({
+      if (!id) return;
+
+      saveToSessionStorage(response.strategy, {
         budget,
         riskRatio,
         recommendedBets
-      }));
+      }, id);
 
-      setState(prev => ({
-        ...prev,
-        strategy: response.strategy,
-        isLoading: false,
-        isRequesting: false
-      }));
+      // レスポンス受信後にカウントダウンを開始
+      setLastRequestTime(Date.now());
+
+      setState(prev => {
+        if (prev.requestId !== currentRequestId) return prev;
+        return {
+          ...prev,
+          strategy: response.strategy,
+          isLoading: false,
+          isRequesting: false
+        };
+      });
     } catch (err) {
-      setState(prev => ({
-        ...prev,
-        error: 'AIからの戦略取得に失敗しました',
-        isLoading: false,
-        isRequesting: false
-      }));
+      setState(prev => {
+        if (prev.requestId !== currentRequestId) return prev;
+        return {
+          ...prev,
+          error: 'AIからの戦略取得に失敗しました',
+          isLoading: false,
+          isRequesting: false
+        };
+      });
       console.error('Strategy Error:', err);
     }
-  }, [id, budget, riskRatio, recommendedBets, horses]);
+  }, [id, budget, riskRatio, recommendedBets, horses, lastRequestTime, state.isRequesting]);
 
   // 初期化とstrategy復元
   useEffect(() => {
     if (!recommendedBets?.length) return;
+    if (!id) return;  // nullを返さず、単にreturn
 
-    const savedStrategy = sessionStorage.getItem(`strategy-${id}`);
-    const savedParams = sessionStorage.getItem(`strategy-params-${id}`);
+    const savedData = getFromSessionStorage(id);
     
-    if (savedStrategy && savedParams) {
-      const params = JSON.parse(savedParams);
+    if (savedData) {
+      const { strategy, params } = savedData;
       if (params.budget === budget && 
           params.riskRatio === riskRatio && 
           JSON.stringify(params.recommendedBets) === JSON.stringify(recommendedBets)) {
         setState(prev => ({
           ...prev,
-          strategy: JSON.parse(savedStrategy)
+          strategy
         }));
         return;
       }
@@ -168,7 +201,27 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
     if (!state.strategy && !state.isRequesting) {
       fetchGeminiStrategy();
     }
-  }, [id, budget, riskRatio, recommendedBets]); // state.strategyとstate.isRequestingを依存配列から削除
+  }, [id, budget, riskRatio, recommendedBets]);
+
+  // カウントダウンの更新
+  useEffect(() => {
+    if (lastRequestTime === 0) return;
+
+    const updateCountdown = () => {
+      const remaining = Math.max(0, MIN_REQUEST_INTERVAL - (Date.now() - lastRequestTime));
+      setCountdown(remaining);
+      
+      if (remaining > 0) {
+        setTimeout(updateCountdown, 100);
+      }
+    };
+
+    updateCountdown();
+    
+    return () => {
+      setCountdown(0);
+    };
+  }, [lastRequestTime]);
 
   // BettingStrategyTableコンポーネントをメモ化
   const strategyTable = useMemo(() => {
@@ -230,11 +283,25 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
         <div className="flex justify-end">
           <Button
             onClick={fetchGeminiStrategy}
-            disabled={state.isLoading || state.isRequesting}
+            disabled={state.isLoading || state.isRequesting || countdown > 0}
             className="gap-2"
           >
-            <Brain className="h-4 w-4" />
-            戦略を再分析
+            {state.isLoading ? (
+              <>
+                <Brain className="h-4 w-4" />
+                戦略を再分析
+              </>
+            ) : countdown > 0 ? (
+              <>
+                <Brain className="h-4 w-4" />
+                {Math.ceil(countdown / 1000)}秒後に再分析可能
+              </>
+            ) : (
+              <>
+                <Brain className="h-4 w-4" />
+                戦略を再分析
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -266,13 +333,18 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
       <div className="flex justify-end">
         <Button
           onClick={fetchGeminiStrategy}
-          disabled={state.isLoading || state.isRequesting}
+          disabled={state.isLoading || state.isRequesting || countdown > 0}
           className="gap-2"
         >
           {state.isLoading ? (
             <>
               <Brain className="h-4 w-4 animate-pulse" />
               分析中...
+            </>
+          ) : countdown > 0 ? (
+            <>
+              <Brain className="h-4 w-4" />
+              {Math.ceil(countdown / 1000)}秒後に再分析可能
             </>
           ) : (
             <>
@@ -286,6 +358,48 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
     </div>
   );
 }
+
+const saveToSessionStorage = (strategy: any, params: any, id: string) => {
+  try {
+    const storageKey = `strategy-${id}`;
+    const paramsKey = `strategy-params-${id}`;
+    
+    sessionStorage.setItem(storageKey, JSON.stringify({
+      strategy,
+      timestamp: Date.now()
+    }));
+    
+    sessionStorage.setItem(paramsKey, JSON.stringify({
+      ...params,
+      timestamp: Date.now()
+    }));
+  } catch (error) {
+    console.error('Session storage error:', error);
+  }
+};
+
+const getFromSessionStorage = (id: string) => {
+  try {
+    const storageKey = `strategy-${id}`;
+    const paramsKey = `strategy-params-${id}`;
+    
+    const savedStrategyData = sessionStorage.getItem(storageKey);
+    const savedParamsData = sessionStorage.getItem(paramsKey);
+    
+    if (!savedStrategyData || !savedParamsData) return null;
+    
+    const { strategy, timestamp: strategyTimestamp } = JSON.parse(savedStrategyData);
+    const { timestamp: paramsTimestamp, ...params } = JSON.parse(savedParamsData);
+    
+    // 5分以上経過したデータは無効とする
+    if (Date.now() - strategyTimestamp > 5 * 60 * 1000) return null;
+    
+    return { strategy, params };
+  } catch (error) {
+    console.error('Session storage error:', error);
+    return null;
+  }
+};
 
 export default function Strategy() {
   const { id } = useParams();
@@ -459,6 +573,10 @@ export default function Strategy() {
              budget > 0 && Object.keys(winProbs).length > 0,
     staleTime: 30000,
     cacheTime: 60000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
   } as UseQueryOptions<BetProposal[], Error>);
 
   useEffect(() => {
