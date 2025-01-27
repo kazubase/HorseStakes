@@ -84,16 +84,10 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
           name: horse.name,
           odds: Number(latestOdds?.find((odd: TanOddsHistory) => Number(odd.horseId) === horse.number)?.odds || 0),
           winProb: winProbs[horse.id],
-          placeProb: placeProbs[horse.id]
+          placeProb: placeProbs[horse.id],
+          frame: horse.frame,
+          number: horse.number
         })),
-        winBets: recommendedBets?.filter(bet => bet.type === '単勝'),
-        placeBets: recommendedBets?.filter(bet => bet.type === '複勝'),
-        bracketQuinellaBets: recommendedBets?.filter(bet => bet.type === '枠連'),
-        quinellaBets: recommendedBets?.filter(bet => bet.type === '馬連'),
-        wideBets: recommendedBets?.filter(bet => bet.type === 'ワイド'),
-        exactaBets: recommendedBets?.filter(bet => bet.type === '馬単'),
-        trioBets: recommendedBets?.filter(bet => bet.type === '３連複'),
-        trifectaBets: recommendedBets?.filter(bet => bet.type === '３連単'),
         bettingOptions: recommendedBets?.map(bet => ({
           type: bet.type,
           horseName: bet.horses.join(bet.type.includes('単') ? '→' : '-'),

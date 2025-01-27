@@ -122,21 +122,31 @@ const betTypeOrder = [
 export const getGeminiStrategy = async (
   bettingCandidates: BettingCandidate[],
   totalBudget: number,
-  allBettingOptions: { bettingOptions: BettingOption[] },
+  allBettingOptions: { 
+    horses: { 
+      name: string;
+      odds: number;
+      winProb: number;
+      placeProb: number;
+      frame: number;
+      number: number;
+    }[];
+    bettingOptions: BettingOption[];
+  },
   riskRatio: number
 ): Promise<GeminiResponse> => {
   try {
-    console.log('🎯 Gemini API Request:', {
-      budget: totalBudget,
-      optionsCount: allBettingOptions.bettingOptions.length
-    });
+    // 出馬表情報の整理
+    const raceCardInfo = allBettingOptions.horses
+      .sort((a, b) => a.number - b.number)
+      .map(horse => `${horse.frame}枠${horse.number}番 ${horse.name}`)
+      .join('\n');
 
-    // 1. 詳細な分析を取得
-    const detailedResponse = await fetch('/api/gemini', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        prompt: `あなたは競馬の投資アドバイザーです。必ず日本語で推論してください。以下の馬券候補から、予算${totalBudget.toLocaleString()}円での最適な購入戦略を提案してください。
+    // プロンプトを作成
+    const prompt = `あなたは競馬の投資アドバイザーです。必ず日本語で推論してください。以下の馬券候補から、予算${totalBudget.toLocaleString()}円での最適な購入戦略を提案してください。
+
+【出馬表】
+${raceCardInfo}
 
 【リスク選好】
 - リスク選好度: ${riskRatio}（1～20の範囲で、1が最もローリスク、20が最もハイリスク）
@@ -250,7 +260,14 @@ json
       "riskLevel": "リスクレベル（低/中/高）"
     }
   }
-}`,
+}`;
+
+    // 1. 詳細な分析を取得
+    const detailedResponse = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        prompt: prompt,
         model: 'gemini-2.0-flash-thinking-exp',
         thought: false,
         apiVersion: 'v1alpha'
@@ -258,11 +275,9 @@ json
     });
 
     const detailedData = await detailedResponse.json();
-    console.log('Detailed Response:', detailedData);
 
     // レスポンス形式チェックを修正
     if (!detailedData || (!detailedData.analysis && !detailedData.strategy)) {
-      console.error('Invalid detailed response format:', detailedData);
       throw new Error('詳細分析のレスポンス形式が不正です');
     }
 
@@ -335,10 +350,8 @@ json
     });
 
     const summarizedData = await summaryResponse.json();
-    console.log('Summary Response:', summarizedData);
 
     if (!summarizedData || !summarizedData.strategy) {
-      console.error('Invalid summary response format:', summarizedData);
       throw new Error('要約のレスポンス形式が不正です');
     }
 
@@ -361,7 +374,6 @@ json
       }
     };
   } catch (error) {
-    console.error('💥 Gemini Strategy Error:', error);
     throw new Error(`Gemini APIエラー: ${(error as Error).message}`);
   }
 }; 

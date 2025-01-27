@@ -659,7 +659,6 @@ export const calculateBetProposals = (
 
   // メイン処理
   const proposals = findOptimalWeights(bettingOptions);
-
   return proposals;
 };
 
@@ -822,8 +821,19 @@ export const calculateBetProposalsWithGemini = async (
   riskRatio: number
 ): Promise<BetProposal[]> => {
   try {
-    // Geminiから推奨馬券を取得
-    const geminiResponse = await getGeminiStrategy([], totalBudget, allBettingOptions, riskRatio);
+    const geminiOptions = {
+      horses: horses.map(h => ({
+        name: h.name,
+        odds: h.odds,
+        winProb: h.winProb,
+        placeProb: h.placeProb,
+        frame: h.frame,
+        number: h.number
+      })),
+      bettingOptions: allBettingOptions.bettingOptions
+    };
+    
+    const geminiResponse = await getGeminiStrategy([], totalBudget, geminiOptions, riskRatio);
     
     // 資金配分の最適化
     return optimizeBetAllocation(geminiResponse.strategy.recommendations, totalBudget);
