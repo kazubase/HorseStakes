@@ -26,10 +26,13 @@ class DailyOddsCollector {
   async initialize() {
     this.browser = await chromium.launch({ 
       headless: true,
+      executablePath: process.env.CHROME_BIN || undefined,  // nullをundefinedに変更
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage'
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-software-rasterizer'
       ]
     });
     await this.collector.initialize();
