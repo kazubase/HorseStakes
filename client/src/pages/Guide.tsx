@@ -20,6 +20,7 @@ export default function Guide() {
                 <p>1. レース一覧から投票したいレースを選択</p>
                 <p>2. レース検索から過去に開催されたレースを検索</p>
                 <p className="text-sm text-muted-foreground">※レース一覧には当日9時からレースが表示されます</p>
+                <p className="text-sm text-muted-foreground">※現在は2024年日本ダービー、ジャパンカップ、有馬記念を検索できます</p>
               </CardContent>
             </Card>
 
