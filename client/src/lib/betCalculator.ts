@@ -48,20 +48,22 @@ export const calculateBetProposals = (
 ): BetProposal[] => {
   const MIN_STAKE = 100;
   
-  console.group('馬券購入戦略の計算過程');
+  if (process.env.NODE_ENV === 'development') {
+    console.group('馬券購入戦略の計算過程');
+    // デバッグ用：入力値の確認
+    console.log('入力パラメータ:', {
+      horses: horses.map(h => ({
+        name: h.name,
+        odds: h.odds,
+        winProb: (h.winProb * 100).toFixed(1) + '%',
+        placeProb: (h.placeProb * 100).toFixed(1) + '%'
+      })),
+      totalBudget,
+      riskRatio
+    });
+    console.groupEnd();
+  }
   
-  // デバッグ用：入力値の確認
-  console.log('入力パラメータ:', {
-    horses: horses.map(h => ({
-      name: h.name,
-      odds: h.odds,
-      winProb: (h.winProb * 100).toFixed(1) + '%',
-      placeProb: (h.placeProb * 100).toFixed(1) + '%'
-    })),
-    totalBudget,
-    riskRatio
-  });
-
   // オッズ行列の作成（期待値がプラスの馬券のみを対象とする）
   const bettingOptions = horses.flatMap(horse => {
     const options = [];

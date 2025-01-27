@@ -462,16 +462,18 @@ export default function Strategy() {
   } as UseQueryOptions<BetProposal[], Error>);
 
   useEffect(() => {
-    console.log('Strategy params updated:', {
-      budget,
-      riskRatio,
-      winProbs,
-      placeProbs,
-      URLパラメータ: {
-        winProbsStr,
-        placeProbsStr
-      }
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Strategy params updated:', {
+        budget,
+        riskRatio,
+        winProbs,
+        placeProbs,
+        URLパラメータ: {
+          winProbsStr,
+          placeProbsStr
+        }
+      });
+    }
   }, [budget, riskRatio, winProbs, placeProbs, winProbsStr, placeProbsStr]);
 
   if (!horses) {
