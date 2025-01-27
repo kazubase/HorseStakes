@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { History, Settings, HelpCircle, Brain } from "lucide-react";
+import { History, Settings, HelpCircle } from "lucide-react";
 import { SiJira } from "react-icons/si";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -29,7 +29,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* Footer navigation */}
       <footer className="border-t bg-card mt-auto">
         <nav className="container mx-auto">
-          <div className="grid grid-cols-3 h-16">
+          <div className="grid grid-cols-2 h-16">
             <Link href="/">
               <div className="flex flex-col items-center justify-center gap-1 hover:text-primary transition-colors">
                 <SiJira className="h-6 w-6" />
@@ -40,12 +40,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <div className="flex flex-col items-center justify-center gap-1 hover:text-primary transition-colors">
                 <HelpCircle className="h-6 w-6" />
                 <span className="text-xs">使い方</span>
-              </div>
-            </Link>
-            <Link href="/algorithm">
-              <div className="flex flex-col items-center justify-center gap-1 hover:text-primary transition-colors">
-                <Brain className="h-6 w-6" />
-                <span className="text-xs">AI解説</span>
               </div>
             </Link>
           </div>
