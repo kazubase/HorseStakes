@@ -320,7 +320,7 @@ json
       credentials: 'same-origin',
       body: JSON.stringify({ 
         prompt: prompt,
-        model: 'gemini-2.0-flash-thinking-exp',
+        model: 'gemini-1.5-flash',
         thought: false,
         apiVersion: 'v1alpha'
       })
@@ -401,7 +401,7 @@ json
     }
   }
 }`,
-        model: 'gemini-2.0-flash-exp'
+        model: 'gemini-1.5-flash'
       })
     }) ?? throwError('要約の取得に失敗しました');
 
