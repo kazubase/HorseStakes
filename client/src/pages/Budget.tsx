@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 export default function Budget() {
   const { id } = useParams();
   const [budget, setBudget] = useState<number>(1000);
+  const [inputValue, setInputValue] = useState<string>("1000");
   const [riskRatio, setRiskRatio] = useState<number>(1);
   const [error, setError] = useState<string>("");
 
@@ -27,6 +28,7 @@ export default function Budget() {
     }
     setError("");
     setBudget(numValue);
+    setInputValue(String(numValue));
   };
 
   const handleRiskRatioChange = (value: number[]) => {
@@ -72,8 +74,15 @@ export default function Budget() {
                 </label>
                 <Input
                   type="number"
-                  value={budget}
-                  onChange={(e) => setBudget(Number(e.target.value))}
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    if (e.target.value === "") {
+                      setBudget(0);
+                    } else {
+                      setBudget(Number(e.target.value));
+                    }
+                  }}
                   onBlur={(e) => handleBudgetBlur(e.target.value)}
                   min={0}
                   step={100}
