@@ -370,34 +370,40 @@ async function main() {
     console.log('Starting odds collector with NODE_ENV:', process.env.NODE_ENV);
     await dailyCollector.initialize();
     
-    // 定期的にupcomingレースをチェック（5分ごと）
-    console.log('Setting up 5-min check schedule');
-    schedule.scheduleJob('*/5 * * * *', async () => {
-      console.log('Running upcoming races check...');
-      await dailyCollector.checkUpcomingRaces();
-    });
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Development mode: Starting immediate collection...');
-    }
-
-    // 初回実行（開発・本番共通）
-    console.log('Running initial race collection...');
-    const races = await dailyCollector.getTodayGradeRaces();
-    console.log('Found races:', races);
-    
-    // 直列処理に変更
-    for (const race of races) {
-      console.log('Processing race:', race);
-      await dailyCollector.registerRace(race);
-      await dailyCollector.scheduleOddsCollection(race);
-      // 各レースの処理完了を待つ
-      await new Promise(resolve => setTimeout(resolve, 5000)); // 5秒の間隔を設ける
-    }
-
-    // 本番環境のみ：毎日8:55に再取得
     if (process.env.NODE_ENV === 'production') {
-      console.log('Production mode: Setting up 8:55 schedule');
+      // 本番環境では単発実行のみ
+      console.log('Production mode: Running single collection cycle');
+      const races = await dailyCollector.getTodayGradeRaces();
+      console.log('Found races:', races);
+      
+      for (const race of races) {
+        console.log('Processing race:', race);
+        await dailyCollector.registerRace(race);
+        await dailyCollector.collectOdds(race.id);
+      }
+    } else {
+      // 開発環境では全ての機能を使用
+      // 定期的にupcomingレースをチェック（5分ごと）
+      console.log('Setting up 5-min check schedule');
+      schedule.scheduleJob('*/5 * * * *', async () => {
+        console.log('Running upcoming races check...');
+        await dailyCollector.checkUpcomingRaces();
+      });
+
+      // 初回実行
+      console.log('Running initial race collection...');
+      const races = await dailyCollector.getTodayGradeRaces();
+      console.log('Found races:', races);
+      
+      for (const race of races) {
+        console.log('Processing race:', race);
+        await dailyCollector.registerRace(race);
+        await dailyCollector.scheduleOddsCollection(race);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+
+      // 毎日8:55に再取得
+      console.log('Setting up 8:55 schedule');
       schedule.scheduleJob('55 8 * * *', async () => {
         console.log('Running 8:55 race collection...');
         const races = await dailyCollector.getTodayGradeRaces();
