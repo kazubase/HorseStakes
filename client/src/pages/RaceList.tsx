@@ -129,7 +129,7 @@ export default function RaceList() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">レース一覧</h1>
         
-        {/* 検索バー */}
+        {/* 検索バーのスタイル改善 */}
         <div className="flex items-center gap-2">
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -141,7 +141,7 @@ export default function RaceList() {
                 setSearchQuery(e.target.value);
                 setShowAllVenues(e.target.value !== "");
               }}
-              className="pl-10"
+              className="pl-10 bg-card border-border/50 focus:border-primary/50"
             />
           </div>
         </div>
@@ -151,7 +151,7 @@ export default function RaceList() {
         <Tabs defaultValue={venues[0]?.id} className="w-full">
           <div className="relative mb-4">
             <TabsList 
-              className="flex w-full justify-start bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+              className="flex w-full max-w-[800px] mx-auto justify-start bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 rounded-md p-1"
               style={{ 
                 overflowX: 'auto',
                 WebkitOverflowScrolling: 'touch',
@@ -163,7 +163,7 @@ export default function RaceList() {
                 <TabsTrigger 
                   key={venue.id} 
                   value={venue.id}
-                  className="flex-shrink-0 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  className="flex-shrink-0 px-4 py-2 data-[state=active]:bg-primary/90 data-[state=active]:text-primary-foreground rounded-md transition-colors"
                 >
                   {venue.name}
                 </TabsTrigger>
