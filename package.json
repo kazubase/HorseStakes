@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "dotenv -e .env -- tsx server/index.ts",
-    "build": "rm -rf dist && tsc",
+    "build": "npm run build:client && tsc",
+    "build:client": "vite build",
     "start": "npx tsx server/index.ts",
     "check": "tsc",
     "db:push": "drizzle-kit push",
