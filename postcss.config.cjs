@@ -3,7 +3,9 @@ const autoprefixer = require('autoprefixer');
 
 module.exports = {
   plugins: {
-    tailwindcss: {},
+    tailwindcss: {
+      config: './tailwind.config.cjs'
+    },
     autoprefixer: {},
   }
 }
