@@ -149,25 +149,22 @@ export default function RaceList() {
       {venues.length > 0 ? (
         <Tabs defaultValue={venues[0]?.id} className="w-full">
           <div className="relative mb-4 -mx-4 sm:mx-0">
-            <div className="overflow-x-auto px-4 sm:px-0">
-              <TabsList 
-                className="bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 rounded-md p-1 flex min-w-full sm:min-w-0 sm:justify-center"
-                style={{ 
-                  WebkitOverflowScrolling: 'touch',
-                  scrollbarWidth: 'none',
-                  msOverflowStyle: 'none',
-                }}
-              >
-                {venues.map(venue => (
-                  <TabsTrigger 
-                    key={venue.id} 
-                    value={venue.id}
-                    className="flex-shrink-0 px-4 py-2 data-[state=active]:bg-primary/90 data-[state=active]:text-primary-foreground rounded-md transition-colors whitespace-nowrap"
-                  >
-                    {venue.name}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="px-4 sm:px-0 min-w-full">
+                <TabsList 
+                  className="bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 rounded-md p-1 flex w-[max-content] mx-auto"
+                >
+                  {venues.map(venue => (
+                    <TabsTrigger 
+                      key={venue.id} 
+                      value={venue.id}
+                      className="flex-shrink-0 px-4 py-2 data-[state=active]:bg-primary/90 data-[state=active]:text-primary-foreground rounded-md transition-colors whitespace-nowrap"
+                    >
+                      {venue.name}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
             </div>
           </div>
 
