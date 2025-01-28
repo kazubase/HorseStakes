@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://horse-stakes-f5679c3df385.herokuapp.com/sitemap.xml 
