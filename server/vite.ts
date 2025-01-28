@@ -87,8 +87,8 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(buildPath));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(buildPath, "index.html"));
+  // 全てのルートを/*にフォールバックさせる
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(buildPath, 'index.html'));
   });
 }
