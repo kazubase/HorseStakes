@@ -129,7 +129,6 @@ export default function RaceList() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">レース一覧</h1>
         
-        {/* 検索バーのスタイル改善 */}
         <div className="flex items-center gap-2">
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -149,14 +148,14 @@ export default function RaceList() {
 
       {venues.length > 0 ? (
         <Tabs defaultValue={venues[0]?.id} className="w-full">
-          <div className="relative mb-4">
+          <div className="flex justify-center mb-4">
             <TabsList 
-              className="flex w-full max-w-[800px] mx-auto justify-start bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 rounded-md p-1"
+              className="bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 rounded-md p-1 overflow-x-auto flex-nowrap"
               style={{ 
-                overflowX: 'auto',
                 WebkitOverflowScrolling: 'touch',
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
+                maxWidth: '100%',
               }}
             >
               {venues.map(venue => (
