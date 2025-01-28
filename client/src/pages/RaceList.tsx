@@ -148,23 +148,22 @@ export default function RaceList() {
       </div>
 
       {venues.length > 0 ? (
-        <Tabs 
-          defaultValue={venues[0]?.id} 
-          className="w-full"
-        >
-          <div className="relative">
-            <TabsList className="flex" style={{ 
-              maxWidth: '100%',
-              overflowX: 'auto',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch'
-            }}>
+        <Tabs defaultValue={venues[0]?.id} className="w-full">
+          <div className="relative mb-4">
+            <TabsList 
+              className="flex w-full justify-start bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+              style={{ 
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+            >
               {venues.map(venue => (
                 <TabsTrigger 
                   key={venue.id} 
                   value={venue.id}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                 >
                   {venue.name}
                 </TabsTrigger>
@@ -174,7 +173,7 @@ export default function RaceList() {
 
           {venues.map(venue => (
             <TabsContent key={venue.id} value={venue.id}>
-              <div className="grid gap-4">
+              <div className="grid gap-3">
                 {filterRaces(races, venue.id).length === 0 ? (
                   <div className="text-center text-muted-foreground py-4">
                     {searchQuery ? "検索結果が見つかりません" : "レースがありません"}
@@ -183,27 +182,24 @@ export default function RaceList() {
                   filterRaces(races, venue.id).map(race => (
                     <Card 
                       key={race.id}
-                      className="cursor-pointer hover:bg-accent/50 transition-colors"
-                      onClick={() => {
-                        console.log("Navigating to race:", race.id);
-                        setLocation(`/race/${race.id}`);
-                      }}
+                      className="cursor-pointer hover:bg-accent transition-colors border-border/40"
+                      onClick={() => setLocation(`/race/${race.id}`)}
                     >
                       <CardContent className="p-4">
                         <div className="flex justify-between items-center">
                           <div>
-                            <h3 className="font-semibold">
+                            <h3 className="font-bold text-foreground/90">
                               {race.name}
                             </h3>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-muted-foreground/80">
                               {format(new Date(race.startTime), 'yyyy/MM/dd HH:mm')} 発走
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm font-medium">
+                            <p className="text-sm font-medium text-foreground/80">
                               {race.status}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground/70">
                               ID: {race.id}
                             </p>
                           </div>
