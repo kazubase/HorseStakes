@@ -85,9 +85,17 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(buildPath));
+  app.use(express.static(buildPath, {
+    setHeaders: (res, path) => {
+      if (path.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      }
+      if (path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      }
+    }
+  }));
 
-  // 全てのルートを/*にフォールバックさせる
   app.get('*', (req, res) => {
     res.sendFile(path.resolve(buildPath, 'index.html'));
   });
