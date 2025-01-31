@@ -84,11 +84,13 @@ export const calculateBetProposals = (
         horse2: 0,
         horse3: 0
       });
-      console.log(`単勝候補: ${horse.number} ${horse.name}`, {
-        オッズ: horse.odds.toFixed(1),
-        的中確率: (horse.winProb * 100).toFixed(2) + '%',
-        期待値: winEV.toFixed(2)
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`単勝候補: ${horse.number} ${horse.name}`, {
+          オッズ: horse.odds.toFixed(1),
+          的中確率: (horse.winProb * 100).toFixed(2) + '%',
+          期待値: winEV.toFixed(2)
+        });
+      }
     }
     return options;
   });
@@ -116,11 +118,13 @@ export const calculateBetProposals = (
         horse2: 0,
         horse3: 0
       });
-      console.log(`複勝候補: ${horse.number} ${horse.name}`, {
-        オッズ: avgOdds.toFixed(1),
-        的中確率: (horse.placeProb * 100).toFixed(2) + '%',
-        期待値: placeEV.toFixed(2)
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`複勝候補: ${horse.number} ${horse.name}`, {
+          オッズ: avgOdds.toFixed(1),
+          的中確率: (horse.placeProb * 100).toFixed(2) + '%',
+          期待値: placeEV.toFixed(2)
+        });
+      }
     }
   });
 
@@ -177,11 +181,13 @@ export const calculateBetProposals = (
         horse2: 0,
         horse3: 0
       });
-      console.log(`枠連候補: ${wakuren.frame1}-${wakuren.frame2}`, {
-        オッズ: wakuren.odds.toFixed(1),
-        的中確率: (wakurenProb * 100).toFixed(2) + '%',
-        期待値: wakurenEV.toFixed(2)
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`枠連候補: ${wakuren.frame1}-${wakuren.frame2}`, {
+          オッズ: wakuren.odds.toFixed(1),
+          的中確率: (wakurenProb * 100).toFixed(2) + '%',
+          期待値: wakurenEV.toFixed(2)
+        });
+      }
     }
   });
 
@@ -218,11 +224,13 @@ export const calculateBetProposals = (
         prob: umarenProb,
         ev: umarenEV
       });
-      console.log(`馬連候補: ${horse1.number}-${horse2.number}`, {
-        オッズ: umaren.odds.toFixed(1),
-        的中確率: (umarenProb * 100).toFixed(2) + '%',
-        期待値: umarenEV.toFixed(2)
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`馬連候補: ${horse1.number}-${horse2.number}`, {
+          オッズ: umaren.odds.toFixed(1),
+          的中確率: (umarenProb * 100).toFixed(2) + '%',
+          期待値: umarenEV.toFixed(2)
+        });
+      }
     }
   });
 
@@ -254,11 +262,13 @@ export const calculateBetProposals = (
         prob: wideProb,
         ev: wideEV
       });
-      console.log(`ワイド候補: ${horse1.number}-${horse2.number}`, {
-        オッズ: avgOdds.toFixed(1),
-        的中確率: (wideProb * 100).toFixed(2) + '%',
-        期待値: wideEV.toFixed(2)
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`ワイド候補: ${horse1.number}-${horse2.number}`, {
+          オッズ: avgOdds.toFixed(1),
+          的中確率: (wideProb * 100).toFixed(2) + '%',
+          期待値: wideEV.toFixed(2)
+        });
+      }
     }
   });
 
@@ -287,11 +297,13 @@ export const calculateBetProposals = (
         prob: umatanProb,
         ev: umatanEV
       });
-      console.log(`馬単候補: ${horse1.number}→${horse2.number}`, {
-        オッズ: umatan.odds.toFixed(1),
-        的中確率: (umatanProb * 100).toFixed(2) + '%',
-        期待値: umatanEV.toFixed(2)
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`馬単候補: ${horse1.number}→${horse2.number}`, {
+          オッズ: umatan.odds.toFixed(1),
+          的中確率: (umatanProb * 100).toFixed(2) + '%',
+          期待値: umatanEV.toFixed(2)
+        });
+      }
     }
   });
 
@@ -352,11 +364,13 @@ export const calculateBetProposals = (
         prob: sanrenProb,
         ev: sanrenEV
       });
-      console.log(`3連複候補: ${horse1.number}-${horse2.number}-${horse3.number}`, {
-        オッズ: sanren.odds.toFixed(1),
-        的中確率: (sanrenProb * 100).toFixed(2) + '%',
-        期待値: sanrenEV.toFixed(2)
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`3連複候補: ${horse1.number}-${horse2.number}-${horse3.number}`, {
+          オッズ: sanren.odds.toFixed(1),
+          的中確率: (sanrenProb * 100).toFixed(2) + '%',
+          期待値: sanrenEV.toFixed(2)
+        });
+      }
     }
   });
 
@@ -388,16 +402,20 @@ export const calculateBetProposals = (
         prob: sanrentanProb,
         ev: sanrentanEV
       });
-      console.log(`3連単候補: ${horse1.number}→${horse2.number}→${horse3.number}`, {
-        オッズ: sanren.odds.toFixed(1),
-        的中確率: (sanrentanProb * 100).toFixed(2) + '%',
-        期待値: sanrentanEV.toFixed(2)
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`3連単候補: ${horse1.number}→${horse2.number}→${horse3.number}`, {
+          オッズ: sanren.odds.toFixed(1),
+          的中確率: (sanrentanProb * 100).toFixed(2) + '%',
+          期待値: sanrentanEV.toFixed(2)
+        });
+      }
     }
   });
 
   // デバッグ用：最適化対象の馬券一覧
-  console.log('最適化対象馬券数:', bettingOptions.length);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('最適化対象馬券数:', bettingOptions.length);
+  }
 
   // 最適化の評価関数を修正
   const findOptimalWeights = (options: typeof bettingOptions) => {
@@ -532,15 +550,17 @@ export const calculateBetProposals = (
         // 期待値順で上位n件を選択
         adjustedOptions = adjustedOptions.concat(bets.slice(0, selectionCount));
         
-        console.log(`馬券種別選択数調整: ${type}`, {
-          設定範囲: `${range.min}～${range.max}点`,
-          候補数: bets.length,
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`馬券種別選択数調整: ${type}`, {
+            設定範囲: `${range.min}～${range.max}点`,
+            候補数: bets.length,
           選択数: selectionCount,
           選択された馬券: bets.slice(0, selectionCount).map(b => ({
             馬番組合せ: b.horseName,
             期待値: b.ev.toFixed(3)
           }))
         });
+      }
       });
 
       return adjustedOptions.sort((a, b) => b.ev - a.ev);
@@ -549,15 +569,16 @@ export const calculateBetProposals = (
     // 馬券種別ごとの選択数を調整
     const adjustedOptions = adjustBetsByType(preFilteredOptions);
 
-    console.log('購入点数範囲:', {
-      調整後の対象馬券数: adjustedOptions.length,
-      馬券種別構成: Object.entries(
-        adjustedOptions.reduce((acc, bet) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('購入点数範囲:', {
+        調整後の対象馬券数: adjustedOptions.length,
+        馬券種別構成: Object.entries(
+          adjustedOptions.reduce((acc, bet) => {
           acc[bet.type] = (acc[bet.type] || 0) + 1;
           return acc;
         }, {} as Record<string, number>)
       )
-    });
+    })};
 
     let bestBets: typeof options = [];
     let bestWeights: number[] = [];
@@ -672,7 +693,9 @@ export const optimizeBetAllocation = (
   recommendations: GeminiRecommendation[],
   totalBudget: number
 ): BetProposal[] => {
-  console.group('Sharpe比最大化による資金配分の最適化');
+  if (process.env.NODE_ENV === 'development') {
+    console.group('Sharpe比最大化による資金配分の最適化');
+  }
   
   const processedRecs = recommendations.map(rec => ({
     ...rec,
@@ -777,16 +800,21 @@ export const optimizeBetAllocation = (
     if (metrics.sharpeRatio > bestMetrics.sharpeRatio) {
       bestMetrics = metrics;
       bestWeights = weights;
-      console.log('改善:', {
-        iteration: iter,
-        sharpeRatio: metrics.sharpeRatio.toFixed(3),
-        expectedReturn: metrics.expectedReturn.toFixed(3),
-        risk: metrics.risk.toFixed(3)
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('改善:', {
+          iteration: iter,
+          sharpeRatio: metrics.sharpeRatio.toFixed(3),
+          expectedReturn: metrics.expectedReturn.toFixed(3),
+          risk: metrics.risk.toFixed(3)
+        });
+      }
     }
   }
 
-  console.groupEnd();
+  if (process.env.NODE_ENV === 'development') {
+    console.groupEnd();
+  }
+
   return processedRecs.map((rec, i) => ({
     type: rec.type,
     horses: rec.horses,
