@@ -13,7 +13,7 @@ export default function Guide() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
-                  Step 1: レース選択
+                  Step 1: レースを選ぶ
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -28,7 +28,7 @@ export default function Guide() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Trophy className="h-5 w-5" />
-                  Step 2: 予想確率、投資設定を入力
+                  Step 2: 確率を予想する
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -42,12 +42,12 @@ export default function Guide() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Ticket className="h-5 w-5" />
-                  Step 3: AI戦略の確認
+                  Step 3: 戦略を確認する
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <p>1. AIが提案する馬券の組み合わせを確認</p>
-                <p>2. オッズ、的中率、資金配分が確認できます</p>
+                <p>2. 資金配分、選定理由も確認できます</p>
                 <p className="text-sm text-muted-foreground">※AIが出力する内容は必ずしも正確ではないことに注意して下さい</p>
               </CardContent>
             </Card>
@@ -79,7 +79,7 @@ export default function Guide() {
                     alt="馬券候補の生成プロセス" 
                     className="w-full max-w-lg mx-auto dark:opacity-90"
                   />
-                  <p className="text-sm text-muted-foreground mt-4">単勝、複勝など全ての馬券種別について期待値と的中確率を計算し、有望な候補を抽出します</p>
+                  <p className="text-sm text-muted-foreground mt-4">単勝、複勝など全ての券種について期待値と的中確率を計算し、有望な候補を抽出します</p>
                 </div>
 
                 <div>

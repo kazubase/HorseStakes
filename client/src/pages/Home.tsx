@@ -66,7 +66,9 @@ export default function Home() {
               </div>
               {!raceLoading && (
                 <div className="text-right">
-                  <p className="text-lg font-semibold">{race?.status}</p>
+                  <p className="text-lg font-semibold">
+                    {race?.status === 'done' ? '発走済' : null}
+                  </p>
                 </div>
               )}
             </div>
@@ -78,15 +80,6 @@ export default function Home() {
           <CardContent className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">出馬表</h2>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => refetchHorses()}
-                className="gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                オッズ更新
-              </Button>
             </div>
 
             {horsesLoading ? (

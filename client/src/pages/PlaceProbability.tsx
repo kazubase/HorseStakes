@@ -131,14 +131,24 @@ export default function PlaceProbability() {
                       )}
                     </span>
                   </div>
-                  <Slider
-                    value={[probabilities[horse.id] || 0]}
-                    onValueChange={([value]) => handleProbabilityChange(horse.id, value)}
-                    min={0}
-                    max={100}
-                    step={5}
-                    className="my-2"
-                  />
+                  <div 
+                    className="touch-none" 
+                    onTouchMove={(e) => e.preventDefault()}
+                    onPointerMove={(e) => {
+                      if (e.pointerType === 'mouse' && e.buttons === 0) {
+                        e.preventDefault();
+                      }
+                    }}
+                  >
+                    <Slider
+                      value={[probabilities[horse.id] || 0]}
+                      onValueChange={([value]) => handleProbabilityChange(horse.id, value)}
+                      min={0}
+                      max={100}
+                      step={5}
+                      className="my-2 [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:hover:h-6 [&_[role=slider]]:hover:w-6 [&_[role=slider]]:transition-all [&_.track]:h-2"
+                    />
+                  </div>
                 </div>
               ))}
             </div>

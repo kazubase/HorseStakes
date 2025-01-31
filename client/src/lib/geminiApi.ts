@@ -310,6 +310,16 @@ json
   }
 }`;
 
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Geminiへのリクエスト：');
+      console.log({
+        apiVersion: 'v1alpha',
+        model: 'gemini-1.5-flash',
+        thought: false,
+      });
+      console.log('プロンプト全文:\n', prompt);
+    }
+
     // 1. 詳細な分析を取得
     const detailedResponse = await fetchWithRetry('/api/gemini', {
       method: 'POST',
@@ -327,6 +337,10 @@ json
     }) ?? throwError('詳細分析の取得に失敗しました');
 
     const detailedData = await detailedResponse.json();
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Geminiからのレスポンス：', JSON.stringify(detailedData, null, 2));
+    }
 
     // レスポンス形式チェックを修正
     if (!detailedData || (!detailedData.analysis && !detailedData.strategy)) {

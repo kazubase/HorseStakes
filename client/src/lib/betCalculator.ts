@@ -586,15 +586,17 @@ export const calculateBetProposals = (
           bestBets = selectedBets;
           bestWeights = normalizedWeights;
           
-          console.log('改善発見:', {
-            betsCount: selectedBets.length,
-            betTypes: metrics.betTypes,
-            adjustedOdds: metrics.expectedReturn.toFixed(3),
-            sharpeRatio: metrics.sharpeRatio.toFixed(3),
-            risk: metrics.risk.toFixed(3),
-            portfolioEffect: metrics.portfolioEffect.toFixed(3),
-            score: metrics.score.toFixed(3)
-          });
+          if (process.env.NODE_ENV === 'development') {
+            console.log('改善発見:', {
+              betsCount: selectedBets.length,
+              betTypes: metrics.betTypes,
+              adjustedOdds: metrics.expectedReturn.toFixed(3),
+              sharpeRatio: metrics.sharpeRatio.toFixed(3),
+              risk: metrics.risk.toFixed(3),
+              portfolioEffect: metrics.portfolioEffect.toFixed(3),
+              score: metrics.score.toFixed(3)
+            });
+          }
         }
       }
     }
@@ -640,21 +642,23 @@ export const calculateBetProposals = (
       });
 
     // 最終結果のログ出力を改善
-    console.log('最終結果:', {
-      sharpeRatio: bestMetrics?.sharpeRatio.toFixed(3) ?? -Infinity,
-      expectedReturn: bestMetrics?.expectedReturn.toFixed(3) ?? 0,
-      risk: bestMetrics?.risk.toFixed(3) ?? 0,
-      totalBets: proposals.length,
-      totalInvestment: proposals.reduce((sum, p) => sum + p.stake, 0),
-      bets: proposals.map(p => ({
-        type: p.type,
-        horses: p.horses,
-        horseName: p.horseName,
-        stake: p.stake,
-        expectedReturn: p.expectedReturn,
-        probability: (p.probability * 100).toFixed(1) + '%'
-      }))
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('最終結果:', {
+        sharpeRatio: bestMetrics?.sharpeRatio.toFixed(3) ?? -Infinity,
+        expectedReturn: bestMetrics?.expectedReturn.toFixed(3) ?? 0,
+        risk: bestMetrics?.risk.toFixed(3) ?? 0,
+        totalBets: proposals.length,
+        totalInvestment: proposals.reduce((sum, p) => sum + p.stake, 0),
+        bets: proposals.map(p => ({
+          type: p.type,
+          horses: p.horses,
+          horseName: p.horseName,
+          stake: p.stake,
+          expectedReturn: p.expectedReturn,
+          probability: (p.probability * 100).toFixed(1) + '%'
+        }))
+      });
+    }
 
     return proposals;
   };

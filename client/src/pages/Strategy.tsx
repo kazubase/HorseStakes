@@ -52,14 +52,16 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
 
   // デバッグ用のレンダリングカウント
   useEffect(() => {
-    renderCount.current += 1;
-    console.log('GeminiStrategy render:', {
-      count: renderCount.current,
-      recommendedBetsLength: recommendedBets?.length,
-      budget,
-      riskRatio,
-      timestamp: new Date().toISOString()
-    });
+    if (process.env.NODE_ENV === 'development') {
+      renderCount.current += 1;
+      console.log('GeminiStrategy render:', {
+        count: renderCount.current,
+        recommendedBetsLength: recommendedBets?.length,
+        budget,
+        riskRatio,
+        timestamp: new Date().toISOString()
+      });
+    }
   }, []); // 初回レンダリング時のみ実行
 
   const { data: horses } = useQuery<Horse[]>({
@@ -540,12 +542,14 @@ export default function Strategy() {
         oddsMax: Number(odd.oddsMax)
       })) || [];
 
-      console.log('馬券計算開始:', {
-        queryKey,
-        horseCount: horseDataList.length,
-        budget,
-        riskRatio
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('馬券計算開始:', {
+          queryKey,
+          horseCount: horseDataList.length,
+          budget,
+          riskRatio
+        });
+      }
 
       const result = calculateBetProposals(
         horseDataList, 
@@ -560,10 +564,12 @@ export default function Strategy() {
         sanrentanData
       );
 
-      console.log('馬券計算完了:', {
-        queryKey,
-        resultCount: result.length
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('馬券計算完了:', {
+          queryKey,
+          resultCount: result.length
+        });
+      }
 
       return result;
     },
