@@ -24,11 +24,13 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   
   // 最適化計算の結果をメモ化
   const optimizationResult = useMemo(() => {
-    console.log('Optimizing bet allocation...', {
-      recommendationsCount: strategy.recommendations.length,
-      budget: totalBudget,
-      renderCount: renderCount.current
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Optimizing bet allocation...', {
+        recommendationsCount: strategy.recommendations.length,
+        budget: totalBudget,
+        renderCount: renderCount.current
+      });
+    }
     
     return optimizeBetAllocation(strategy.recommendations, totalBudget);
   }, [strategy.recommendations, totalBudget]);
@@ -132,12 +134,14 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   // デバッグ用のレンダリングカウント
   useEffect(() => {
     renderCount.current += 1;
-    console.log('BettingStrategyTable render:', {
-      count: renderCount.current,
-      recommendationsCount: strategy.recommendations.length,
-      totalBudget,
-      timestamp: new Date().toISOString()
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('BettingStrategyTable render:', {
+        count: renderCount.current,
+        recommendationsCount: strategy.recommendations.length,
+        totalBudget,
+        timestamp: new Date().toISOString()
+      });
+    }
   }, [strategy.recommendations.length, totalBudget]);
 
   // テーブルデータの生成をメモ化

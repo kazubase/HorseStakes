@@ -128,19 +128,23 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
         })) || []
       };
 
-      console.log('Fetching Gemini strategy:', {
-        timestamp: new Date().toISOString(),
-        recommendedBetsCount: recommendedBets.length
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Fetching Gemini strategy:', {
+          timestamp: new Date().toISOString(),
+          recommendedBetsCount: recommendedBets.length
+        });
+      }
 
       const response = await getGeminiStrategy([], budget, allBettingOptions, riskRatio);
       
-      console.log('Gemini strategy response:', {
-        hasStrategy: !!response.strategy,
-        strategy: response.strategy,
-        bettingTable: response.strategy?.bettingTable,
-        recommendations: response.strategy?.recommendations
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Gemini strategy response:', {
+          hasStrategy: !!response.strategy,
+          strategy: response.strategy,
+          bettingTable: response.strategy?.bettingTable,
+          recommendations: response.strategy?.recommendations
+        });
+      }
 
       if (!response.strategy?.bettingTable) {
         throw new Error('Invalid strategy response format');
@@ -648,13 +652,15 @@ export default function Strategy() {
   const betDetails = recommendedBets?.map(bet => {
     const weight = bet.stake / totalInvestment;
     
-    console.log(`馬券詳細:`, {
-      馬名: bet.horses.join(', '),
-      投資額: bet.stake,
-      ウェイト: weight.toFixed(4),
-      期待払戻金: bet.expectedReturn,
-      的中確率: bet.probability
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`馬券詳細:`, {
+        馬名: bet.horses.join(', '),
+        投資額: bet.stake,
+        ウェイト: weight.toFixed(4),
+        期待払戻金: bet.expectedReturn,
+        的中確率: bet.probability
+      });
+    }
     
     return {
       weight,
@@ -669,12 +675,14 @@ export default function Strategy() {
     (expectedTotalPayout / totalInvestment) - 1 : 
     0;
 
-  console.log('ポートフォリオ全体:', {
-    総投資額: totalInvestment,
-    期待払戻金: expectedTotalPayout,
-    期待リターン: `${(totalExpectedReturn * 100).toFixed(2)}%`,
-    馬券数: betDetails.length
-  });
+  if (process.env.NODE_ENV === 'development') {
+    console.log('ポートフォリオ全体:', {
+      総投資額: totalInvestment,
+      期待払戻金: expectedTotalPayout,
+      期待リターン: `${(totalExpectedReturn * 100).toFixed(2)}%`,
+      馬券数: betDetails.length
+    });
+  }
 
   const expectedROI = totalInvestment > 0 ? 
     `+${(totalExpectedReturn * 100).toFixed(1)}%` : 
