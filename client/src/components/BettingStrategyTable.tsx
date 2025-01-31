@@ -171,7 +171,10 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             <InfoCircledIcon className="h-4 w-4" />
           </Button>
         </Popover.Trigger>
-        <Popover.Content className="w-80 rounded-lg border bg-card p-4 shadow-lg" sideOffset={5}>
+        <Popover.Content 
+          className="w-80 rounded-lg border bg-card p-4 shadow-lg z-50" 
+          sideOffset={5}
+        >
           <div className="space-y-2">
             <h4 className="font-semibold text-base border-b pb-2 text-white">選択理由</h4>
             <p className="text-sm text-gray-200 leading-relaxed whitespace-normal break-words">
@@ -234,29 +237,40 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4" ref={tableRef}>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {tableData.headers.map((header, i) => (
-                  <TableHead key={i} className="whitespace-nowrap">
-                    {header}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tableData.rows.map((row, i) => (
-                <TableRow key={i}>
-                  {row.map((cell, j) => (
-                    <TableCell key={j} className="whitespace-nowrap">
-                      {cell}
-                    </TableCell>
+        <div className="space-y-4">
+          <div className="relative">
+            <div className="overflow-x-auto" ref={tableRef}>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {tableData.headers.map((header, i) => (
+                      <TableHead 
+                        key={i} 
+                        className={`whitespace-nowrap ${i < 2 ? 'sticky left-0 z-10 bg-background/75 backdrop-blur-sm' : ''}`}
+                      >
+                        {header}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tableData.rows.map((row, i) => (
+                    <TableRow key={i}>
+                      {row.map((cell, j) => (
+                        <TableCell 
+                          key={j} 
+                          className={`whitespace-nowrap ${j < 2 ? 'sticky left-0 z-10 bg-background/75 backdrop-blur-sm' : ''}`}
+                        >
+                          {cell}
+                        </TableCell>
+                      ))}
+                    </TableRow>
                   ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                </TableBody>
+              </Table>
+            </div>
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-background to-transparent" />
+          </div>
 
           <div className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between">
