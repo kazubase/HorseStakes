@@ -498,13 +498,13 @@ export const calculateBetProposals = (
         const riskFactor = getBetTypeRiskFactor(opt.type);
         
         // オッズの下限のみを設定
-        const minOdds = Math.max(1.0, riskRatio * 0.5 * riskFactor);
+        const minOdds = Math.max(1.0, Math.pow(riskRatio, 0.5) * Math.pow(riskFactor, 1.5));
         
         // リスクリワード比率に応じて最小確率を調整
         const minProbability = Math.max(0.005, 1 / (riskRatio * riskFactor));
         
         // 最低期待値
-        const minEV = 0.5;
+        const minEV = Math.max(0.3, Math.pow(riskFactor, 0.5) / Math.pow(riskRatio, 0.5));
 
         return opt.odds >= minOdds && 
                opt.prob >= minProbability && 
@@ -815,7 +815,7 @@ export const optimizeBetAllocation = (
     console.groupEnd();
   }
 
-  return processedRecs.map((rec, i) => ({
+  let proposals = processedRecs.map((rec, i) => ({
     type: rec.type,
     horses: rec.horses,
     horseName: ["馬単", "３連単"].includes(rec.type) 
@@ -835,8 +835,8 @@ export const optimizeBetAllocation = (
       "馬連": 4,
       "ワイド": 5,
       "馬単": 6,
-      "3連複": 7,
-      "3連単": 8
+      "３連複": 7,
+      "３連単": 8
     };
     
     // 馬券種別でソート
@@ -846,6 +846,40 @@ export const optimizeBetAllocation = (
     // 同じ馬券種別なら投資額の大きい順
     return b.stake - a.stake;
   });
+
+  // 総投資額を計算
+  const totalInvestment = proposals.reduce((sum, bet) => sum + bet.stake, 0);
+
+  // 予算に満たない場合、余った予算を100円単位で配分
+  if (totalInvestment < totalBudget) {
+    const remainingBudget = totalBudget - totalInvestment;
+    const numIncrements = Math.floor(remainingBudget / 100);
+    
+    // 期待値でソートした配分順序を作成
+    const distributionOrder = [...proposals]
+      .map((bet, index) => ({
+        index,
+        expectedValue: bet.probability * bet.expectedReturn / bet.stake
+      }))
+      .sort((a, b) => a.expectedValue - b.expectedValue);
+
+    // 100円ずつ配分
+    for (let i = 0; i < numIncrements; i++) {
+      const targetIndex = distributionOrder[i % proposals.length].index;
+      proposals[targetIndex].stake += 100;
+      proposals[targetIndex].expectedReturn = 
+        proposals[targetIndex].expectedReturn / (proposals[targetIndex].stake - 100) * proposals[targetIndex].stake;
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('予算調整完了:', {
+        総予算: totalBudget,
+        調整後総投資額: proposals.reduce((sum, bet) => sum + bet.stake, 0)
+      });
+    }
+  }
+
+  return proposals;
 };
 
 export const calculateBetProposalsWithGemini = async (

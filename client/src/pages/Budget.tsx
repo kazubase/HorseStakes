@@ -110,14 +110,24 @@ export default function Budget() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <Slider
-                  value={[riskRatio]}
-                  onValueChange={handleRiskRatioChange}
-                  min={1.0}
-                  max={20.0}
-                  step={1.0}
-                  className="my-4"
-                />
+                <div 
+                  className="touch-none" 
+                  onTouchMove={(e) => e.preventDefault()}
+                  onPointerMove={(e) => {
+                    if (e.pointerType === 'mouse' && e.buttons === 0) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <Slider
+                    value={[riskRatio]}
+                    onValueChange={handleRiskRatioChange}
+                    min={1.0}
+                    max={20.0}
+                    step={1.0}
+                    className="my-4 [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:hover:h-6 [&_[role=slider]]:hover:w-6 [&_[role=slider]]:transition-all [&_.track]:h-2"
+                  />
+                </div>
                 <p className="text-sm text-muted-foreground text-right">
                   {riskRatio.toFixed(1)}
                 </p>

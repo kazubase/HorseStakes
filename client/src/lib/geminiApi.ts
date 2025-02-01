@@ -214,6 +214,16 @@ export const getGeminiStrategy = async (
 - 各馬券について、他の馬券との相関関係を理由に含めること
 - 各馬券について、リスク分散効果を理由に含めること
 
+【的中条件】
+- 単勝：指定した馬が1着
+- 複勝：指定した馬が3着以内
+- 枠連：指定した2つの枠から1着と2着が出る（順不同）
+- 馬連：指定した2頭が1着と2着（順不同）
+- ワイド：指定した2頭が3着以内（順不同）
+- 馬単：指定した2頭が1着と2着（順序指定）
+- ３連複：指定した3頭が1着、2着、3着を独占（順不同）
+- ３連単：指定した3頭が1着、2着、3着を独占（順序指定）
+
 【出馬表】
 ${raceCardInfo}
 
@@ -272,7 +282,7 @@ ${allBettingOptions.bettingOptions
   })
   .join('\n')}
 
-3連複候補:
+３連複候補:
 ${allBettingOptions.bettingOptions
   .filter(opt => opt.type === "３連複")
   .map(bet => {
@@ -281,7 +291,7 @@ ${allBettingOptions.bettingOptions
   })
   .join('\n')}
 
-3連単候補:
+３連単候補:
 ${allBettingOptions.bettingOptions
   .filter(opt => opt.type === "３連単")
   .map(bet => {
