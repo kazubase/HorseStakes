@@ -188,27 +188,25 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   // テーブルのref追加
   const tableRef = useRef<HTMLDivElement>(null);
 
-  // スクリーンショット機能の追加
+  // スクリーンショット機能
   const captureTable = async () => {
-    if (!tableRef.current) return;
+    const cardElement = tableRef.current?.closest('[data-card-container]');
+    if (!cardElement) return;
     
     try {
-      // キャプチャ前に余白を追加
-      const originalPadding = tableRef.current.style.padding;
-      tableRef.current.style.padding = '16px'; // 余白を追加
+      const originalPadding = (cardElement as HTMLElement).style.padding;
+      (cardElement as HTMLElement).style.padding = '16px';
 
-      const canvas = await html2canvas(tableRef.current, {
+      const canvas = await html2canvas(cardElement as HTMLElement, {
         backgroundColor: '#000000',
         scale: 1,
         useCORS: true,
         logging: false,
-        // キャプチャ範囲を少し広げる
-        width: tableRef.current.scrollWidth + 32, // 左右の余白を含む
-        height: tableRef.current.scrollHeight + 32, // 上下の余白を含む
+        width: cardElement.scrollWidth + 32,
+        height: cardElement.scrollHeight + 32,
       });
       
-      // 元の余白に戻す
-      tableRef.current.style.padding = originalPadding;
+      (cardElement as HTMLElement).style.padding = originalPadding;
       
       const link = document.createElement('a');
       link.download = `betting-strategy-${new Date().toISOString()}.png`;
@@ -220,7 +218,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   };
 
   return (
-    <Card>
+    <Card data-card-container>
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>AI最適化戦略</CardTitle>
