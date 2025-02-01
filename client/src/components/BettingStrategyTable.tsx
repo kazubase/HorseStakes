@@ -146,7 +146,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 
   // テーブルデータの生成をメモ化
   const tableData = useMemo(() => ({
-    headers: ['券種', '買い目', 'オッズ', '的中率', '最適投資額', '想定払戻金', ''],
+    headers: ['券種', '買い目', 'オッズ', '的中率', '最適投資額', '想定払戻金', '選定理由'],
     rows: sortedBets.map(bet => [
       normalizeTicketType(bet.type),
       (() => {
@@ -171,17 +171,16 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             <InfoCircledIcon className="h-4 w-4" />
           </Button>
         </Popover.Trigger>
-        <Popover.Content 
-          className="w-80 rounded-lg border bg-card p-4 shadow-lg z-50" 
-          sideOffset={5}
-        >
-          <div className="space-y-2">
-            <h4 className="font-semibold text-base border-b pb-2 text-white">選択理由</h4>
-            <p className="text-sm text-gray-200 leading-relaxed whitespace-normal break-words">
+        <Popover.Portal>
+          <Popover.Content 
+            className="w-80 rounded-lg border border-border/30 bg-black/70 p-4 shadow-lg z-[9999] backdrop-blur-sm" 
+            sideOffset={5}
+          >
+            <p className="text-sm text-white/90 leading-relaxed whitespace-normal break-words">
               {bet.reason || '理由なし'}
             </p>
-          </div>
-        </Popover.Content>
+          </Popover.Content>
+        </Popover.Portal>
       </Popover.Root>
     ])
   }), [sortedBets]);
@@ -238,15 +237,23 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="relative">
-            <div className="overflow-x-auto" ref={tableRef}>
+          <div className="relative rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm overflow-visible">
+            <div className="overflow-x-auto overflow-visible" ref={tableRef}>
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b border-border/50 hover:bg-transparent">
                     {tableData.headers.map((header, i) => (
                       <TableHead 
                         key={i} 
-                        className={`whitespace-nowrap ${i < 2 ? 'sticky left-0 z-10 bg-background/75 backdrop-blur-sm' : ''}`}
+                        className={`whitespace-nowrap bg-background/40 py-3 ${
+                          i < 2 ? 'sticky left-0 z-10 bg-background/95 backdrop-blur-sm' : ''
+                        } ${
+                          i === 0 ? 'z-20 rounded-tl-lg' : ''
+                        } ${
+                          i === tableData.headers.length - 1 ? 'rounded-tr-lg' : ''
+                        } ${
+                          i === 1 ? 'left-[70px]' : ''
+                        }`}
                       >
                         {header}
                       </TableHead>
@@ -255,11 +262,26 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                 </TableHeader>
                 <TableBody>
                   {tableData.rows.map((row, i) => (
-                    <TableRow key={i}>
+                    <TableRow 
+                      key={i} 
+                      className={`border-b border-border/30 transition-colors hover:bg-muted/5 ${
+                        i === tableData.rows.length - 1 ? 'last:border-b-0' : ''
+                      }`}
+                    >
                       {row.map((cell, j) => (
                         <TableCell 
                           key={j} 
-                          className={`whitespace-nowrap ${j < 2 ? 'sticky left-0 z-10 bg-background/75 backdrop-blur-sm' : ''}`}
+                          className={`whitespace-nowrap py-2.5 ${
+                            j < 2 ? 'sticky left-0 z-10 bg-background/95 backdrop-blur-sm' : ''
+                          } ${
+                            j === 0 ? 'z-20 font-medium' : ''
+                          } ${
+                            j === 1 ? 'left-[70px]' : ''
+                          } ${
+                            i === tableData.rows.length - 1 && j === 0 ? 'rounded-bl-lg' : ''
+                          } ${
+                            i === tableData.rows.length - 1 && j === row.length - 1 ? 'rounded-br-lg' : ''
+                          }`}
                         >
                           {cell}
                         </TableCell>
@@ -269,21 +291,23 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                 </TableBody>
               </Table>
             </div>
-            <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-background to-transparent" />
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-background to-transparent rounded-r-lg" />
           </div>
 
-          <div className="mt-4 space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="font-medium">総投資額:</span>
-              <span>{totals.totalInvestment.toLocaleString()}円</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">推定期待収益:</span>
-              <span>{Math.round(totals.totalExpectedReturn).toLocaleString()}円</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">推定期待収益率:</span>
-              <span>{totals.expectedReturnRate}%</span>
+          <div className="mt-6 rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm p-4 space-y-3">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center py-1">
+                <span className="font-medium text-muted-foreground">総投資額:</span>
+                <span className="font-semibold">{totals.totalInvestment.toLocaleString()}円</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="font-medium text-muted-foreground">推定期待収益:</span>
+                <span className="font-semibold">{Math.round(totals.totalExpectedReturn).toLocaleString()}円</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="font-medium text-muted-foreground">推定期待収益率:</span>
+                <span className="font-semibold">+{totals.expectedReturnRate}%</span>
+              </div>
             </div>
           </div>
         </div>
