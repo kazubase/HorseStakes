@@ -1,0 +1,19 @@
+# テストファイル
+**/*.test.ts
+**/*.spec.ts
+
+# ドキュメント
+*.md
+docs/
+
+# 開発用設定ファイル
+.vscode/
+.git/
+.gitignore
+
+# ソースマップ
+**/*.map
+
+# Playwrightの不要なブラウザ
+.cache/ms-playwright/*
+!.cache/ms-playwright/chromium-* 
