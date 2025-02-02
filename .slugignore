@@ -16,4 +16,12 @@ docs/
 
 # Playwrightの不要なブラウザ
 .cache/ms-playwright/*
-!.cache/ms-playwright/chromium-* 
+!.cache/ms-playwright/chromium-*
+
+# Herokuの一時ファイル
+.heroku/
+.apt/
+
+# Chrome関連（必要最小限以外）
+.chrome-for-testing/*
+!.chrome-for-testing/chrome* 
