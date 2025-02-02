@@ -15,7 +15,7 @@
     "db:seed-bet-types": "dotenv -e .env -- tsx db/migrations/bet-types-seed.ts",
     "collect": "npx tsx server/daily-odds-collector.ts",
     "postinstall": "npm run build",
-    "heroku-postbuild": "npx playwright install-deps chromium && npx playwright install chromium"
+    "heroku-postbuild": "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install && npx playwright install-deps chromium"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
