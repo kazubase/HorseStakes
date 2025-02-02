@@ -1,17 +1,14 @@
-import { useParams, useLocation } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useParams } from "wouter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MainLayout from "@/components/layout/MainLayout";
-import { Calculator, Brain, TrendingUp, Wallet, Target, Scale, AlertCircle } from "lucide-react";
+import {  Brain, AlertCircle } from "lucide-react";
 import { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import RiskAssessment from "@/components/RiskAssessment";
-import { Progress } from "@/components/ui/progress";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { calculateBetProposals, type BetProposal } from '@/lib/betCalculator';
-import { getGeminiStrategy, type BettingCandidate, type GeminiResponse, DetailedGeminiResponse, type GeminiStrategy } from '@/lib/geminiApi';
+import { getGeminiStrategy, type GeminiStrategy } from '@/lib/geminiApi';
 import { BettingStrategyTable } from "@/components/BettingStrategyTable";
 
 interface RecommendedBet {
