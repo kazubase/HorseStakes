@@ -24,4 +24,13 @@ docs/
 
 # Chrome関連（必要最小限以外）
 .chrome-for-testing/*
-!.chrome-for-testing/chrome* 
+!.chrome-for-testing/chrome-linux64
+!.chrome-for-testing/chrome-linux64/chrome
+
+# 完全に不要なファイル
+.chrome-for-testing/*/chromedriver
+.chrome-for-testing/*/interactive_ui_tests
+.chrome-for-testing/*/chrome_crashpad_handler
+.chrome-for-testing/*/chrome-testing
+.chrome-for-testing/*/nacl_helper
+.chrome-for-testing/*/xdg-* 
