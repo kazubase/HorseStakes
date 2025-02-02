@@ -22,15 +22,23 @@ docs/
 .heroku/
 .apt/
 
-# Chrome関連（必要最小限以外）
+# Chrome関連（必要最小限のみ保持）
 .chrome-for-testing/*
-!.chrome-for-testing/chrome-linux64
 !.chrome-for-testing/chrome-linux64/chrome
+!.chrome-for-testing/chrome-linux64/chrome_sandbox
+!.chrome-for-testing/chrome-linux64/chrome_crashpad_handler
 
 # 完全に不要なファイル
 .chrome-for-testing/*/chromedriver
 .chrome-for-testing/*/interactive_ui_tests
-.chrome-for-testing/*/chrome_crashpad_handler
 .chrome-for-testing/*/chrome-testing
 .chrome-for-testing/*/nacl_helper
-.chrome-for-testing/*/xdg-* 
+.chrome-for-testing/*/xdg-*
+
+# 追加の最適化
+node_modules/.cache/
+node_modules/**/test/
+node_modules/**/tests/
+node_modules/**/docs/
+node_modules/**/*.md
+node_modules/**/*.map 
