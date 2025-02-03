@@ -95,22 +95,25 @@ export default function PlaceProbability() {
         <h1 className="text-2xl font-bold">複勝予想確率入力</h1>
 
         {horses && Math.abs(totalProbability - getRequiredTotalProbability(horses.length)) > 0.1 && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>
-                全ての確率の合計が{getRequiredTotalProbability(horses.length)}%になるように調整してください
-                （現在: {totalProbability.toFixed(1)}%）
-              </span>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={normalizeAllProbabilities}
-              >
-                一括調整
-              </Button>
-            </AlertDescription>
-          </Alert>
+          <div className="sticky top-4 z-50">
+            <Alert variant="default" className="border border-emerald-500/20 bg-emerald-500/5 shadow-lg">
+              <AlertCircle className="h-4 w-4 text-emerald-400" />
+              <AlertDescription className="flex items-center justify-between text-emerald-100">
+                <span>
+                  全ての確率の合計が{getRequiredTotalProbability(horses.length)}%になるように調整してください
+                  （現在: {totalProbability.toFixed(1)}%）
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={normalizeAllProbabilities}
+                  className="border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-100"
+                >
+                  一括調整
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
         )}
 
         <Card>
@@ -146,7 +149,7 @@ export default function PlaceProbability() {
                       min={0}
                       max={100}
                       step={5}
-                      className="my-2 [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:hover:h-6 [&_[role=slider]]:hover:w-6 [&_[role=slider]]:transition-all [&_.track]:h-2"
+                      className="my-2 [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:hover:h-6 [&_[role=slider]]:hover:w-6 [&_[role=slider]]:transition-all [&_.track]:h-2 [&_.track]:pointer-events-none"
                     />
                   </div>
                 </div>
