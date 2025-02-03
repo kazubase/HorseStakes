@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import {  Brain, AlertCircle } from "lucide-react";
-import { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
+import { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds, Race } from "@db/schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { calculateBetProposals, type BetProposal } from '@/lib/betCalculator';
@@ -601,6 +601,12 @@ export default function Strategy() {
     }
   }, [budget, riskRatio, winProbs, placeProbs, winProbsStr, placeProbsStr]);
 
+  // レース情報を取得
+  const { data: race } = useQuery<Race>({
+    queryKey: [`/api/races/${id}`],
+    enabled: !!id,
+  });
+
   if (!horses) {
     return (
       <MainLayout>
@@ -715,6 +721,16 @@ export default function Strategy() {
   return (
     <MainLayout>
       <div className="space-y-4">
+        {/* レース名を表示 */}
+        <div className="rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm p-4">
+          <h2 className="text-xl font-bold">
+            {race?.name || 'レース名を読み込み中...'}
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {race?.venue} - {race?.startTime ? new Date(race.startTime).toLocaleString('ja-JP') : ''}
+          </p>
+        </div>
+
         <GeminiStrategy 
           recommendedBets={recommendedBets} 
           budget={budget} 
