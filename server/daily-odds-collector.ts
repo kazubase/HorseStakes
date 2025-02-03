@@ -140,9 +140,6 @@ class DailyOddsCollector {
                   const raceTime = new Date();
                   raceTime.setHours(hours, minutes, 0, 0);  // 日本時間で設定
 
-                  // UTCに変換（データベース保存用）
-                  const utcRaceTime = new Date(raceTime.getTime() - (9 * 60 * 60 * 1000));
-
                   const year = today.getFullYear();  // 年を100で割らない
                   const venueCode = this.getVenueCode(venue);
                   const raceId = parseInt(
@@ -153,7 +150,7 @@ class DailyOddsCollector {
                     id: raceId,
                     name: raceName,
                     venue,
-                    startTime: utcRaceTime,  // UTC時間で保存
+                    startTime: raceTime,  // UTC時間で保存
                     isGrade: true
                   });
                   
@@ -250,11 +247,11 @@ class DailyOddsCollector {
       // 日本時間で比較
       const now = new Date();
       const jstNow = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-      const jstStartTime = new Date(race.startTime.getTime() + (9 * 60 * 60 * 1000));
 
-      console.log(`Checking race ${raceId} - Start time (JST): ${jstStartTime.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`);
+      console.log(`jstNow: ${jstNow.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`);
+      console.log(`race.startTime: ${race.startTime.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`);
       
-      if (jstStartTime < jstNow && race.status === 'upcoming') {
+      if (race.startTime < jstNow && race.status === 'upcoming') {
         console.log(`Race ${raceId} has finished. Updating status to done`);
         await db.update(races)
           .set({ status: 'done' })
