@@ -10,11 +10,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const controlHeader = () => {
       const currentScrollY = window.scrollY;
-      
-      // スクロール方向を判定（下スクロールで非表示、上スクロールで表示）
-      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+      const isScrolledToBottom = 
+        window.innerHeight + currentScrollY >= document.documentElement.scrollHeight - 10; // 10pxのバッファを追加
+
+      // 一番下までスクロールした場合はヘッダーを非表示のままにする
+      if (isScrolledToBottom) {
         setIsHeaderVisible(false);
-      } else {
+      }
+      // 下スクロールで非表示（一番下でない場合）
+      else if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setIsHeaderVisible(false);
+      }
+      // 上スクロールで表示
+      else if (currentScrollY < lastScrollY) {
         setIsHeaderVisible(true);
       }
       

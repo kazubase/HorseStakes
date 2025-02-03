@@ -150,7 +150,20 @@ export default function PlaceProbability() {
                       min={0}
                       max={100}
                       step={5}
-                      className="my-2 [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:hover:h-6 [&_[role=slider]]:hover:w-6 [&_[role=slider]]:transition-all [&_.track]:h-2 [&_.track]:pointer-events-none"
+                      className="my-2 
+                        [&_[role=slider]]:h-5 
+                        [&_[role=slider]]:w-5 
+                        [&_[role=slider]]:hover:h-6 
+                        [&_[role=slider]]:hover:w-6 
+                        [&_[role=slider]]:transition-all 
+                        [&_[role=slider]]:relative 
+                        [&_[role=slider]]:after:absolute 
+                        [&_[role=slider]]:after:content-[''] 
+                        [&_[role=slider]]:after:w-10 
+                        [&_[role=slider]]:after:h-full 
+                        [&_[role=slider]]:after:-left-3
+                        [&_.track]:h-2 
+                        [&_.track]:pointer-events-none"
                     />
                   </div>
                 </div>
