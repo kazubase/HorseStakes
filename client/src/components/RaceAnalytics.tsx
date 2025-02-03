@@ -1,0 +1,135 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
+
+interface RaceAnalyticsProps {
+  winProbs: Record<string, number>;
+  placeProbs: Record<string, number>;
+  horses: Array<{ id: number; name: string; number: number }>;
+  budget: number;
+  riskRatio: number;
+}
+
+export function RaceAnalytics({ winProbs, placeProbs, horses, budget, riskRatio }: RaceAnalyticsProps) {
+  // データ作成を改善
+  const createProbData = (probs: Record<string, number>, count: number = 5) => {
+    const data = horses
+      .map(horse => ({
+        name: `${horse.number}. ${horse.name}`,
+        probability: probs[horse.id] || 0,
+        horseNumber: horse.number
+      }))
+      .sort((a, b) => b.probability - a.probability)
+      .filter(horse => horse.probability > 0); // 確率が0の馬を除外
+
+    // 5頭に満たない場合、空のデータで埋める
+    while (data.length < count) {
+      data.push({
+        name: "",
+        probability: 0,
+        horseNumber: -1
+      });
+    }
+
+    return data.slice(0, count);
+  };
+
+  const winProbData = createProbData(winProbs);
+  const placeProbData = createProbData(placeProbs);
+
+  // 共通のチャートコンポーネント
+  const ProbabilityChart = ({ data, title, color }: { 
+    data: Array<{ name: string; probability: number }>;
+    title: string;
+    color: string;
+  }) => (
+    <Card className="flex-1 bg-zinc-900/50 border-zinc-800">
+      <CardHeader>
+        <CardTitle className="text-zinc-100">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[250px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} layout="vertical" margin={{ right: 20 }}>
+              <XAxis 
+                type="number" 
+                domain={[0, 100]} 
+                unit="%" 
+                stroke="rgba(161, 161, 170, 0.3)"
+                fontSize={12}
+                tickFormatter={(value) => `${value}%`}
+              />
+              <YAxis 
+                dataKey="name" 
+                type="category" 
+                width={150}
+                stroke="rgba(161, 161, 170, 0.3)"
+                fontSize={12}
+                interval={0}
+                tickFormatter={(value) => value || "　"}
+              />
+              <Tooltip 
+                formatter={(value: number) => [`${value.toFixed(1)}%`, title]}
+                labelFormatter={(label) => label || ""}
+                contentStyle={{
+                  backgroundColor: 'rgba(24, 24, 27, 0.9)',
+                  border: '1px solid rgba(63, 63, 70, 0.5)',
+                  borderRadius: '6px',
+                  color: '#ffffff'
+                }}
+              />
+              <Bar 
+                dataKey="probability" 
+                fill={color}
+                radius={[0, 4, 4, 0]}
+              >
+                {data.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`}
+                    fill={entry.name ? color : "transparent"}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* リスク/リワード設定 */}
+      <Card className="w-full bg-zinc-900/50 border-zinc-800">
+        <CardHeader>
+          <CardTitle className="text-zinc-100">投資設定</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-around">
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-400">予算:</span>
+              <span className="text-xl font-bold text-zinc-100">{budget.toLocaleString()}円</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-400">リスクリワード:</span>
+              <span className="text-xl font-bold text-zinc-100">{riskRatio}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* チャート部分 */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <ProbabilityChart 
+          data={winProbData} 
+          title="単勝予想確率 上位5頭" 
+          color="rgba(16, 185, 129, 1.0)"
+        />
+        <ProbabilityChart 
+          data={placeProbData} 
+          title="複勝予想確率 上位5頭" 
+          color="rgba(5, 150, 105, 1.0)"
+        />
+      </div>
+    </div>
+  );
+} 

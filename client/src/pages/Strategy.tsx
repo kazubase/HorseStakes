@@ -10,6 +10,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { calculateBetProposals, type BetProposal } from '@/lib/betCalculator';
 import { getGeminiStrategy, type GeminiStrategy } from '@/lib/geminiApi';
 import { BettingStrategyTable } from "@/components/BettingStrategyTable";
+import { RaceAnalytics } from "@/components/RaceAnalytics";
 
 interface RecommendedBet {
   type: string;
@@ -721,7 +722,7 @@ export default function Strategy() {
   return (
     <MainLayout>
       <div className="space-y-4">
-        {/* レース名を表示 */}
+        {/* レース名表示 */}
         <div className="rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm p-4">
           <h2 className="text-xl font-bold">
             {race?.name || 'レース名を読み込み中...'}
@@ -736,6 +737,17 @@ export default function Strategy() {
           budget={budget} 
           riskRatio={riskRatio}
         />
+
+        {/* 分析情報の表示 */}
+        {horses && (
+          <RaceAnalytics
+            winProbs={winProbs}
+            placeProbs={placeProbs}
+            horses={horses}
+            budget={budget}
+            riskRatio={riskRatio}
+          />
+        )}
       </div>
     </MainLayout>
   );
