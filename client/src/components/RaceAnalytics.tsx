@@ -14,7 +14,7 @@ export function RaceAnalytics({ winProbs, placeProbs, horses, budget, riskRatio 
   const createProbData = (probs: Record<string, number>, count: number = 5) => {
     const data = horses
       .map(horse => ({
-        name: `${horse.number}. ${horse.name}`,
+        name: `${horse.number}. ${horse.name.length > 8 ? horse.name.substring(0, 8) + '...' : horse.name}`,
         probability: probs[horse.id] || 0,
         horseNumber: horse.number
       }))
@@ -36,11 +36,16 @@ export function RaceAnalytics({ winProbs, placeProbs, horses, budget, riskRatio 
   const winProbData = createProbData(winProbs);
   const placeProbData = createProbData(placeProbs);
 
+  // グラデーションカラーを生成する関数
+  const getGradientColor = (probability: number) => {
+    // 確率に応じて色の濃さを変える（0%: 薄い、100%: 濃い）
+    return `rgba(14, 232, 159, ${0.3 + (probability / 100) * 0.7})`;
+  };
+
   // 共通のチャートコンポーネント
-  const ProbabilityChart = ({ data, title, color }: { 
+  const ProbabilityChart = ({ data, title }: { 
     data: Array<{ name: string; probability: number }>;
     title: string;
-    color: string;
   }) => (
     <Card className="flex-1 bg-zinc-900/50 border-zinc-800">
       <CardHeader>
@@ -53,22 +58,22 @@ export function RaceAnalytics({ winProbs, placeProbs, horses, budget, riskRatio 
               <XAxis 
                 type="number" 
                 domain={[0, 100]} 
-                unit="%" 
-                stroke="rgba(161, 161, 170, 0.3)"
+                stroke="rgba(161, 161, 170, 1.0)"
                 fontSize={12}
-                tickFormatter={(value) => `${value}%`}
+                tickFormatter={(value) => `${value}`} // %を一つだけ表示
+                unit="%" // 単位として%を追加
               />
               <YAxis 
                 dataKey="name" 
                 type="category" 
                 width={150}
-                stroke="rgba(161, 161, 170, 0.3)"
+                stroke="rgba(161, 161, 170, 1.0)"
                 fontSize={12}
                 interval={0}
                 tickFormatter={(value) => value || "　"}
               />
               <Tooltip 
-                formatter={(value: number) => [`${value.toFixed(1)}%`, title]}
+                formatter={(value) => [`${(value as number).toFixed(1)}%`, '確率']}
                 labelFormatter={(label) => label || ""}
                 contentStyle={{
                   backgroundColor: 'rgba(24, 24, 27, 0.9)',
@@ -76,16 +81,17 @@ export function RaceAnalytics({ winProbs, placeProbs, horses, budget, riskRatio 
                   borderRadius: '6px',
                   color: '#ffffff'
                 }}
+                labelStyle={{ color: '#ffffff' }}
+                itemStyle={{ color: '#ffffff' }}
               />
               <Bar 
                 dataKey="probability" 
-                fill={color}
                 radius={[0, 4, 4, 0]}
               >
                 {data.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`}
-                    fill={entry.name ? color : "transparent"}
+                    fill={entry.name ? getGradientColor(entry.probability) : "transparent"}
                   />
                 ))}
               </Bar>
@@ -122,12 +128,10 @@ export function RaceAnalytics({ winProbs, placeProbs, horses, budget, riskRatio 
         <ProbabilityChart 
           data={winProbData} 
           title="単勝予想確率 上位5頭" 
-          color="rgba(16, 185, 129, 1.0)"
         />
         <ProbabilityChart 
           data={placeProbData} 
           title="複勝予想確率 上位5頭" 
-          color="rgba(5, 150, 105, 1.0)"
         />
       </div>
     </div>
