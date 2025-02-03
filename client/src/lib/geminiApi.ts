@@ -168,11 +168,22 @@ const fetchWithRetry = async (
   throw new Error('リクエストが失敗しました');
 };
 
+// フィードバックの種類を定義
+export interface StrategyFeedback {
+  type: 'MORE_RISK' | 'LESS_RISK' | 'FOCUS_HORSE' | 'AVOID_HORSE' | 'PREFER_BET_TYPE' | 'AVOID_BET_TYPE';
+  details: {
+    horseNumbers?: number[];
+    betType?: string;
+    description?: string;
+  };
+}
+
+// getGeminiStrategy関数を更新
 export const getGeminiStrategy = async (
   bettingCandidates: BettingCandidate[],
   totalBudget: number,
-  allBettingOptions: { 
-    horses: { 
+  allBettingOptions: {
+    horses: {
       name: string;
       odds: number;
       winProb: number;
@@ -182,9 +193,33 @@ export const getGeminiStrategy = async (
     }[];
     bettingOptions: BettingOption[];
   },
-  riskRatio: number
+  riskRatio: number,
+  feedback?: StrategyFeedback[] // 新しいパラメータ
 ): Promise<GeminiResponse> => {
   try {
+    // フィードバックに基づくプロンプトの追加
+    const feedbackPrompt = feedback?.length 
+      ? `
+【ユーザーからのフィードバック】
+${feedback.map(f => {
+  switch (f.type) {
+    case 'MORE_RISK':
+      return '- より積極的な投資戦略を希望';
+    case 'LESS_RISK':
+      return '- より保守的な投資戦略を希望';
+    case 'FOCUS_HORSE':
+      return `- ${f.details.horseNumbers?.map(n => `${n}番`).join(',')}に注目して投資`;
+    case 'AVOID_HORSE':
+      return `- ${f.details.horseNumbers?.map(n => `${n}番`).join(',')}への投資を避ける`;
+    case 'PREFER_BET_TYPE':
+      return `- ${f.details.betType}を重視した戦略を希望`;
+    case 'AVOID_BET_TYPE':
+      return `- ${f.details.betType}への投資を避ける`;
+  }
+}).join('\n')}
+上記のフィードバックを考慮して、戦略を調整してください。`
+      : '';
+
     // 出馬表情報の整理
     const raceCardInfo = allBettingOptions.horses
       .sort((a, b) => a.number - b.number)
@@ -193,6 +228,8 @@ export const getGeminiStrategy = async (
 
     // プロンプトを作成
     const prompt = `あなたは競馬の投資アドバイザーです。必ず日本語で推論してください。以下の馬券候補から、予算${totalBudget.toLocaleString()}円での最適な購入戦略を提案してください。
+
+${feedbackPrompt}
 
 【リスク選好】
 - リスク選好度: ${riskRatio}（1～20の範囲で、1が最もローリスク、20が最もハイリスク）

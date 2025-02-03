@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
-import {  Brain, AlertCircle } from "lucide-react";
+import {  Brain, AlertCircle, X } from "lucide-react";
 import { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds, Race } from "@db/schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
@@ -11,6 +11,10 @@ import { calculateBetProposals, type BetProposal } from '@/lib/betCalculator';
 import { getGeminiStrategy, type GeminiStrategy } from '@/lib/geminiApi';
 import { BettingStrategyTable } from "@/components/BettingStrategyTable";
 import { RaceAnalytics } from "@/components/RaceAnalytics";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 interface RecommendedBet {
   type: string;
@@ -34,6 +38,16 @@ interface GeminiStrategyState {
   requestId?: string;
 }
 
+// フィードバックの型定義
+interface StrategyFeedback {
+  type: 'MORE_RISK' | 'LESS_RISK' | 'FOCUS_HORSE' | 'AVOID_HORSE' | 'PREFER_BET_TYPE' | 'AVOID_BET_TYPE';
+  details: {
+    horseNumbers?: number[];
+    betType?: string;
+    description?: string;
+  };
+}
+
 function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyProps) {
   const { id } = useParams();
   const renderCount = useRef(0);
@@ -47,6 +61,7 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
   const [lastRequestTime, setLastRequestTime] = useState<number>(0);
   const MIN_REQUEST_INTERVAL = 5000;
   const [countdown, setCountdown] = useState<number>(0);
+  const [feedbacks, setFeedbacks] = useState<StrategyFeedback[]>([]);
 
   // デバッグ用のレンダリングカウント
   useEffect(() => {
@@ -80,7 +95,6 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
 
   const fetchGeminiStrategy = useCallback(async () => {
     const now = Date.now();
-    // 連続リクエストの制限チェックのみを行い、カウントダウンは開始しない
     if (now - lastRequestTime < MIN_REQUEST_INTERVAL) {
       setState(prev => ({
         ...prev,
@@ -133,7 +147,13 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
         });
       }
 
-      const response = await getGeminiStrategy([], budget, allBettingOptions, riskRatio);
+      const response = await getGeminiStrategy(
+        [], 
+        budget, 
+        allBettingOptions, 
+        riskRatio,
+        feedbacks
+      );
       
       if (process.env.NODE_ENV === 'development') {
         console.log('Gemini strategy response:', {
@@ -153,10 +173,10 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
       saveToSessionStorage(response.strategy, {
         budget,
         riskRatio,
-        recommendedBets
+        recommendedBets,
+        feedbacks
       }, id);
 
-      // レスポンス受信後にカウントダウンを開始
       setLastRequestTime(Date.now());
 
       setState(prev => {
@@ -180,7 +200,7 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
       });
       console.error('Strategy Error:', err);
     }
-  }, [id, budget, riskRatio, recommendedBets, horses, lastRequestTime, state.isRequesting]);
+  }, [id, budget, riskRatio, recommendedBets, horses, lastRequestTime, state.isRequesting, feedbacks]);
 
   // 初期化とstrategy復元
   useEffect(() => {
@@ -237,6 +257,21 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
       />
     );
   }, [state.strategy, budget]);
+
+  // フィードバックを追加する関数
+  const addFeedback = (feedback: StrategyFeedback) => {
+    setFeedbacks(prev => [...prev, feedback]);
+  };
+
+  // フィードバックをリセットする関数
+  const resetFeedbacks = () => {
+    setFeedbacks([]);
+  };
+
+  // フィードバックを削除する関数
+  const removeFeedback = (index: number) => {
+    setFeedbacks(prev => prev.filter((_, i) => i !== index));
+  };
 
   if (state.isLoading) {
     return (
@@ -334,7 +369,106 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <Brain className="h-4 w-4" />
+              戦略を調整
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80">
+            <div className="space-y-4">
+              <h4 className="font-medium">戦略の調整</h4>
+              
+              {/* リスク選好の調整 */}
+              <div className="space-y-2">
+                <Label>リスク選好</Label>
+                <RadioGroup 
+                  onValueChange={(value) => {
+                    addFeedback({ 
+                      type: value as 'MORE_RISK' | 'LESS_RISK', 
+                      details: {} 
+                    });
+                  }}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="MORE_RISK" id="more-risk" />
+                    <Label htmlFor="more-risk">よりリスクを取る</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="LESS_RISK" id="less-risk" />
+                    <Label htmlFor="less-risk">よりリスクを抑える</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* 馬の選択 */}
+              <div className="space-y-2">
+                <Label>注目したい馬</Label>
+                <div className="flex flex-wrap gap-2">
+                  {horses?.map(horse => (
+                    <Button
+                      key={horse.number}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addFeedback({
+                        type: 'FOCUS_HORSE',
+                        details: { 
+                          horseNumbers: [horse.number],
+                          description: horse.name
+                        }
+                      })}
+                    >
+                      {horse.number}番
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 券種の選択 */}
+              <div className="space-y-2">
+                <Label>重視したい券種</Label>
+                <div className="flex flex-wrap gap-2">
+                  {['単勝', '複勝', '馬連', 'ワイド', '馬単', '３連複', '３連単'].map(type => (
+                    <Button
+                      key={type}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addFeedback({
+                        type: 'PREFER_BET_TYPE',
+                        details: { betType: type }
+                      })}
+                    >
+                      {type}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* フィードバックのリセットと再分析 */}
+              <div className="flex flex-col gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={resetFeedbacks}
+                  disabled={feedbacks.length === 0}
+                >
+                  調整をリセット
+                </Button>
+                <Button 
+                  onClick={() => {
+                    fetchGeminiStrategy();
+                  }}
+                  disabled={feedbacks.length === 0}
+                >
+                  フィードバックを反映して再分析
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* 既存の再分析ボタン */}
         <Button
           onClick={fetchGeminiStrategy}
           disabled={state.isLoading || state.isRequesting || countdown > 0}
@@ -358,6 +492,43 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
           )}
         </Button>
       </div>
+
+      {/* フィードバック履歴の表示 */}
+      {feedbacks.length > 0 && (
+        <div className="rounded-lg border p-4 space-y-2">
+          <h4 className="font-medium">反映された調整</h4>
+          <div className="flex flex-wrap gap-2">
+            {feedbacks.map((feedback, index) => (
+              <Badge 
+                key={index} 
+                variant="secondary"
+                className="flex items-center gap-1"
+              >
+                {feedback.type === 'FOCUS_HORSE' && 
+                  `${feedback.details.horseNumbers?.join(',')}番に注目`}
+                {feedback.type === 'AVOID_HORSE' && 
+                  `${feedback.details.horseNumbers?.join(',')}番を避ける`}
+                {feedback.type === 'PREFER_BET_TYPE' && 
+                  `${feedback.details.betType}を重視`}
+                {feedback.type === 'AVOID_BET_TYPE' && 
+                  `${feedback.details.betType}を避ける`}
+                {feedback.type === 'MORE_RISK' && 'よりリスクを取る'}
+                {feedback.type === 'LESS_RISK' && 'よりリスクを抑える'}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => removeFeedback(index)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 既存のstrategyTable */}
       {strategyTable}
     </div>
   );
