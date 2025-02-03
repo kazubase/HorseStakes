@@ -39,7 +39,7 @@ export function RaceAnalytics({ winProbs, placeProbs, horses, budget, riskRatio 
   // グラデーションカラーを生成する関数
   const getGradientColor = (probability: number) => {
     // 確率に応じて色の濃さを変える（0%: 薄い、100%: 濃い）
-    return `rgba(14, 232, 159, ${0.1 + (probability / 100) * 0.9})`;
+    return `rgba(14, 232, 159, ${0.3 + (probability / 100) * 0.7})`;
   };
 
   // 共通のチャートコンポーネント
