@@ -1,12 +1,41 @@
 import { Link } from "wouter";
 import { History, Settings, HelpCircle } from "lucide-react";
 import { SiJira } from "react-icons/si";
+import { useEffect, useState } from "react";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const controlHeader = () => {
+      const currentScrollY = window.scrollY;
+      
+      // スクロール方向を判定（下スクロールで非表示、上スクロールで表示）
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setIsHeaderVisible(false);
+      } else {
+        setIsHeaderVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    // スクロールイベントリスナーの登録
+    window.addEventListener('scroll', controlHeader);
+
+    // クリーンアップ
+    return () => {
+      window.removeEventListener('scroll', controlHeader);
+    };
+  }, [lastScrollY]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="border-b bg-card/80 backdrop-blur-sm fixed top-0 left-0 right-0 z-10">
+      {/* Header - トランジション追加 */}
+      <header className={`border-b bg-card/80 backdrop-blur-sm fixed top-0 left-0 right-0 z-10 transition-transform duration-300 ${
+        isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}>
         <div className="container mx-auto px-4 h-12 flex items-center justify-between">
           <Link href="/">
             <div className="flex items-center gap-3 cursor-pointer">
@@ -21,8 +50,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="flex-1 container mx-auto px-4 py-6 mt-12 mb-12">
+      {/* Main content - マージン調整 */}
+      <main className={`flex-1 container mx-auto px-4 py-6 mb-12 transition-[margin] duration-300 ${
+        isHeaderVisible ? 'mt-12' : 'mt-0'
+      }`}>
         {children}
       </main>
 

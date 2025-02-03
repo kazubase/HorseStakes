@@ -76,7 +76,10 @@ export default function WinProbability() {
             <Alert variant="default" className="border border-emerald-500/20 bg-emerald-500/5 shadow-lg">
               <AlertCircle className="h-4 w-4 text-emerald-400" />
               <AlertDescription className="flex items-center justify-between text-emerald-100">
-                <span>全ての確率の合計が100%になるように調整してください（現在: {totalProbability.toFixed(1)}%）</span>
+                <span>全ての確率の合計が100%になるように調整してください
+                  <br />
+                  （現在: {totalProbability.toFixed(1)}%）
+                </span>
                 <Button 
                   variant="outline" 
                   size="sm"

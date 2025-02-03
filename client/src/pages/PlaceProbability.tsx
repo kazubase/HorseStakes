@@ -101,6 +101,7 @@ export default function PlaceProbability() {
               <AlertDescription className="flex items-center justify-between text-emerald-100">
                 <span>
                   全ての確率の合計が{getRequiredTotalProbability(horses.length)}%になるように調整してください
+                  <br />
                   （現在: {totalProbability.toFixed(1)}%）
                 </span>
                 <Button 
