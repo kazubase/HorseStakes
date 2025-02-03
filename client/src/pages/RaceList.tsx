@@ -111,7 +111,12 @@ export default function RaceList() {
           race.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           race.id.toString().includes(searchQuery);
 
-        // 選択された日付のレースを表示
+        // 検索時は日付フィルターを無視
+        if (searchQuery !== "") {
+          return matchesVenue && matchesSearch;
+        }
+
+        // 検索していない場合は選択された日付のレースを表示
         const matchesDate = () => {
           const raceDate = new Date(race.startTime);
           const targetDate = getTargetDate(selectedDate);
@@ -161,38 +166,37 @@ export default function RaceList() {
 
   return (
     <MainLayout>
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <h1 className="text-2xl font-bold">レース一覧</h1>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                {format(selectedDate, 'yyyy/MM/dd')}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                locale={ja}
-                disabled={(date) => {
-                  // 未来の日付は選択不可
-                  return date > new Date();
-                }}
-              />
-            </PopoverContent>
-          </Popover>
-          {selectedDate.getDay() >= 1 && selectedDate.getDay() <= 5 && (
-            <span className="text-sm text-muted-foreground">
-              ※平日は直前の週末のレースを表示しています
-            </span>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  {format(selectedDate, 'yyyy/MM/dd')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  locale={ja}
+                  disabled={(date) => date > new Date()}
+                />
+              </PopoverContent>
+            </Popover>
+            {selectedDate.getDay() >= 1 && selectedDate.getDay() <= 5 && (
+              <span className="text-sm text-muted-foreground">
+                ※平日は直前の週末のレースを表示
+              </span>
+            )}
+          </div>
         </div>
         
-        <div className="flex items-center gap-2">
-          <div className="relative w-64">
+        <div className="w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               type="text"
@@ -202,7 +206,7 @@ export default function RaceList() {
                 setSearchQuery(e.target.value);
                 setShowAllVenues(e.target.value !== "");
               }}
-              className="pl-10 bg-card border-border/50 focus:border-primary/50"
+              className="pl-10 bg-card border-border/50 focus:border-primary/50 w-full"
             />
           </div>
         </div>
