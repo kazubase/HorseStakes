@@ -148,25 +148,21 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   const tableData = useMemo(() => ({
     headers: ['券種', '買い目', 'オッズ', '的中率', '最適投資額', '想定払戻金', '選定理由'],
     rows: sortedBets.map(bet => [
-      <div key={bet.type} className="writing-vertical text-xs leading-tight min-h-[3rem] flex items-center justify-center">
+      <div key={bet.type} className="md:writing-horizontal writing-vertical text-xs leading-tight min-h-[3rem] flex items-center justify-center">
         {normalizeTicketType(bet.type)}
       </div>,
       (() => {
-        if (["馬単", "3連単"].includes(normalizeTicketType(bet.type))) {
-          // 馬単と3連単は矢印区切り（配列を使用して結合）
-          return bet.horses.join('→');
-        } else if (bet.horses.length === 1) {
-          // 単勝・複勝は馬番のみ
-          return bet.horses[0];
-        } else {
-          // その他は単純なハイフン区切り
-          return bet.horses.join('-');
-        }
+        const content = ["馬単", "3連単"].includes(normalizeTicketType(bet.type))
+          ? bet.horses.join('→')
+          : bet.horses.length === 1
+          ? bet.horses[0]
+          : bet.horses.join('-');
+        return <div className="text-center">{content}</div>;
       })(),
-      Number(bet.expectedReturn / bet.stake).toFixed(1),
-      (bet.probability * 100).toFixed(1) + '%',
-      bet.stake.toLocaleString() + '円',
-      bet.expectedReturn.toLocaleString() + '円',
+      <div className="text-center">{Number(bet.expectedReturn / bet.stake).toFixed(1)}</div>,
+      <div className="text-center">{(bet.probability * 100).toFixed(1)}%</div>,
+      <div className="text-center">{bet.stake.toLocaleString()}円</div>,
+      <div className="text-center">{bet.expectedReturn.toLocaleString()}円</div>,
       <div key={bet.horses.join('-')} className="flex justify-center items-center">
         <Popover.Root>
           <Popover.Trigger asChild>
@@ -248,7 +244,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                       {tableData.headers.map((header, i) => (
                         <TableHead 
                           key={i} 
-                          className={`whitespace-nowrap bg-background/40 py-3 ${
+                          className={`whitespace-nowrap bg-background/40 py-3 text-center ${
                             i < 2 ? 'sticky left-0 z-10 bg-background/95 backdrop-blur-sm' : ''
                           } ${
                             i === 0 ? 'z-10 rounded-tl-lg' : ''
@@ -321,6 +317,16 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           .writing-vertical {
             writing-mode: vertical-rl;
             text-orientation: upright;
+          }
+          .writing-horizontal {
+            writing-mode: horizontal-tb;
+            text-orientation: mixed;
+          }
+          @media (min-width: 768px) {
+            .md\\:writing-horizontal {
+              writing-mode: horizontal-tb;
+              text-orientation: mixed;
+            }
           }
         `}
       </style>

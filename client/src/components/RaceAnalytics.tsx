@@ -14,7 +14,7 @@ export function RaceAnalytics({ winProbs, placeProbs, horses, budget, riskRatio 
   const createProbData = (probs: Record<string, number>, count: number = 5) => {
     const data = horses
       .map(horse => ({
-        name: `${horse.number}. ${horse.name.length > 8 ? horse.name.substring(0, 8) + '...' : horse.name}`,
+        name: `${horse.number}. ${horse.name}`,
         probability: probs[horse.id] || 0,
         horseNumber: horse.number
       }))
@@ -39,7 +39,7 @@ export function RaceAnalytics({ winProbs, placeProbs, horses, budget, riskRatio 
   // グラデーションカラーを生成する関数
   const getGradientColor = (probability: number) => {
     // 確率に応じて色の濃さを変える（0%: 薄い、100%: 濃い）
-    return `rgba(14, 232, 159, ${0.3 + (probability / 100) * 0.7})`;
+    return `rgba(14, 232, 159, ${0.1 + (probability / 100) * 0.9})`;
   };
 
   // 共通のチャートコンポーネント
@@ -66,11 +66,16 @@ export function RaceAnalytics({ winProbs, placeProbs, horses, budget, riskRatio 
               <YAxis 
                 dataKey="name" 
                 type="category" 
-                width={150}
+                width={130}
                 stroke="rgba(161, 161, 170, 1.0)"
                 fontSize={12}
                 interval={0}
-                tickFormatter={(value) => value || "　"}
+                tickFormatter={(value) => {
+                  if (!value) return "　";
+                  // 馬番と馬名の間のスペースを調整
+                  const [number, name] = value.split('. ');
+                  return `${number}.${name}`; // スペースを削除
+                }}
               />
               <Tooltip 
                 formatter={(value) => [`${(value as number).toFixed(1)}%`, '確率']}
