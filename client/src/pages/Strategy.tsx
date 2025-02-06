@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { BettingOptionsTable } from "@/components/BettingOptionsTable";
 
 interface RecommendedBet {
   type: string;
@@ -908,6 +909,11 @@ export default function Strategy() {
           budget={budget} 
           riskRatio={riskRatio}
         />
+
+        {/* 馬券候補一覧を追加 */}
+        {recommendedBets && recommendedBets.length > 0 && (
+          <BettingOptionsTable bettingOptions={recommendedBets} />
+        )}
 
         {/* 分析情報の表示 */}
         {horses && (
