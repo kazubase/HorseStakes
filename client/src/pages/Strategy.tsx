@@ -893,8 +893,8 @@ export default function Strategy() {
 
   return (
     <MainLayout>
-      <div className="space-y-4">
-        {/* レース名表示 */}
+      <div className="space-y-6">
+        {/* レース情報ヘッダー */}
         <div className="rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm p-4">
           <h2 className="text-xl font-bold">
             {race?.name || 'レース名を読み込み中...'}
@@ -904,27 +904,38 @@ export default function Strategy() {
           </p>
         </div>
 
-        <GeminiStrategy 
-          recommendedBets={recommendedBets} 
-          budget={budget} 
-          riskRatio={riskRatio}
-        />
+        {/* メインコンテンツ: モバイルでは1カラム、lg以上で2カラム */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6">
+          {/* 左カラム: AI戦略、分析情報 */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* AI戦略 */}
+            <GeminiStrategy 
+              recommendedBets={recommendedBets} 
+              budget={budget} 
+              riskRatio={riskRatio}
+            />
 
-        {/* 馬券候補一覧を追加 */}
-        {recommendedBets && recommendedBets.length > 0 && (
-          <BettingOptionsTable bettingOptions={recommendedBets} />
-        )}
+            {/* 分析情報 */}
+            {horses && (
+              <RaceAnalytics
+                winProbs={winProbs}
+                placeProbs={placeProbs}
+                horses={horses}
+                budget={budget}
+                riskRatio={riskRatio}
+              />
+            )}
+          </div>
 
-        {/* 分析情報の表示 */}
-        {horses && (
-          <RaceAnalytics
-            winProbs={winProbs}
-            placeProbs={placeProbs}
-            horses={horses}
-            budget={budget}
-            riskRatio={riskRatio}
-          />
-        )}
+          {/* 右カラム: 馬券候補一覧 */}
+          <div className="lg:col-span-2">
+            {recommendedBets && recommendedBets.length > 0 && (
+              <div className="lg:sticky lg:top-4">
+                <BettingOptionsTable bettingOptions={recommendedBets} />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </MainLayout>
   );
