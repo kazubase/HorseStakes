@@ -574,72 +574,24 @@ export const calculateBetProposals = (
         調整後の対象馬券数: adjustedOptions.length,
         馬券種別構成: Object.entries(
           adjustedOptions.reduce((acc, bet) => {
-          acc[bet.type] = (acc[bet.type] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>)
-      )
-    })};
-
-    let bestBets: typeof options = [];
-    let bestWeights: number[] = [];
-    let bestMetrics = null;
-
-    // 最適な組み合わせを探索（より少ない点数から開始）
-    for (let size = Math.min(5, adjustedOptions.length); size <= adjustedOptions.length; size++) {
-      for (let iter = 0; iter < 100; iter++) {  // イテレーション回数を増加
-        // ランダムに馬券を選択（馬券種別の構成を維持）
-        const selectedBets = adjustedOptions
-          .sort(() => Math.random() - 0.5)
-          .slice(0, size);
-
-        // 重みの最適化
-        const weights = selectedBets.map(() => 0.6 + (Math.random() * 0.4));
-        const sum = weights.reduce((a, b) => a + b, 0);
-        const normalizedWeights = weights.map(w => w / sum);
-        
-        const metrics = calculatePortfolioMetrics(selectedBets, normalizedWeights);
-        if (!metrics || !metrics.isWithinRiskRange) continue;
-
-        const isBetter = !bestMetrics || metrics.score > bestMetrics.score;
-
-        if (isBetter) {
-          bestMetrics = metrics;
-          bestBets = selectedBets;
-          bestWeights = normalizedWeights;
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.log('改善発見:', {
-              betsCount: selectedBets.length,
-              betTypes: metrics.betTypes,
-              adjustedOdds: metrics.expectedReturn.toFixed(3),
-              sharpeRatio: metrics.sharpeRatio.toFixed(3),
-              risk: metrics.risk.toFixed(3),
-              portfolioEffect: metrics.portfolioEffect.toFixed(3),
-              score: metrics.score.toFixed(3)
-            });
-          }
-        }
-      }
+            acc[bet.type] = (acc[bet.type] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>)
+        )
+      });
     }
 
-    // 重みの正規化を行う
-    let normalizedWeights = [...bestWeights];
-    if (bestWeights.length > 0) {
-      // 重みの合計を計算
-      const totalWeight = bestWeights.reduce((sum, w) => sum + w, 0);
-      
-      // 各重みを調整して、合計が1になるようにする
-      normalizedWeights = bestWeights.map(w => w / totalWeight);
-    }
+    // 重みの初期化（均等配分）
+    const weights = adjustedOptions.map(() => 1 / adjustedOptions.length);
 
     // 結果を投資額に変換し、ソート
-    const proposals: BetProposal[] = bestBets
+    const proposals: BetProposal[] = adjustedOptions
       .map((bet, i) => ({
         type: bet.type as BetProposal['type'],
         horses: [bet.horseName],
         horseName: bet.horseName,
-        stake: Number((totalBudget * normalizedWeights[i]).toFixed(1)),  // 小数点1桁に制限
-        expectedReturn: Number((totalBudget * normalizedWeights[i] * bet.odds).toFixed(1)),  // 小数点1桁に制限
+        stake: Number((totalBudget * weights[i]).toFixed(1)),
+        expectedReturn: Number((totalBudget * weights[i] * bet.odds).toFixed(1)),
         probability: bet.prob
       }))
       .sort((a, b) => {
@@ -665,9 +617,6 @@ export const calculateBetProposals = (
     // 最終結果のログ出力を改善
     if (process.env.NODE_ENV === 'development') {
       console.log('最終結果:', {
-        sharpeRatio: bestMetrics?.sharpeRatio.toFixed(3) ?? -Infinity,
-        expectedReturn: bestMetrics?.expectedReturn.toFixed(3) ?? 0,
-        risk: bestMetrics?.risk.toFixed(3) ?? 0,
         totalBets: proposals.length,
         totalInvestment: proposals.reduce((sum, p) => sum + p.stake, 0),
         bets: proposals.map(p => ({
@@ -791,7 +740,7 @@ export const optimizeBetAllocation = (
   let bestWeights: number[] = [];
   let bestMetrics = { sharpeRatio: -Infinity, expectedReturn: 0, risk: 0 };
 
-  for (let iter = 0; iter < 1000; iter++) {
+  for (let iter = 0; iter < 2000; iter++) {
     const weights = Array(processedRecs.length).fill(0)
       .map(() => Math.random())
       .map((w, _, arr) => w / arr.reduce((a, b) => a + b, 0));
