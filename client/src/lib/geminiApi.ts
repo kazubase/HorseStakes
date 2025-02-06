@@ -361,7 +361,7 @@ json
       console.log('Geminiへのリクエスト：');
       console.log({
         apiVersion: 'v1alpha',
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash-001',
         thought: false,
       });
       console.log('プロンプト全文:\n', prompt);
@@ -377,7 +377,7 @@ json
       credentials: 'same-origin',
       body: JSON.stringify({ 
         prompt: prompt,
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash-001',
         thought: false,
         apiVersion: 'v1alpha'
       })
@@ -462,7 +462,7 @@ json
     }
   }
 }`,
-        model: 'gemini-1.5-flash'
+        model: 'gemini-2.0-flash-001'
       })
     }) ?? throwError('要約の取得に失敗しました');
 
