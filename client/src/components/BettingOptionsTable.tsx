@@ -4,9 +4,13 @@ import { BetProposal } from "@/lib/betCalculator";
 
 interface BettingOptionsTableProps {
   bettingOptions: BetProposal[];
+  selectedBets?: BetProposal[];
 }
 
-export function BettingOptionsTable({ bettingOptions }: BettingOptionsTableProps) {
+export function BettingOptionsTable({ 
+  bettingOptions,
+  selectedBets = [] 
+}: BettingOptionsTableProps) {
   // 期待値を計算
   const optionsWithEV = bettingOptions.map(option => {
     const odds = option.expectedReturn / option.stake;
@@ -46,6 +50,47 @@ export function BettingOptionsTable({ bettingOptions }: BettingOptionsTableProps
     return horses.join(betType.includes('単') ? '→' : '-');
   };
 
+  // 選択された馬券かどうかを判定する関数を修正
+  const isSelected = (option: BetProposal) => {
+
+    const result = selectedBets.some(selected => {
+      // 券種が一致すること（３連複/3連複のような表記揺れに対応）
+      const normalizedType = (type: string) => type.replace('３', '3');
+      const isSameType = normalizedType(selected.type) === normalizedType(option.type);
+      
+      // 馬番を数値配列に変換して比較
+      const normalizeHorses = (horses: string[]) => {
+        // "-", "→" で分割されている場合は分割して処理
+        const allNumbers = horses.flatMap(h => {
+          if (h.includes('-')) {
+            return h.split('-').map(num => parseInt(num.trim()));
+          }
+          if (h.includes('→')) {
+            return h.split('→').map(num => parseInt(num.trim()));
+          }
+          return parseInt(h.split(' ')[0]);
+        });
+        
+        // 馬単系は順序を維持、それ以外はソート
+        return option.type.includes('単') ? allNumbers : allNumbers.sort((a, b) => a - b);
+      };
+      
+      const selectedHorses = normalizeHorses(selected.horses);
+      const optionHorses = normalizeHorses(option.horses);
+      
+      // 馬単と3連単は順序を考慮
+      const isSameHorses = option.type.includes('単')
+        ? selectedHorses.join(',') === optionHorses.join(',')
+        // その他の馬券は順序を考慮しない
+        : selectedHorses.length === optionHorses.length &&
+          selectedHorses.every(h => optionHorses.includes(h));
+      
+      return isSameType && isSameHorses;
+    });
+
+    return result;
+  };
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
@@ -72,7 +117,14 @@ export function BettingOptionsTable({ bettingOptions }: BettingOptionsTableProps
                 {/* 馬券リスト */}
                 <div className="space-y-1.5 mt-2">
                   {options.map((option, index) => (
-                    <div key={index} className="p-2">
+                    <div 
+                      key={index} 
+                      className={`p-2 rounded-md transition-colors ${
+                        isSelected(option) 
+                          ? 'bg-primary/10 border border-primary/30' 
+                          : 'hover:bg-muted/50'
+                      }`}
+                    >
                       <div className="grid grid-cols-2 gap-2">
                         <span className="font-medium">
                           {formatHorses(option.horses, betType)}

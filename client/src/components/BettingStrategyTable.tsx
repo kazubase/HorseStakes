@@ -314,15 +314,15 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             <div className="grid grid-cols-3 gap-4 text-xs">
               <div className="flex flex-col">
                 <span className="text-muted-foreground">総投資額</span>
-                <span className="font-bold">{totals.totalInvestment.toLocaleString()}円</span>
+                <span className="text-sm font-bold">{totals.totalInvestment.toLocaleString()}円</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground">推定期待収益</span>
-                <span className="font-bold">{Math.round(totals.totalExpectedReturn).toLocaleString()}円</span>
+                <span className="text-sm font-bold">{Math.round(totals.totalExpectedReturn).toLocaleString()}円</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground">期待収益率</span>
-                <span className="font-bold">+{totals.expectedReturnRate}%</span>
+                <span className="text-sm font-bold">+{totals.expectedReturnRate}%</span>
               </div>
             </div>
           </div>

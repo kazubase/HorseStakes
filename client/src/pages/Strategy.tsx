@@ -29,6 +29,7 @@ interface GeminiStrategyProps {
   recommendedBets: BetProposal[] | undefined;
   budget: number;
   riskRatio: number;
+  onStrategyChange: (strategy: GeminiStrategy | null) => void;
 }
 
 interface GeminiStrategyState {
@@ -49,7 +50,7 @@ interface StrategyFeedback {
   };
 }
 
-function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyProps) {
+function GeminiStrategy({ recommendedBets, budget, riskRatio, onStrategyChange }: GeminiStrategyProps) {
   const { id } = useParams();
   const renderCount = useRef(0);
   const [state, setState] = useState<GeminiStrategyState>({
@@ -189,6 +190,8 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
           isRequesting: false
         };
       });
+
+      onStrategyChange(response.strategy);
     } catch (err) {
       setState(prev => {
         if (prev.requestId !== currentRequestId) return prev;
@@ -201,7 +204,7 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio }: GeminiStrategyPr
       });
       console.error('Strategy Error:', err);
     }
-  }, [id, budget, riskRatio, recommendedBets, horses, lastRequestTime, state.isRequesting, feedbacks]);
+  }, [id, budget, riskRatio, recommendedBets, horses, lastRequestTime, state.isRequesting, feedbacks, onStrategyChange]);
 
   // 初期化とstrategy復元
   useEffect(() => {
@@ -780,6 +783,9 @@ export default function Strategy() {
     enabled: !!id,
   });
 
+  // Strategy コンポーネント内で状態を管理
+  const [geminiStrategy, setGeminiStrategy] = useState<GeminiStrategy | null>(null);
+
   if (!horses) {
     return (
       <MainLayout>
@@ -913,6 +919,7 @@ export default function Strategy() {
               recommendedBets={recommendedBets} 
               budget={budget} 
               riskRatio={riskRatio}
+              onStrategyChange={setGeminiStrategy}
             />
 
             {/* 分析情報 */}
@@ -931,7 +938,17 @@ export default function Strategy() {
           <div className="lg:col-span-1">
             {recommendedBets && recommendedBets.length > 0 && (
               <div className="lg:sticky lg:top-4">
-                <BettingOptionsTable bettingOptions={recommendedBets} />
+                <BettingOptionsTable 
+                  bettingOptions={recommendedBets} 
+                  selectedBets={geminiStrategy?.recommendations?.map(bet => ({
+                    type: bet.type,
+                    horses: bet.horses,
+                    horseName: bet.horses.join('-'),
+                    stake: 0,
+                    expectedReturn: bet.odds || 0,
+                    probability: Number(bet.probability)
+                  })) || []}
+                />
               </div>
             )}
           </div>
