@@ -905,9 +905,9 @@ export default function Strategy() {
         </div>
 
         {/* メインコンテンツ: モバイルでは1カラム、lg以上で2カラム */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
           {/* 左カラム: AI戦略、分析情報 */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className="lg:col-span-1 space-y-4">
             {/* AI戦略 */}
             <GeminiStrategy 
               recommendedBets={recommendedBets} 
@@ -928,7 +928,7 @@ export default function Strategy() {
           </div>
 
           {/* 右カラム: 馬券候補一覧 */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-1">
             {recommendedBets && recommendedBets.length > 0 && (
               <div className="lg:sticky lg:top-4">
                 <BettingOptionsTable bettingOptions={recommendedBets} />

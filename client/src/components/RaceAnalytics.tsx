@@ -129,7 +129,7 @@ export function RaceAnalytics({ winProbs, placeProbs, horses, budget, riskRatio 
       </Card>
 
       {/* チャート部分 */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-1">
         <ProbabilityChart 
           data={winProbData} 
           title="単勝予想確率 上位5頭" 

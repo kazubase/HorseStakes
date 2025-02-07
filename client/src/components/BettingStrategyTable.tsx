@@ -152,7 +152,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         {normalizeTicketType(bet.type)}
       </div>,
       (() => {
-        const content = ["馬単", "3連単"].includes(normalizeTicketType(bet.type))
+        const content = ["馬単", "３連単"].includes(normalizeTicketType(bet.type))
           ? bet.horses.join('→')
           : bet.horses.length === 1
           ? bet.horses[0]
@@ -218,118 +218,116 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   };
 
   return (
-    <>
-      <Card data-card-container>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>AI最適化戦略</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={captureTable}
-              className="gap-2"
-            >
-              <Camera className="h-4 w-4" />
-              買い目を保存
-            </Button>
+    <Card data-card-container>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <CardTitle>AI最適化戦略</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={captureTable}
+            className="gap-2"
+          >
+            <Camera className="h-4 w-4" />
+            保存
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {/* ヘッダー行 */}
+          <div className="grid grid-cols-4 gap-1 px-2 pb-2 border-b text-xs text-muted-foreground">
+            <div>券種</div>
+            <div>オッズ</div>
+            <div>投資額</div>
+            <div>選定理由</div>
+            <div>買い目</div>
+            <div>的中率</div>
+            <div>払戻金</div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="relative rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm overflow-visible">
-              <div className="overflow-x-auto overflow-visible" ref={tableRef}>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-b border-border/50 hover:bg-transparent">
-                      {tableData.headers.map((header, i) => (
-                        <TableHead 
-                          key={i} 
-                          className={`whitespace-nowrap bg-background/40 py-3 text-center ${
-                            i < 2 ? 'sticky left-0 z-10 bg-background/95 backdrop-blur-sm' : ''
-                          } ${
-                            i === 0 ? 'z-10 rounded-tl-lg' : ''
-                          } ${
-                            i === tableData.headers.length - 1 ? 'rounded-tr-lg' : ''
-                          } ${
-                            i === 1 ? 'left-[30px] z-20' : ''
-                          }`}
-                        >
-                          {header}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tableData.rows.map((row, i) => (
-                      <TableRow 
-                        key={i} 
-                        className={`border-b border-border/30 transition-colors hover:bg-muted/5 ${
-                          i === tableData.rows.length - 1 ? 'last:border-b-0' : ''
-                        }`}
-                      >
-                        {row.map((cell, j) => (
-                          <TableCell 
-                            key={j} 
-                            className={`whitespace-nowrap py-2.5 ${
-                              j < 2 ? 'sticky left-0 z-10 bg-background/95 backdrop-blur-sm' : ''
-                            } ${
-                              j === 0 ? 'z-10 font-medium' : ''
-                            } ${
-                              j === 1 ? 'left-[30px] z-20' : ''
-                            } ${
-                              i === tableData.rows.length - 1 && j === 0 ? 'rounded-bl-lg' : ''
-                            } ${
-                              i === tableData.rows.length - 1 && j === row.length - 1 ? 'rounded-br-lg' : ''
-                            }`}
-                          >
-                            {cell}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-background to-transparent rounded-r-lg" />
-            </div>
 
-            <div className="mt-6 rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm p-4 space-y-3">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center py-1">
-                  <span className="font-medium text-muted-foreground">総投資額:</span>
-                  <span className="font-semibold">{totals.totalInvestment.toLocaleString()}円</span>
+          {/* 馬券リスト */}
+          <div className="space-y-2">
+            {sortedBets.map((bet, index) => (
+              <div key={index} className="grid grid-cols-4 gap-4 p-2 tems-center">
+                {/* 1列目: 券種と買い目 */}
+                <div className="flex flex-col">
+                  <span className="text-xs">
+                    {normalizeTicketType(bet.type)}
+                  </span>
+                  <span className="text-sm font-bold">
+                    {["馬単", "３連単"].includes(normalizeTicketType(bet.type))
+                      ? bet.horses.join('→')
+                      : bet.horses.length === 1
+                      ? bet.horses[0]
+                      : bet.horses.join('-')}
+                  </span>
                 </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="font-medium text-muted-foreground">推定期待収益:</span>
-                  <span className="font-semibold">{Math.round(totals.totalExpectedReturn).toLocaleString()}円</span>
+
+                {/* 2列目: オッズと的中率 */}
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold">
+                    ×{Number(bet.expectedReturn / bet.stake).toFixed(1)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {(bet.probability * 100).toFixed(1)}%
+                  </span>
                 </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="font-medium text-muted-foreground">推定期待収益率:</span>
-                  <span className="font-semibold">+{totals.expectedReturnRate}%</span>
+
+                {/* 3列目: 投資額と払戻金 */}
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold">
+                    {bet.stake.toLocaleString()}円
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {bet.expectedReturn.toLocaleString()}円
+                  </span>
                 </div>
+
+                {/* 4列目: 選定理由 */}
+                <div className="flex items-center">
+                  <Popover.Root>
+                    <Popover.Trigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 px-2 gap-1">
+                        <InfoCircledIcon className="h-4 w-4" />
+                        <span className="text-xs"></span>
+                      </Button>
+                    </Popover.Trigger>
+                    <Popover.Portal>
+                      <Popover.Content 
+                        className="w-80 rounded-lg border border-border/30 bg-black/70 p-4 shadow-lg z-[9999] backdrop-blur-sm" 
+                        sideOffset={5}
+                      >
+                        <p className="text-sm text-white/90 leading-relaxed whitespace-normal break-words">
+                          {bet.reason || '理由なし'}
+                        </p>
+                      </Popover.Content>
+                    </Popover.Portal>
+                  </Popover.Root>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 集計情報 */}
+          <div className="rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm p-3">
+            <div className="grid grid-cols-3 gap-4 text-xs">
+              <div className="flex flex-col">
+                <span className="text-muted-foreground">総投資額</span>
+                <span className="font-bold">{totals.totalInvestment.toLocaleString()}円</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground">推定期待収益</span>
+                <span className="font-bold">{Math.round(totals.totalExpectedReturn).toLocaleString()}円</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground">期待収益率</span>
+                <span className="font-bold">+{totals.expectedReturnRate}%</span>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-      <style>
-        {`
-          .writing-vertical {
-            writing-mode: vertical-rl;
-            text-orientation: upright;
-          }
-          .writing-horizontal {
-            writing-mode: horizontal-tb;
-            text-orientation: mixed;
-          }
-          @media (min-width: 768px) {
-            .md\\:writing-horizontal {
-              writing-mode: horizontal-tb;
-              text-orientation: mixed;
-            }
-          }
-        `}
-      </style>
-    </>
+        </div>
+      </CardContent>
+    </Card>
   );
 }); 
