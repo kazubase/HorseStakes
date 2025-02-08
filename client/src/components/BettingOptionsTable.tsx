@@ -52,7 +52,6 @@ export function BettingOptionsTable({
 
   // 選択された馬券かどうかを判定する関数を修正
   const isSelected = (option: BetProposal) => {
-
     const result = selectedBets.some(selected => {
       // 券種が一致すること（３連複/3連複のような表記揺れに対応）
       const normalizedType = (type: string) => type.replace('３', '3');
@@ -60,15 +59,17 @@ export function BettingOptionsTable({
       
       // 馬番を数値配列に変換して比較
       const normalizeHorses = (horses: string[]) => {
-        // "-", "→" で分割されている場合は分割して処理
+        // 各馬番を文字列として扱い、分割処理を行う
         const allNumbers = horses.flatMap(h => {
-          if (h.includes('-')) {
-            return h.split('-').map(num => parseInt(num.trim()));
+          const horseStr = String(h); // 数値を確実に文字列に変換
+          if (horseStr.includes('-')) {
+            return horseStr.split('-').map(num => parseInt(num.trim()));
           }
-          if (h.includes('→')) {
-            return h.split('→').map(num => parseInt(num.trim()));
+          if (horseStr.includes('→')) {
+            return horseStr.split('→').map(num => parseInt(num.trim()));
           }
-          return parseInt(h.split(' ')[0]);
+          // 空白で分割して最初の数値を取得
+          return parseInt(horseStr.split(' ')[0]);
         });
         
         // 馬単系は順序を維持、それ以外はソート

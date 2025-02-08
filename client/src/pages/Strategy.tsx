@@ -434,7 +434,7 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio, onStrategyChange }
               <div className="space-y-2">
                 <Label>重視したい券種</Label>
                 <div className="flex flex-wrap gap-2">
-                  {['単勝', '複勝', '馬連', 'ワイド', '馬単', '３連複', '３連単'].map(type => (
+                  {['単勝', '複勝', '枠連', 'ワイド', '馬連', '馬単', '３連複', '３連単'].map(type => (
                     <Button
                       key={type}
                       variant="outline"

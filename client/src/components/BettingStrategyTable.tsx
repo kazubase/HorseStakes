@@ -50,8 +50,8 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       "単勝": 1,
       "複勝": 2,
       "枠連": 3,
-      "馬連": 4,
-      "ワイド": 5,
+      "ワイド": 4,
+      "馬連": 5,
       "馬単": 6,
       "3連複": 7,
       "3連単": 8

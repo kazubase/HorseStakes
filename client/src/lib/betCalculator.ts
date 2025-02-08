@@ -2,7 +2,7 @@ import { GeminiStrategy, getGeminiStrategy } from './geminiApi';
 import type { GeminiRecommendation } from './geminiApi';
 
 interface BettingOption {
-  type: "単勝" | "複勝" | "枠連" | "馬連" | "ワイド" | "馬単" | "３連複" | "３連単";
+  type: "単勝" | "複勝" | "枠連" | "ワイド" | "馬連" | "馬単" | "３連複" | "３連単";
   horseName: string;
   odds: number;
   prob: number;
@@ -428,10 +428,10 @@ export const calculateBetProposals = (
           return 1.0;  // 基準
         case "枠連":
           return 2.0;  // 枠連のリスク
-        case "馬連":
-          return 3.0;  // 馬連のリスク
         case "ワイド":
           return 2.0;  // ワイドのリスク
+        case "馬連":
+          return 3.0;  // 馬連のリスク
         case "馬単":
           return 4.0;  // 馬単のリスク
         case "３連複":
@@ -519,8 +519,8 @@ export const calculateBetProposals = (
         "複勝": { min: 0, max: 2 },
         "単勝": { min: 0, max: 3 },
         "枠連": { min: 0, max: 4 },
-        "馬連": { min: 0, max: 6 },
         "ワイド": { min: 0, max: 4 },
+        "馬連": { min: 0, max: 6 },
         "馬単": { min: 0, max: 8 },
         "３連複": { min: 0, max: 12 },
         "３連単": { min: 0, max: 16 }
@@ -599,8 +599,8 @@ export const calculateBetProposals = (
           "単勝": 1,
           "複勝": 2,
           "枠連": 3,
-          "馬連": 4,
-          "ワイド": 5,
+          "ワイド": 4,
+          "馬連": 5,
           "馬単": 6,
           "３連複": 7,
           "３連単": 8
@@ -781,8 +781,8 @@ export const optimizeBetAllocation = (
       "単勝": 1,
       "複勝": 2,
       "枠連": 3,
-      "馬連": 4,
-      "ワイド": 5,
+      "ワイド": 4,
+      "馬連": 5,
       "馬単": 6,
       "３連複": 7,
       "３連単": 8
