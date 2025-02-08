@@ -32,6 +32,9 @@ export default function Home() {
     enabled: !!id,
   });
 
+  // 馬番でソートした馬リストを作成
+  const sortedHorses = [...horses].sort((a, b) => a.number - b.number);
+
   // オッズデータを取得する新しいクエリを追加
   const { data: latestOdds = [] } = useQuery<TanOddsHistory[]>({
     queryKey: [`/api/tan-odds-history/latest/${id}`],
@@ -98,14 +101,14 @@ export default function Home() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {horses.map((horse, index) => {
+                  {sortedHorses.map((horse) => {
                     const latestOdd = latestOdds?.find(odd => 
-                      Number(odd.horseId) === index + 1
+                      Number(odd.horseId) === horse.number
                     );
                     
                     return (
                       <TableRow key={horse.id}>
-                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{horse.number}</TableCell>
                         <TableCell>{horse.name}</TableCell>
                         <TableCell className="text-right">
                           {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}

@@ -19,6 +19,9 @@ export default function WinProbability() {
     enabled: !!id,
   });
 
+  // 馬番でソートした馬リストを作成
+  const sortedHorses = [...(horses || [])].sort((a, b) => a.number - b.number);
+
   useEffect(() => {
     if (horses) {
       const initial = horses.reduce((acc, horse) => {
@@ -96,11 +99,11 @@ export default function WinProbability() {
         <Card>
           <CardContent className="p-6">
             <div className="space-y-6">
-              {horses.map((horse, index) => (
+              {sortedHorses.map((horse) => (
                 <div key={horse.id} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <label className="text-sm font-medium">
-                      {index + 1}. {horse.name}
+                      {horse.number}. {horse.name}
                     </label>
                     <span className="text-sm text-muted-foreground">
                       {probabilities[horse.id]?.toFixed(1)}%

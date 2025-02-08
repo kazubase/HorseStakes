@@ -173,7 +173,16 @@ export class OddsCollector {
       console.log('Page content length:', html.length);
 
       // 馬券種別固有のパース処理
-      return await config.parser(html, raceId);
+      const oddsData = await config.parser(html, raceId);
+
+      const sortedHorses = oddsData.sort((a, b) => {
+        if (a.frame === b.frame) {
+          return a.number - b.number;
+        }
+        return a.frame - b.frame;
+      });
+
+      return sortedHorses;
 
     } finally {
       await context.close();

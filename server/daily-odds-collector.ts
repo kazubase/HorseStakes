@@ -38,7 +38,7 @@ class DailyOddsCollector {
     await this.collector.initialize();
   }
 
-  // JRAページから当日の重賞レース情報を取得
+  // JRAページから当日のレース情報を取得（重賞とテスト対象レースを含む）
   async getTodayGradeRaces(): Promise<RaceInfo[]> {
     if (!this.browser) throw new Error('Browser not initialized');
     
@@ -59,33 +59,43 @@ class DailyOddsCollector {
       const html = await page.content();
       const $ = cheerio.load(html);
 
-      // 当日の開催情報を取得
+      // 当日および翌日の開催情報を取得
       const today = new Date();
       const todayStr = `${today.getMonth() + 1}月${today.getDate()}日`;
-      console.log('Looking for races on:', todayStr);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      const tomorrowStr = `${tomorrow.getMonth() + 1}月${tomorrow.getDate()}日`;
+      console.log('Looking for races on:', todayStr, 'or', tomorrowStr);
 
       // 各開催の情報を取得
       const kaisaiElements = $('.thisweek .panel.no-padding.no-border[class*="mt"]');
       console.log('Found kaisai elements:', kaisaiElements.length);
 
-      const promises: Promise<void>[] = [];
       for (const element of kaisaiElements.toArray()) {
         const $kaisai = $(element);
         const dateHeader = $kaisai.find('.sub_header').text().trim();
         console.log('Date header:', dateHeader);
 
-        if (dateHeader.includes(todayStr)) {
-          console.log('Processing kaisai for today');
+        // 当日または翌日の開催情報であれば処理する
+        if (dateHeader.includes(todayStr) || dateHeader.includes(tomorrowStr)) {
+          console.log('Processing kaisai for date:', dateHeader);
           const kaisaiLinks = $kaisai.find('.link_list a');
           console.log('Found kaisai links:', kaisaiLinks.length);
 
+          // ヘッダーの日付に合わせて基準日（baseDate）を設定
+          let baseDate: Date;
+          if (dateHeader.includes(tomorrowStr)) {
+            baseDate = new Date(tomorrow);
+          } else {
+            baseDate = new Date(today);
+          }
+          
           for (const link of kaisaiLinks.toArray()) {
             const kaisaiText = $(link).text().trim();
             console.log('Kaisai text:', kaisaiText);
             const [kai, venue, nichi] = kaisaiText.match(/(\d+)回(.+?)(\d+)日/)?.slice(1) || [];
             console.log('Parsed values:', { kai, venue, nichi });
             
-            // 順次処理
             try {
               // 開催ボタンをクリック
               const kaisaiName = `${kai}回${venue}${nichi}日`;
@@ -107,26 +117,26 @@ class DailyOddsCollector {
                 // レース名とグレード情報を取得
                 const raceName = $raceName.find('.stakes').text().trim();
                 const gradeIcon = $raceName.find('.grade_icon img').attr('src');
-                
-                // グレード判定を修正（G1, G2, G3すべてに対応）
                 const isGrade = gradeIcon?.includes('icon_grade_s_g');
                 
-                if (isGrade) {
-                  // レース番号を画像のalt属性から取得（"11レース" → 11）
-                  const raceNumber = parseInt($raceNum.find('img').attr('alt')?.replace('レース', '') || '0');
-                  
-                  // 時刻を日本語形式から変換（15時25分 → 15:25）
-                  const timeText = $raceTime.text().trim();
-                  console.log('Race time text:', timeText);  // デバッグ用
+                // レース番号の画像から取得（"11レース" → 11）
+                const raceNumber = parseInt($raceNum.find('img').attr('alt')?.replace('レース', '') || '0');
 
-                  // 「発走済」の場合はステータスを更新
+                // テスト用の条件：東京5Rの場合も含む
+                const isTestTarget = venue === '東京' && raceNumber === 9;
+                
+                if (isGrade || isTestTarget) {
+                  // 時刻を日本語形式から変換（例：「15時45分」→ [15, 45]）
+                  const timeText = $raceTime.text().trim();
+                  console.log('Race time text:', timeText);
+
+                  // 「発走済」の場合はステータス更新
                   if (timeText === '発走済') {
-                    const year = today.getFullYear();
+                    const year = baseDate.getFullYear();
                     const venueCode = this.getVenueCode(venue);
                     const raceId = parseInt(
                       `${year}${venueCode}${kai.padStart(2, '0')}${nichi.padStart(2, '0')}${raceNumber.toString().padStart(2, '0')}`
                     );
-
                     console.log(`Race ${raceName} has already started, updating status to done for ID: ${raceId}`);
                     await db.update(races)
                       .set({ status: 'done' })
@@ -134,13 +144,11 @@ class DailyOddsCollector {
                     continue;
                   }
 
+                  // baseDate を元にレース開始時刻を設定（ヘッダーの日付が翌日の場合は tomorrow、そうでなければ today）
                   const [hours, minutes] = timeText.replace(/[時分]/g, ':').split(':').map(Number);
-
-                  // レース時刻を設定
-                  const raceTime = new Date();
-                  raceTime.setHours(hours, minutes, 0, 0);  // 日本時間で設定
-
-                  const year = today.getFullYear();  // 年を100で割らない
+                  const raceTime = new Date(baseDate.getTime());
+                  raceTime.setHours(hours, minutes, 0, 0);
+                  const year = baseDate.getFullYear();
                   const venueCode = this.getVenueCode(venue);
                   const raceId = parseInt(
                     `${year}${venueCode}${kai.padStart(2, '0')}${nichi.padStart(2, '0')}${raceNumber.toString().padStart(2, '0')}`
@@ -148,13 +156,13 @@ class DailyOddsCollector {
 
                   raceInfos.push({
                     id: raceId,
-                    name: raceName,
+                    name: raceName || `${venue}${raceNumber}R`,
                     venue,
-                    startTime: raceTime,  // UTC時間で保存
-                    isGrade: true
+                    startTime: raceTime,
+                    isGrade: !!isGrade  
                   });
                   
-                  console.log('Found grade race:', { raceName, raceId, timeText, raceNumber });
+                  console.log('Found race:', { raceName, raceId, timeText, raceNumber });
                 }
               }
 
@@ -205,34 +213,74 @@ class DailyOddsCollector {
       existingJob?.cancel();
       this.activeJobs.delete(race.id);
     }
-
+  
+    let collectionStartTimeUTC: Date | null = null;
+    if (race.isGrade) {
+      // race.startTimeはUTCで保存されているので、toLocaleStringでJSTの日付文字列に変換
+      const raceStartTimeInJST = new Date(
+        race.startTime.toLocaleString("en-US", { timeZone: "Asia/Tokyo" })
+      );
+      // raceStartTimeInJSTはJSTのカレンダー日付として解釈できるので、
+      // 収集開始は「前日 10:00 JST（UTC 01:00）」とする：
+      const collectionYear = raceStartTimeInJST.getFullYear();
+      const collectionMonth = raceStartTimeInJST.getMonth();
+      const collectionDay = raceStartTimeInJST.getDate() - 1; // 前日
+      collectionStartTimeUTC = new Date(Date.UTC(collectionYear, collectionMonth, collectionDay, 1, 0, 0));
+  
+      console.log(
+        `Race ${race.id} is grade. Collection will start at ${collectionStartTimeUTC.toISOString()} (race.startTime remains ${race.startTime.toISOString()})`
+      );
+    }
+  
     console.log(`Setting up schedule for race: ${race.id}`);
     
-    // 単一のスケジュールで管理
+    // 10分間隔でジョブ実行（毎時 0, 10, 20, 30, 40, 50分）
     const rule = new schedule.RecurrenceRule();
-    rule.minute = new Array(6).fill(0).map((_, i) => i * 10); // 10分間隔
-
+    rule.minute = [0, 10, 20, 30, 40, 50];
+  
     const job = schedule.scheduleJob(rule, async () => {
       const now = new Date();
+  
+      // 重賞の場合、収集開始UTC時刻に達していなければスキップする
+      if (race.isGrade && collectionStartTimeUTC && now < collectionStartTimeUTC) {
+        console.log(
+          `Race ${race.id} is grade. Waiting for collection start time: ${collectionStartTimeUTC.toISOString()}. Current: ${now.toISOString()}`
+        );
+        return;
+      }
+  
       const timeToRace = race.startTime.getTime() - now.getTime();
-      
+  
       if (timeToRace > 0) {
-        // レース30分前は10分間隔で収集
-        if (timeToRace <= 30 * 60 * 1000) {
+        if (race.isGrade) {
+          // 重賞レースは、収集開始時刻に達している場合、毎回収集を実施
           await this.collectOdds(race.id);
-        } 
-        // それ以外は30分間隔で収集
-        else if (now.getMinutes() % 30 === 0) {
-          await this.collectOdds(race.id);
+        } else {
+          // 通常レースは、レース開始30分前以降は10分間隔で収集
+          if (timeToRace <= 30 * 60 * 1000) {
+            await this.collectOdds(race.id);
+          }
+          // それ以外は30分間隔で収集
+          else if (now.getMinutes() % 30 === 0) {
+            await this.collectOdds(race.id);
+          }
         }
       } else {
-        // レース終了後はジョブをキャンセル
+        // レース開始後はジョブをキャンセル
+        console.log(`Race ${race.id} has finished. Cancelling job.`);
         job.cancel();
         this.activeJobs.delete(race.id);
       }
     });
-
+  
     this.activeJobs.set(race.id, job);
+  
+    // 初回実行: 重賞レースの場合、既に収集開始時刻に到達しているなら即時オッズ収集を実施する
+    const now = new Date();
+    if (race.isGrade && collectionStartTimeUTC && now >= collectionStartTimeUTC) {
+      console.log(`Initial collection for grade race ${race.id}`);
+      await this.collectOdds(race.id);
+    }
   }
 
   // オッズ収集実行
@@ -244,14 +292,12 @@ class DailyOddsCollector {
 
       if (!race || race.status === 'done') return;
 
-      // 日本時間で比較
       const now = new Date();
-      const jstNow = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-
-      console.log(`jstNow: ${jstNow.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`);
-      console.log(`race.startTime: ${race.startTime.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`);
       
-      if (race.startTime < jstNow && race.status === 'upcoming') {
+      console.log(`Current time: ${now.toISOString()}`);
+      console.log(`Race start time: ${race.startTime.toISOString()}`);
+      
+      if (race.startTime < now && race.status === 'upcoming') {
         console.log(`Race ${raceId} has finished. Updating status to done`);
         await db.update(races)
           .set({ status: 'done' })
@@ -353,15 +399,27 @@ class DailyOddsCollector {
 
     console.log('Found upcoming races:', upcomingRaces);
 
-    // 各レースのオッズ収集をスケジュール
+    // 各レースのステータスをチェック
     for (const race of upcomingRaces) {
-      await this.scheduleOddsCollection({
-        id: race.id,
-        name: race.name,
-        venue: race.venue,
-        startTime: race.startTime,
-        isGrade: true
-      });
+      const now = new Date();
+      if (race.startTime < now) {
+        console.log(`Race ${race.id} has finished. Updating status to done`);
+        await db.update(races)
+          .set({ status: 'done' })
+          .where(eq(races.id, race.id));
+        continue;
+      }
+
+      // すでにジョブが存在している場合は再登録しない
+      if (!this.activeJobs.has(race.id)) {
+        await this.scheduleOddsCollection({
+          id: race.id,
+          name: race.name,
+          venue: race.venue,
+          startTime: race.startTime,
+          isGrade: true
+        });
+      }
     }
   }
 }
@@ -403,6 +461,10 @@ async function main() {
         console.log('Processing race:', race);
         await dailyCollector.registerRace(race);
         await dailyCollector.scheduleOddsCollection(race);
+        // テスト用レースの場合は即時収集も実行
+        if (race.venue === '東京' && race.name.includes('春菜賞')) {
+          await dailyCollector.collectOdds(race.id);
+        }
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
 
