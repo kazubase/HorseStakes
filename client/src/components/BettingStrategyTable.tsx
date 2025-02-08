@@ -152,7 +152,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         {normalizeTicketType(bet.type)}
       </div>,
       (() => {
-        const content = ["馬単", "３連単"].includes(normalizeTicketType(bet.type))
+        const content = ["馬単", "3連単"].includes(normalizeTicketType(bet.type))
           ? bet.horses.join('→')
           : bet.horses.length === 1
           ? bet.horses[0]
@@ -256,7 +256,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                     {normalizeTicketType(bet.type)}
                   </span>
                   <span className="text-sm font-bold">
-                    {["馬単", "３連単"].includes(normalizeTicketType(bet.type))
+                    {["馬単", "3連単"].includes(normalizeTicketType(bet.type))
                       ? bet.horses.join('→')
                       : bet.horses.length === 1
                       ? bet.horses[0]
