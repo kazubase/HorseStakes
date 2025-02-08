@@ -13,7 +13,7 @@ export default function Budget() {
   const { id } = useParams();
   const [budget, setBudget] = useState<number>(1000);
   const [inputValue, setInputValue] = useState<string>("1000");
-  const [riskRatio, setRiskRatio] = useState<number>(1);
+  const [riskRatio, setRiskRatio] = useState<number>(2);
   const [error, setError] = useState<string>("");
 
   const handleBudgetBlur = (value: string) => {
@@ -41,8 +41,8 @@ export default function Budget() {
       setError("予算は0より大きい値を入力してください");
       return;
     }
-    if (riskRatio < 1.0) {
-      setError("リスクリワードは1.0以上に設定してください");
+    if (riskRatio < 2.0) {
+      setError("リスクリワードは2.0以上に設定してください");
       return;
     }
 
@@ -122,7 +122,7 @@ export default function Budget() {
                   <Slider
                     value={[riskRatio]}
                     onValueChange={handleRiskRatioChange}
-                    min={1.0}
+                    min={2.0}
                     max={20.0}
                     step={1.0}
                     className="my-4 

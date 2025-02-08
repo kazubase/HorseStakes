@@ -144,6 +144,16 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     }
   }, [strategy.recommendations.length, totalBudget]);
 
+  // 馬券の買い目表記を統一する関数を追加
+  const formatHorseNumbers = (type: string, horses: string[]): string => {
+    const normalizedType = normalizeTicketType(type);
+    return ["馬単", "3連単"].includes(normalizedType)
+      ? horses.join('→')
+      : horses.length === 1
+      ? horses[0]
+      : horses.join('-');
+  };
+
   // テーブルデータの生成をメモ化
   const tableData = useMemo(() => ({
     headers: ['券種', '買い目', 'オッズ', '的中率', '最適投資額', '想定払戻金', '選定理由'],
@@ -151,14 +161,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       <div key={bet.type} className="md:writing-horizontal writing-vertical text-xs leading-tight min-h-[3rem] flex items-center justify-center">
         {normalizeTicketType(bet.type)}
       </div>,
-      (() => {
-        const content = ["馬単", "3連単"].includes(normalizeTicketType(bet.type))
-          ? bet.horses.join('→')
-          : bet.horses.length === 1
-          ? bet.horses[0]
-          : bet.horses.join('-');
-        return <div className="text-center">{content}</div>;
-      })(),
+      <div className="text-center">
+        {formatHorseNumbers(bet.type, bet.horses)}
+      </div>,
       <div className="text-center">{Number(bet.expectedReturn / bet.stake).toFixed(1)}</div>,
       <div className="text-center">{(bet.probability * 100).toFixed(1)}%</div>,
       <div className="text-center">{bet.stake.toLocaleString()}円</div>,
@@ -256,11 +261,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                     {normalizeTicketType(bet.type)}
                   </span>
                   <span className="text-sm font-bold">
-                    {["馬単", "3連単"].includes(normalizeTicketType(bet.type))
-                      ? bet.horses.join('→')
-                      : bet.horses.length === 1
-                      ? bet.horses[0]
-                      : bet.horses.join('-')}
+                    {formatHorseNumbers(bet.type, bet.horses)}
                   </span>
                 </div>
 
