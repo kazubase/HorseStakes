@@ -56,6 +56,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       "3連複": 7,
       "3連単": 8
     };
+    // optimizationResult は既に useMemo で算出済みなので、ここでは単にソートするだけにする
     return [...optimizationResult].sort((a, b) => {
       const typeA = normalizeTicketType(a.type);
       const typeB = normalizeTicketType(b.type);

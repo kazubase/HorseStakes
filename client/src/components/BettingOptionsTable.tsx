@@ -117,31 +117,37 @@ export function BettingOptionsTable({
 
                 {/* 馬券リスト */}
                 <div className="space-y-1.5 mt-2">
-                  {options.map((option, index) => (
-                    <div 
-                      key={index} 
-                      className={`p-2 rounded-md transition-colors ${
-                        isSelected(option) 
-                          ? 'bg-primary/10 border border-primary/30' 
-                          : 'hover:bg-muted/50'
-                      }`}
-                    >
-                      <div className="grid grid-cols-2 gap-2">
-                        <span className="font-medium">
-                          {formatHorses(option.horses, betType)}
-                        </span>
-                        <span className="text-right font-bold">
-                          ×{option.odds.toFixed(1)}
-                        </span>
+                  {options.map((option, index) => {
+                    // 同じ馬券候補が selectedBets に含まれていればハイライト
+                    const isHighlighted = selectedBets.some(
+                      (selected) => selected.type === option.type && selected.horseName === option.horseName
+                    );
+                    return (
+                      <div 
+                        key={index} 
+                        className={`p-2 rounded-md transition-colors ${
+                          isSelected(option) || isHighlighted
+                            ? 'bg-primary/10 border border-primary/30' 
+                            : 'hover:bg-muted/50'
+                        }`}
+                      >
+                        <div className="grid grid-cols-2 gap-2">
+                          <span className="font-medium">
+                            {formatHorses(option.horses, betType)}
+                          </span>
+                          <span className="text-right font-bold">
+                            ×{option.odds.toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mt-1">
+                          <span>{(option.probability * 100).toFixed(1)}%</span>
+                          <span className="text-right font-medium">
+                            {(option.ev).toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mt-1">
-                        <span>{(option.probability * 100).toFixed(1)}%</span>
-                        <span className="text-right font-medium">
-                          {(option.ev).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

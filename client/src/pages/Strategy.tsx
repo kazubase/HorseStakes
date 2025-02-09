@@ -6,7 +6,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import {  Brain, AlertCircle, X } from "lucide-react";
 import { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds, Race } from "@db/schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef, memo } from "react";
 import { calculateBetProposals, type BetProposal } from '@/lib/betCalculator';
 import { getGeminiStrategy, type GeminiStrategy } from '@/lib/geminiApi';
 import { BettingStrategyTable } from "@/components/BettingStrategyTable";
@@ -50,7 +50,8 @@ interface StrategyFeedback {
   };
 }
 
-function GeminiStrategy({ recommendedBets, budget, riskRatio, onStrategyChange }: GeminiStrategyProps) {
+// 変更後：React.memo を利用してコンポーネント全体をメモ化
+const GeminiStrategy = memo(function GeminiStrategy({ recommendedBets, budget, riskRatio, onStrategyChange }: GeminiStrategyProps) {
   const { id } = useParams();
   const renderCount = useRef(0);
   const [state, setState] = useState<GeminiStrategyState>({
@@ -536,7 +537,7 @@ function GeminiStrategy({ recommendedBets, budget, riskRatio, onStrategyChange }
       {strategyTable}
     </div>
   );
-}
+});
 
 const saveToSessionStorage = (strategy: any, params: any, id: string) => {
   try {
@@ -786,6 +787,53 @@ export default function Strategy() {
   // Strategy コンポーネント内で状態を管理
   const [geminiStrategy, setGeminiStrategy] = useState<GeminiStrategy | null>(null);
 
+  const memoizedRecommendedBets = useMemo(() => recommendedBets, [JSON.stringify(recommendedBets)]);
+  
+  const portfolio = useMemo(() => {
+    const totalInvestment = memoizedRecommendedBets?.reduce((sum, bet) => sum + bet.stake, 0) || 0;
+    
+    const betDetails = memoizedRecommendedBets?.map(bet => {
+      const weight = totalInvestment ? (bet.stake / totalInvestment) : 0;
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`馬券詳細:`, {
+          馬名: bet.horses.join(', '),
+          投資額: bet.stake,
+          ウェイト: weight.toFixed(4),
+          期待払戻金: bet.expectedReturn,
+          的中確率: bet.probability
+        });
+      }
+      return { weight, expectedPayout: bet.expectedReturn * bet.probability };
+    }) || [];
+    
+    const expectedTotalPayout = betDetails.reduce((sum, detail) => sum + detail.expectedPayout, 0);
+    const totalExpectedReturn = totalInvestment > 0 ? (expectedTotalPayout / totalInvestment) - 1 : 0;
+    const expectedROI = totalInvestment > 0 ? `+${(totalExpectedReturn * 100).toFixed(1)}%` : '0%';
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ポートフォリオ全体:', {
+        総投資額: totalInvestment,
+        期待払戻金: expectedTotalPayout,
+        期待リターン: `${(totalExpectedReturn * 100).toFixed(2)}%`,
+        馬券数: betDetails.length
+      });
+    }
+    
+    return { totalInvestment, betDetails, expectedTotalPayout, totalExpectedReturn, expectedROI };
+  }, [memoizedRecommendedBets]);
+
+  // useMemo を利用して selectedBets を再計算し、geminiStrategy の内部内容が変化した場合にも再評価させる
+  const selectedBets = useMemo(() => {
+    return geminiStrategy?.recommendations?.map(bet => ({
+      type: bet.type,
+      horses: bet.horses,
+      horseName: bet.horses.join('-'),
+      stake: 0,
+      expectedReturn: bet.odds || 0,
+      probability: Number(bet.probability)
+    })) || [];
+  }, [JSON.stringify(geminiStrategy?.recommendations)]);
+
   if (!horses) {
     return (
       <MainLayout>
@@ -828,47 +876,6 @@ export default function Strategy() {
       </MainLayout>
     );
   }
-
-  const totalInvestment = recommendedBets?.reduce((sum, bet) => sum + bet.stake, 0) || 0;
-  
-  const betDetails = recommendedBets?.map(bet => {
-    const weight = bet.stake / totalInvestment;
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`馬券詳細:`, {
-        馬名: bet.horses.join(', '),
-        投資額: bet.stake,
-        ウェイト: weight.toFixed(4),
-        期待払戻金: bet.expectedReturn,
-        的中確率: bet.probability
-      });
-    }
-    
-    return {
-      weight,
-      expectedPayout: bet.expectedReturn * bet.probability
-    };
-  }) || [];
-
-  const expectedTotalPayout = betDetails.reduce((sum, detail) => 
-    sum + detail.expectedPayout, 0);
-
-  const totalExpectedReturn = totalInvestment > 0 ? 
-    (expectedTotalPayout / totalInvestment) - 1 : 
-    0;
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log('ポートフォリオ全体:', {
-      総投資額: totalInvestment,
-      期待払戻金: expectedTotalPayout,
-      期待リターン: `${(totalExpectedReturn * 100).toFixed(2)}%`,
-      馬券数: betDetails.length
-    });
-  }
-
-  const expectedROI = totalInvestment > 0 ? 
-    `+${(totalExpectedReturn * 100).toFixed(1)}%` : 
-    '0%';
 
   if (recommendedBets?.length === 0) {
     return (
@@ -940,14 +947,7 @@ export default function Strategy() {
               <div className="lg:sticky lg:top-4">
                 <BettingOptionsTable 
                   bettingOptions={recommendedBets} 
-                  selectedBets={geminiStrategy?.recommendations?.map(bet => ({
-                    type: bet.type,
-                    horses: bet.horses,
-                    horseName: bet.horses.join('-'),
-                    stake: 0,
-                    expectedReturn: bet.odds || 0,
-                    probability: Number(bet.probability)
-                  })) || []}
+                  selectedBets={selectedBets}
                 />
               </div>
             )}
