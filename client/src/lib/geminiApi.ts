@@ -194,146 +194,192 @@ export const getGeminiStrategy = async (
     bettingOptions: BettingOption[];
   },
   riskRatio: number,
-  feedback?: StrategyFeedback[] // 新しいパラメータ
+  feedback?: StrategyFeedback[]
 ): Promise<GeminiResponse> => {
   try {
-    // フィードバックに基づくプロンプトの追加
-    const feedbackPrompt = feedback?.length 
-      ? `
-【ユーザーからのフィードバック】
-${feedback.map(f => {
-  switch (f.type) {
-    case 'MORE_RISK':
-      return '- より積極的な投資戦略を希望';
-    case 'LESS_RISK':
-      return '- より保守的な投資戦略を希望';
-    case 'FOCUS_HORSE':
-      return `- ${f.details.horseNumbers?.map(n => `${n}番`).join(',')}に注目して投資`;
-    case 'AVOID_HORSE':
-      return `- ${f.details.horseNumbers?.map(n => `${n}番`).join(',')}への投資を避ける`;
-    case 'PREFER_BET_TYPE':
-      return `- ${f.details.betType}を重視した戦略を希望`;
-    case 'AVOID_BET_TYPE':
-      return `- ${f.details.betType}への投資を避ける`;
-  }
-}).join('\n')}
-上記のフィードバックを考慮して、戦略を調整してください。`
-      : '';
-
-    // 出馬表情報の整理
+    // 共通コンテキストの作成：出馬表
     const raceCardInfo = allBettingOptions.horses
       .sort((a, b) => a.number - b.number)
       .map(horse => `${horse.frame}枠${horse.number}番 ${horse.name}`)
       .join('\n');
 
-    // プロンプトを作成
-    const prompt = `あなたは競馬の投資アドバイザーです。必ず日本語で推論してください。以下の馬券候補から、予算${totalBudget.toLocaleString()}円での最適な購入戦略を提案してください。
+    // 共通コンテキスト：馬券候補一覧
+    const generateBettingCandidatesList = (): string => {
+      const types: Array<"単勝" | "複勝" | "枠連" | "ワイド" | "馬連" | "馬単" | "３連複" | "３連単"> = [
+        "単勝", "複勝", "枠連", "ワイド", "馬連", "馬単", "３連複", "３連単"
+      ];
+      let result = "";
+      types.forEach(type => {
+        const candidates = allBettingOptions.bettingOptions
+          .filter(opt => opt.type === type)
+          .map(opt => {
+            const expectedValue = opt.odds * opt.prob - 1;
+            return `${opt.horseName} [オッズ:${opt.odds.toFixed(1)}, 的中確率:${(opt.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
+          })
+          .join('\n');
+        result += `\n${type}候補:\n${candidates}\n`;
+      });
+      return result;
+    };
+
+    const bettingCandidatesList = generateBettingCandidatesList();
+
+    /*
+     * -------------------------
+     * Step 1: 各馬券候補の期待値とリスク評価
+     * -------------------------
+     */
+    const step1Prompt = `【ステップ1：期待値とリスク評価】
+以下の出馬表と馬券候補一覧を元に、各馬券候補のオッズ、的中確率、期待値、リスクを評価してください。
+【出馬表】
+${raceCardInfo}
+【馬券候補一覧】
+${bettingCandidatesList}
+【指示】
+各候補の期待値とリスク評価の要点を簡潔にまとめてください。`;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ステップ1プロンプト:\n', step1Prompt);
+    }
+
+    const step1Response = await fetchWithRetry('/api/gemini', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrfToken(),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        prompt: step1Prompt,
+        model: 'gemini-2.0-flash-001',
+        thought: false,
+        apiVersion: 'v1alpha'
+      })
+    }) ?? throwError('ステップ1の解析結果の取得に失敗しました');
+    const step1Data = await step1Response.json();
+
+    /*
+     * -------------------------
+     * Step 2: 馬券間の相関関係とリスク分散効果の分析
+     * -------------------------
+     */
+    const step2Prompt = `【ステップ2：相関関係とリスク分散効果の分析】
+以下の出馬表と馬券候補一覧を元に、各馬券間の相関関係およびリスク分散効果を分析してください。
+【出馬表】
+${raceCardInfo}
+【馬券候補一覧】
+${bettingCandidatesList}
+【指示】
+同じ馬を含む候補間の正の相関や、異なる馬券候補間の負の相関を踏まえ、全体のリスク分散効果について評価してください。`;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ステップ2プロンプト:\n', step2Prompt);
+    }
+
+    const step2Response = await fetchWithRetry('/api/gemini', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrfToken(),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        prompt: step2Prompt,
+        model: 'gemini-2.0-flash-001',
+        thought: false,
+        apiVersion: 'v1alpha'
+      })
+    }) ?? throwError('ステップ2の解析結果の取得に失敗しました');
+    const step2Data = await step2Response.json();
+
+    /*
+     * -------------------------
+     * Step 3: 予算制約下での馬券選択と購入戦略の策定
+     * -------------------------
+     */
+    const step3Prompt = `【ステップ3：予算制約下の購入戦略策定】
+以下の出馬表と馬券候補一覧を元に、予算${totalBudget.toLocaleString()}円の制約下で、どの馬券をどの金額で購入するか、最適な戦略を提案してください。
+【出馬表】
+${raceCardInfo}
+【馬券候補一覧】
+${bettingCandidatesList}
+【指示】
+各候補に対して推奨の投資金額や期待される払い戻しを考慮し、戦略を策定してください。`;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ステップ3プロンプト:\n', step3Prompt);
+    }
+
+    const step3Response = await fetchWithRetry('/api/gemini', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrfToken(),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        prompt: step3Prompt,
+        model: 'gemini-2.0-flash-001',
+        thought: false,
+        apiVersion: 'v1alpha'
+      })
+    }) ?? throwError('ステップ3の解析結果の取得に失敗しました');
+    const step3Data = await step3Response.json();
+
+    /*
+     * -------------------------
+     * Step 4: 最終的な戦略の出力（JSON形式）
+     * -------------------------
+     */
+    let feedbackPrompt = '';
+    if (feedback && feedback.length) {
+      feedbackPrompt = `
+【ユーザーからのフィードバック】
+${feedback.map(f => {
+        switch (f.type) {
+          case 'MORE_RISK':
+            return '- より積極的な投資戦略を希望';
+          case 'LESS_RISK':
+            return '- より保守的な投資戦略を希望';
+          case 'FOCUS_HORSE':
+            return `- ${f.details.horseNumbers?.map(n => `${n}番`).join(',')}に注目して投資`;
+          case 'AVOID_HORSE':
+            return `- ${f.details.horseNumbers?.map(n => `${n}番`).join(',')}への投資を避ける`;
+          case 'PREFER_BET_TYPE':
+            return `- ${f.details.betType}を重視した戦略を希望`;
+          case 'AVOID_BET_TYPE':
+            return `- ${f.details.betType}への投資を避ける`;
+          default:
+            return '';
+        }
+      }).join('\n')}
+上記フィードバックを踏まえて、最終的な戦略を調整してください。
+`;
+    }
+
+    const step4Prompt = `【ステップ4：最終戦略のJSON形式出力】
+以下はこれまでの分析結果です。
+
+■ ステップ1：期待値とリスク評価
+${typeof step1Data === 'object' ? JSON.stringify(step1Data, null, 2) : step1Data}
+
+■ ステップ2：相関関係とリスク分散効果の分析
+${typeof step2Data === 'object' ? JSON.stringify(step2Data, null, 2) : step2Data}
+
+■ ステップ3：予算制約下での購入戦略策定
+${typeof step3Data === 'object' ? JSON.stringify(step3Data, null, 2) : step3Data}
+
+${feedbackPrompt}
 
 【出馬表】
 ${raceCardInfo}
 
 【馬券候補一覧】
-単勝候補（1着になる馬を当てる）:
-${allBettingOptions.bettingOptions
-  .filter(opt => opt.type === "単勝")
-  .map(bet => {
-    const expectedValue = bet.odds * bet.prob - 1;
-    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
-  })
-  .join('\n')}
+${bettingCandidatesList}
 
-複勝候補（3着以内に入る馬を当てる）:
-${allBettingOptions.bettingOptions
-  .filter(opt => opt.type === "複勝")
-  .map(bet => {
-    const expectedValue = bet.odds * bet.prob - 1;
-    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
-  })
-  .join('\n')}
+【指示】
+上記情報を統合し、以下のJSON形式に従って最終的な競馬投資戦略を回答してください。
 
-枠連候補（着順を問わず、1着と2着になる枠を当てる）:
-${allBettingOptions.bettingOptions
-  .filter(opt => opt.type === "枠連")
-  .map(bet => {
-    const expectedValue = bet.odds * bet.prob - 1;
-    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
-  })
-  .join('\n')}
-
-ワイド候補（着順を問わず、3着以内に入る2頭を当てる）:
-${allBettingOptions.bettingOptions
-  .filter(opt => opt.type === "ワイド")
-  .map(bet => {
-    const expectedValue = bet.odds * bet.prob - 1;
-    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
-  })
-  .join('\n')}
-
-馬連候補（着順を問わず、1着と2着になる馬を当てる）:
-${allBettingOptions.bettingOptions
-  .filter(opt => opt.type === "馬連")
-  .map(bet => {
-    const expectedValue = bet.odds * bet.prob - 1;
-    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
-  })
-  .join('\n')}
-
-馬単候補（1着と2着になる馬を当てる）:
-${allBettingOptions.bettingOptions
-  .filter(opt => opt.type === "馬単")
-  .map(bet => {
-    const expectedValue = bet.odds * bet.prob - 1;
-    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
-  })
-  .join('\n')}
-
-３連複候補（着順を問わず、1着、2着、3着になる馬を当てる）:
-${allBettingOptions.bettingOptions
-  .filter(opt => opt.type === "３連複")
-  .map(bet => {
-    const expectedValue = bet.odds * bet.prob - 1;
-    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
-  })
-  .join('\n')}
-
-３連単候補（1着、2着、3着になる馬を当てる）:
-${allBettingOptions.bettingOptions
-  .filter(opt => opt.type === "３連単")
-  .map(bet => {
-    const expectedValue = bet.odds * bet.prob - 1;
-    return `${bet.horseName} [オッズ:${bet.odds.toFixed(1)}, 的中確率:${(bet.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
-  })
-  .join('\n')}
-
-【リスクリワード】
-- リスクリワード: ${riskRatio}（2～20の範囲で、2が最もローリスク、20が最もハイリスク）
-- リスクリワードとは予算に対してどの程度のリターンを求めるかを表す指標です。
-- 例えば、リスクリワードが5.0の場合、予算の5倍のリターンを求めることを意味します。
-
-【分析の観点】
-1. 各馬券の期待値と的中確率
-   - リスクリワードが高いほど期待値を重視
-   - リスクリワードが低いほど的中確率を重視
-2. 馬券間の相関関係
-   - 同じ馬を含む馬券の組み合わせは正の相関。例えば馬連1-2とワイド1-2は正の相関
-   - 一部同じ馬を含む馬券の組み合わせは中程度の正の相関。例えば馬連1-2と馬連1-3やワイド1-3は中程度の正の相関
-   - 異なる馬の組み合わせは負の相関。例えば馬連1-2と馬連3-4は負の相関
-3. リスク分散効果
-   - 負の相関の馬券の組み合わせが多いほどリスク分散効果が高い
-   - 同じ券種の点数を増やすほどリスク分散効果が高い
-   - 的中確率の低い馬券を提案するときはリスク分散効果を重視すること
-4. 予算に応じた馬券選択
-   - 予算が少ない場合は的中確率の低い馬券を避けること
-   
-【制約条件】
-- 必ず日本語で分析と提案を行うこと
-- 各馬券について、他の馬券との相関関係を選択理由に含めること
-- 各馬券について、リスク分散効果を選択理由に含めること
-- 各馬券について、具体的な数字を選択理由に含めないこと
-
-${feedbackPrompt}
-
-以下の形式でJSON応答してください：
 json
 {
   "strategy": {
@@ -343,8 +389,8 @@ json
         "type": "馬券種類",
         "horses": ["馬番"],
         "odds": オッズ,
-        "probability": 的中確率(少数で表示：50%なら0.5),
-        "reason": "選択理由を1文で説明"
+        "probability": 的中確率(例: 0.5),
+        "reason": "選択理由を簡潔に説明"
       }
     ],
     "summary": {
@@ -352,142 +398,81 @@ json
     }
   }
 }`;
-
     if (process.env.NODE_ENV === 'development') {
-      console.log('Geminiへのリクエスト：');
-      console.log({
-        apiVersion: 'v1alpha',
-        model: 'gemini-2.0-flash-001',
-        thought: false,
-      });
-      console.log('プロンプト全文:\n', prompt);
+      console.log('ステップ4プロンプト:\n', step4Prompt);
     }
 
-    // 1. 詳細な分析を取得
-    const detailedResponse = await fetchWithRetry('/api/gemini', {
+    const step4Response = await fetchWithRetry('/api/gemini', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-Token': getCsrfToken(),
       },
       credentials: 'same-origin',
-      body: JSON.stringify({ 
-        prompt: prompt,
+      body: JSON.stringify({
+        prompt: step4Prompt,
         model: 'gemini-2.0-flash-001',
         thought: false,
         apiVersion: 'v1alpha'
       })
-    }) ?? throwError('詳細分析の取得に失敗しました');
+    }) ?? throwError('ステップ4の最終出力の取得に失敗しました');
+    const step4Data = await step4Response.json();
 
-    const detailedData = await detailedResponse.json();
+    // JSONコードブロック内のJSON部分を抽出してパースする
+    if (!step4Data || !step4Data.strategy || !step4Data.strategy.description) {
+      throw new Error('最終戦略のレスポンス形式が不正です');
+    }
+    let parsedStrategy: any;
+    try {
+      const jsonRegex = /```json\s*\n([\s\S]*?)\n```/;
+      const match = jsonRegex.exec(step4Data.strategy.description);
+      if (match && match[1]) {
+        parsedStrategy = JSON.parse(match[1]);
+      } else {
+        throw new Error('JSONコードブロックが見つかりません');
+      }
+    } catch (error: any) {
+      throw new Error('最終戦略のJSONパースに失敗しました: ' + error.message);
+    }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('Geminiからのレスポンス：', JSON.stringify(detailedData, null, 2));
+      console.log('Parsed Gemini戦略：', JSON.stringify(parsedStrategy, null, 2));
     }
 
-    // レスポンス形式チェックを修正
-    if (!detailedData || (!detailedData.analysis && !detailedData.strategy)) {
-      throw new Error('詳細分析のレスポンス形式が不正です');
-    }
-
-    // 既にstrategy形式で返ってきた場合は要約をスキップ
-    if (detailedData.strategy) {
-      const jsonMatch = detailedData.strategy.description.match(/```json\n([\s\S]*?)\n```/);
-      if (jsonMatch) {
-        const parsedStrategy = JSON.parse(jsonMatch[1]);
-        return {
-          strategy: {
-            description: parsedStrategy.strategy.description,
-            recommendations: parsedStrategy.strategy.recommendations.map((rec: GeminiRecommendation) => ({
-              type: rec.type,
-              horses: rec.horses,
-              odds: rec.odds,
-              probability: rec.probability,
-              reason: rec.reason
-            })),
-            bettingTable: {
-              headers: ['券種', '買い目', 'オッズ', '的中率', '投資額', '期待収益'],
-              rows: parsedStrategy.strategy.recommendations.map((rec: GeminiRecommendation) => [
-                rec.type,
-                rec.horses.join('-'),
-                String(rec.odds),
-                typeof rec.probability === 'number' 
-                  ? (rec.probability * 100).toFixed(1) + '%'
-                  : rec.probability,
-                '0円', // 投資額は後で最適化
-                '0円'  // 期待収益は後で計算
-              ])
-            },
-            summary: {
-              riskLevel: parsedStrategy.strategy.summary.riskLevel
-            }
-          }
-        };
-      }
-    }
-
-    // 2. 要約を取得（必要な場合のみ）
-    const summaryResponse = await fetchWithRetry('/api/gemini', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': getCsrfToken(),
-      },
-      credentials: 'same-origin',
-      body: JSON.stringify({ 
-        prompt: `必ず日本語で応答してください。以下の競馬投資分析を、表形式で簡潔に要約してください：
-
-${JSON.stringify(detailedData, null, 2)}
-
-以下の形式でJSON応答してください：
-json
-{
-  "strategy": {
-    "description": "戦略の要点を1文で",
-    "recommendations": [
-      {
-        "type": "馬券種類",
-        "horses": ["馬番"],
-        "odds": オッズ,
-        "probability": 的中確率(少数で表示：50%なら0.5),
-        "reason": "選択理由を説明"
-      }
-    ],
-    "summary": {
-      "riskLevel": "リスクレベル（低/中/高）"
-    }
-  }
-}`,
-        model: 'gemini-2.0-flash-001'
-      })
-    }) ?? throwError('要約の取得に失敗しました');
-
-    const summarizedData = await summaryResponse.json();
-
-    if (!summarizedData || !summarizedData.strategy) {
-      throw new Error('要約のレスポンス形式が不正です');
+    if (!parsedStrategy || !parsedStrategy.strategy) {
+      throw new Error('パースされた戦略データが不正です');
     }
 
     return {
       strategy: {
-        description: summarizedData.strategy.description,
+        description: parsedStrategy.strategy.description,
+        recommendations: parsedStrategy.strategy.recommendations.map((rec: GeminiRecommendation) => ({
+          type: rec.type,
+          horses: rec.horses,
+          odds: rec.odds,
+          probability: rec.probability,
+          reason: rec.reason
+        })),
         bettingTable: {
-          headers: summarizedData.strategy.bettingTable.headers,
-          rows: summarizedData.strategy.bettingTable.rows.map((row: string[]) => row.slice(0, 6))
+          headers: ['券種', '買い目', 'オッズ', '的中率', '投資額', '期待収益'],
+          rows: parsedStrategy.strategy.recommendations.map((rec: GeminiRecommendation) => [
+            rec.type,
+            rec.horses.join('-'),
+            String(rec.odds),
+            typeof rec.probability === 'number'
+              ? (rec.probability * 100).toFixed(1) + '%'
+              : rec.probability,
+            '0円', // 後で最適化
+            '0円'  // 後で計算
+          ])
         },
         summary: {
-          riskLevel: summarizedData.strategy.summary.riskLevel
-        },
-        recommendations: summarizedData.strategy.recommendations.map((rec: GeminiStrategy['recommendations'][0]) => ({
-          ...rec,
-          expectedReturn: 0,
-          probability: 0,
-          reason: rec.reason
-        }))
+          riskLevel: parsedStrategy.strategy.summary.riskLevel
+        }
       }
     };
-  } catch (error) {
-    throw new Error(`Gemini APIエラー: ${(error as Error).message}`);
+  } catch (error: any) {
+    throw new Error(`Gemini APIエラー (多段階フロー): ${error.message}`);
   }
 };
 
