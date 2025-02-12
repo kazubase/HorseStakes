@@ -223,19 +223,24 @@ export const getGeminiStrategy = async (
     };
 
     const bettingCandidatesList = generateBettingCandidatesList();
-
-    // 改善したステップ1プロンプト（更新版）
+    
+    /*
+     * -------------------------
+     * Step 1: 馬券候補の期待値とリスク評価
+     * -------------------------
+     */
     const step1Prompt = `【ステップ1：馬券候補の期待値とリスク評価】
 
-以下の出馬表と馬券候補一覧の情報に基づき、各馬券候補ごとに以下の項目を評価してください：
-1. 券種（例："ワイド", "３連単", など）
-2. オッズ（数値）
-3. 的中確率（小数または％、例: 0.15 または 15%）
-4. 期待値（計算式：オッズ × 的中確率 - 1）
-5. リスク分類（「低」「中」「高」のいずれか）
-6. 推奨インジケータ（該当する場合は「推奨候補」、該当しない場合は空文字）
+以下の出馬表と馬券候補一覧に基づき、各馬券候補の評価を行います。
 
-また、全体としての戦略の要点を簡潔にまとめたサマリーも最後に出力してください。
+【評価項目】
+1. 券種
+2. 買い目（対象馬番）
+3. オッズ
+4. 的中確率
+5. 期待値
+6. リスク分類（低/中/高）
+7. 推奨度
 
 【出馬表】
 ${raceCardInfo}
@@ -244,27 +249,35 @@ ${raceCardInfo}
 ${bettingCandidatesList}
 
 【出力形式】
-必ず以下の形式のJSONコードブロック（\`\`\`json ... \`\`\`）のみを出力してください。このコードブロック以外の余計なテキストは一切含めないこと。
-
 \`\`\`json
 {
   "candidates": [
     {
-      "type": "ワイド",
+      "type": "券種（例：ワイド）",
+      "horses": ["1", "2"],
       "odds": 30.9,
       "probability": 0.15,
       "expectedValue": 3.63,
       "risk": "中",
       "recommendation": "推奨候補"
-    },
-    ... 他の候補 ...
+    }
   ],
-  "summary": "全体として、◯◯の理由から特にワイドが推奨される。"
+  "summary": {
+    "mainPoints": [
+      "主なポイント1",
+      "主なポイント2"
+    ],
+    "recommendedTypes": ["推奨される券種1", "推奨される券種2"],
+    "keyHorses": ["注目すべき馬番1", "注目すべき馬番2"]
+  }
 }
 \`\`\`
 
 【指示】
-上記情報を詳細に解析し、各候補ごとの評価結果と、全体戦略の要点をまとめたJSON形式のアウトプットを出力してください。`;
+1. 各馬券候補について、上記の評価項目に基づいて客観的な分析を行ってください
+2. 期待値の計算は（オッズ × 的中確率 - 1）を用いてください
+3. リスク分類は的中確率と投資額を考慮して判断してください
+4. 全体の戦略についても、主要なポイント、推奨される券種、注目馬を含めて簡潔にまとめてください`;
 
     if (process.env.NODE_ENV === 'development') {
       console.log('ステップ1プロンプト:\n', step1Prompt);
@@ -293,10 +306,12 @@ ${bettingCandidatesList}
      */
     const step2Prompt = `【ステップ2：馬券間の相関関係とリスク分散効果の分析】
 
-以下の出馬表と馬券候補一覧の情報をもとに、馬券間の相関関係とリスク分散効果を詳細に解析してください。解析では、以下の点に着目してください：
-1. 各馬券候補間の相関関係（正の相関・負の相関）の評価
-2. 異なる券種の組み合わせによるリスク分散効果の評価
-3. 具体的な注目点と戦略上の推奨事項の提示（例：ドゥレッツァ(10)、シンエンペラー(7)、スターズオンアース(14) など）
+ステップ1の分析結果を踏まえ、馬券間の相関関係とリスク分散効果について詳細な分析を行います。
+
+【分析の観点】
+1. 各馬券候補間の相関関係の評価
+2. 異なる券種の組み合わせによるリスク分散効果
+3. 有力馬を軸とした戦略的組み合わせ
 
 【出馬表】
 ${raceCardInfo}
@@ -305,50 +320,66 @@ ${raceCardInfo}
 ${bettingCandidatesList}
 
 【出力形式】
-必ず以下の形式のJSONコードブロック（\`\`\`json ... \`\`\`）のみを出力してください。このコードブロック以外の余計なテキストは一切含めないこと。
-
 \`\`\`json
 {
   "analysis": {
     "sections": [
       {
-        "theme": "ドゥレッツァ(10) を軸とした馬券",
-        "positiveCorrelation": "例：ドゥレッツァが絡む馬券は高いリターンが期待できるが、リスクも増大する。",
-        "riskDiversificationEffect": "例：複勝など安定性のある馬券を併用することでリスク低減が期待できる。",
-        "recommendation": "例：高配当時に限定して購入を検討。"
-      },
-      {
-        "theme": "シンエンペラー(7) を軸とした馬券",
-        "positiveCorrelation": "例：シンエンペラーが絡むと他の馬券と連動しやすい。",
-        "riskDiversificationEffect": "例：ワイドとの組み合わせで安定性を確保可能。",
-        "recommendation": ""
-      },
-      {
-        "theme": "ドゥレッツァ(10) とシンエンペラー(7) の組み合わせ",
-        "positiveCorrelation": "例：両馬の組み合わせは大きなリターンが期待できる。",
-        "riskDiversificationEffect": "例：ワイドで補完するとリスク分散効果が向上する。",
-        "recommendation": ""
-      },
-      {
-        "theme": "スターズオンアース(14) を絡めた馬券",
-        "positiveCorrelation": "例：14が絡むことで、連動効果によるリターンが期待できる。",
-        "riskDiversificationEffect": "例：ワイドなどでリスクを軽減可能。",
-        "recommendation": ""
-      },
-      {
-        "theme": "枠連馬券の分析",
-        "positiveCorrelation": "例：枠連は個々の馬の実績に依存しにくい。",
-        "riskDiversificationEffect": "例：他の馬券と組み合わせることで全体のリスクが低減される。",
-        "recommendation": ""
+        "theme": "有力馬を軸とした分析",
+        "targetHorses": ["1", "2"],
+        "positiveCorrelation": "この組み合わせによる相乗効果の分析",
+        "riskDiversificationEffect": "リスク分散の可能性",
+        "recommendation": "具体的な推奨事項"
       }
     ],
-    "overallSummary": "例：特定の馬に偏らず、異なる券種をバランスよく組み合わせることでリスク分散効果を最大化できる。"
+    "betTypeAnalysis": [
+      {
+        "type": "単勝・複勝分析",
+        "characteristics": "的中率と期待値の特徴",
+        "correlationWithOthers": "他の券種との相関性",
+        "riskProfile": "リスク特性"
+      },
+      {
+        "type": "馬連・ワイド分析",
+        "characteristics": "的中率と期待値の特徴",
+        "correlationWithOthers": "他の券種との相関性",
+        "riskProfile": "リスク特性"
+      },
+      {
+        "type": "3連系馬券分析",
+        "characteristics": "的中率と期待値の特徴",
+        "correlationWithOthers": "他の券種との相関性",
+        "riskProfile": "リスク特性"
+      }
+    ],
+    "riskManagementStrategies": [
+      {
+        "strategy": "戦略名",
+        "description": "戦略の詳細",
+        "expectedEffect": "期待される効果"
+      }
+    ],
+    "overallSummary": {
+      "keyPoints": [
+        "主要な分析ポイント1",
+        "主要な分析ポイント2"
+      ],
+      "recommendedCombinations": [
+        {
+          "combination": ["券種1", "券種2"],
+          "reason": "推奨理由"
+        }
+      ]
+    }
   }
 }
 \`\`\`
 
 【指示】
-上記出馬表と馬券候補一覧の情報を詳細に解析し、各セクションごとの具体的な相関関係とリスク分散効果の評価、および全体に関する戦略的な結論（全体サマリー）を、上記のJSON形式に従って出力してください。`;
+1. 有力馬を中心とした馬券の相関関係を分析
+2. 各券種の特性とリスク分散効果を評価
+3. 具体的なリスク管理戦略を提案
+4. 全体の最適な組み合わせを提示`;
 
     if (process.env.NODE_ENV === 'development') {
       console.log('ステップ2プロンプト:\n', step2Prompt);
@@ -377,12 +408,13 @@ ${bettingCandidatesList}
      */
     const step3Prompt = `【ステップ3：予算制約下での購入戦略策定】
 
-以下の出馬表、馬券候補一覧、及びこれまでの分析結果（ステップ1、ステップ2）を踏まえ、予算制約の下で、以下の条件に沿った馬券購入戦略を策定してください：
-1. 期待値が高い馬券を中心に組み立てること。
-2. 本命として、ドゥレッツァとシンエンペラーを軸に、補完的にスターズオンアースを絡めること。
-3. 異なる券種（ワイド、３連複、３連単、馬単、複勝など）を組み合わせ、リスク分散を図ること。
-4. 各馬券種ごとに、買い目、購入金額、オッズ、的中確率、期待値、期待される払い戻し、理由を明示すること。
-5. 最終的な購入総額が必ず${totalBudget.toLocaleString()}円となるようにすること。
+ステップ1、2の分析結果を踏まえ、予算${totalBudget.toLocaleString()}円の制約下で、最適な馬券購入戦略を策定します。
+
+【戦略策定の基準】
+1. 期待値の高い馬券を重視
+2. リスク分散を考慮した券種の組み合わせ
+3. 予算配分の最適化
+4. 的中確率とリターンのバランス
 
 【出馬表】
 ${raceCardInfo}
@@ -391,162 +423,74 @@ ${raceCardInfo}
 ${bettingCandidatesList}
 
 【出力形式】
-必ず以下の形式のJSONコードブロック（\`\`\`json ... \`\`\`）のみを出力してください。このコードブロック以外の余計なテキストは一切含めないこと。
-
 \`\`\`json
 {
   "purchaseStrategy": {
     "budget": ${totalBudget},
     "strategyPillars": [
-      "期待値重視",
-      "本命：ドゥレッツァとシンエンペラー",
-      "穴狙い：スターズオンアース",
-      "リスク分散：複数の券種を組み合わせる"
+      "戦略の柱1",
+      "戦略の柱2",
+      "戦略の柱3",
+      "戦略の柱4"
     ],
     "bets": [
       {
-        "type": "ワイド",
-        "selection": "7-10",
+        "type": "券種",
+        "horses": ["1", "2"],
         "amount": 1000,
-        "odds": 30.9,
+        "odds": 10.0,
         "hitProbability": 15.00,
-        "expectedValue": 3.63,
-        "expectedPayout": 30900,
-        "reason": "期待値が非常に高く、シンエンペラーとドゥレッツァの組み合わせで的中率も比較的高い。"
-      },
-      {
-        "type": "ワイド",
-        "selection": "10-14",
-        "amount": 500,
-        "odds": 13.9,
-        "hitProbability": 30.00,
-        "expectedValue": 3.17,
-        "expectedPayout": 6950,
-        "reason": "ドゥレッツァとスターズオンアースの組み合わせで、高期待値と堅実な的中率を狙う。"
-      },
-      {
-        "type": "ワイド",
-        "selection": "7-14",
-        "amount": 300,
-        "odds": 21.8,
-        "hitProbability": 18.00,
-        "expectedValue": 2.92,
-        "expectedPayout": 6540,
-        "reason": "シンエンペラーとスターズオンアースの組み合わせで、リスク分散に寄与。"
-      },
-      {
-        "type": "３連複",
-        "selection": "3-7-10",
-        "amount": 500,
-        "odds": 122.3,
-        "hitProbability": 4.05,
-        "expectedValue": 3.95,
-        "expectedPayout": 61150,
-        "reason": "本命の組み合わせで期待値が非常に高い。"
-      },
-      {
-        "type": "３連複",
-        "selection": "3-10-14",
-        "amount": 300,
-        "odds": 62.6,
-        "hitProbability": 7.35,
-        "expectedValue": 3.60,
-        "expectedPayout": 18780,
-        "reason": "高期待値の組み合わせ。ドゥレッツァ、スターズオンアースの組み合わせ。"
-      },
-      {
-        "type": "３連単",
-        "selection": "3→7→10",
-        "amount": 200,
-        "odds": 447.9,
-        "hitProbability": 1.80,
-        "expectedValue": 7.06,
-        "expectedPayout": 89580,
-        "reason": "非常に高い期待値による高配当狙い。"
-      },
-      {
-        "type": "３連単",
-        "selection": "3→10→7",
-        "amount": 200,
-        "odds": 378.6,
-        "hitProbability": 1.80,
-        "expectedValue": 5.81,
-        "expectedPayout": 75720,
-        "reason": "高配当狙いの組み合わせ。"
-      },
-      {
-        "type": "３連単",
-        "selection": "3→7→14",
-        "amount": 200,
-        "odds": 277.6,
-        "hitProbability": 2.25,
-        "expectedValue": 5.25,
-        "expectedPayout": 55520,
-        "reason": "期待値が高く、スターズオンアースを組み合わせた高配当狙い。"
-      },
-      {
-        "type": "３連単",
-        "selection": "3→10→14",
-        "amount": 200,
-        "odds": 207.2,
-        "hitProbability": 3.00,
-        "expectedValue": 5.22,
-        "expectedPayout": 41440,
-        "reason": "高期待値で高配当を狙う。"
-      },
-      {
-        "type": "馬単",
-        "selection": "3→10",
-        "amount": 200,
-        "odds": 30.7,
-        "hitProbability": 12.00,
-        "expectedValue": 2.68,
-        "expectedPayout": 6140,
-        "reason": "本命同士の組み合わせで安定感を狙う。"
-      },
-      {
-        "type": "馬単",
-        "selection": "10→14",
-        "amount": 100,
-        "odds": 147.0,
-        "hitProbability": 2.50,
-        "expectedValue": 2.67,
-        "expectedPayout": 14700,
-        "reason": "ドゥレッツァとスターズオンアースの組み合わせで高配当狙い。"
-      },
-      {
-        "type": "複勝",
-        "selection": "10",
-        "amount": 500,
-        "odds": 3.7,
-        "hitProbability": 50.00,
-        "expectedValue": 0.85,
-        "expectedPayout": 1850,
-        "reason": "手堅く的中率を上げるための購入。"
-      },
-      {
-        "type": "複勝",
-        "selection": "7",
-        "amount": 500,
-        "odds": 5.2,
-        "hitProbability": 30.00,
-        "expectedValue": 0.56,
-        "expectedPayout": 2600,
-        "reason": "手堅く的中率を上げるための購入。"
+        "expectedValue": 0.50,
+        "expectedPayout": 10000,
+        "reason": "選択理由"
       }
     ],
     "totalSpent": ${totalBudget},
     "expectedOutcome": {
-      "hitRate": "ワイド、複勝中心で安定した的中率が期待される",
-      "highPayout": "３連複、３連単、馬単で高配当を狙う",
-      "riskManagement": "異なる券種への分散購入でリスクを低減"
+      "hitRate": "的中率の予測",
+      "highPayout": "高配当期待度",
+      "riskManagement": "リスク管理方針"
+    },
+    "riskAnalysis": {
+      "lowRiskBets": {
+        "percentage": 30,
+        "types": ["複勝", "ワイド"]
+      },
+      "mediumRiskBets": {
+        "percentage": 40,
+        "types": ["馬連", "馬単"]
+      },
+      "highRiskBets": {
+        "percentage": 30,
+        "types": ["3連複", "3連単"]
+      }
+    },
+    "investmentDistribution": {
+      "byBetType": [
+        {
+          "type": "券種",
+          "percentage": 25,
+          "amount": 2500
+        }
+      ],
+      "byRiskLevel": [
+        {
+          "level": "リスクレベル",
+          "percentage": 30,
+          "amount": 3000
+        }
+      ]
     }
   }
 }
 \`\`\`
 
 【指示】
-上記出馬表、馬券候補一覧、及びこれまでの分析結果を基に、予算${totalBudget.toLocaleString()}円の枠内での馬券購入戦略を詳細に策定してください。必ず各項目を明示し、最終的な総購入金額が${totalBudget.toLocaleString()}円になるようにしてください。`;
+1. 期待値とリスクのバランスを考慮した購入戦略を策定
+2. 予算${totalBudget.toLocaleString()}円の範囲内で最適な配分を行う
+3. 各馬券の選択理由を具体的に説明
+4. リスク分散を考慮した投資配分を提示
+5. 的中確率と期待払戻のバランスを考慮`;
 
     if (process.env.NODE_ENV === 'development') {
       console.log('ステップ3プロンプト:\n', step3Prompt);
