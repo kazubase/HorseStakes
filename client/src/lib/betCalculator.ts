@@ -23,6 +23,13 @@ export interface BetProposal {
   expectedReturn: number;
   probability: number;
   reason?: string;  // reasonを追加
+  // 以下のプロパティを追加
+  frame1?: number;
+  frame2?: number;
+  frame3?: number;
+  horse1?: number;
+  horse2?: number;
+  horse3?: number;
 }
 
 export interface HorseData {
@@ -443,55 +450,6 @@ export const calculateBetProposals = (
       }
     };
 
-    // ポートフォリオの評価関数
-    const calculatePortfolioMetrics = (bets: typeof options, weights: number[]) => {
-      if (bets.length === 0 || weights.length === 0) return null;
-      
-      const totalInvestment = weights.reduce((a, b) => a + b, 0);
-      
-      // 期待リターンの計算（馬券種別のリスク特性を考慮）
-      const returns = bets.map((bet, i) => 
-        weights[i] * (bet.odds - 1) * bet.prob / getBetTypeRiskFactor(bet.type)
-      );
-      const expectedReturn = returns.reduce((a, b) => a + b, 0);
-      
-      // リスク（標準偏差）の計算
-      const variance = bets.map((bet, i) => {
-        const r = (bet.odds - 1) * weights[i] / getBetTypeRiskFactor(bet.type);
-        return bet.prob * (1 - bet.prob) * r * r;
-      }).reduce((a, b) => a + b, 0);
-      
-      const risk = Math.sqrt(variance);
-      const sharpeRatio = risk > 0 ? expectedReturn / risk : 0;
-
-      // 目標リターンとの整合性
-      const returnDifference = Math.abs(expectedReturn - riskRatio) / riskRatio;
-      const isWithinRiskRange = expectedReturn <= riskRatio * 1.5;
-
-      // 分散投資効果（効果を抑制）
-      const betTypes = new Set(bets.map(b => b.type));
-      const typeBonus = betTypes.size > 1 ? Math.log(betTypes.size) * 0.05 : 0;  // 0.1 → 0.05
-      const portfolioEffect = Math.log(bets.length) * 0.1 + typeBonus;  // 0.2 → 0.1
-
-      // 総合評価スコア（Sharpe比の重みを増加）
-      const score = isWithinRiskRange ? (
-        sharpeRatio * 4.0 +        // 2.0 → 4.0 Sharpe比の重みを倍増
-        portfolioEffect -          // 分散効果を半減
-        returnDifference * 1.0     // 0.5 → 1.0 リターン整合性の重みを増加
-      ) : -Infinity;
-
-      return { 
-        sharpeRatio,
-        expectedReturn,
-        risk,
-        portfolioEffect,
-        score,
-        isWithinRiskRange,
-        betTypes: Array.from(betTypes),
-        betsCount: bets.length
-      };
-    };
-
     // 事前フィルタリング（統合版）
     const preFilteredOptions = options
       .filter(opt => {
@@ -638,6 +596,887 @@ export const calculateBetProposals = (
   return proposals;
 };
 
+// 馬券間の相関係数を計算する関数を独立させる
+export const calculateCorrelation = (proposals: BetProposal[]) => {
+  const correlations: { bet1: string; bet2: string; correlation: number }[] = [];
+  
+  for (let i = 0; i < proposals.length; i++) {
+    for (let j = i + 1; j < proposals.length; j++) {
+      const bet1 = proposals[i];
+      const bet2 = proposals[j];
+      
+      // 同時的中確率を計算
+      const jointProb = calculateJointProbability(bet1, bet2);
+      
+      // 相関係数の計算
+      const correlation = (jointProb - bet1.probability * bet2.probability) / 
+                        Math.sqrt(bet1.probability * (1 - bet1.probability) * 
+                                bet2.probability * (1 - bet2.probability));
+      
+      correlations.push({
+        bet1: `${bet1.type}(${bet1.horseName})`,
+        bet2: `${bet2.type}(${bet2.horseName})`,
+        correlation: Number(correlation.toFixed(3))
+      });
+    }
+  }
+  
+  return correlations.sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
+};
+
+// 2つの馬券が同時に的中する確率を計算
+const calculateJointProbability = (bet1: BetProposal, bet2: BetProposal): number => {
+  // 馬券種別の組み合わせに基づいて同時的中確率を計算
+  switch(bet1.type) {
+    case "単勝":
+      return calculateWinJointProb(bet1, bet2);
+    case "複勝":
+      return calculatePlaceJointProb(bet1, bet2);
+    case "枠連":
+      return calculateBracketQuinellaJointProb(bet1, bet2);
+    case "ワイド":
+      return calculateWideJointProb(bet1, bet2);
+    case "馬連":
+      return calculateQuinellaJointProb(bet1, bet2);
+    case "馬単":
+      return calculateExactaJointProb(bet1, bet2);
+    case "３連複":
+      return calculateTrio3JointProb(bet1, bet2);
+    case "３連単":
+      return calculateTrifecta3JointProb(bet1, bet2);
+    default:
+      return 0;
+  }
+};
+
+// 単勝との組み合わせの同時的中確率
+const calculateWinJointProb = (win: BetProposal, other: BetProposal): number => {
+  const winHorse = win.horses[0];
+  
+  switch(other.type) {
+    case "単勝":
+      // 異なる馬の単勝は同時に的中しない
+      return other.horses[0] === winHorse ? win.probability : 0;
+      
+    case "複勝":
+      // 同じ馬なら単勝的中は必ず複勝的中する
+      return other.horses.includes(winHorse) ? win.probability : 0;
+      
+    case "枠連":
+      // 単勝馬が枠連の組み合わせに含まれる場合のみ的中
+      // frame1とframe2の情報を利用
+      const winFrame = win.frame1; // 単勝馬の枠番
+      return (other.frame1 === winFrame || other.frame2 === winFrame) ? 
+        win.probability * ((other.probability * 2) / 3) : 0; // 枠連の条件付き確率を調整
+      
+    case "ワイド":
+      // 単勝馬がワイドの組み合わせに含まれる場合のみ的中
+      // 単勝馬が1着なら、もう一頭が2着か3着に入れば良い
+      if (!other.horses.includes(winHorse)) return 0;
+      const otherHorseProb = other.probability / (other.horses.length - 1);
+      return win.probability * otherHorseProb;
+      
+    case "馬連":
+      // 単勝馬が馬連の組み合わせに含まれ、もう一頭が2着の場合に的中
+      if (!other.horses.includes(winHorse)) return 0;
+      const otherHorsePlace = other.probability / 2; // 馬連のもう一頭が2着に入る確率
+      return win.probability * otherHorsePlace;
+      
+    case "馬単":
+      if (other.horse1 === Number(winHorse)) {
+        // 単勝馬が馬単の1着指定と同じ場合
+        return win.probability * (other.probability / win.probability);
+      } else if (other.horse2 === Number(winHorse)) {
+        // 単勝馬が馬単の2着指定の場合は的中しない
+        return 0;
+      }
+      return 0;
+      
+    case "３連複":
+      // 単勝馬が3連複の組み合わせに含まれ、他の2頭が2-3着の場合に的中
+      if (!other.horses.includes(winHorse)) return 0;
+      const otherHorsesPlace = other.probability / 3; // 残り2頭が2-3着に入る確率
+      return win.probability * otherHorsesPlace;
+      
+    case "３連単":
+      // 単勝馬が3連単の1着指定と同じ場合のみ的中
+      return other.horse1 === Number(winHorse) ? 
+        win.probability * (other.probability / win.probability) : 0;
+      
+    default:
+      return 0;
+  }
+};
+
+// 複勝との組み合わせの同時的中確率
+const calculatePlaceJointProb = (place: BetProposal, other: BetProposal): number => {
+  const placeHorse = place.horses[0];
+  
+  switch(other.type) {
+    case "単勝":
+      // 単勝馬が複勝対象馬と同じ場合、単勝的中は必ず複勝的中
+      return other.horses[0] === placeHorse ? other.probability : 0;
+      
+    case "複勝":
+      if (other.horses[0] === placeHorse) {
+        // 同じ馬の複勝は完全に相関
+        return place.probability;
+      } else {
+        // 異なる馬の複勝の場合、3着以内の着順の組み合わせを考慮
+        // 例: 1-2着、1-3着、2-3着の可能性
+        return place.probability * other.probability * 0.9; // 若干の負の相関を考慮
+      }
+      
+    case "枠連":
+      // 複勝対象馬の枠が枠連に含まれている場合
+      const placeFrame = place.frame1;
+      if (other.frame1 === placeFrame || other.frame2 === placeFrame) {
+        // 複勝馬が1-2着に入り、もう一方の枠の馬が2-1着に入る確率
+        return place.probability * (other.probability / 2);
+      }
+      return 0;
+      
+    case "ワイド":
+      if (other.horses.includes(placeHorse)) {
+        // 複勝対象馬がワイドに含まれている場合
+        // ワイドのもう一頭も複勝圏内に入る必要がある
+        return place.probability * (other.probability / place.probability);
+      }
+      return 0;
+      
+    case "馬連":
+      if (other.horses.includes(placeHorse)) {
+        // 複勝対象馬が馬連に含まれている場合
+        // 複勝馬が1-2着に入り、もう一頭が2-1着に入る確率
+        return place.probability * (other.probability / 2);
+      }
+      return 0;
+      
+    case "馬単":
+      if (other.horse1 === Number(placeHorse)) {
+        // 複勝対象馬が馬単の1着指定の場合
+        return place.probability * (other.probability / place.probability);
+      } else if (other.horse2 === Number(placeHorse)) {
+        // 複勝対象馬が馬単の2着指定の場合
+        return place.probability * (other.probability / 2);
+      }
+      return 0;
+      
+    case "３連複":
+      if (other.horses.includes(placeHorse)) {
+        // 複勝対象馬が3連複に含まれている場合
+        // 複勝馬が1-2-3着のいずれかに入り、他の2頭も3着以内に入る確率
+        return place.probability * (other.probability / 3);
+      }
+      return 0;
+      
+    case "３連単":
+      if (other.horse1 === Number(placeHorse)) {
+        // 複勝対象馬が3連単の1着指定の場合
+        return place.probability * (other.probability / place.probability);
+      } else if (other.horse2 === Number(placeHorse) || other.horse3 === Number(placeHorse)) {
+        // 複勝対象馬が3連単の2着か3着指定の場合
+        return place.probability * (other.probability / 2);
+      }
+      return 0;
+      
+    default:
+      return 0;
+  }
+};
+
+// 枠連との組み合わせの同時的中確率
+const calculateBracketQuinellaJointProb = (wakuren: BetProposal, other: BetProposal): number => {
+  const frame1 = wakuren.frame1;
+  const frame2 = wakuren.frame2;
+  
+  switch(other.type) {
+    case "単勝":
+      // 単勝馬の枠が枠連の組み合わせに含まれている場合のみ的中
+      const winFrame = other.frame1;
+      if (frame1 === winFrame || frame2 === winFrame) {
+        // 単勝馬が的中し、もう一方の枠から2着が出る確率
+        return other.probability * (wakuren.probability / other.probability);
+      }
+      return 0;
+      
+    case "複勝":
+      // 複勝馬の枠が枠連の組み合わせに含まれている場合
+      const placeFrame = other.frame1;
+      if (frame1 === placeFrame || frame2 === placeFrame) {
+        // 複勝馬が1-2着に入り、もう一方の枠から相手が出る確率
+        return other.probability * (wakuren.probability / other.probability);
+      }
+      return 0;
+      
+    case "枠連":
+      if (frame1 === other.frame1 && frame2 === other.frame2) {
+        // 完全に同じ枠連の場合
+        return wakuren.probability;
+      } else if ((frame1 === other.frame1 && frame2 === other.frame2) ||
+                 (frame1 === other.frame2 && frame2 === other.frame1)) {
+        // 枠の順序が逆の場合（同じ組み合わせ）
+        return wakuren.probability;
+      } else if (frame1 === other.frame1 || frame1 === other.frame2 ||
+                 frame2 === other.frame1 || frame2 === other.frame2) {
+        // 片方の枠が共通する場合
+        return wakuren.probability * other.probability * 0.5;
+      }
+      // 共通する枠がない場合
+      return wakuren.probability * other.probability * 0.3;
+      
+    case "ワイド":
+      // ワイドの両馬の枠を確認
+      const wideFrame1 = other.frame1;
+      const wideFrame2 = other.frame2;
+      if ((frame1 === wideFrame1 && frame2 === wideFrame2) ||
+          (frame1 === wideFrame2 && frame2 === wideFrame1)) {
+        // 枠が完全に一致する場合
+        return Math.min(wakuren.probability, other.probability);
+      } else if (frame1 === wideFrame1 || frame1 === wideFrame2 ||
+                 frame2 === wideFrame1 || frame2 === wideFrame2) {
+        // 片方の枠が共通する場合
+        return wakuren.probability * (other.probability / 2);
+      }
+      return wakuren.probability * other.probability * 0.3;
+      
+    case "馬連":
+      // 馬連の両馬の枠を確認
+      const umarenFrame1 = other.frame1;
+      const umarenFrame2 = other.frame2;
+      if ((frame1 === umarenFrame1 && frame2 === umarenFrame2) ||
+          (frame1 === umarenFrame2 && frame2 === umarenFrame1)) {
+        // 枠が完全に一致する場合
+        return Math.min(wakuren.probability, other.probability);
+      } else if (frame1 === umarenFrame1 || frame1 === umarenFrame2 ||
+                 frame2 === umarenFrame1 || frame2 === umarenFrame2) {
+        // 片方の枠が共通する場合
+        return wakuren.probability * (other.probability / 2);
+      }
+      return wakuren.probability * other.probability * 0.3;
+      
+    case "馬単":
+      // 馬単の1着馬と2着馬の枠を確認
+      const umatanFrame1 = other.frame1;
+      const umatanFrame2 = other.frame2;
+      if ((frame1 === umatanFrame1 && frame2 === umatanFrame2) ||
+          (frame1 === umatanFrame2 && frame2 === umatanFrame1)) {
+        // 枠が一致する場合（順序は考慮しない）
+        return wakuren.probability * (other.probability / wakuren.probability);
+      } else if (frame1 === umatanFrame1 || frame1 === umatanFrame2 ||
+                 frame2 === umatanFrame1 || frame2 === umatanFrame2) {
+        // 片方の枠が共通する場合
+        return wakuren.probability * (other.probability / 2);
+      }
+      return wakuren.probability * other.probability * 0.3;
+      
+    case "３連複":
+      // 3連複の3頭の枠を確認
+      const sanrenpukuFrames = [other.frame1, other.frame2, other.frame3];
+      const hasCommonFrame = sanrenpukuFrames.some(f => f === frame1 || f === frame2);
+      if (hasCommonFrame) {
+        // 共通する枠がある場合
+        return wakuren.probability * (other.probability / 2);
+      }
+      return wakuren.probability * other.probability * 0.2;
+      
+    case "３連単":
+      // 3連単の3頭の枠を確認（着順考慮）
+      const sanrentanFrames = [other.frame1, other.frame2, other.frame3];
+      const hasCommonFrameInOrder = sanrentanFrames.slice(0, 2).some(f => f === frame1 || f === frame2);
+      if (hasCommonFrameInOrder) {
+        // 1-2着に共通する枠がある場合
+        return wakuren.probability * (other.probability / wakuren.probability);
+      }
+      return wakuren.probability * other.probability * 0.2;
+      
+    default:
+      return 0;
+  }
+};
+
+// ワイドとの組み合わせの同時的中確率
+const calculateWideJointProb = (wide: BetProposal, other: BetProposal): number => {
+  const wideHorse1 = wide.horse1;
+  const wideHorse2 = wide.horse2;
+  
+  switch(other.type) {
+    case "単勝":
+      // 単勝馬がワイドの組み合わせに含まれている場合
+      const winHorse = Number(other.horses[0]);
+      if (winHorse === wideHorse1 || winHorse === wideHorse2) {
+        // 単勝馬が1着、もう一方のワイド指定馬が2-3着に入る確率
+        return other.probability * ((wide.probability * 2) / 3);
+      }
+      return 0;
+      
+    case "複勝":
+      // 複勝馬がワイドの組み合わせに含まれている場合
+      const placeHorse = Number(other.horses[0]);
+      if (placeHorse === wideHorse1 || placeHorse === wideHorse2) {
+        // 複勝馬が1-2-3着のいずれかに入り、もう一方のワイド指定馬も複勝圏内に入る確率
+        return other.probability * (wide.probability / other.probability);
+      }
+      return 0;
+      
+    case "枠連":
+      // ワイドの両馬の枠を確認
+      const wideFrame1 = wide.frame1;
+      const wideFrame2 = wide.frame2;
+      if ((other.frame1 === wideFrame1 && other.frame2 === wideFrame2) ||
+          (other.frame1 === wideFrame2 && other.frame2 === wideFrame1)) {
+        // 枠が完全に一致する場合
+        return Math.min(wide.probability, other.probability);
+      } else if (other.frame1 === wideFrame1 || other.frame1 === wideFrame2 ||
+                 other.frame2 === wideFrame1 || other.frame2 === wideFrame2) {
+        // 片方の枠が共通する場合
+        return wide.probability * (other.probability / 2);
+      }
+      return wide.probability * other.probability * 0.3;
+      
+    case "ワイド":
+      // 同じワイドの場合
+      if (wideHorse1 === other.horse1 && wideHorse2 === other.horse2 ||
+          wideHorse1 === other.horse2 && wideHorse2 === other.horse1) {
+        return wide.probability;
+      }
+      // 1頭が共通する場合
+      if (wideHorse1 === other.horse1 || wideHorse1 === other.horse2 ||
+          wideHorse2 === other.horse1 || wideHorse2 === other.horse2) {
+        // 共通する馬が複勝圏内に入り、それぞれのもう一頭も複勝圏内に入る確率
+        return wide.probability * (other.probability / 2);
+      }
+      // 共通する馬がない場合
+      return wide.probability * other.probability * 0.6; // 複勝圏内が3頭なので、やや高めの相関
+      
+    case "馬連":
+      // ワイドと馬連の馬が完全に一致する場合
+      if ((wideHorse1 === other.horse1 && wideHorse2 === other.horse2) ||
+          (wideHorse1 === other.horse2 && wideHorse2 === other.horse1)) {
+        // 馬連的中は必ずワイド的中
+        return other.probability;
+      }
+      // 1頭が共通する場合
+      if (wideHorse1 === other.horse1 || wideHorse1 === other.horse2 ||
+          wideHorse2 === other.horse1 || wideHorse2 === other.horse2) {
+        // 共通馬が1-2着に入り、もう一方の馬が複勝圏内に入る確率
+        return wide.probability * (other.probability / 2);
+      }
+      return wide.probability * other.probability * 0.3;
+      
+    case "馬単":
+      // ワイドと馬単の馬が一致する場合
+      if (wideHorse1 === other.horse1 && wideHorse2 === other.horse2 ||
+          wideHorse1 === other.horse2 && wideHorse2 === other.horse1) {
+        // 馬単的中は必ずワイド的中
+        return other.probability;
+      }
+      // 1頭が共通する場合
+      if (wideHorse1 === other.horse1 || wideHorse1 === other.horse2 ||
+          wideHorse2 === other.horse1 || wideHorse2 === other.horse2) {
+        // 共通馬が指定着順に入り、もう一方の馬が複勝圏内に入る確率
+        return wide.probability * (other.probability / 2);
+      }
+      return wide.probability * other.probability * 0.3;
+      
+    case "３連複":
+      // ワイドの両馬が3連複に含まれる場合
+      if (other.horses.includes(String(wideHorse1)) && other.horses.includes(String(wideHorse2))) {
+        // ワイドの両馬が3着以内に入る確率（3連複的中が条件）
+        return other.probability;
+      }
+      // 1頭のみ含まれる場合
+      if (other.horses.includes(String(wideHorse1)) || other.horses.includes(String(wideHorse2))) {
+        // 共通馬が3着以内に入り、もう一方のワイド指定馬も複勝圏内に入る確率
+        return wide.probability * (other.probability / 2);
+      }
+      return wide.probability * other.probability * 0.2;
+      
+    case "３連単":
+      // ワイドの両馬が3連単に含まれる場合
+      if (other.horses.includes(String(wideHorse1)) && other.horses.includes(String(wideHorse2))) {
+        // 3連単的中時にワイドも的中する確率
+        return other.probability;
+      }
+      // 1頭のみ含まれる場合
+      if (other.horses.includes(String(wideHorse1)) || other.horses.includes(String(wideHorse2))) {
+        // 共通馬が指定着順に入り、もう一方のワイド指定馬も複勝圏内に入る確率
+        return wide.probability * (other.probability / 2);
+      }
+      return wide.probability * other.probability * 0.2;
+      
+    default:
+      return 0;
+  }
+};
+
+// 馬連との組み合わせの同時的中確率
+const calculateQuinellaJointProb = (umaren: BetProposal, other: BetProposal): number => {
+  const umarenHorse1 = umaren.horse1;
+  const umarenHorse2 = umaren.horse2;
+  
+  switch(other.type) {
+    case "単勝":
+      // 単勝馬が馬連の組み合わせに含まれている場合
+      const winHorse = Number(other.horses[0]);
+      if (winHorse === umarenHorse1 || winHorse === umarenHorse2) {
+        // 単勝馬が1着、もう一方の馬連指定馬が2着に入る確率
+        return other.probability * (umaren.probability / other.probability);
+      }
+      return 0;
+      
+    case "複勝":
+      // 複勝馬が馬連の組み合わせに含まれている場合
+      const placeHorse = Number(other.horses[0]);
+      if (placeHorse === umarenHorse1 || placeHorse === umarenHorse2) {
+        // 複勝馬が1-2着に入り、もう一方の馬連指定馬も1-2着に入る確率
+        return other.probability * (umaren.probability / other.probability) * 0.67; // 3着は除外
+      }
+      return 0;
+      
+    case "枠連":
+      // 馬連の両馬の枠を確認
+      const umarenFrame1 = umaren.frame1;
+      const umarenFrame2 = umaren.frame2;
+      if ((other.frame1 === umarenFrame1 && other.frame2 === umarenFrame2) ||
+          (other.frame1 === umarenFrame2 && other.frame2 === umarenFrame1)) {
+        // 枠が完全に一致する場合
+        return Math.min(umaren.probability, other.probability);
+      } else if (other.frame1 === umarenFrame1 || other.frame1 === umarenFrame2 ||
+                 other.frame2 === umarenFrame1 || other.frame2 === umarenFrame2) {
+        // 片方の枠が共通する場合
+        return umaren.probability * (other.probability / 2);
+      }
+      return umaren.probability * other.probability * 0.3;
+      
+    case "ワイド":
+      // 馬連とワイドの馬が完全に一致する場合
+      if ((umarenHorse1 === other.horse1 && umarenHorse2 === other.horse2) ||
+          (umarenHorse1 === other.horse2 && umarenHorse2 === other.horse1)) {
+        // 馬連的中はワイドも必ず的中
+        return umaren.probability;
+      }
+      // 1頭が共通する場合
+      if (umarenHorse1 === other.horse1 || umarenHorse1 === other.horse2 ||
+          umarenHorse2 === other.horse1 || umarenHorse2 === other.horse2) {
+        // 共通馬が1-2着に入り、他馬が複勝圏内に入る確率
+        return umaren.probability * (other.probability / 2);
+      }
+      return umaren.probability * other.probability * 0.3;
+      
+    case "馬連":
+      // 同じ馬連の場合
+      if ((umarenHorse1 === other.horse1 && umarenHorse2 === other.horse2) ||
+          (umarenHorse1 === other.horse2 && umarenHorse2 === other.horse1)) {
+        return umaren.probability;
+      }
+      // 1頭が共通する場合
+      if (umarenHorse1 === other.horse1 || umarenHorse1 === other.horse2 ||
+          umarenHorse2 === other.horse1 || umarenHorse2 === other.horse2) {
+        // 共通馬が1-2着に入る条件での確率
+        return umaren.probability * (other.probability / 2);
+      }
+      // 共通する馬がない場合
+      return umaren.probability * other.probability * 0.2; // 1-2着限定なので低い相関
+      
+    case "馬単":
+      // 馬連と馬単の馬が一致する場合
+      if ((umarenHorse1 === other.horse1 && umarenHorse2 === other.horse2) ||
+          (umarenHorse1 === other.horse2 && umarenHorse2 === other.horse1)) {
+        // 馬単的中は必ず馬連的中
+        return other.probability;
+      }
+      // 1頭が共通する場合
+      if (umarenHorse1 === other.horse1 || umarenHorse1 === other.horse2 ||
+          umarenHorse2 === other.horse1 || umarenHorse2 === other.horse2) {
+        // 共通馬が指定着順に入り、もう一方の馬が1-2着に入る確率
+        return umaren.probability * (other.probability / 2);
+      }
+      return umaren.probability * other.probability * 0.2;
+      
+    case "３連複":
+      // 馬連の両馬が3連複に含まれる場合
+      if (other.horses.includes(String(umarenHorse1)) && other.horses.includes(String(umarenHorse2))) {
+        // 馬連の両馬が1-2着に入る確率（3連複的中が条件）
+        return umaren.probability * (other.probability / umaren.probability);
+      }
+      // 1頭のみ含まれる場合
+      if (other.horses.includes(String(umarenHorse1)) || other.horses.includes(String(umarenHorse2))) {
+        // 共通馬が1-2着に入り、他馬も3着以内に入る確率
+        return umaren.probability * (other.probability / 3);
+      }
+      return umaren.probability * other.probability * 0.2;
+      
+    case "３連単":
+      // 馬連の両馬が3連単の1-2着に指定されている場合
+      if ((other.horse1 === umarenHorse1 && other.horse2 === umarenHorse2) ||
+          (other.horse1 === umarenHorse2 && other.horse2 === umarenHorse1)) {
+        // 3連単の1-2着が的中すれば馬連も的中
+        return other.probability;
+      }
+      // 1頭が1-2着に指定されている場合
+      if (other.horse1 === umarenHorse1 || other.horse1 === umarenHorse2 ||
+          other.horse2 === umarenHorse1 || other.horse2 === umarenHorse2) {
+        // 共通馬が指定着順に入り、もう一方の馬が1-2着に入る確率
+        return umaren.probability * (other.probability / 2);
+      }
+      return umaren.probability * other.probability * 0.2;
+      
+    default:
+      return 0;
+  }
+};
+
+// 馬単との組み合わせの同時的中確率
+const calculateExactaJointProb = (umatan: BetProposal, other: BetProposal): number => {
+  const umatanHorse1 = umatan.horse1; // 1着指定馬
+  const umatanHorse2 = umatan.horse2; // 2着指定馬
+  
+  switch(other.type) {
+    case "単勝":
+      // 単勝馬が馬単の1着指定馬と同じ場合のみ的中
+      const winHorse = Number(other.horses[0]);
+      if (winHorse === umatanHorse1) {
+        // 単勝馬が1着、馬単2着指定馬が2着に入る確率
+        return other.probability * (umatan.probability / other.probability);
+      }
+      return 0;
+      
+    case "複勝":
+      // 複勝馬が馬単の指定馬に含まれる場合
+      const placeHorse = Number(other.horses[0]);
+      if (placeHorse === umatanHorse1) {
+        // 1着指定馬が1着、2着指定馬が2着に入る確率
+        return other.probability * (umatan.probability / other.probability);
+      } else if (placeHorse === umatanHorse2) {
+        // 1着指定馬が1着、2着指定馬（複勝馬）が2着に入る確率
+        return umatan.probability * (other.probability / 2); // 複勝馬が2着に入る確率で調整
+      }
+      return 0;
+      
+    case "枠連":
+      // 馬単の両馬の枠を確認
+      const umatanFrame1 = umatan.frame1;
+      const umatanFrame2 = umatan.frame2;
+      if ((other.frame1 === umatanFrame1 && other.frame2 === umatanFrame2) ||
+          (other.frame1 === umatanFrame2 && other.frame2 === umatanFrame1)) {
+        // 枠が一致する場合、着順を考慮した確率
+        return umatan.probability * (other.probability / umatan.probability);
+      } else if (other.frame1 === umatanFrame1 || other.frame1 === umatanFrame2 ||
+                 other.frame2 === umatanFrame1 || other.frame2 === umatanFrame2) {
+        // 片方の枠が共通する場合
+        return umatan.probability * (other.probability / 2);
+      }
+      return umatan.probability * other.probability * 0.2;
+      
+    case "ワイド":
+      // 馬単の両馬がワイドに含まれる場合
+      if ((umatanHorse1 === other.horse1 && umatanHorse2 === other.horse2) ||
+          (umatanHorse1 === other.horse2 && umatanHorse2 === other.horse1)) {
+        // 馬単的中はワイドも必ず的中
+        return umatan.probability;
+      }
+      // 1頭が共通する場合
+      if (umatanHorse1 === other.horse1 || umatanHorse1 === other.horse2 ||
+          umatanHorse2 === other.horse1 || umatanHorse2 === other.horse2) {
+        // 共通馬が指定着順に入り、他馬が複勝圏内に入る確率
+        return umatan.probability * (other.probability / 2);
+      }
+      return umatan.probability * other.probability * 0.2;
+      
+    case "馬連":
+      // 馬単の両馬が馬連に含まれる場合
+      if ((umatanHorse1 === other.horse1 && umatanHorse2 === other.horse2) ||
+          (umatanHorse1 === other.horse2 && umatanHorse2 === other.horse1)) {
+        // 馬単的中は必ず馬連的中
+        return umatan.probability;
+      }
+      // 1頭が共通する場合
+      if (umatanHorse1 === other.horse1 || umatanHorse1 === other.horse2 ||
+          umatanHorse2 === other.horse1 || umatanHorse2 === other.horse2) {
+        // 共通馬が指定着順に入り、他馬が1-2着に入る確率
+        return umatan.probability * (other.probability / 2);
+      }
+      return umatan.probability * other.probability * 0.2;
+      
+    case "馬単":
+      // 同じ馬単の場合
+      if (umatanHorse1 === other.horse1 && umatanHorse2 === other.horse2) {
+        return umatan.probability;
+      }
+      // 1頭が共通する場合
+      if (umatanHorse1 === other.horse1 || umatanHorse2 === other.horse2) {
+        // 共通馬が同じ着順で入る確率
+        return umatan.probability * (other.probability / 2);
+      }
+      // 共通する馬がない場合
+      return umatan.probability * other.probability * 0.1; // 着順指定があるため、非常に低い相関
+      
+    case "３連複":
+      // 馬単の両馬が3連複に含まれる場合
+      if (other.horses.includes(String(umatanHorse1)) && other.horses.includes(String(umatanHorse2))) {
+        // 馬単の着順で決着する確率（3連複的中が条件）
+        return umatan.probability * (other.probability / umatan.probability);
+      }
+      // 1頭のみ含まれる場合
+      if (other.horses.includes(String(umatanHorse1)) || other.horses.includes(String(umatanHorse2))) {
+        // 共通馬が指定着順に入り、他馬も3着以内に入る確率
+        return umatan.probability * (other.probability / 3);
+      }
+      return umatan.probability * other.probability * 0.1;
+      
+    case "３連単":
+      // 馬単の両馬が3連単の1-2着に指定されている場合
+      if (umatanHorse1 === other.horse1 && umatanHorse2 === other.horse2) {
+        // 3連単の1-2着が的中すれば馬単も的中
+        return other.probability;
+      }
+      // 1頭が1-2着に指定されている場合で、着順が一致
+      if ((umatanHorse1 === other.horse1) || (umatanHorse2 === other.horse2)) {
+        // 共通馬が指定着順に入る確率
+        return umatan.probability * (other.probability / 2);
+      }
+      return umatan.probability * other.probability * 0.1;
+      
+    default:
+      return 0;
+  }
+};
+
+// 3連複との組み合わせの同時的中確率
+const calculateTrio3JointProb = (sanrenpuku: BetProposal, other: BetProposal): number => {
+  // 3連複の指定馬を配列として取得
+  const sanrenpukuHorses = [sanrenpuku.horse1, sanrenpuku.horse2, sanrenpuku.horse3];
+  
+  switch(other.type) {
+    case "単勝":
+      // 単勝馬が3連複の組み合わせに含まれている場合
+      const winHorse = Number(other.horses[0]);
+      if (sanrenpukuHorses.includes(winHorse)) {
+        // 単勝馬が1着、他の2頭が2-3着に入る確率
+        return other.probability * (sanrenpuku.probability / other.probability);
+      }
+      return 0;
+      
+    case "複勝":
+      // 複勝馬が3連複の組み合わせに含まれている場合
+      const placeHorse = Number(other.horses[0]);
+      if (sanrenpukuHorses.includes(placeHorse)) {
+        // 複勝馬が1-2-3着のいずれかに入り、他の2頭も3着以内に入る確率
+        return other.probability * (sanrenpuku.probability / other.probability);
+      }
+      return 0;
+      
+    case "枠連":
+      // 3連複の馬の枠を確認
+      const sanrenpukuFrames = [sanrenpuku.frame1, sanrenpuku.frame2, sanrenpuku.frame3];
+      const commonFrames = [other.frame1, other.frame2].filter(f => 
+        sanrenpukuFrames.includes(f)
+      );
+      
+      if (commonFrames.length === 2) {
+        // 枠連の両方の枠が3連複に含まれる場合
+        return other.probability * (sanrenpuku.probability / other.probability);
+      } else if (commonFrames.length === 1) {
+        // 片方の枠のみ共通する場合
+        return sanrenpuku.probability * (other.probability / 2);
+      }
+      return sanrenpuku.probability * other.probability * 0.2;
+      
+    case "ワイド":
+      // ワイドの両馬が3連複に含まれているか確認
+      const wideHorses = [other.horse1, other.horse2];
+      const commonWideHorses = wideHorses.filter(h => 
+        sanrenpukuHorses.includes(h)
+      );
+      
+      if (commonWideHorses.length === 2) {
+        // ワイドの両馬が3連複に含まれる場合
+        return other.probability;
+      } else if (commonWideHorses.length === 1) {
+        // 1頭のみ共通する場合
+        return sanrenpuku.probability * (other.probability / 2);
+      }
+      return sanrenpuku.probability * other.probability * 0.2;
+      
+    case "馬連":
+      // 馬連の両馬が3連複に含まれているか確認
+      const umarenHorses = [other.horse1, other.horse2];
+      const commonUmarenHorses = umarenHorses.filter(h => 
+        sanrenpukuHorses.includes(h)
+      );
+      
+      if (commonUmarenHorses.length === 2) {
+        // 馬連の両馬が3連複に含まれる場合
+        return other.probability;
+      } else if (commonUmarenHorses.length === 1) {
+        // 1頭のみ共通する場合
+        return sanrenpuku.probability * (other.probability / 2);
+      }
+      return sanrenpuku.probability * other.probability * 0.2;
+      
+    case "馬単":
+      // 馬単の両馬が3連複に含まれているか確認
+      const umatanHorses = [other.horse1, other.horse2];
+      const commonUmatanHorses = umatanHorses.filter(h => 
+        sanrenpukuHorses.includes(h)
+      );
+      
+      if (commonUmatanHorses.length === 2) {
+        // 馬単の両馬が3連複に含まれる場合
+        return other.probability;
+      } else if (commonUmatanHorses.length === 1) {
+        // 1頭のみ共通する場合
+        return sanrenpuku.probability * (other.probability / 2);
+      }
+      return sanrenpuku.probability * other.probability * 0.2;
+      
+    case "３連複":
+      // 同じ3連複の場合
+      if (sanrenpukuHorses.every(h => 
+        [other.horse1, other.horse2, other.horse3].includes(h))) {
+        return sanrenpuku.probability;
+      }
+      
+      // 2頭が共通する場合
+      const commonHorses = sanrenpukuHorses.filter(h => 
+        [other.horse1, other.horse2, other.horse3].includes(h)
+      );
+      
+      if (commonHorses.length === 2) {
+        return sanrenpuku.probability * (other.probability / 2);
+      } else if (commonHorses.length === 1) {
+        // 1頭のみ共通する場合
+        return sanrenpuku.probability * (other.probability / 3);
+      }
+      return sanrenpuku.probability * other.probability * 0.1;
+      
+    case "３連単":
+      // 3連単の3頭が3連複と同じ馬の場合
+      if (sanrenpukuHorses.every(h => 
+        [other.horse1, other.horse2, other.horse3].includes(h))) {
+        // 3連単的中は必ず3連複的中
+        return other.probability;
+      }
+      
+      // 共通する馬の数で確率を調整
+      const commonTrifectaHorses = sanrenpukuHorses.filter(h => 
+        [other.horse1, other.horse2, other.horse3].includes(h)
+      );
+      
+      if (commonTrifectaHorses.length === 2) {
+        return sanrenpuku.probability * (other.probability / 2);
+      } else if (commonTrifectaHorses.length === 1) {
+        return sanrenpuku.probability * (other.probability / 3);
+      }
+      return sanrenpuku.probability * other.probability * 0.1;
+      
+    default:
+      return 0;
+  }
+};
+
+// 3連単との組み合わせの同時的中確率
+const calculateTrifecta3JointProb = (sanrentan: BetProposal, other: BetProposal): number => {
+  const sanrentanHorse1 = sanrentan.horse1; // 1着指定馬
+  const sanrentanHorse2 = sanrentan.horse2; // 2着指定馬
+  const sanrentanHorse3 = sanrentan.horse3; // 3着指定馬
+  
+  switch(other.type) {
+    case "単勝":
+      // 単勝馬が3連単の1着指定馬と同じ場合のみ的中
+      return other.horse1 === sanrentanHorse1 ? 
+        other.probability * (sanrentan.probability / other.probability) : 0;
+      
+    case "複勝":
+      // 複勝馬が3連単の指定馬に含まれる場合
+      const placeHorse = Number(other.horses[0]);
+      if (placeHorse === sanrentanHorse1) {
+        // 1着指定馬が1着、他2頭が指定順で入る確率
+        return other.probability * (sanrentan.probability / other.probability);
+      } else if (placeHorse === sanrentanHorse2 || placeHorse === sanrentanHorse3) {
+        // 2,3着指定馬が指定順で入る確率
+        return sanrentan.probability;
+      }
+      return 0;
+      
+    case "枠連":
+      // 3連単の1-2着馬の枠を確認
+      const frame1 = sanrentan.frame1;
+      const frame2 = sanrentan.frame2;
+      if ((other.frame1 === frame1 && other.frame2 === frame2) ||
+          (other.frame1 === frame2 && other.frame2 === frame1)) {
+        // 1-2着の枠が一致する場合
+        return sanrentan.probability;
+      }
+      return sanrentan.probability * other.probability * 0.2;
+      
+    case "ワイド":
+      // 3連単の馬が2頭ワイドに含まれる場合
+      const wideHorses = [other.horse1, other.horse2];
+      const isInWide = (horse: number) => wideHorses.includes(horse);
+      
+      if (sanrentanHorse1 && sanrentanHorse2 && sanrentanHorse3 && 
+          ((isInWide(sanrentanHorse1) && isInWide(sanrentanHorse2)) ||
+           (isInWide(sanrentanHorse1) && isInWide(sanrentanHorse3)) ||
+           (isInWide(sanrentanHorse2) && isInWide(sanrentanHorse3)))) {
+        // 3連単的中はワイドも的中
+        return sanrentan.probability;
+      }
+      return sanrentan.probability * other.probability * 0.2;
+      
+    case "馬連":
+      // 3連単の1-2着馬が馬連と一致する場合
+      if ((other.horse1 === sanrentanHorse1 && other.horse2 === sanrentanHorse2) ||
+          (other.horse1 === sanrentanHorse2 && other.horse2 === sanrentanHorse1)) {
+        // 3連単的中は馬連も的中
+        return sanrentan.probability;
+      }
+      return sanrentan.probability * other.probability * 0.2;
+      
+    case "馬単":
+      // 3連単の1-2着が馬単と一致する場合
+      if (other.horse1 === sanrentanHorse1 && other.horse2 === sanrentanHorse2) {
+        // 3連単的中は馬単も的中
+        return sanrentan.probability;
+      }
+      return sanrentan.probability * other.probability * 0.2;
+      
+    case "３連複":
+      // 3連単の3頭が3連複と同じ場合（順序不問）
+      const sanrenpukuHorses = [other.horse1, other.horse2, other.horse3];
+      if (sanrenpukuHorses.includes(sanrentanHorse1) &&
+          sanrenpukuHorses.includes(sanrentanHorse2) &&
+          sanrenpukuHorses.includes(sanrentanHorse3)) {
+        // 3連単的中は必ず3連複的中
+        return sanrentan.probability;
+      }
+      return sanrentan.probability * other.probability * 0.1;
+      
+    case "３連単":
+      // 完全に同じ3連単の場合
+      if (other.horse1 === sanrentanHorse1 &&
+          other.horse2 === sanrentanHorse2 &&
+          other.horse3 === sanrentanHorse3) {
+        return sanrentan.probability;
+      }
+      // 2頭が同じ着順の場合
+      const sameOrderCount = [
+        other.horse1 === sanrentanHorse1,
+        other.horse2 === sanrentanHorse2,
+        other.horse3 === sanrentanHorse3
+      ].filter(Boolean).length;
+      
+      if (sameOrderCount === 2) {
+        return sanrentan.probability * (other.probability / 2);
+      }
+      return sanrentan.probability * other.probability * 0.1;
+      
+    default:
+      return 0;
+  }
+};
+
 export const optimizeBetAllocation = (
   recommendations: GeminiRecommendation[],
   totalBudget: number
@@ -773,7 +1612,13 @@ export const optimizeBetAllocation = (
     stake: Math.floor(totalBudget * bestWeights[i] / 100) * 100,
     expectedReturn: rec.odds * Math.floor(totalBudget * bestWeights[i] / 100) * 100,
     probability: rec.probability,
-    reason: rec.reason
+    reason: rec.reason,
+    frame1: rec.frame1,
+    frame2: rec.frame2,
+    frame3: rec.frame3,
+    horse1: rec.horse1,
+    horse2: rec.horse2,
+    horse3: rec.horse3
   }))
   .filter(bet => bet.stake >= 100)
   .sort((a, b) => {
@@ -826,6 +1671,24 @@ export const optimizeBetAllocation = (
         調整後総投資額: proposals.reduce((sum, bet) => sum + bet.stake, 0)
       });
     }
+  }
+
+  // 最終結果のログ出力を関数内に移動
+  if (process.env.NODE_ENV === 'development') {
+    const correlations = calculateCorrelation(proposals);
+    console.log('最終結果:', {
+      totalBets: proposals.length,
+      totalInvestment: proposals.reduce((sum, p) => sum + p.stake, 0),
+      bets: proposals.map(p => ({
+        type: p.type,
+        horses: p.horses,
+        horseName: p.horseName,
+        stake: p.stake,
+        expectedReturn: p.expectedReturn,
+        probability: (p.probability * 100).toFixed(1) + '%'
+      })),
+      correlations
+    });
   }
 
   return proposals;

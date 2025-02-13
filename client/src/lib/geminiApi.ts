@@ -91,8 +91,15 @@ export interface GeminiRecommendation {
   type: string;
   horses: string[];
   odds: number;
-  probability: string | number;
+  probability: number | string;
   reason: string;
+  // 追加するプロパティ
+  frame1?: number;
+  frame2?: number;
+  frame3?: number;
+  horse1?: number;
+  horse2?: number;
+  horse3?: number;
 }
 
 export interface GeminiStrategy {
