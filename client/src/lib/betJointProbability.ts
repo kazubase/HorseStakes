@@ -791,112 +791,83 @@ const calculateWinJointProb = (win: BetProposal, other: BetProposal, horses: Hor
     const umarenHorse1 = umaren.horse1;
     const umarenHorse2 = umaren.horse2;
     
+    if (!umarenHorse1 || !umarenHorse2) return 0;
+    
     switch(other.type) {
       case "単勝":
-        // 単勝馬が馬連の組み合わせに含まれている場合
-        const winHorse = Number(other.horses[0]);
-        if (winHorse === umarenHorse1 || winHorse === umarenHorse2) {
-          // 単勝馬が1着、もう一方の馬連指定馬が2着に入る確率
-          return other.probability * (umaren.probability / other.probability);
-        }
         return 0;
         
       case "複勝":
-        // 複勝馬が馬連の組み合わせに含まれている場合
-        const placeHorse = Number(other.horses[0]);
-        if (placeHorse === umarenHorse1 || placeHorse === umarenHorse2) {
-          // 複勝馬が1-2着に入り、もう一方の馬連指定馬も1-2着に入る確率
-          return other.probability * (umaren.probability / other.probability) * 0.67; // 3着は除外
-        }
         return 0;
         
       case "枠連":
-        // 馬連の両馬の枠を確認
-        const umarenFrame1 = umaren.frame1;
-        const umarenFrame2 = umaren.frame2;
-        if ((other.frame1 === umarenFrame1 && other.frame2 === umarenFrame2) ||
-            (other.frame1 === umarenFrame2 && other.frame2 === umarenFrame1)) {
-          // 枠が完全に一致する場合
-          return Math.min(umaren.probability, other.probability);
-        } else if (other.frame1 === umarenFrame1 || other.frame1 === umarenFrame2 ||
-                   other.frame2 === umarenFrame1 || other.frame2 === umarenFrame2) {
-          // 片方の枠が共通する場合
-          return umaren.probability * (other.probability / 2);
-        }
-        return umaren.probability * other.probability * 0.3;
+        return 0;
         
       case "ワイド":
-        // 馬連とワイドの馬が完全に一致する場合
-        if ((umarenHorse1 === other.horse1 && umarenHorse2 === other.horse2) ||
-            (umarenHorse1 === other.horse2 && umarenHorse2 === other.horse1)) {
-          // 馬連的中はワイドも必ず的中
-          return umaren.probability;
-        }
-        // 1頭が共通する場合
-        if (umarenHorse1 === other.horse1 || umarenHorse1 === other.horse2 ||
-            umarenHorse2 === other.horse1 || umarenHorse2 === other.horse2) {
-          // 共通馬が1-2着に入り、他馬が複勝圏内に入る確率
-          return umaren.probability * (other.probability / 2);
-        }
-        return umaren.probability * other.probability * 0.3;
+        return 0;
         
       case "馬連":
-        // 同じ馬連の場合
-        if ((umarenHorse1 === other.horse1 && umarenHorse2 === other.horse2) ||
-            (umarenHorse1 === other.horse2 && umarenHorse2 === other.horse1)) {
-          return umaren.probability;
-        }
-        // 1頭が共通する場合
-        if (umarenHorse1 === other.horse1 || umarenHorse1 === other.horse2 ||
-            umarenHorse2 === other.horse1 || umarenHorse2 === other.horse2) {
-          // 共通馬が1-2着に入る条件での確率
-          return umaren.probability * (other.probability / 2);
-        }
-        // 共通する馬がない場合
-        return umaren.probability * other.probability * 0.2; // 1-2着限定なので低い相関
+        return 0;
         
       case "馬単":
+        if (!other.horse1 || !other.horse2) return 0;
+        
         // 馬連と馬単の馬が一致する場合
         if ((umarenHorse1 === other.horse1 && umarenHorse2 === other.horse2) ||
             (umarenHorse1 === other.horse2 && umarenHorse2 === other.horse1)) {
           // 馬単的中は必ず馬連的中
           return other.probability;
         }
-        // 1頭が共通する場合
-        if (umarenHorse1 === other.horse1 || umarenHorse1 === other.horse2 ||
-            umarenHorse2 === other.horse1 || umarenHorse2 === other.horse2) {
-          // 共通馬が指定着順に入り、もう一方の馬が1-2着に入る確率
-          return umaren.probability * (other.probability / 2);
-        }
-        return umaren.probability * other.probability * 0.2;
+
+        // それ以外の場合は同時的中なし
+        return 0;
         
       case "３連複":
-        // 馬連の両馬が3連複に含まれる場合
-        if (other.horses.includes(String(umarenHorse1)) && other.horses.includes(String(umarenHorse2))) {
-          // 馬連の両馬が1-2着に入る確率（3連複的中が条件）
-          return umaren.probability * (other.probability / umaren.probability);
+        if (!other.horse1 || !other.horse2 || !other.horse3) return 0;
+        
+        const sanrenpuku1 = horses.find(h => h.number === other.horse1);
+        const sanrenpuku2 = horses.find(h => h.number === other.horse2);
+        const sanrenpuku3 = horses.find(h => h.number === other.horse3);
+        if (!sanrenpuku1 || !sanrenpuku2 || !sanrenpuku3) return 0;
+
+        // 馬連の両馬が3連複に含まれる場合のみ計算
+        if ([sanrenpuku1.number, sanrenpuku2.number, sanrenpuku3.number].includes(umarenHorse1) &&
+            [sanrenpuku1.number, sanrenpuku2.number, sanrenpuku3.number].includes(umarenHorse2)) {
+            
+            let jointProb = 0;
+            const horse1 = horses.find(h => h.number === umarenHorse1);
+            const horse2 = horses.find(h => h.number === umarenHorse2);
+            const horse3 = horses.find(h => h.number === 
+                [other.horse1, other.horse2, other.horse3].find(h => h !== umarenHorse1 && h !== umarenHorse2));
+            if (!horse1 || !horse2 || !horse3) return 0;
+
+            // 1着-2着-3着のパターン
+            jointProb += horse1.winProb * 
+                         ((horse2.placeProb - horse2.winProb) / 2) * 
+                         ((horse3.placeProb - horse3.winProb) / 2);
+            
+            // 2着-1着-3着のパターン
+            jointProb += horse2.winProb * 
+                         ((horse1.placeProb - horse1.winProb) / 2) * 
+                         ((horse3.placeProb - horse3.winProb) / 2);
+
+            return jointProb;
         }
-        // 1頭のみ含まれる場合
-        if (other.horses.includes(String(umarenHorse1)) || other.horses.includes(String(umarenHorse2))) {
-          // 共通馬が1-2着に入り、他馬も3着以内に入る確率
-          return umaren.probability * (other.probability / 3);
-        }
-        return umaren.probability * other.probability * 0.2;
+
+        return 0;
         
       case "３連単":
+        if (!other.horse1 || !other.horse2 || !other.horse3) return 0;
+        if (!umarenHorse1 || !umarenHorse2) return 0;
+        
         // 馬連の両馬が3連単の1-2着に指定されている場合
         if ((other.horse1 === umarenHorse1 && other.horse2 === umarenHorse2) ||
             (other.horse1 === umarenHorse2 && other.horse2 === umarenHorse1)) {
-          // 3連単の1-2着が的中すれば馬連も的中
-          return other.probability;
+            // 3連単の確率をそのまま返す
+            return other.probability;
         }
-        // 1頭が1-2着に指定されている場合
-        if (other.horse1 === umarenHorse1 || other.horse1 === umarenHorse2 ||
-            other.horse2 === umarenHorse1 || other.horse2 === umarenHorse2) {
-          // 共通馬が指定着順に入り、もう一方の馬が1-2着に入る確率
-          return umaren.probability * (other.probability / 2);
-        }
-        return umaren.probability * other.probability * 0.2;
+        
+        return 0;
         
       default:
         return 0;
