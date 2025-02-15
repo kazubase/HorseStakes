@@ -99,19 +99,38 @@ const calculateWinJointProb = (win: BetProposal, other: BetProposal, horses: Hor
         return win.probability * secondPlaceProb;
         
       case "ワイド":
-        // 単勝馬がワイドの組み合わせに含まれる場合のみ的中
         if (!other.horse1 || !other.horse2) return 0;
-        if (other.horse1 !== winNumber && other.horse2 !== winNumber) return 0;
+        
+        // 単勝馬がワイドの組み合わせに含まれる場合
+        if (other.horse1 === winNumber || other.horse2 === winNumber) {
+          // もう一方の馬を特定
+          const otherHorseNumber = other.horse1 === winNumber ? other.horse2 : other.horse1;
+          const otherHorse = horses.find(h => h.number === otherHorseNumber);
+          if (!otherHorse) return 0;
 
-        // もう一方の馬を特定
-        const otherHorseNumber = other.horse1 === winNumber ? other.horse2 : other.horse1;
-        const otherHorse = horses.find(h => h.number === otherHorseNumber);
-        if (!otherHorse) return 0;
-
-        // 単勝馬が1着、もう一方の馬が2-3着になる確率
-        // 単勝馬が1着の場合、もう一方の馬は2着か3着になれば良い
-        const placeProb = otherHorse.placeProb - otherHorse.winProb;
-        return win.probability * placeProb;
+          // 単勝馬が1着、もう一方の馬が2-3着になる確率
+          const placeProb = otherHorse.placeProb - otherHorse.winProb;
+          return win.probability * placeProb;
+        } else {
+          // 単勝馬がワイドの組み合わせに含まれない場合
+          const horse1 = horses.find(h => h.number === other.horse1);
+          const horse2 = horses.find(h => h.number === other.horse2);
+          if (!horse1 || !horse2) return 0;
+          
+          let totalProb = 0;
+          
+          // W-1-2 のパターン（Wは単勝馬で必ず1着）
+          totalProb += win.probability * 
+                      ((horse1.placeProb - horse1.winProb) / 2) * 
+                      ((horse2.placeProb - horse2.winProb) / 2);
+          
+          // W-2-1 のパターン
+          totalProb += win.probability * 
+                      ((horse2.placeProb - horse2.winProb) / 2) * 
+                      ((horse1.placeProb - horse1.winProb) / 2);
+          
+          return totalProb;
+        }
         
       case "馬連":
         // 単勝馬が馬連の組み合わせに含まれ、もう一頭が2着の場合に的中
@@ -404,34 +423,26 @@ const calculateWinJointProb = (win: BetProposal, other: BetProposal, horses: Hor
         
       case "３連複":
         if (!other.horse1 || !other.horse2 || !other.horse3) return 0;
-        if (other.horse1 !== placeNumber && other.horse2 !== placeNumber && other.horse3 !== placeNumber) return 0;
-
-        // 他の2頭を特定
-        const otherHorses = [other.horse1, other.horse2, other.horse3]
-            .filter(num => num !== placeNumber)
-            .map(num => horses.find(h => h.number === num))
-            .filter((h): h is HorseData => h !== undefined);
-
-        if (otherHorses.length !== 2) return 0;
-
-        // 3頭が3着以内に入る確率
-        return placeHorse.placeProb * otherHorses[0].placeProb * otherHorses[1].placeProb;
+        
+        // 複勝馬が3連複の組み合わせに含まれているかチェック
+        if (other.horse1 === placeNumber || other.horse2 === placeNumber || other.horse3 === placeNumber) {
+          // 複勝馬が含まれている場合は3連複の的中確率をそのまま返す
+          return other.probability;
+        }
+        
+        // 複勝馬が3連複の組み合わせに含まれない場合は0
+        return 0;
         
       case "３連単":
         if (!other.horse1 || !other.horse2 || !other.horse3) return 0;
         
-        if (other.horse1 === placeNumber) {
-            // 複勝対象馬が1着指定の場合
-            const secondHorse = horses.find(h => h.number === other.horse2);
-            const thirdHorse = horses.find(h => h.number === other.horse3);
-            if (!secondHorse || !thirdHorse) return 0;
-            return placeHorse.winProb * secondHorse.placeProb / 2 * thirdHorse.placeProb / 2;
-        } else if (other.horse2 === placeNumber || other.horse3 === placeNumber) {
-            // 複勝対象馬が2着か3着指定の場合
-            const firstHorse = horses.find(h => h.number === other.horse1);
-            if (!firstHorse) return 0;
-            return firstHorse.winProb * placeHorse.placeProb / 2;
+        // 複勝馬が3連単の組み合わせに含まれているかチェック
+        if (other.horse1 === placeNumber || other.horse2 === placeNumber || other.horse3 === placeNumber) {
+          // 複勝馬が含まれている場合は3連単の的中確率をそのまま返す
+          return other.probability;
         }
+        
+        // 複勝馬が3連単の組み合わせに含まれない場合は0
         return 0;
         
       default:
