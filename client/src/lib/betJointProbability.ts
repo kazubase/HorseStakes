@@ -229,12 +229,6 @@ const calculateWinJointProb = (win: BetProposal, other: BetProposal, horses: Hor
         // 必要な情報の確認
         if (!place.frame1 || !other.frame1 || !other.frame2) return 0;
         
-        // 複勝馬の枠が枠連の組み合わせに含まれていない場合は0
-        if (other.frame1 !== place.frame1 && other.frame2 !== place.frame1) return 0;
-        
-        // もう一方の枠を特定
-        const otherFrame = other.frame1 === place.frame1 ? other.frame2 : other.frame1;
-        
         // 各枠の馬を取得し、馬番順にソート
         const frame1Horses = horses.filter(h => h.frame === other.frame1)
           .sort((a, b) => a.number - b.number);
@@ -248,14 +242,13 @@ const calculateWinJointProb = (win: BetProposal, other: BetProposal, horses: Hor
           frame2Horses.forEach(horse2 => {
             // 同じ馬は除外
             if (horse1.number === horse2.number) return;
-            
             // 重複を避けるため、馬番の小さい方が枠1の馬の場合のみ計算
             if (horse1.number > horse2.number) return;
             
             let combinationProb = 0;
             
-            // ケース1と2: 複勝馬が1-2着
             if (horse1.number === placeNumber || horse2.number === placeNumber) {
+              // ケース1と2: 複勝馬が1-2着
               // 複勝馬が1着のケース
               if (horse1.number === placeNumber) {
                 combinationProb += horse1.winProb * ((horse2.placeProb - horse2.winProb) / 2);
@@ -271,37 +264,14 @@ const calculateWinJointProb = (win: BetProposal, other: BetProposal, horses: Hor
               if (horse2.number === placeNumber) {
                 combinationProb += horse1.winProb * ((horse2.placeProb - horse2.winProb) / 2);
               }
-            }
-            
-            // ケース3: 複勝馬が3着
-            if (horse1.number === placeNumber || horse2.number === placeNumber) {
+            } else {
+              // ケース3: 複勝馬が3着で、枠連の馬が1-2着
               const thirdPlaceProb = (placeHorse.placeProb - placeHorse.winProb) / 2;
-              const otherHorse = horse1.number === placeNumber ? horse2 : horse1;
               
-              // 残りの馬を取得する際に、枠連の的中条件を考慮
-              const remainingHorses = horses.filter(h => {
-                // 枠連が同じ枠の組み合わせの場合（例：5-5, 6-6など）
-                if (other.frame1 === other.frame2) {
-                  return h.frame === other.frame1 && 
-                         h.number !== placeNumber && 
-                         h.number !== otherHorse.number;
-                }
-                // 枠連が異なる枠の組み合わせの場合（例：5-6, 1-2など）
-                else {
-                  const targetFrame = otherHorse.frame === other.frame1 ? other.frame2 : other.frame1;
-                  return h.frame === targetFrame && h.number !== placeNumber;
-                }
-              }).sort((a, b) => a.number - b.number);
-              
-              remainingHorses.forEach(remainingHorse => {
-                // otherHorseが1着、remainingHorseが2着のケース
-                const prob1 = otherHorse.winProb * ((remainingHorse.placeProb - remainingHorse.winProb) / 2) * thirdPlaceProb;
-                combinationProb += prob1;
-
-                // remainingHorseが1着、otherHorseが2着のケース
-                const prob2 = remainingHorse.winProb * ((otherHorse.placeProb - otherHorse.winProb) / 2) * thirdPlaceProb;
-                combinationProb += prob2;
-              });
+              // horse1が1着、horse2が2着のケース
+              combinationProb += horse1.winProb * ((horse2.placeProb - horse2.winProb) / 2) * thirdPlaceProb;
+              // horse2が1着、horse1が2着のケース
+              combinationProb += horse2.winProb * ((horse1.placeProb - horse1.winProb) / 2) * thirdPlaceProb;
             }
             totalProb += combinationProb;
           });
