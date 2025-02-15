@@ -1,12 +1,25 @@
 import { BetProposal, HorseData } from './betCalculator';
 import { calculateJointProbability } from './betJointProbability';
 
+// 条件付き確率の結果を表すインターフェース
+interface BetCorrelation {
+  condition: {
+    type: string;
+    horses: string;
+  };
+  target: {
+    type: string;
+    horses: string;
+  };
+  probability: number;
+}
+
 // 馬券間の条件付き確率を計算する関数
 export const calculateConditionalProbability = (
   proposals: BetProposal[], 
   horses: HorseData[]
-): { bet1: string; bet2: string; conditionalProb: number }[] => {
-  const conditionalProbs: { bet1: string; bet2: string; conditionalProb: number }[] = [];
+): BetCorrelation[] => {
+  const correlations: BetCorrelation[] = [];
   
   for (let i = 0; i < proposals.length - 1; i++) {
     for (let j = i + 1; j < proposals.length; j++) {
@@ -23,23 +36,35 @@ export const calculateConditionalProbability = (
       
       // ゼロでない条件付き確率のみを記録
       if (conditionalProb1Given2 > 0) {
-        conditionalProbs.push({
-          bet1: `${bet1.type}(${bet1.horseName})`,
-          bet2: `${bet2.type}(${bet2.horseName})`,
-          conditionalProb: Number(conditionalProb1Given2.toFixed(3))
+        correlations.push({
+          condition: {
+            type: bet1.type,
+            horses: bet1.horseName
+          },
+          target: {
+            type: bet2.type,
+            horses: bet2.horseName
+          },
+          probability: Number(conditionalProb1Given2.toFixed(3))
         });
       }
       
       if (conditionalProb2Given1 > 0) {
-        conditionalProbs.push({
-          bet1: `${bet2.type}(${bet2.horseName})`,
-          bet2: `${bet1.type}(${bet1.horseName})`,
-          conditionalProb: Number(conditionalProb2Given1.toFixed(3))
+        correlations.push({
+          condition: {
+            type: bet2.type,
+            horses: bet2.horseName
+          },
+          target: {
+            type: bet1.type,
+            horses: bet1.horseName
+          },
+          probability: Number(conditionalProb2Given1.toFixed(3))
         });
       }
     }
   }
   
   // 条件付き確率の高い順にソート
-  return conditionalProbs.sort((a, b) => b.conditionalProb - a.conditionalProb);
+  return correlations.sort((a, b) => b.probability - a.probability);
 }; 

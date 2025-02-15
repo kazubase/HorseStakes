@@ -185,6 +185,57 @@ export interface StrategyFeedback {
   };
 }
 
+// 馬券間の相関関係分析用のインターフェース
+export interface BetCorrelationAnalysis {
+  correlationGroups: {
+    type: string;  // "強い相関" | "中程度の相関" | "弱い相関"
+    threshold: number;  // 条件付き確率の閾値（例：0.8, 0.5, 0.2）
+    patterns: {
+      description: string;  // 相関パターンの説明
+      examples: {
+        condition: {
+          type: string;
+          horses: string;
+        };
+        target: {
+          type: string;
+          horses: string;
+        };
+        probability: number;
+      }[];
+    }[];
+  }[];
+  insights: {
+    betTypeCorrelations: {
+      type1: string;
+      type2: string;
+      correlationLevel: string;
+      explanation: string;
+    }[];
+    riskDiversification: {
+      recommendation: string;
+      reasoning: string;
+      suggestedCombinations: {
+        bet1: string;
+        bet2: string;
+        reason: string;
+      }[];
+    };
+  };
+}
+
+export interface BetCorrelation {
+  condition: {
+    type: string;
+    horses: string;
+  };
+  target: {
+    type: string;
+    horses: string;
+  };
+  probability: number;
+}
+
 // getGeminiStrategy関数を更新
 export const getGeminiStrategy = async (
   bettingCandidates: BettingCandidate[],
@@ -201,7 +252,8 @@ export const getGeminiStrategy = async (
     bettingOptions: BettingOption[];
   },
   riskRatio: number,
-  feedback?: StrategyFeedback[]
+  feedback?: StrategyFeedback[],
+  correlations?: BetCorrelation[]
 ): Promise<GeminiResponse> => {
   try {
     // 出馬表情報の作成
@@ -233,21 +285,18 @@ export const getGeminiStrategy = async (
     
     /*
      * -------------------------
-     * Step 1: 馬券候補の期待値とリスク評価
+     * Step 1: 馬券間の相関関係とリスク評価
      * -------------------------
      */
-    const step1Prompt = `【ステップ1：馬券候補の期待値とリスク評価】
+    const step1Prompt = `【ステップ1：馬券間の相関関係とリスク評価】
 
-以下の出馬表と馬券候補一覧に基づき、各馬券候補の評価を行います。
+以下の出馬表、馬券候補一覧、および条件付き確率データに基づき、包括的な分析を行います。
 
 【評価項目】
-1. 券種
-2. 買い目（対象馬番）
-3. オッズ
-4. 的中確率
-5. 期待値
-6. リスク分類（低/中/高）
-7. 推奨度
+1. 各馬券の基本評価（期待値、リスク）
+2. 馬券間の相関関係
+3. リスク分散効果
+4. 推奨される組み合わせ
 
 【出馬表】
 ${raceCardInfo}
@@ -255,36 +304,66 @@ ${raceCardInfo}
 【馬券候補一覧】
 ${bettingCandidatesList}
 
+【条件付き確率データ】
+${correlations ? correlations.map(c => 
+  `・${c.condition.type}(${c.condition.horses})が的中 → ${c.target.type}(${c.target.horses})が的中する確率: ${(c.probability * 100).toFixed(1)}%`
+).join('\n') : '条件付き確率データなし'}
+
 【出力形式】
 \`\`\`json
 {
-  "candidates": [
-    {
-      "type": "券種（例：ワイド）",
-      "horses": ["1", "2"],
-      "odds": 30.9,
-      "probability": 0.15,
-      "expectedValue": 3.63,
-      "risk": "中",
-      "recommendation": "推奨候補"
-    }
-  ],
-  "summary": {
-    "mainPoints": [
-      "主なポイント1",
-      "主なポイント2"
+  "analysis": {
+    "correlationPatterns": [
+      {
+        "strength": "強い相関（0.8以上）" | "中程度の相関（0.5-0.8）" | "弱い相関（0.5未満）",
+        "patterns": [
+          {
+            "description": "相関パターンの説明",
+            "examples": [
+              {
+                "bet1": "馬券1の説明",
+                "bet2": "馬券2の説明",
+                "probability": "条件付き確率",
+                "interpretation": "この相関の意味"
+              }
+            ]
+          }
+        ]
+      }
     ],
-    "recommendedTypes": ["推奨される券種1", "推奨される券種2"],
-    "keyHorses": ["注目すべき馬番1", "注目すべき馬番2"]
+    "betTypeAnalysis": [
+      {
+        "type": "券種（例：単勝）",
+        "characteristics": "特徴の説明",
+        "correlations": "他券種との相関性",
+        "riskProfile": "リスク特性"
+      }
+    ],
+    "riskDiversification": {
+      "recommendations": [
+        {
+          "combination": ["馬券1", "馬券2"],
+          "reasoning": "推奨理由",
+          "expectedEffect": "期待される効果"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "keyInsights": [
+      "重要な洞察1",
+      "重要な洞察2"
+    ],
+    "recommendedStrategy": "総合的な推奨戦略の説明"
   }
 }
 \`\`\`
 
 【指示】
-1. 各馬券候補について、上記の評価項目に基づいて客観的な分析を行ってください
-2. 期待値の計算は（オッズ × 的中確率 - 1）を用いてください
-3. リスク分類は的中確率と投資額を考慮して判断してください
-4. 全体の戦略についても、主要なポイント、推奨される券種、注目馬を含めて簡潔にまとめてください`;
+1. 条件付き確率データを活用して、馬券間の相関関係を詳細に分析してください
+2. 相関の強さに基づいてパターンを分類し、それぞれの特徴を説明してください
+3. リスク分散の観点から、効果的な馬券の組み合わせを提案してください
+4. 分析結果を踏まえた具体的な投資戦略を提示してください`;
 
     if (process.env.NODE_ENV === 'development') {
       console.log('ステップ1プロンプト:\n', step1Prompt);
@@ -306,116 +385,15 @@ ${bettingCandidatesList}
     }) ?? throwError('ステップ1の解析結果の取得に失敗しました');
     const step1Data = await step1Response.json();
 
-    /*
-     * -------------------------
-     * Step 2: 馬券間の相関関係とリスク分散効果の分析
-     * -------------------------
-     */
-    const step2Prompt = `【ステップ2：馬券間の相関関係とリスク分散効果の分析】
-
-ステップ1の分析結果を踏まえ、馬券間の相関関係とリスク分散効果について詳細な分析を行います。
-
-【分析の観点】
-1. 各馬券候補間の相関関係の評価
-2. 異なる券種の組み合わせによるリスク分散効果
-3. 有力馬を軸とした戦略的組み合わせ
-
-【出馬表】
-${raceCardInfo}
-
-【馬券候補一覧】
-${bettingCandidatesList}
-
-【出力形式】
-\`\`\`json
-{
-  "analysis": {
-    "sections": [
-      {
-        "theme": "有力馬を軸とした分析",
-        "targetHorses": ["1", "2"],
-        "positiveCorrelation": "この組み合わせによる相乗効果の分析",
-        "riskDiversificationEffect": "リスク分散の可能性",
-        "recommendation": "具体的な推奨事項"
-      }
-    ],
-    "betTypeAnalysis": [
-      {
-        "type": "単勝・複勝分析",
-        "characteristics": "的中率と期待値の特徴",
-        "correlationWithOthers": "他の券種との相関性",
-        "riskProfile": "リスク特性"
-      },
-      {
-        "type": "馬連・ワイド分析",
-        "characteristics": "的中率と期待値の特徴",
-        "correlationWithOthers": "他の券種との相関性",
-        "riskProfile": "リスク特性"
-      },
-      {
-        "type": "3連系馬券分析",
-        "characteristics": "的中率と期待値の特徴",
-        "correlationWithOthers": "他の券種との相関性",
-        "riskProfile": "リスク特性"
-      }
-    ],
-    "riskManagementStrategies": [
-      {
-        "strategy": "戦略名",
-        "description": "戦略の詳細",
-        "expectedEffect": "期待される効果"
-      }
-    ],
-    "overallSummary": {
-      "keyPoints": [
-        "主要な分析ポイント1",
-        "主要な分析ポイント2"
-      ],
-      "recommendedCombinations": [
-        {
-          "combination": ["券種1", "券種2"],
-          "reason": "推奨理由"
-        }
-      ]
-    }
-  }
-}
-\`\`\`
-
-【指示】
-1. 有力馬を中心とした馬券の相関関係を分析
-2. 各券種の特性とリスク分散効果を評価
-3. 具体的なリスク管理戦略を提案
-4. 全体の最適な組み合わせを提示`;
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('ステップ2プロンプト:\n', step2Prompt);
-    }
-
-    const step2Response = await fetchWithRetry('/api/gemini', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': getCsrfToken(),
-      },
-      credentials: 'same-origin',
-      body: JSON.stringify({
-        prompt: step2Prompt,
-        model: 'gemini-2.0-flash-001',
-        thought: false,
-        apiVersion: 'v1alpha'
-      })
-    }) ?? throwError('ステップ2の解析結果の取得に失敗しました');
-    const step2Data = await step2Response.json();
 
     /*
      * -------------------------
-     * Step 3: 予算制約下での馬券選択と購入戦略の策定
+     * Step 2: 予算制約下での馬券選択と購入戦略の策定
      * -------------------------
      */
-    const step3Prompt = `【ステップ3：予算制約下での購入戦略策定】
+    const step2Prompt = `【ステップ2：予算制約下での購入戦略策定】
 
-ステップ1、2の分析結果を踏まえ、予算${totalBudget.toLocaleString()}円の制約下で、最適な馬券購入戦略を策定します。
+ステップ1の分析結果を踏まえ、予算${totalBudget.toLocaleString()}円の制約下で、最適な馬券購入戦略を策定します。
 
 【戦略策定の基準】
 1. 期待値の高い馬券を重視
@@ -500,10 +478,10 @@ ${bettingCandidatesList}
 5. 的中確率と期待払戻のバランスを考慮`;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('ステップ3プロンプト:\n', step3Prompt);
+      console.log('ステップ2プロンプト:\n', step2Prompt);
     }
 
-    const step3Response = await fetchWithRetry('/api/gemini', {
+    const step2Response = await fetchWithRetry('/api/gemini', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -511,17 +489,17 @@ ${bettingCandidatesList}
       },
       credentials: 'same-origin',
       body: JSON.stringify({
-        prompt: step3Prompt,
+        prompt: step2Prompt,
         model: 'gemini-2.0-flash-001',
         thought: false,
         apiVersion: 'v1alpha'
       })
-    }) ?? throwError('ステップ3の解析結果の取得に失敗しました');
-    const step3Data = await step3Response.json();
+    }) ?? throwError('ステップ2の解析結果の取得に失敗しました');
+      const step2Data = await step2Response.json();
 
     /*
      * -------------------------
-     * Step 4: 最終的な戦略の出力（JSON形式）
+     * Step 3: 最終的な戦略の出力（JSON形式）
      * -------------------------
      */
     let feedbackPrompt = '';
@@ -550,17 +528,14 @@ ${feedback.map(f => {
 `;
     }
 
-    const step4Prompt = `【ステップ4：最終戦略のJSON形式出力】
+    const step3Prompt = `【ステップ3：最終戦略のJSON形式出力】
 以下はこれまでの分析結果です。
 
-■ ステップ1：期待値とリスク評価
+■ ステップ1：相関関係とリスク分散効果の分析
 ${typeof step1Data === 'object' ? JSON.stringify(step1Data, null, 2) : step1Data}
 
-■ ステップ2：相関関係とリスク分散効果の分析
+■ ステップ2：予算制約下での購入戦略策定
 ${typeof step2Data === 'object' ? JSON.stringify(step2Data, null, 2) : step2Data}
-
-■ ステップ3：予算制約下での購入戦略策定
-${typeof step3Data === 'object' ? JSON.stringify(step3Data, null, 2) : step3Data}
 
 ${feedbackPrompt}
 
@@ -591,10 +566,10 @@ json
     }
   }}`;
     if (process.env.NODE_ENV === 'development') {
-      console.log('ステップ4プロンプト:\n', step4Prompt);
+      console.log('ステップ3プロンプト:\n', step3Prompt);
     }
 
-    const step4Response = await fetchWithRetry('/api/gemini', {
+    const step3Response = await fetchWithRetry('/api/gemini', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -602,22 +577,22 @@ json
       },
       credentials: 'same-origin',
       body: JSON.stringify({
-        prompt: step4Prompt,
+        prompt: step3Prompt,
         model: 'gemini-2.0-flash-001',
         thought: false,
         apiVersion: 'v1alpha'
       })
-    }) ?? throwError('ステップ4の最終出力の取得に失敗しました');
-    const step4Data = await step4Response.json();
+    }) ?? throwError('ステップ3の最終出力の取得に失敗しました');
+    const step3Data = await step3Response.json();
 
     // JSONコードブロック内のJSON部分を抽出してパースする
-    if (!step4Data || !step4Data.strategy || !step4Data.strategy.description) {
+    if (!step3Data || !step3Data.strategy || !step3Data.strategy.description) {
       throw new Error('最終戦略のレスポンス形式が不正です');
     }
     let parsedStrategy: any;
     try {
       const jsonRegex = /```json\s*\n([\s\S]*?)\n```/;
-      const match = jsonRegex.exec(step4Data.strategy.description);
+      const match = jsonRegex.exec(step3Data.strategy.description);
       if (match && match[1]) {
         parsedStrategy = JSON.parse(match[1]);
       } else {
