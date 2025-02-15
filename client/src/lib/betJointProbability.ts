@@ -531,16 +531,58 @@ const calculateWinJointProb = (win: BetProposal, other: BetProposal, horses: Hor
         const sanrenpuku3 = horses.find(h => h.number === other.horse3);
         if (!sanrenpuku1 || !sanrenpuku2 || !sanrenpuku3) return 0;
         
-        // 3連複の1-2着馬の枠が枠連の組み合わせと一致する場合のみ的中
+        let sanrenpukuProb = 0;
+        
+        // 3連複の6通りの着順パターンそれぞれについて計算
+        // 1-2-3のパターン
         if ((sanrenpuku1.frame === frame1 && sanrenpuku2.frame === frame2) ||
-            (sanrenpuku1.frame === frame2 && sanrenpuku2.frame === frame1) ||
-            (sanrenpuku1.frame === frame1 && sanrenpuku3.frame === frame2) ||
-            (sanrenpuku1.frame === frame2 && sanrenpuku3.frame === frame1) ||
-            (sanrenpuku2.frame === frame1 && sanrenpuku3.frame === frame2) ||
-            (sanrenpuku2.frame === frame2 && sanrenpuku3.frame === frame1)) {
-          return other.probability;
+            (sanrenpuku1.frame === frame2 && sanrenpuku2.frame === frame1)) {
+            sanrenpukuProb += sanrenpuku1.winProb * 
+                        ((sanrenpuku2.placeProb - sanrenpuku2.winProb) / 2) * 
+                        ((sanrenpuku3.placeProb - sanrenpuku3.winProb) / 2);
         }
-        return 0;
+        
+        // 1-3-2のパターン
+        if ((sanrenpuku1.frame === frame1 && sanrenpuku3.frame === frame2) ||
+            (sanrenpuku1.frame === frame2 && sanrenpuku3.frame === frame1)) {
+            sanrenpukuProb += sanrenpuku1.winProb * 
+                        ((sanrenpuku3.placeProb - sanrenpuku3.winProb) / 2) * 
+                        ((sanrenpuku2.placeProb - sanrenpuku2.winProb) / 2);
+        }
+        
+        // 2-1-3のパターン
+        if ((sanrenpuku2.frame === frame1 && sanrenpuku1.frame === frame2) ||
+            (sanrenpuku2.frame === frame2 && sanrenpuku1.frame === frame1)) {
+            sanrenpukuProb += sanrenpuku2.winProb * 
+                        ((sanrenpuku1.placeProb - sanrenpuku1.winProb) / 2) * 
+                        ((sanrenpuku3.placeProb - sanrenpuku3.winProb) / 2);
+        }
+        
+        // 2-3-1のパターン
+        if ((sanrenpuku2.frame === frame1 && sanrenpuku3.frame === frame2) ||
+            (sanrenpuku2.frame === frame2 && sanrenpuku3.frame === frame1)) {
+            sanrenpukuProb += sanrenpuku2.winProb * 
+                        ((sanrenpuku3.placeProb - sanrenpuku3.winProb) / 2) * 
+                        ((sanrenpuku1.placeProb - sanrenpuku1.winProb) / 2);
+        }
+        
+        // 3-1-2のパターン
+        if ((sanrenpuku3.frame === frame1 && sanrenpuku1.frame === frame2) ||
+            (sanrenpuku3.frame === frame2 && sanrenpuku1.frame === frame1)) {
+            sanrenpukuProb += sanrenpuku3.winProb * 
+                        ((sanrenpuku1.placeProb - sanrenpuku1.winProb) / 2) * 
+                        ((sanrenpuku2.placeProb - sanrenpuku2.winProb) / 2);
+        }
+        
+        // 3-2-1のパターン
+        if ((sanrenpuku3.frame === frame1 && sanrenpuku2.frame === frame2) ||
+            (sanrenpuku3.frame === frame2 && sanrenpuku2.frame === frame1)) {
+            sanrenpukuProb += sanrenpuku3.winProb * 
+                        ((sanrenpuku2.placeProb - sanrenpuku2.winProb) / 2) * 
+                        ((sanrenpuku1.placeProb - sanrenpuku1.winProb) / 2);
+        }
+        
+        return sanrenpukuProb;
         
       case "３連単":
         if (!other.horse1 || !other.horse2 || !other.horse3) return 0;
