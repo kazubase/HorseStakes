@@ -6,9 +6,6 @@ export const calculateJointProbability = (
   bet2: BetProposal, 
   horses: HorseData[]
 ): number => {
-  if (process.env.NODE_ENV === 'development') {
-    console.group('同時確率の計算');
-  }
   
   let result = 0;
   
@@ -40,11 +37,6 @@ export const calculateJointProbability = (
     default:
       return 0;
   }
-  
-  if (process.env.NODE_ENV === 'development') {
-    console.groupEnd();
-  }
-  
   return result;
 };
 
