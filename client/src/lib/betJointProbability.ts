@@ -455,105 +455,136 @@ const calculateWinJointProb = (win: BetProposal, other: BetProposal, horses: Hor
     const frame1 = wakuren.frame1;
     const frame2 = wakuren.frame2;
     
+    if (frame1 === undefined || frame2 === undefined) return 0;
+    
     switch(other.type) {
       case "単勝":
-        // 単勝馬の枠が枠連の組み合わせに含まれている場合のみ的中
-        const winFrame = other.frame1;
-        if (frame1 === winFrame || frame2 === winFrame) {
-          // 単勝馬が的中し、もう一方の枠から2着が出る確率
-          return other.probability * (wakuren.probability / other.probability);
-        }
         return 0;
         
       case "複勝":
-        // 複勝馬の枠が枠連の組み合わせに含まれている場合
-        const placeFrame = other.frame1;
-        if (frame1 === placeFrame || frame2 === placeFrame) {
-          // 複勝馬が1-2着に入り、もう一方の枠から相手が出る確率
-          return other.probability * (wakuren.probability / other.probability);
-        }
         return 0;
         
       case "枠連":
-        if (frame1 === other.frame1 && frame2 === other.frame2) {
-          // 完全に同じ枠連の場合
+        // 同じ枠連の場合（順序は関係ない）
+        if ((frame1 === other.frame1 && frame2 === other.frame2) ||
+            (frame1 === other.frame2 && frame2 === other.frame1)) {
           return wakuren.probability;
-        } else if ((frame1 === other.frame1 && frame2 === other.frame2) ||
-                   (frame1 === other.frame2 && frame2 === other.frame1)) {
-          // 枠の順序が逆の場合（同じ組み合わせ）
-          return wakuren.probability;
-        } else if (frame1 === other.frame1 || frame1 === other.frame2 ||
-                   frame2 === other.frame1 || frame2 === other.frame2) {
-          // 片方の枠が共通する場合
-          return wakuren.probability * other.probability * 0.5;
         }
-        // 共通する枠がない場合
-        return wakuren.probability * other.probability * 0.3;
+        return 0;
         
       case "ワイド":
-        // ワイドの両馬の枠を確認
-        const wideFrame1 = other.frame1;
-        const wideFrame2 = other.frame2;
-        if ((frame1 === wideFrame1 && frame2 === wideFrame2) ||
-            (frame1 === wideFrame2 && frame2 === wideFrame1)) {
-          // 枠が完全に一致する場合
-          return Math.min(wakuren.probability, other.probability);
-        } else if (frame1 === wideFrame1 || frame1 === wideFrame2 ||
-                   frame2 === wideFrame1 || frame2 === wideFrame2) {
-          // 片方の枠が共通する場合
-          return wakuren.probability * (other.probability / 2);
-        }
-        return wakuren.probability * other.probability * 0.3;
+        if (!other.horse1 || !other.horse2 || !frame1 || !frame2) return 0;
+        
+        const horse1 = horses.find(h => h.number === other.horse1);
+        const horse2 = horses.find(h => h.number === other.horse2);
+        if (!horse1 || !horse2) return 0;
+
+        // 各枠の馬を取得し、馬番順にソート
+        const frame1Horses = horses.filter(h => h.frame === frame1)
+          .sort((a, b) => a.number - b.number);
+        const frame2Horses = horses.filter(h => h.frame === frame2)
+          .sort((a, b) => a.number - b.number);
+        
+        let totalProb = 0;
+        
+        // 枠連を馬連の組み合わせに分解して計算（重複を避けるため、馬番の小さい方を基準に計算）
+        frame1Horses.forEach(f1horse => {
+          frame2Horses.forEach(f2horse => {
+            // 同じ馬は除外
+            if (f1horse.number === f2horse.number) return;
+            // 重複を避けるため、馬番の小さい方が枠1の馬の場合のみ計算
+            if (f1horse.number > f2horse.number) return;
+            
+            // ワイドの馬との関係を確認
+            const isWideHorse1 = f1horse.number === horse1.number || f2horse.number === horse1.number;
+            const isWideHorse2 = f1horse.number === horse2.number || f2horse.number === horse2.number;
+            
+            if (isWideHorse1 || isWideHorse2) {
+              let combinationProb = 0;
+
+              if (isWideHorse1 && isWideHorse2) {
+                // 両方ワイドの馬の場合
+                combinationProb += f1horse.winProb * ((f2horse.placeProb - f2horse.winProb) / 2);
+                combinationProb += f2horse.winProb * ((f1horse.placeProb - f1horse.winProb) / 2);
+              } else {
+                // 片方だけワイドの馬の場合
+                const wideHorse = isWideHorse1 ? horse1 : horse2;
+                const otherWideHorse = isWideHorse1 ? horse2 : horse1;
+                const frameHorse = f1horse.number === wideHorse.number ? f1horse : f2horse;
+                const otherFrameHorse = f1horse.number === wideHorse.number ? f2horse : f1horse;
+
+                combinationProb += frameHorse.winProb * ((otherFrameHorse.placeProb - otherFrameHorse.winProb) / 2) * 
+                                 ((otherWideHorse.placeProb - otherWideHorse.winProb) / 2);
+                combinationProb += otherFrameHorse.winProb * ((frameHorse.placeProb - frameHorse.winProb) / 2) * 
+                                 ((otherWideHorse.placeProb - otherWideHorse.winProb) / 2);
+              }
+              totalProb += combinationProb;
+            }
+          });
+        });
+        
+        return totalProb;
         
       case "馬連":
-        // 馬連の両馬の枠を確認
-        const umarenFrame1 = other.frame1;
-        const umarenFrame2 = other.frame2;
-        if ((frame1 === umarenFrame1 && frame2 === umarenFrame2) ||
-            (frame1 === umarenFrame2 && frame2 === umarenFrame1)) {
-          // 枠が完全に一致する場合
-          return Math.min(wakuren.probability, other.probability);
-        } else if (frame1 === umarenFrame1 || frame1 === umarenFrame2 ||
-                   frame2 === umarenFrame1 || frame2 === umarenFrame2) {
-          // 片方の枠が共通する場合
-          return wakuren.probability * (other.probability / 2);
+        if (!other.horse1 || !other.horse2) return 0;
+        
+        const umaren1 = horses.find(h => h.number === other.horse1);
+        const umaren2 = horses.find(h => h.number === other.horse2);
+        if (!umaren1 || !umaren2) return 0;
+        
+        // 馬連の両馬の枠が枠連の組み合わせと一致する場合のみ的中
+        if ((umaren1.frame === frame1 && umaren2.frame === frame2) ||
+            (umaren1.frame === frame2 && umaren2.frame === frame1)) {
+          return other.probability;
         }
-        return wakuren.probability * other.probability * 0.3;
+        return 0;
         
       case "馬単":
-        // 馬単の1着馬と2着馬の枠を確認
-        const umatanFrame1 = other.frame1;
-        const umatanFrame2 = other.frame2;
-        if ((frame1 === umatanFrame1 && frame2 === umatanFrame2) ||
-            (frame1 === umatanFrame2 && frame2 === umatanFrame1)) {
-          // 枠が一致する場合（順序は考慮しない）
-          return wakuren.probability * (other.probability / wakuren.probability);
-        } else if (frame1 === umatanFrame1 || frame1 === umatanFrame2 ||
-                   frame2 === umatanFrame1 || frame2 === umatanFrame2) {
-          // 片方の枠が共通する場合
-          return wakuren.probability * (other.probability / 2);
+        if (!other.horse1 || !other.horse2) return 0;
+        
+        const umatan1 = horses.find(h => h.number === other.horse1);
+        const umatan2 = horses.find(h => h.number === other.horse2);
+        if (!umatan1 || !umatan2) return 0;
+        
+        // 馬単の1-2着馬の枠が枠連の組み合わせと一致する場合のみ的中
+        if ((umatan1.frame === frame1 && umatan2.frame === frame2) ||
+            (umatan1.frame === frame2 && umatan2.frame === frame1)) {
+          return other.probability;
         }
-        return wakuren.probability * other.probability * 0.3;
+        return 0;
         
       case "３連複":
-        // 3連複の3頭の枠を確認
-        const sanrenpukuFrames = [other.frame1, other.frame2, other.frame3];
-        const hasCommonFrame = sanrenpukuFrames.some(f => f === frame1 || f === frame2);
-        if (hasCommonFrame) {
-          // 共通する枠がある場合
-          return wakuren.probability * (other.probability / 2);
+        if (!other.horse1 || !other.horse2 || !other.horse3) return 0;
+        
+        const sanrenpuku1 = horses.find(h => h.number === other.horse1);
+        const sanrenpuku2 = horses.find(h => h.number === other.horse2);
+        const sanrenpuku3 = horses.find(h => h.number === other.horse3);
+        if (!sanrenpuku1 || !sanrenpuku2 || !sanrenpuku3) return 0;
+        
+        // 3連複の1-2着馬の枠が枠連の組み合わせと一致する場合のみ的中
+        if ((sanrenpuku1.frame === frame1 && sanrenpuku2.frame === frame2) ||
+            (sanrenpuku1.frame === frame2 && sanrenpuku2.frame === frame1) ||
+            (sanrenpuku1.frame === frame1 && sanrenpuku3.frame === frame2) ||
+            (sanrenpuku1.frame === frame2 && sanrenpuku3.frame === frame1) ||
+            (sanrenpuku2.frame === frame1 && sanrenpuku3.frame === frame2) ||
+            (sanrenpuku2.frame === frame2 && sanrenpuku3.frame === frame1)) {
+          return other.probability;
         }
-        return wakuren.probability * other.probability * 0.2;
+        return 0;
         
       case "３連単":
-        // 3連単の3頭の枠を確認（着順考慮）
-        const sanrentanFrames = [other.frame1, other.frame2, other.frame3];
-        const hasCommonFrameInOrder = sanrentanFrames.slice(0, 2).some(f => f === frame1 || f === frame2);
-        if (hasCommonFrameInOrder) {
-          // 1-2着に共通する枠がある場合
-          return wakuren.probability * (other.probability / wakuren.probability);
+        if (!other.horse1 || !other.horse2 || !other.horse3) return 0;
+        
+        const sanrentan1 = horses.find(h => h.number === other.horse1);
+        const sanrentan2 = horses.find(h => h.number === other.horse2);
+        if (!sanrentan1 || !sanrentan2) return 0;
+        
+        // 3連単の1-2着馬の枠が枠連の組み合わせと一致する場合のみ的中
+        if ((sanrentan1.frame === frame1 && sanrentan2.frame === frame2) ||
+            (sanrentan1.frame === frame2 && sanrentan2.frame === frame1)) {
+          return other.probability;
         }
-        return wakuren.probability * other.probability * 0.2;
+        return 0;
         
       default:
         return 0;
