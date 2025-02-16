@@ -807,6 +807,56 @@ export const calculateBetProposalsWithGemini = async (
   riskRatio: number
 ): Promise<BetProposal[]> => {
   try {
+    if (process.env.NODE_ENV === 'development') {
+      console.group('calculateBetProposalsWithGemini');
+      console.log('Input parameters:', {
+        horses: horses.length,
+        totalBudget,
+        bettingOptions: allBettingOptions.bettingOptions.length,
+        riskRatio
+      });
+    }
+
+    const proposals = calculateBetProposals(
+      horses, 
+      totalBudget, 
+      riskRatio,
+      allBettingOptions.bettingOptions.filter(b => b.type === "複勝")
+        .map(b => ({ horse1: b.horse1, oddsMin: b.odds, oddsMax: b.odds })),
+      allBettingOptions.bettingOptions.filter(b => b.type === "枠連")
+        .map(b => ({ frame1: b.frame1, frame2: b.frame2, odds: b.odds })),
+      allBettingOptions.bettingOptions.filter(b => b.type === "馬連")
+        .map(b => ({ horse1: b.horse1, horse2: b.horse2, odds: b.odds })),
+      allBettingOptions.bettingOptions.filter(b => b.type === "ワイド")
+        .map(b => ({ horse1: b.horse1, horse2: b.horse2, oddsMin: b.odds, oddsMax: b.odds })),
+      allBettingOptions.bettingOptions.filter(b => b.type === "馬単")
+        .map(b => ({ horse1: b.horse1, horse2: b.horse2, odds: b.odds })),
+      allBettingOptions.bettingOptions.filter(b => b.type === "３連複")
+        .map(b => ({ horse1: b.horse1, horse2: b.horse2, horse3: b.horse3, odds: b.odds })),
+      allBettingOptions.bettingOptions.filter(b => b.type === "３連単")
+        .map(b => ({ horse1: b.horse1, horse2: b.horse2, horse3: b.horse3, odds: b.odds }))
+    );
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Generated proposals:', {
+        count: proposals.length,
+        proposals: proposals.map(p => ({
+          type: p.type,
+          horses: p.horses,
+          stake: p.stake
+        }))
+      });
+    }
+
+    const conditionalProbabilities = proposals.length > 0 ? calculateConditionalProbability(proposals, horses) : [];
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Conditional probabilities:', {
+        count: conditionalProbabilities.length,
+        probabilities: conditionalProbabilities
+      });
+    }
+    
     const geminiOptions = {
       horses: horses.map(h => ({
         name: h.name,
@@ -816,32 +866,26 @@ export const calculateBetProposalsWithGemini = async (
         frame: h.frame,
         number: h.number
       })),
-      bettingOptions: allBettingOptions.bettingOptions
+      bettingOptions: allBettingOptions.bettingOptions,
+      conditionalProbabilities
     };
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Gemini options prepared:', {
+        horsesCount: geminiOptions.horses.length,
+        bettingOptionsCount: geminiOptions.bettingOptions.length,
+        conditionalProbabilitiesCount: geminiOptions.conditionalProbabilities.length
+      });
+      console.groupEnd();
+    }
     
     const geminiResponse = await getGeminiStrategy([], totalBudget, geminiOptions, riskRatio);
-    
-    // 資金配分の最適化
     return optimizeBetAllocation(geminiResponse.strategy.recommendations, totalBudget);
   } catch (error) {
-    console.error('Bet calculation error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Bet calculation error:', error);
+      console.groupEnd();
+    }
     return [];
   }
-};
-
-const createBetProposal = (option: BettingOption, stake: number): BetProposal => {
-  return {
-    type: option.type,
-    horses: [option.horseName],
-    horseName: option.horseName,
-    stake: stake,
-    expectedReturn: stake * option.odds,
-    probability: option.prob,
-    frame1: option.frame1,
-    frame2: option.frame2,
-    frame3: option.frame3,
-    horse1: option.horse1,
-    horse2: option.horse2,
-    horse3: option.horse3
-  };
 };

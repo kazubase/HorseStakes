@@ -16,7 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { BettingOptionsTable } from "@/components/BettingOptionsTable";
-
+import { calculateConditionalProbability } from '@/lib/betConditionalProbability';
 interface RecommendedBet {
   type: string;
   horses: string[];
@@ -90,6 +90,41 @@ const GeminiStrategy = memo(function GeminiStrategy({ recommendedBets, budget, r
     enabled: !!id,
   });
 
+  const { data: latestFukuOdds } = useQuery<FukuOdds[]>({
+    queryKey: [`/api/fuku-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
+  const { data: latestWakurenOdds } = useQuery<WakurenOdds[]>({
+    queryKey: [`/api/wakuren-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
+  const { data: latestUmarenOdds } = useQuery<UmarenOdds[]>({
+    queryKey: [`/api/umaren-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
+  const { data: latestWideOdds } = useQuery<WideOdds[]>({
+    queryKey: [`/api/wide-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
+  const { data: latestUmatanOdds } = useQuery<UmatanOdds[]>({
+    queryKey: [`/api/umatan-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
+  const { data: latestSanrenpukuOdds } = useQuery<Fuku3Odds[]>({
+    queryKey: [`/api/sanrenpuku-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
+  const { data: latestSanrentanOdds } = useQuery<Tan3Odds[]>({
+    queryKey: [`/api/sanrentan-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
   const winProbsStr = new URLSearchParams(window.location.search).get("winProbs") || "{}";
   const placeProbsStr = new URLSearchParams(window.location.search).get("placeProbs") || "{}";
   
@@ -119,6 +154,65 @@ const GeminiStrategy = memo(function GeminiStrategy({ recommendedBets, budget, r
         requestId: currentRequestId 
       }));
       
+      const proposals = calculateBetProposals(
+        horses.map(horse => ({
+          name: horse.name,
+          odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
+          winProb: winProbs[horse.id] / 100,
+          placeProb: placeProbs[horse.id] / 100,
+          frame: horse.frame,
+          number: horse.number
+        })),
+        budget,
+        riskRatio,
+        latestFukuOdds?.map(odd => ({
+          horse1: Number(odd.horseId),
+          oddsMin: Number(odd.oddsMin),
+          oddsMax: Number(odd.oddsMax)
+        })) || [],
+        latestWakurenOdds?.map(odd => ({
+          frame1: odd.frame1,
+          frame2: odd.frame2,
+          odds: Number(odd.odds)
+        })) || [],
+        latestUmarenOdds?.map(odd => ({
+          horse1: Number(odd.horse1),
+          horse2: Number(odd.horse2),
+          odds: Number(odd.odds)
+        })) || [],
+        latestWideOdds?.map(odd => ({
+          horse1: Number(odd.horse1),
+          horse2: Number(odd.horse2),
+          oddsMin: Number(odd.oddsMin),
+          oddsMax: Number(odd.oddsMax)
+        })) || [],
+        latestUmatanOdds?.map(odd => ({
+          horse1: Number(odd.horse1),
+          horse2: Number(odd.horse2),
+          odds: Number(odd.odds)
+        })) || [],
+        latestSanrenpukuOdds?.map(odd => ({
+          horse1: Number(odd.horse1),
+          horse2: Number(odd.horse2),
+          horse3: Number(odd.horse3),
+          odds: Number(odd.odds)
+        })) || [],
+        latestSanrentanOdds?.map(odd => ({
+          horse1: Number(odd.horse1),
+          horse2: Number(odd.horse2),
+          horse3: Number(odd.horse3),
+          odds: Number(odd.odds)
+        })) || []
+      );
+      const conditionalProbabilities = calculateConditionalProbability(proposals, horses.map(horse => ({
+        name: horse.name,
+        odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
+        winProb: winProbs[horse.id] / 100,
+        placeProb: placeProbs[horse.id] / 100,
+        frame: horse.frame,
+        number: horse.number
+      })));
+
       const allBettingOptions = {
         horses: horses.map((horse: Horse) => ({
           name: horse.name,
@@ -134,13 +228,24 @@ const GeminiStrategy = memo(function GeminiStrategy({ recommendedBets, budget, r
           odds: bet.expectedReturn / bet.stake,
           prob: bet.probability,
           ev: bet.expectedReturn - bet.stake,
-          frame1: 0,
-          frame2: 0,
-          frame3: 0,
-          horse1: 0,
-          horse2: 0,
-          horse3: 0
-        })) || []
+          frame1: bet.frame1 || 0,
+          frame2: bet.frame2 || 0,
+          frame3: bet.frame3 || 0,
+          horse1: bet.horse1 || 0,
+          horse2: bet.horse2 || 0,
+          horse3: bet.horse3 || 0
+        })) || [],
+        conditionalProbabilities: conditionalProbabilities.map(corr => ({
+          condition: {
+            type: corr.condition.type,
+            horses: corr.condition.horses
+          },
+          target: {
+            type: corr.target.type,
+            horses: corr.target.horses
+          },
+          probability: corr.probability
+        }))
       };
 
       if (process.env.NODE_ENV === 'development') {
@@ -153,7 +258,7 @@ const GeminiStrategy = memo(function GeminiStrategy({ recommendedBets, budget, r
       const response = await getGeminiStrategy(
         [], 
         budget, 
-        allBettingOptions, 
+        allBettingOptions,
         riskRatio,
         feedbacks
       );
@@ -205,7 +310,7 @@ const GeminiStrategy = memo(function GeminiStrategy({ recommendedBets, budget, r
       });
       console.error('Strategy Error:', err);
     }
-  }, [id, budget, riskRatio, recommendedBets, horses, lastRequestTime, state.isRequesting, feedbacks, onStrategyChange]);
+  }, [id, budget, riskRatio, recommendedBets, horses, lastRequestTime, state.isRequesting, feedbacks, onStrategyChange, latestFukuOdds, latestWakurenOdds, latestUmarenOdds, latestWideOdds, latestUmatanOdds, latestSanrenpukuOdds, latestSanrentanOdds]);
 
   // 初期化とstrategy復元
   useEffect(() => {
@@ -379,7 +484,7 @@ const GeminiStrategy = memo(function GeminiStrategy({ recommendedBets, budget, r
           <PopoverTrigger asChild>
             <Button variant="outline" className="gap-2">
               <Brain className="h-4 w-4" />
-              戦略を調整
+              戦略の調整
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80">

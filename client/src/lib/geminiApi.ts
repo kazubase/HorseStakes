@@ -250,12 +250,15 @@ export const getGeminiStrategy = async (
       number: number;
     }[];
     bettingOptions: BettingOption[];
+    conditionalProbabilities: BetCorrelation[];
   },
   riskRatio: number,
-  feedback?: StrategyFeedback[],
-  correlations?: BetCorrelation[]
+  feedback?: StrategyFeedback[]
 ): Promise<GeminiResponse> => {
   try {
+    // correlationsをallBettingOptionsから取得
+    const correlations = allBettingOptions.conditionalProbabilities || [];
+
     // 出馬表情報の作成
     const raceCardInfo = allBettingOptions.horses
       .sort((a, b) => a.number - b.number)
@@ -283,6 +286,13 @@ export const getGeminiStrategy = async (
 
     const bettingCandidatesList = generateBettingCandidatesList();
     
+    // 条件付き確率一覧を生成
+    const correlationsText = correlations && correlations.length > 0 
+    ? `${correlations.map(c => 
+        `・${c.condition.type}「${c.condition.horses}」が的中 → ${c.target.type}「${c.target.horses}」が的中する確率: ${(c.probability * 100).toFixed(1)}%`
+      ).join('\n')}`
+    : '条件付き確率データなし';
+
     /*
      * -------------------------
      * Step 1: 馬券間の相関関係とリスク評価
@@ -304,10 +314,8 @@ ${raceCardInfo}
 【馬券候補一覧】
 ${bettingCandidatesList}
 
-【条件付き確率データ】
-${correlations ? correlations.map(c => 
-  `・${c.condition.type}(${c.condition.horses})が的中 → ${c.target.type}(${c.target.horses})が的中する確率: ${(c.probability * 100).toFixed(1)}%`
-).join('\n') : '条件付き確率データなし'}
+【条件付き確率一覧】
+${correlationsText}
 
 【出力形式】
 \`\`\`json
