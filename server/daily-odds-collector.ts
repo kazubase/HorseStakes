@@ -123,9 +123,9 @@ class DailyOddsCollector {
                 const raceNumber = parseInt($raceNum.find('img').attr('alt')?.replace('レース', '') || '0');
 
                 // テスト用の条件：東京5Rの場合も含む
-                const isTestTarget = venue === '東京' && raceNumber === 9;
+                //const isTestTarget = venue === '東京' && raceNumber === 9;
                 
-                if (isGrade || isTestTarget) {
+                if (isGrade) {
                   // 時刻を日本語形式から変換（例：「15時45分」→ [15, 45]）
                   const timeText = $raceTime.text().trim();
                   console.log('Race time text:', timeText);

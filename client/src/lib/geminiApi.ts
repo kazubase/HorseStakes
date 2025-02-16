@@ -288,10 +288,23 @@ export const getGeminiStrategy = async (
     
     // 条件付き確率一覧を生成
     const correlationsText = correlations && correlations.length > 0 
-    ? `${correlations.map(c => 
-        `・${c.condition.type}「${c.condition.horses}」が的中 → ${c.target.type}「${c.target.horses}」が的中する確率: ${(c.probability * 100).toFixed(1)}%`
-      ).join('\n')}`
-    : '条件付き確率データなし';
+      ? `条件付き確率データ:
+${JSON.stringify(
+  correlations.reduce((acc, c) => {
+    // 券種でグループ化
+    if (!acc[c.condition.type]) {
+      acc[c.condition.type] = {};
+    }
+    // 馬番組み合わせでグループ化
+    if (!acc[c.condition.type][c.condition.horses]) {
+      acc[c.condition.type][c.condition.horses] = {};
+    }
+    // ターゲットの馬券と確率を追加
+    acc[c.condition.type][c.condition.horses][`${c.target.type}[${c.target.horses}]`] = c.probability;
+    return acc;
+  }, {} as Record<string, Record<string, Record<string, number>>>
+), null, 2)}`
+      : '条件付き確率データなし';
 
     /*
      * -------------------------
@@ -300,13 +313,14 @@ export const getGeminiStrategy = async (
      */
     const step1Prompt = `【ステップ1：馬券間の相関関係とリスク評価】
 
-以下の出馬表、馬券候補一覧、および条件付き確率データに基づき、包括的な分析を行います。
+以下の出馬表、馬券候補一覧、および条件付き確率一覧に基づき、包括的な分析を行います。
+リスク選好度（riskRatio）は${riskRatio}です。（2-20の範囲で、20が最もリスク許容度が高い）
 
 【評価項目】
 1. 各馬券の基本評価（期待値、リスク）
 2. 馬券間の相関関係
 3. リスク分散効果
-4. 推奨される組み合わせ
+4. リスク選好度に応じた推奨組み合わせ
 
 【出馬表】
 ${raceCardInfo}
@@ -321,9 +335,19 @@ ${correlationsText}
 \`\`\`json
 {
   "analysis": {
+    "riskProfile": {
+      "riskRatio": ${riskRatio},
+      "interpretation": "リスク選好度の解釈",
+      "recommendedRiskDistribution": {
+        "lowRisk": "配分割合（%）",
+        "mediumRisk": "配分割合（%）",
+        "highRisk": "配分割合（%）"
+      }
+    },
     "correlationPatterns": [
       {
         "strength": "強い相関（0.8以上）" | "中程度の相関（0.5-0.8）" | "弱い相関（0.5未満）",
+        "riskLevel": "低/中/高",
         "patterns": [
           {
             "description": "相関パターンの説明",
@@ -332,7 +356,8 @@ ${correlationsText}
                 "bet1": "馬券1の説明",
                 "bet2": "馬券2の説明",
                 "probability": "条件付き確率",
-                "interpretation": "この相関の意味"
+                "interpretation": "この相関の意味",
+                "riskConsideration": "リスク選好度との適合性"
               }
             ]
           }
@@ -344,7 +369,8 @@ ${correlationsText}
         "type": "券種（例：単勝）",
         "characteristics": "特徴の説明",
         "correlations": "他券種との相関性",
-        "riskProfile": "リスク特性"
+        "riskProfile": "リスク特性",
+        "suitability": "現在のリスク選好度との適合性（0-100%）"
       }
     ],
     "riskDiversification": {
@@ -352,7 +378,8 @@ ${correlationsText}
         {
           "combination": ["馬券1", "馬券2"],
           "reasoning": "推奨理由",
-          "expectedEffect": "期待される効果"
+          "expectedEffect": "期待される効果",
+          "riskAlignment": "リスク選好度との整合性の説明"
         }
       ]
     }
@@ -362,16 +389,23 @@ ${correlationsText}
       "重要な洞察1",
       "重要な洞察2"
     ],
-    "recommendedStrategy": "総合的な推奨戦略の説明"
+    "riskBasedStrategy": "リスク選好度を考慮した戦略の説明",
+    "recommendedApproach": {
+      "conservative": "ローリスクアプローチの説明（リスク回避的な場合）",
+      "balanced": "バランス型アプローチの説明（中程度のリスク選好の場合）",
+      "aggressive": "ハイリスクアプローチの説明（リスク選好的な場合）",
+      "recommended": "現在のリスク選好度に最適なアプローチ"
+    }
   }
 }
 \`\`\`
 
 【指示】
-1. 条件付き確率データを活用して、馬券間の相関関係を詳細に分析してください
-2. 相関の強さに基づいてパターンを分類し、それぞれの特徴を説明してください
-3. リスク分散の観点から、効果的な馬券の組み合わせを提案してください
-4. 分析結果を踏まえた具体的な投資戦略を提示してください`;
+1. リスク選好度（${riskRatio}）を考慮した相関関係の分析を行ってください
+2. 相関パターンをリスクレベルで分類し、現在のリスク選好度との適合性を評価してください
+3. リスク分散とリターンのバランスを考慮した馬券の組み合わせを提案してください
+4. リスク選好度に応じた具体的な投資戦略を提示してください
+5. 各券種について、現在のリスク選好度との適合性を評価してください`;
 
     if (process.env.NODE_ENV === 'development') {
       console.log('ステップ1プロンプト:\n', step1Prompt);
@@ -401,12 +435,16 @@ ${correlationsText}
      */
     const step2Prompt = `【ステップ2：予算制約下での購入戦略策定】
 
-ステップ1の分析結果を踏まえ、予算${totalBudget.toLocaleString()}円の制約下で、最適な馬券購入戦略を策定します。
+■ ステップ1の分析結果
+${typeof step1Data === 'object' ? JSON.stringify(step1Data, null, 2) : step1Data}
+
+上記の分析結果を踏まえ、予算${totalBudget.toLocaleString()}円の制約下で、最適な馬券購入戦略を策定します。
+リスク選好度（riskRatio）は${riskRatio}です。（2-20の範囲で、20が最もリスク許容度が高い）
 
 【戦略策定の基準】
 1. 期待値の高い馬券を重視
-2. リスク分散を考慮した券種の組み合わせ
-3. 予算配分の最適化
+2. ステップ1で分析した相関関係に基づくリスク分散
+3. リスク選好度に応じた予算配分の最適化
 4. 的中確率とリターンのバランス
 
 【出馬表】
@@ -415,75 +453,83 @@ ${raceCardInfo}
 【馬券候補一覧】
 ${bettingCandidatesList}
 
+【指示】
+1. リスク選好度（${riskRatio}）に基づいた投資戦略を立案
+2. ステップ1で特定された相関パターンを考慮した馬券選択
+3. 予算${totalBudget.toLocaleString()}円をリスク選好度に応じて効果的に配分
+4. リスク分散とリターンのバランスを考慮した投資配分を提示
+5. リスク選好度に適した相関関係の活用方法を説明
+
 【出力形式】
 \`\`\`json
 {
   "purchaseStrategy": {
     "budget": ${totalBudget},
-    "strategyPillars": [
-      "戦略の柱1",
-      "戦略の柱2",
-      "戦略の柱3",
-      "戦略の柱4"
-    ],
-    "bets": [
-      {
-        "type": "券種",
-        "horses": ["1", "2"],
-        "amount": 1000,
-        "odds": 10.0,
-        "hitProbability": 15.00,
-        "expectedValue": 0.50,
-        "expectedPayout": 10000,
-        "reason": "選択理由"
-      }
-    ],
-    "totalSpent": ${totalBudget},
-    "expectedOutcome": {
-      "hitRate": "的中率の予測",
-      "highPayout": "高配当期待度",
-      "riskManagement": "リスク管理方針"
+    "riskProfile": {
+      "riskRatio": ${riskRatio},
+      "interpretation": "現在のリスク選好度の解釈",
+      "strategyAlignment": "リスク選好度に基づく戦略の方向性"
     },
-    "riskAnalysis": {
-      "lowRiskBets": {
-        "percentage": 30,
-        "types": ["複勝", "ワイド"]
-      },
-      "mediumRiskBets": {
-        "percentage": 40,
-        "types": ["馬連", "馬単"]
-      },
-      "highRiskBets": {
-        "percentage": 30,
-        "types": ["3連複", "3連単"]
-      }
+    "overview": {
+      "mainStrategy": "全体的な戦略の要約（1-2文）",
+      "keyPoints": [
+        "重要なポイント1",
+        "重要なポイント2"
+      ]
     },
-    "investmentDistribution": {
-      "byBetType": [
+    "correlationStrategy": {
+      "highCorrelation": [
         {
-          "type": "券種",
-          "percentage": 25,
-          "amount": 2500
+          "pattern": "単勝[1]→複勝[1]のような高相関パターン",
+          "application": "この相関をどう活用/回避するか",
+          "riskConsideration": "リスク選好度との整合性"
         }
       ],
-      "byRiskLevel": [
+      "synergies": [
         {
-          "level": "リスクレベル",
-          "percentage": 30,
-          "amount": 3000
+          "combination": ["券種1", "券種2"],
+          "merit": "組み合わせの利点",
+          "riskAlignment": "リスク選好度との適合性"
         }
       ]
+    },
+    "recommendations": [
+      {
+        "type": "券種",
+        "horses": ["馬番"],
+        "stake": 1000,
+        "odds": 10.0,
+        "probability": 0.15,
+        "expectedValue": 0.50,
+        "riskLevel": "低/中/高",
+        "reasoning": {
+          "selection": "選択理由",
+          "stakeSize": "投資額の根拠",
+          "correlationContext": "他の馬券との関連性",
+          "riskJustification": "リスク選好度との整合性の説明"
+        }
+      }
+    ],
+    "riskManagement": {
+      "distribution": [
+        {
+          "riskLevel": "低/中/高",
+          "percentage": 30,
+          "betTypes": ["券種1", "券種2"],
+          "rationale": "リスク選好度を考慮した配分理由"
+        }
+      ],
+      "hedgingStrategy": "リスク選好度に応じたヘッジ方針"
+    },
+    "expectedOutcomes": {
+      "bestCase": "最良のシナリオ",
+      "worstCase": "最悪のシナリオ",
+      "mostLikely": "最も可能性の高いシナリオ",
+      "riskReturnProfile": "リスクリターン特性の説明"
     }
   }
 }
-\`\`\`
-
-【指示】
-1. 期待値とリスクのバランスを考慮した購入戦略を策定
-2. 予算${totalBudget.toLocaleString()}円の範囲内で最適な配分を行う
-3. 各馬券の選択理由を具体的に説明
-4. リスク分散を考慮した投資配分を提示
-5. 的中確率と期待払戻のバランスを考慮`;
+\`\`\``;
 
     if (process.env.NODE_ENV === 'development') {
       console.log('ステップ2プロンプト:\n', step2Prompt);
@@ -547,6 +593,9 @@ ${typeof step2Data === 'object' ? JSON.stringify(step2Data, null, 2) : step2Data
 
 ${feedbackPrompt}
 
+予算は${totalBudget.toLocaleString()}円、リスク選好度（riskRatio）は${riskRatio}です。
+（2-20の範囲で、20が最もリスク許容度が高い）
+
 【出馬表】
 ${raceCardInfo}
 
@@ -554,25 +603,40 @@ ${raceCardInfo}
 ${bettingCandidatesList}
 
 【指示】
-上記情報を統合し、以下のJSON形式に従って最終的な競馬投資戦略を回答してください。
+上記情報を統合し、予算とリスク選好度を考慮した最終的な競馬投資戦略を以下のJSON形式で回答してください。
 
 json
 {
   "strategy": {
+    "budget": ${totalBudget},
+    "riskProfile": {
+      "riskRatio": ${riskRatio},
+      "interpretation": "現在のリスク選好度の解釈"
+    },
     "description": "戦略の優位性を3文以内で",
     "recommendations": [
       {
         "type": "馬券種類",
         "horses": ["馬番"],
+        "stake": 投資額,
         "odds": オッズ,
         "probability": 的中確率(例: 0.5),
-        "reason": "選択理由を簡潔に説明"
+        "expectedValue": 期待値,
+        "riskLevel": "リスクレベル（低/中/高）",
+        "reason": "選択理由と予算配分の根拠を簡潔に説明"
       }
     ],
     "summary": {
-      "riskLevel": "リスクレベル（低/中/高）"
+      "riskLevel": "全体的なリスクレベル（低/中/高）",
+      "riskDistribution": {
+        "lowRisk": "低リスク馬券への配分割合（%）",
+        "mediumRisk": "中リスク馬券への配分割合（%）",
+        "highRisk": "高リスク馬券への配分割合（%）"
+      },
+      "expectedReturn": "期待される総合的なリターン"
     }
-  }}`;
+  }
+}`;
     if (process.env.NODE_ENV === 'development') {
       console.log('ステップ3プロンプト:\n', step3Prompt);
     }
