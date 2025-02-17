@@ -50,7 +50,7 @@ export default function Budget() {
     const winProbs = currentParams.get('winProbs') || '{}';
     const placeProbs = currentParams.get('placeProbs') || '{}';
 
-    window.location.href = `/strategy/${id}?budget=${budget}&risk=${riskRatio}&winProbs=${winProbs}&placeProbs=${placeProbs}`;
+    window.location.href = `/races/${id}/betting-strategy?budget=${budget}&risk=${riskRatio}&winProbs=${winProbs}&placeProbs=${placeProbs}`;
   };
 
   return (

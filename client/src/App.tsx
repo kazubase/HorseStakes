@@ -6,6 +6,7 @@ import PlaceProbability from "@/pages/PlaceProbability";
 import Budget from "@/pages/Budget";
 import Strategy from "@/pages/Strategy";
 import Guide from "@/pages/Guide";
+import { BettingStrategy } from "@/pages/BettingStrategy";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/predict/place/:id" component={PlaceProbability} />
           <Route path="/predict/budget/:id" component={Budget} />
           <Route path="/strategy/:id" component={Strategy} />
+          <Route path="/races/:id/betting-strategy" component={BettingStrategy} />
         </Switch>
       </div>
     </div>
