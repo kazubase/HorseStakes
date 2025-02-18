@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAtom } from 'jotai';
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import { BettingOptionsTable } from "@/components/BettingOptionsTable";
 import { getGeminiStrategy, type BettingCandidate, type GeminiResponse } from '@/lib/geminiApi';
 import { Spinner } from "@/components/ui/spinner";
 import type { BetProposal, BettingOption } from '@/lib/betCalculator';
+import { evaluateBettingOptions } from '@/lib/betEvaluation';
 
 // 拡張されたBetProposalの型定義
 interface ExtendedBetProposal {
@@ -62,8 +63,6 @@ export function BettingAnalysis() {
   const { id } = useParams();
   const [location] = useLocation();
   const [horses, setHorses] = useAtom(horsesAtom);
-  const [winProbs] = useAtom(winProbsAtom);
-  const [placeProbs] = useAtom(placeProbsAtom);
   const [analysisResult, setAnalysisResult] = useAtom<GeminiResponse | null>(analysisResultAtom);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -71,10 +70,11 @@ export function BettingAnalysis() {
   const budget = Number(urlParams.get('budget')) || 10000;
   const riskRatio = Number(urlParams.get('riskRatio')) || 1.0;
 
-  const winProbsParam = urlParams.get('winProbs') || '{}';
-  const placeProbsParam = urlParams.get('placeProbs') || '{}';
-  const winProbsData = JSON.parse(winProbsParam);
-  const placeProbsData = JSON.parse(placeProbsParam);
+  const winProbsStr = new URLSearchParams(window.location.search).get("winProbs") || "{}";
+  const placeProbsStr = new URLSearchParams(window.location.search).get("placeProbs") || "{}";
+  
+  const winProbs = JSON.parse(winProbsStr);
+  const placeProbs = JSON.parse(placeProbsStr);
 
   const { data: horsesData, isError: isHorsesError } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
@@ -127,114 +127,78 @@ export function BettingAnalysis() {
     }
   }, [horsesData, setHorses]);
 
-  useEffect(() => {
-    const analyze = async () => {
-      if (!horses || !latestOdds || !latestFukuOdds || 
-          !wakurenOdds || !umarenOdds || !wideOdds || !umatanOdds || 
-          !sanrenpukuOdds || !sanrentanOdds) return;
-      
-      setIsAnalyzing(true);
-      try {
-        const horsesWithProbs = horses.map(horse => ({
-          ...horse,
-          odds: Number(latestOdds.find(o => o.horseId === horse.id)?.odds || 0),
-          winProb: Number(winProbsData[horse.id]) / 100 || 0,
-          placeProb: Number(placeProbsData[horse.id]) / 100 || 0
-        }));
+  // Step 1: 馬券の期待値計算
+  const bettingOptions = useMemo(() => {
+    if (!horses || !latestOdds || !latestFukuOdds || !wakurenOdds || !umarenOdds || !wideOdds || !umatanOdds || !sanrenpukuOdds || !sanrentanOdds) return [];
+    return evaluateBettingOptions(
+      horses.map(horse => ({
+        name: horse.name,
+        odds: Number(latestOdds.find(odd => odd.horseId === horse.id)?.odds || 0),
+        winProb: winProbs[horse.id] / 100,
+        placeProb: placeProbs[horse.id] / 100,
+        frame: horse.frame,
+        number: horse.number
+      })),
+      budget,
+      riskRatio,
+      latestFukuOdds.map(odd => ({
+        horse1: Number(odd.horseId),
+        oddsMin: Number(odd.oddsMin),
+        oddsMax: Number(odd.oddsMax)
+      })),
+      wakurenOdds.map(odd => ({
+        frame1: odd.frame1,
+        frame2: odd.frame2,
+        odds: Number(odd.odds)
+      })),
+      umarenOdds.map(odd => ({
+        horse1: Number(odd.horse1),
+        horse2: Number(odd.horse2),
+        odds: Number(odd.odds)
+      })),
+      wideOdds.map(odd => ({
+        horse1: Number(odd.horse1),
+        horse2: Number(odd.horse2),
+        oddsMin: Number(odd.oddsMin),
+        oddsMax: Number(odd.oddsMax)
+      })),
+      umatanOdds.map(odd => ({
+        horse1: Number(odd.horse1),
+        horse2: Number(odd.horse2),
+        odds: Number(odd.odds)
+      })),
+      sanrenpukuOdds.map(odd => ({
+        horse1: Number(odd.horse1),
+        horse2: Number(odd.horse2),
+        horse3: Number(odd.horse3),
+        odds: Number(odd.odds)
+      })),
+      sanrentanOdds.map(odd => ({
+        horse1: Number(odd.horse1),
+        horse2: Number(odd.horse2),
+        horse3: Number(odd.horse3),
+        odds: Number(odd.odds)
+      }))
+    );
+  }, [horses, latestOdds, latestFukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, sanrenpukuOdds, sanrentanOdds]);
 
-        const betProposals = calculateBetProposals(
-          horsesWithProbs,
-          budget,
-          riskRatio,
-          latestFukuOdds.map(o => ({
-            horse1: horses.find(h => h.id === o.horseId)?.number || 0,
-            oddsMin: Number(o.oddsMin),
-            oddsMax: Number(o.oddsMax)
-          })),
-          wakurenOdds.map(o => ({
-            frame1: o.frame1,
-            frame2: o.frame2,
-            odds: Number(o.odds)
-          })),
-          umarenOdds.map(o => ({
-            horse1: horses.find(h => h.id === o.horse1)?.number || 0,
-            horse2: horses.find(h => h.id === o.horse2)?.number || 0,
-            odds: Number(o.odds)
-          })),
-          wideOdds.map(o => ({
-            horse1: horses.find(h => h.id === o.horse1)?.number || 0,
-            horse2: horses.find(h => h.id === o.horse2)?.number || 0,
-            oddsMin: Number(o.oddsMin),
-            oddsMax: Number(o.oddsMax)
-          })),
-          umatanOdds.map(o => ({
-            horse1: horses.find(h => h.id === o.horse1)?.number || 0,
-            horse2: horses.find(h => h.id === o.horse2)?.number || 0,
-            odds: Number(o.odds)
-          })),
-          sanrenpukuOdds.map(o => ({
-            horse1: horses.find(h => h.id === o.horse1)?.number || 0,
-            horse2: horses.find(h => h.id === o.horse2)?.number || 0,
-            horse3: horses.find(h => h.id === o.horse3)?.number || 0,
-            odds: Number(o.odds)
-          })),
-          sanrentanOdds.map(o => ({
-            horse1: horses.find(h => h.id === o.horse1)?.number || 0,
-            horse2: horses.find(h => h.id === o.horse2)?.number || 0,
-            horse3: horses.find(h => h.id === o.horse3)?.number || 0,
-            odds: Number(o.odds)
-          }))
-        ) as ExtendedBetProposal[];
+  /*
+  // Step 2: Geminiによる分析
+  const geminiAnalysis = useQuery({
+    queryKey: ['gemini-analysis', bettingOptions],
+    queryFn: () => getGeminiStrategy(bettingOptions, budget, riskRatio)
+  });
 
-        const bettingCandidates: BettingCandidate[] = betProposals.map(bet => ({
-          type: bet.type,
-          horseName: bet.horseName,
-          odds: Number(latestOdds.find(o => o.horseId === bet.horse1)?.odds || 0),
-          probability: `${(bet.probability * 100).toFixed(1)}%`,
-          expectedValue: (bet.expectedReturn / bet.stake - 1).toFixed(2)
-        }));
-
-        const geminiOptions: GeminiOptions = {
-          horses: horsesWithProbs,
-          bettingOptions: betProposals.map(bet => ({
-            type: bet.type,
-            horseName: bet.horseName,
-            odds: Number(latestOdds.find(o => o.horseId === bet.horse1)?.odds || 0),
-            prob: bet.probability,
-            ev: bet.expectedReturn / bet.stake - 1,
-            frame1: bet.frame1 || 0,
-            frame2: bet.frame2 || 0,
-            frame3: bet.frame3 || 0,
-            horse1: bet.horse1 || 0,
-            horse2: bet.horse2 || 0,
-            horse3: bet.horse3 || 0
-          })),
-          conditionalProbabilities: []
-        };
-
-        const result = await getGeminiStrategy(
-          bettingCandidates,
-          budget,
-          geminiOptions,
-          riskRatio
-        );
-
-        setAnalysisResult(result);
-      } catch (error) {
-        console.error('分析エラー:', error);
-      } finally {
-        setIsAnalyzing(false);
-      }
-    };
-
-    analyze();
-  }, [horses, latestOdds, latestFukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, sanrenpukuOdds, sanrentanOdds, budget, riskRatio]);
-
-  useEffect(() => {
-    console.log('horses:', horses);
-    console.log('winProbs:', winProbs);
-    console.log('placeProbs:', placeProbs);
-  }, [horses, winProbs, placeProbs]);
+  // Step 3: ポートフォリオ最適化
+  const optimizedPortfolio = useMemo(() => {
+    if (!geminiAnalysis.data) return null;
+    return optimizePortfolio(
+      geminiAnalysis.data.strategy.recommendations,
+      budget,
+      riskRatio
+    );
+  }, [geminiAnalysis.data, budget, riskRatio]);
+  */
 
   if (isHorsesError) {
     return (
@@ -356,8 +320,8 @@ export function BettingAnalysis() {
                   {horses
                     .map(horse => ({
                       ...horse,
-                      winProb: Number(winProbsData[horse.id.toString()]) / 100 || 0,
-                      placeProb: Number(placeProbsData[horse.id.toString()]) / 100 || 0
+                      winProb: Number(winProbs[horse.id]) / 100 || 0,
+                      placeProb: Number(placeProbs[horse.id]) / 100 || 0
                     }))
                     .sort((a, b) => b.winProb - a.winProb)
                     .slice(0, 5)
