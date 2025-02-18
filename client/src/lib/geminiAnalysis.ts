@@ -114,7 +114,7 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
   // 出馬表情報の作成
   const raceCardInfo = input.horses
     .sort((a, b) => a.number - b.number)
-    .map(horse => `${horse.frame}枠${horse.number}番 ${horse.name}`)
+    .map(horse => `${horse.frame}枠${horse.number}番 ${horse.name.padEnd(20)} 単勝${(horse.winProb * 100).toFixed(1).padStart(4)}% 複勝${(horse.placeProb * 100).toFixed(1).padStart(4)}%`)
     .join('\n');
 
   // 馬券候補一覧の作成
