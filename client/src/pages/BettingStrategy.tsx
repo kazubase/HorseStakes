@@ -1,6 +1,8 @@
 import { useParams } from "wouter";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAtom } from 'jotai';
+import { useQuery } from "@tanstack/react-query";
+import { Race } from "@db/schema";
 import { currentStepAtom } from '@/stores/bettingStrategy';
 import { BettingAnalysis } from "@/components/betting/BettingAnalysis";
 import { BettingSelection } from "@/components/betting/BettingSelection";
@@ -12,6 +14,12 @@ import { AlertCircle } from "lucide-react";
 export function BettingStrategy() {
   const { id } = useParams();
   const [currentStep] = useAtom(currentStepAtom);
+
+    // レース情報を取得
+  const { data: race } = useQuery<Race>({
+    queryKey: [`/api/races/${id}`],
+    enabled: !!id,
+  });
   
   if (!id) {
     return (
@@ -28,6 +36,18 @@ export function BettingStrategy() {
 
   return (
     <MainLayout>
+    <div className="space-y-6">
+      {/* レース情報ヘッダー */}
+      <div className="rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm p-4">
+        <h2 className="text-xl font-bold">
+          {race?.name || 'レース名を読み込み中...'}
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          {race?.venue} - {race?.startTime ? new Date(race.startTime).toLocaleString('ja-JP') : ''}
+          </p>
+        </div>
+      </div>
+
       <div className="container mx-auto py-6 space-y-6">
         {/* ステップ進行状況 */}
         <BettingStepProgress />
