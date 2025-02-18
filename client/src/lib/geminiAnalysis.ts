@@ -128,7 +128,7 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
         .filter(bet => bet.type === type)
         .map(bet => {
           const expectedValue = bet.probability * bet.expectedReturn / bet.stake - 1;
-          return `${bet.horseName} [オッズ:${(bet.expectedReturn / bet.stake).toFixed(1)}, 的中確率:${(bet.probability * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
+          return `${bet.horseName} [オッズ:${(bet.expectedReturn / bet.stake).toFixed(1)}, 的中確率:${(bet.probability * 100).toFixed(1)}%, 期待値:${expectedValue.toFixed(2)}]`;
         })
         .join('\n');
       return candidates ? `\n${type}候補:\n${candidates}` : '';
@@ -140,12 +140,15 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
   const correlationsText = input.correlations && input.correlations.length > 0
     ? `条件付き確率データ:\n${JSON.stringify(
         input.correlations.reduce((acc, c) => {
+          // 券種でグループ化
           if (!acc[c.condition.type]) {
             acc[c.condition.type] = {};
           }
+          // 馬番組み合わせでグループ化
           if (!acc[c.condition.type][c.condition.horses]) {
             acc[c.condition.type][c.condition.horses] = {};
           }
+          // ターゲットの馬券と確率を追加
           acc[c.condition.type][c.condition.horses][`${c.target.type}[${c.target.horses}]`] = c.probability;
           return acc;
         }, {} as Record<string, Record<string, Record<string, number>>>

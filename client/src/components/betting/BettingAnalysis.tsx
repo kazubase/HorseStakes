@@ -20,6 +20,7 @@ import { Spinner } from "@/components/ui/spinner";
 import type { BetProposal, BettingOption } from '@/lib/betCalculator';
 import { evaluateBettingOptions } from '@/lib/betEvaluation';
 import { analyzeWithGemini } from '@/lib/geminiAnalysis';
+import { calculateConditionalProbability } from '@/lib/betConditionalProbability';
 
 // 拡張されたBetProposalの型定義
 interface ExtendedBetProposal {
@@ -182,21 +183,56 @@ export function BettingAnalysis() {
     );
   }, [horses, latestOdds, latestFukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, sanrenpukuOdds, sanrentanOdds, winProbs, placeProbs]);
 
+  const conditionalProbabilities = useMemo(() => {
+    if (!horses || !bettingOptions) return [];
+    
+    return calculateConditionalProbability(
+      bettingOptions,
+      horses.map(horse => ({
+        name: horse.name,
+        odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
+        winProb: winProbs[horse.id] / 100,
+        placeProb: placeProbs[horse.id] / 100,
+        frame: horse.frame,
+        number: horse.number
+      }))
+    ).map(corr => ({
+      condition: {
+        type: corr.condition.type,
+        horses: corr.condition.horses
+      },
+      target: {
+        type: corr.target.type,
+        horses: corr.target.horses
+      },
+      probability: corr.probability
+    }));
+  }, [horses, bettingOptions, latestOdds, winProbs, placeProbs]);
+
   // Step 2: Geminiによる分析
   const geminiAnalysis = useQuery({
     queryKey: ['gemini-analysis', bettingOptions, budget, riskRatio],
     queryFn: () => analyzeWithGemini({
       horses: horses?.map(horse => ({
         name: horse.name,
-        odds: Number(latestOdds?.find(odd => odd.horseId === horse.id)?.odds || 0),
+        odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
         winProb: winProbs[horse.id] / 100,
         placeProb: placeProbs[horse.id] / 100,
         frame: horse.frame,
         number: horse.number
       })) || [],
-      bettingOptions,
+      bettingOptions: bettingOptions.map(bet => ({
+        type: bet.type,
+        horses: bet.horses,
+        horseName: bet.horses.join(bet.type.includes('単') ? '→' : '-'),
+        odds: bet.expectedReturn / bet.stake,
+        probability: bet.probability,
+        expectedReturn: bet.expectedReturn,
+        stake: bet.stake
+      })),
       budget,
-      riskRatio
+      riskRatio,
+      correlations: conditionalProbabilities
     }),
     enabled: !!horses && !!bettingOptions.length
   });
