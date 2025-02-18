@@ -213,8 +213,34 @@ const calculateWinJointProb = (win: BetProposal, other: BetProposal, horses: Hor
         } else {
           const otherHorse = horses.find(h => h.number === other.horse1);
           if (!otherHorse) return 0;
-          // 両方の馬が複勝圏内に入る確率
-          return placeHorse.placeProb * otherHorse.placeProb;
+          
+          let jointProb = 0;
+
+          // 1着-2着のパターン
+          jointProb += placeHorse.winProb * 
+                      ((otherHorse.placeProb - otherHorse.winProb) / 2);
+
+          // 1着-3着のパターン
+          jointProb += placeHorse.winProb * 
+                      ((otherHorse.placeProb - otherHorse.winProb) / 2);
+
+          // 2着-1着のパターン
+          jointProb += otherHorse.winProb * 
+                      ((placeHorse.placeProb - placeHorse.winProb) / 2);
+
+          // 2着-3着のパターン
+          jointProb += ((placeHorse.placeProb - placeHorse.winProb) / 2) * 
+                      ((otherHorse.placeProb - otherHorse.winProb) / 2);
+
+          // 3着-1着のパターン
+          jointProb += otherHorse.winProb * 
+                      ((placeHorse.placeProb - placeHorse.winProb) / 2);
+
+          // 3着-2着のパターン
+          jointProb += ((placeHorse.placeProb - placeHorse.winProb) / 2) * 
+                      ((otherHorse.placeProb - otherHorse.winProb) / 2);
+          
+          return jointProb;
         }
         
       case "枠連":

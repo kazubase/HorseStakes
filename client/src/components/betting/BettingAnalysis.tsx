@@ -132,7 +132,7 @@ export function BettingAnalysis() {
     return evaluateBettingOptions(
       horses.map(horse => ({
         name: horse.name,
-        odds: Number(latestOdds.find(odd => odd.horseId === horse.id)?.odds || 0),
+        odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
         winProb: winProbs[horse.id] / 100,
         placeProb: placeProbs[horse.id] / 100,
         frame: horse.frame,
