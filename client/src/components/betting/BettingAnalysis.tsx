@@ -179,7 +179,7 @@ export function BettingAnalysis() {
         odds: Number(odd.odds)
       }))
     );
-  }, [horses, latestOdds, latestFukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, sanrenpukuOdds, sanrentanOdds]);
+  }, [horses, latestOdds, latestFukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, sanrenpukuOdds, sanrentanOdds, winProbs, placeProbs]);
 
   /*
   // Step 2: Geminiによる分析
@@ -276,14 +276,15 @@ export function BettingAnalysis() {
           </CardHeader>
           <CardContent>
             <BettingOptionsTable
-              bettingOptions={analysisResult?.strategy.recommendations.map(rec => ({
-                type: rec.type,
-                horseName: rec.horses.join('-'),
-                horses: rec.horses,
-                stake: 0,
-                expectedReturn: 0,
-                probability: Number(rec.probability)
-              })) || []}
+              bettingOptions={bettingOptions.map(bet => ({
+                type: bet.type,
+                horses: [bet.horseName],
+                horseName: bet.horseName,
+                stake: bet.stake,
+                expectedReturn: bet.expectedReturn,
+                probability: bet.probability
+              }))}
+              selectedBets={[]}
             />
           </CardContent>
         </Card>
