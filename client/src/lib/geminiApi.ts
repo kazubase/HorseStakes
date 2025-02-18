@@ -6,54 +6,6 @@ export interface BettingCandidate {
   expectedValue: string;
 }
 
-// 詳細な分析用のインターフェース
-export interface DetailedGeminiResponse {
-  analysis: {
-    thoughtProcess: string;
-    riskAnalysis: string;
-    recommendations: Array<{
-      type: string;
-      horses: string[];
-      stake: number;
-      expectedReturn: number;
-      probability: number;
-      reasoning: string;
-    }>;
-  };
-}
-
-// 戦略テーブルの行データの型
-export interface StrategyTableRow {
-  type: string;
-  horses: string;
-  odds: string;
-  probability: string;
-  stake: string;
-  reason: string;
-}
-
-// 要約用のインターフェースを更新
-export interface SummarizedGeminiResponse {
-  strategy: {
-    description: string;
-    bettingTable: {
-      headers: string[];
-      rows: [string, string, string, string, string, string][];
-    };
-    summary: {
-      totalInvestment: string;
-      expectedReturn: string;
-      riskLevel: string;
-    };
-    recommendations: {
-      type: string;
-      horses: string[];
-      stake: number;
-      reason: string;
-    }[];
-  };
-}
-
 // 既存のインターフェースを更新
 export interface GeminiResponse {
   strategy: GeminiStrategy;
@@ -71,20 +23,6 @@ interface BettingOption {
   horse1: number;
   horse2: number;
   horse3: number;
-}
-
-interface Horse {
-  name: string;
-  odds: number;
-  winProb: string;
-  placeProb: string;
-}
-
-interface CombinationBetOption {
-  combination: string;
-  odds: number;
-  probability: string;
-  expectedValue: string;
 }
 
 export interface GeminiRecommendation {
@@ -112,6 +50,67 @@ export interface GeminiStrategy {
   summary: {
     riskLevel: string;  // リスクレベルのみを保持
   };
+}
+
+// フィードバックの種類を定義
+export interface StrategyFeedback {
+  type: 'MORE_RISK' | 'LESS_RISK' | 'FOCUS_HORSE' | 'AVOID_HORSE' | 'PREFER_BET_TYPE' | 'AVOID_BET_TYPE';
+  details: {
+    horseNumbers?: number[];
+    betType?: string;
+    description?: string;
+  };
+}
+
+// 馬券間の相関関係分析用のインターフェース
+export interface BetCorrelationAnalysis {
+  correlationGroups: {
+    type: string;  // "強い相関" | "中程度の相関" | "弱い相関"
+    threshold: number;  // 条件付き確率の閾値（例：0.8, 0.5, 0.2）
+    patterns: {
+      description: string;  // 相関パターンの説明
+      examples: {
+        condition: {
+          type: string;
+          horses: string;
+        };
+        target: {
+          type: string;
+          horses: string;
+        };
+        probability: number;
+      }[];
+    }[];
+  }[];
+  insights: {
+    betTypeCorrelations: {
+      type1: string;
+      type2: string;
+      correlationLevel: string;
+      explanation: string;
+    }[];
+    riskDiversification: {
+      recommendation: string;
+      reasoning: string;
+      suggestedCombinations: {
+        bet1: string;
+        bet2: string;
+        reason: string;
+      }[];
+    };
+  };
+}
+
+export interface BetCorrelation {
+  condition: {
+    type: string;
+    horses: string;
+  };
+  target: {
+    type: string;
+    horses: string;
+  };
+  probability: number;
 }
 
 // 券種の順序を定義
@@ -174,67 +173,6 @@ const fetchWithRetry = async (
   }
   throw new Error('リクエストが失敗しました');
 };
-
-// フィードバックの種類を定義
-export interface StrategyFeedback {
-  type: 'MORE_RISK' | 'LESS_RISK' | 'FOCUS_HORSE' | 'AVOID_HORSE' | 'PREFER_BET_TYPE' | 'AVOID_BET_TYPE';
-  details: {
-    horseNumbers?: number[];
-    betType?: string;
-    description?: string;
-  };
-}
-
-// 馬券間の相関関係分析用のインターフェース
-export interface BetCorrelationAnalysis {
-  correlationGroups: {
-    type: string;  // "強い相関" | "中程度の相関" | "弱い相関"
-    threshold: number;  // 条件付き確率の閾値（例：0.8, 0.5, 0.2）
-    patterns: {
-      description: string;  // 相関パターンの説明
-      examples: {
-        condition: {
-          type: string;
-          horses: string;
-        };
-        target: {
-          type: string;
-          horses: string;
-        };
-        probability: number;
-      }[];
-    }[];
-  }[];
-  insights: {
-    betTypeCorrelations: {
-      type1: string;
-      type2: string;
-      correlationLevel: string;
-      explanation: string;
-    }[];
-    riskDiversification: {
-      recommendation: string;
-      reasoning: string;
-      suggestedCombinations: {
-        bet1: string;
-        bet2: string;
-        reason: string;
-      }[];
-    };
-  };
-}
-
-export interface BetCorrelation {
-  condition: {
-    type: string;
-    horses: string;
-  };
-  target: {
-    type: string;
-    horses: string;
-  };
-  probability: number;
-}
 
 // getGeminiStrategy関数を更新
 export const getGeminiStrategy = async (

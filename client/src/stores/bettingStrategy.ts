@@ -1,6 +1,7 @@
 import { atom } from 'jotai';
 import type { BetProposal } from '@/lib/betCalculator';
 import type { Horse } from '@db/schema';
+import type { GeminiResponse } from '@/lib/geminiApi';
 
 // ステップ管理
 export type BettingStep = 'ANALYSIS' | 'SELECTION' | 'PORTFOLIO';
@@ -20,7 +21,7 @@ export interface AnalysisResult {
     sharpeRatio: number;
   };
 }
-export const analysisResultAtom = atom<AnalysisResult | null>(null);
+export const analysisResultAtom = atom<GeminiResponse | null>(null);
 
 // 選択状態
 export interface SelectionState {

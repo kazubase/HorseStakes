@@ -5,11 +5,13 @@ import { BetProposal } from "@/lib/betCalculator";
 interface BettingOptionsTableProps {
   bettingOptions: BetProposal[];
   selectedBets?: BetProposal[];
+  onBetSelect?: (bet: BetProposal) => void;
 }
 
 export function BettingOptionsTable({ 
   bettingOptions,
-  selectedBets = [] 
+  selectedBets = [],
+  onBetSelect
 }: BettingOptionsTableProps) {
   // 期待値を計算
   const optionsWithEV = bettingOptions.map(option => {

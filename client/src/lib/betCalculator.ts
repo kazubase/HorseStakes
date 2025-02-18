@@ -2,7 +2,7 @@ import { GeminiStrategy, getGeminiStrategy } from './geminiApi';
 import type { GeminiRecommendation } from './geminiApi';
 import { calculateConditionalProbability } from './betConditionalProbability';
 
-interface BettingOption {
+export interface BettingOption {
   type: "単勝" | "複勝" | "枠連" | "ワイド" | "馬連" | "馬単" | "３連複" | "３連単";
   horseName: string;
   odds: number;

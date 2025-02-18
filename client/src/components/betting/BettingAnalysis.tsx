@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAtom } from 'jotai';
 import { useQuery } from "@tanstack/react-query";
@@ -15,27 +15,67 @@ import { calculateBetProposals } from '@/lib/betCalculator';
 import type { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
 import { RaceAnalytics } from "@/components/RaceAnalytics";
 import { BettingOptionsTable } from "@/components/BettingOptionsTable";
+import { getGeminiStrategy, type BettingCandidate, type GeminiResponse } from '@/lib/geminiApi';
+import { Spinner } from "@/components/ui/spinner";
+import type { BetProposal, BettingOption } from '@/lib/betCalculator';
+
+// 拡張されたBetProposalの型定義
+interface ExtendedBetProposal {
+  type: string;
+  horseName: string;
+  horses: string[];
+  stake: number;
+  expectedReturn: number;
+  probability: number;
+  frame1?: number;
+  frame2?: number;
+  frame3?: number;
+  horse1?: number;
+  horse2?: number;
+  horse3?: number;
+}
+
+// Geminiオプションの型定義
+interface GeminiOptions {
+  horses: Array<Horse & {
+    odds: number;
+    winProb: number;
+    placeProb: number;
+  }>;
+  bettingOptions: Array<{
+    type: string;
+    horseName: string;
+    odds: number;
+    prob: number;
+    ev: number;
+    frame1: number;
+    frame2: number;
+    frame3: number;
+    horse1: number;
+    horse2: number;
+    horse3: number;
+  }>;
+  conditionalProbabilities: any[];
+}
 
 export function BettingAnalysis() {
   const { id } = useParams();
-  const location = useLocation();
+  const [location] = useLocation();
   const [horses, setHorses] = useAtom(horsesAtom);
   const [winProbs] = useAtom(winProbsAtom);
   const [placeProbs] = useAtom(placeProbsAtom);
-  const [analysisResult, setAnalysisResult] = useAtom(analysisResultAtom);
+  const [analysisResult, setAnalysisResult] = useAtom<GeminiResponse | null>(analysisResultAtom);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // URLパラメータから設定値を取得
-  const searchParams = new URLSearchParams(window.location.search);
-  const budget = Number(searchParams.get('budget')) || 10000;
-  const riskRatio = Number(searchParams.get('risk')) || 1.0;
+  const urlParams = new URLSearchParams(location.split('?')[1]);
+  const budget = Number(urlParams.get('budget')) || 10000;
+  const riskRatio = Number(urlParams.get('riskRatio')) || 1.0;
 
-  // URLパラメータから確率データを取得
-  const winProbsParam = searchParams.get('winProbs') || '{}';
-  const placeProbsParam = searchParams.get('placeProbs') || '{}';
+  const winProbsParam = urlParams.get('winProbs') || '{}';
+  const placeProbsParam = urlParams.get('placeProbs') || '{}';
   const winProbsData = JSON.parse(winProbsParam);
   const placeProbsData = JSON.parse(placeProbsParam);
 
-  // データ取得
   const { data: horsesData, isError: isHorsesError } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
     enabled: !!id,
@@ -51,62 +91,144 @@ export function BettingAnalysis() {
     enabled: !!id,
   });
 
-  // ... 他のオッズデータの取得 ...
+  const { data: wakurenOdds } = useQuery<WakurenOdds[]>({
+    queryKey: [`/api/wakuren-odds/latest/${id}`],
+    enabled: !!id,
+  });
 
-  // 分析実行
+  const { data: umarenOdds } = useQuery<UmarenOdds[]>({
+    queryKey: [`/api/umaren-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
+  const { data: wideOdds } = useQuery<WideOdds[]>({
+    queryKey: [`/api/wide-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
+  const { data: umatanOdds } = useQuery<UmatanOdds[]>({
+    queryKey: [`/api/umatan-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
+  const { data: sanrenpukuOdds } = useQuery<Fuku3Odds[]>({
+    queryKey: [`/api/sanrenpuku-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
+  const { data: sanrentanOdds } = useQuery<Tan3Odds[]>({
+    queryKey: [`/api/sanrentan-odds/latest/${id}`],
+    enabled: !!id,
+  });
+
   useEffect(() => {
-    if (!horsesData || !latestOdds || !winProbs || !placeProbs) return;
-
-    // 馬データの更新
-    setHorses(horsesData);
-
-    // 分析用データの準備
-    const horseData = horsesData.map(horse => ({
-      name: horse.name,
-      odds: Number(latestOdds.find(o => o.horseId === horse.id)?.odds) || 0,
-      winProb: winProbs[horse.id] || 0,
-      placeProb: placeProbs[horse.id] || 0,
-      frame: horse.frame,
-      number: horse.number
-    }));
-
-    try {
-      // 馬券候補の計算
-      const bettingOptions = calculateBetProposals(
-        horseData,
-        10000, // 仮の予算（実際には設定値を使用）
-        1.0,   // 仮のリスク比率
-        latestFukuOdds?.map(odds => ({
-          horse1: odds.horseId,
-          oddsMin: Number(odds.oddsMin),
-          oddsMax: Number(odds.oddsMax)
-        })) || [],
-        [], // wakurenData
-        [], // umarenData
-        [], // wideData
-        [], // umatanData
-        [], // sanrenpukuData
-        []  // sanrentanData
-      );
-
-      // リスク指標の計算
-      const riskMetrics = {
-        expectedReturn: bettingOptions.reduce((sum, bet) => sum + bet.expectedReturn, 0),
-        risk: calculateRisk(bettingOptions), // リスク計算関数は別途実装
-        sharpeRatio: 0 // 後で計算
-      };
-
-      // 分析結果を保存
-      setAnalysisResult({
-        bettingOptions,
-        riskMetrics
-      });
-
-    } catch (error) {
-      console.error('Analysis error:', error);
-      // エラー処理
+    if (horsesData) {
+      setHorses(horsesData);
     }
-  }, [horsesData, latestOdds, winProbs, placeProbs, setHorses, setAnalysisResult]);
+  }, [horsesData, setHorses]);
+
+  useEffect(() => {
+    const analyze = async () => {
+      if (!horses || !latestOdds || !latestFukuOdds || 
+          !wakurenOdds || !umarenOdds || !wideOdds || !umatanOdds || 
+          !sanrenpukuOdds || !sanrentanOdds) return;
+      
+      setIsAnalyzing(true);
+      try {
+        const horsesWithProbs = horses.map(horse => ({
+          ...horse,
+          odds: Number(latestOdds.find(o => o.horseId === horse.id)?.odds || 0),
+          winProb: Number(winProbsData[horse.id]) / 100 || 0,
+          placeProb: Number(placeProbsData[horse.id]) / 100 || 0
+        }));
+
+        const betProposals = calculateBetProposals(
+          horsesWithProbs,
+          budget,
+          riskRatio,
+          latestFukuOdds.map(o => ({
+            horse1: horses.find(h => h.id === o.horseId)?.number || 0,
+            oddsMin: Number(o.oddsMin),
+            oddsMax: Number(o.oddsMax)
+          })),
+          wakurenOdds.map(o => ({
+            frame1: o.frame1,
+            frame2: o.frame2,
+            odds: Number(o.odds)
+          })),
+          umarenOdds.map(o => ({
+            horse1: horses.find(h => h.id === o.horse1)?.number || 0,
+            horse2: horses.find(h => h.id === o.horse2)?.number || 0,
+            odds: Number(o.odds)
+          })),
+          wideOdds.map(o => ({
+            horse1: horses.find(h => h.id === o.horse1)?.number || 0,
+            horse2: horses.find(h => h.id === o.horse2)?.number || 0,
+            oddsMin: Number(o.oddsMin),
+            oddsMax: Number(o.oddsMax)
+          })),
+          umatanOdds.map(o => ({
+            horse1: horses.find(h => h.id === o.horse1)?.number || 0,
+            horse2: horses.find(h => h.id === o.horse2)?.number || 0,
+            odds: Number(o.odds)
+          })),
+          sanrenpukuOdds.map(o => ({
+            horse1: horses.find(h => h.id === o.horse1)?.number || 0,
+            horse2: horses.find(h => h.id === o.horse2)?.number || 0,
+            horse3: horses.find(h => h.id === o.horse3)?.number || 0,
+            odds: Number(o.odds)
+          })),
+          sanrentanOdds.map(o => ({
+            horse1: horses.find(h => h.id === o.horse1)?.number || 0,
+            horse2: horses.find(h => h.id === o.horse2)?.number || 0,
+            horse3: horses.find(h => h.id === o.horse3)?.number || 0,
+            odds: Number(o.odds)
+          }))
+        ) as ExtendedBetProposal[];
+
+        const bettingCandidates: BettingCandidate[] = betProposals.map(bet => ({
+          type: bet.type,
+          horseName: bet.horseName,
+          odds: Number(latestOdds.find(o => o.horseId === bet.horse1)?.odds || 0),
+          probability: `${(bet.probability * 100).toFixed(1)}%`,
+          expectedValue: (bet.expectedReturn / bet.stake - 1).toFixed(2)
+        }));
+
+        const geminiOptions: GeminiOptions = {
+          horses: horsesWithProbs,
+          bettingOptions: betProposals.map(bet => ({
+            type: bet.type,
+            horseName: bet.horseName,
+            odds: Number(latestOdds.find(o => o.horseId === bet.horse1)?.odds || 0),
+            prob: bet.probability,
+            ev: bet.expectedReturn / bet.stake - 1,
+            frame1: bet.frame1 || 0,
+            frame2: bet.frame2 || 0,
+            frame3: bet.frame3 || 0,
+            horse1: bet.horse1 || 0,
+            horse2: bet.horse2 || 0,
+            horse3: bet.horse3 || 0
+          })),
+          conditionalProbabilities: []
+        };
+
+        const result = await getGeminiStrategy(
+          bettingCandidates,
+          budget,
+          geminiOptions,
+          riskRatio
+        );
+
+        setAnalysisResult(result);
+      } catch (error) {
+        console.error('分析エラー:', error);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    };
+
+    analyze();
+  }, [horses, latestOdds, latestFukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, sanrenpukuOdds, sanrentanOdds, budget, riskRatio]);
 
   useEffect(() => {
     console.log('horses:', horses);
@@ -125,57 +247,62 @@ export function BettingAnalysis() {
     );
   }
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-      {/* AIによる分析（スマホでは最上部） */}
-      <div className="md:col-start-4 md:col-span-6 order-1">
-        <Card className="h-full">
-          <CardHeader>
-            <CardTitle>AIによる分析</CardTitle>
-            <CardDescription>
-              予想確率の評価とリスク分析
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* 予想確率の評価 */}
-              <div>
-                <h4 className="font-medium mb-2">予想確率の評価</h4>
-                <p className="text-sm text-muted-foreground">
-                  {/* ここにGeminiの確率評価を表示 */}
-                </p>
-              </div>
+  const renderAnalysis = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>AIによる分析</CardTitle>
+        <CardDescription>
+          予想確率の評価とリスク分析
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isAnalyzing ? (
+          <div className="flex justify-center items-center p-4">
+            <Spinner />
+            <span className="ml-2">分析中...</span>
+          </div>
+        ) : analysisResult ? (
+          <div className="space-y-6">
+            <div>
+              <h4 className="font-medium mb-2">戦略概要</h4>
+              <p className="text-sm text-muted-foreground">
+                {analysisResult.strategy.description}
+              </p>
+            </div>
 
-              {/* リスク分析 */}
-              <div>
-                <h4 className="font-medium mb-2">リスク特性</h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">期待収益率</p>
-                    <p className="text-lg font-bold text-green-500">
-                      +{((analysisResult?.riskMetrics?.expectedReturn ?? 0) * 100).toFixed(1)}%
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">リスク値</p>
-                    <p className="text-lg font-bold">
-                      {analysisResult?.riskMetrics?.risk.toFixed(2)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">シャープレシオ</p>
-                    <p className="text-lg font-bold">
-                      {analysisResult?.riskMetrics?.sharpeRatio.toFixed(2)}
-                    </p>
-                  </div>
+            <div>
+              <h4 className="font-medium mb-2">リスク特性</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">リスクレベル</p>
+                  <p className="text-lg font-bold">
+                    {analysisResult.strategy.summary.riskLevel}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">推奨馬券数</p>
+                  <p className="text-lg font-bold">
+                    {analysisResult.strategy.recommendations.length}点
+                  </p>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            分析結果を取得できませんでした
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+      <div className="md:col-start-4 md:col-span-6 order-1">
+        {renderAnalysis()}
       </div>
 
-      {/* 馬券候補（スマホでは2番目） */}
       <div className="md:col-span-3 order-2">
         <Card>
           <CardHeader>
@@ -186,13 +313,19 @@ export function BettingAnalysis() {
           </CardHeader>
           <CardContent>
             <BettingOptionsTable
-              bettingOptions={analysisResult?.bettingOptions || []}
+              bettingOptions={analysisResult?.strategy.recommendations.map(rec => ({
+                type: rec.type,
+                horseName: rec.horses.join('-'),
+                horses: rec.horses,
+                stake: 0,
+                expectedReturn: 0,
+                probability: Number(rec.probability)
+              })) || []}
             />
           </CardContent>
         </Card>
       </div>
 
-      {/* 予想設定（スマホでは最下部） */}
       <div className="md:col-span-3 order-3 md:order-first">
         <Card>
           <CardHeader>
@@ -202,7 +335,6 @@ export function BettingAnalysis() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* 投資設定 */}
             <div className="mb-6">
               <h4 className="font-medium mb-4">投資条件</h4>
               <div className="space-y-4">
@@ -217,7 +349,6 @@ export function BettingAnalysis() {
               </div>
             </div>
 
-            {/* 予想確率 */}
             <div>
               <h4 className="font-medium mb-4">予想確率</h4>
               {horses && horses.length > 0 ? (
@@ -270,7 +401,6 @@ export function BettingAnalysis() {
   );
 }
 
-// リスク計算関数（簡易版）
 function calculateRisk(bets: any[]) {
   // 標準偏差などを使用したリスク計算を実装
   return 0;
