@@ -66,9 +66,8 @@ export function BettingAnalysis() {
   const [analysisResult, setAnalysisResult] = useAtom<GeminiResponse | null>(analysisResultAtom);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const urlParams = new URLSearchParams(location.split('?')[1]);
-  const budget = Number(urlParams.get('budget')) || 10000;
-  const riskRatio = Number(urlParams.get('riskRatio')) || 1.0;
+  const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
+  const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1.0;
 
   const winProbsStr = new URLSearchParams(window.location.search).get("winProbs") || "{}";
   const placeProbsStr = new URLSearchParams(window.location.search).get("placeProbs") || "{}";
