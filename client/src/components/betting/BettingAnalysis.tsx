@@ -19,6 +19,7 @@ import { getGeminiStrategy, type BettingCandidate, type GeminiResponse } from '@
 import { Spinner } from "@/components/ui/spinner";
 import type { BetProposal, BettingOption } from '@/lib/betCalculator';
 import { evaluateBettingOptions } from '@/lib/betEvaluation';
+import { analyzeWithGemini } from '@/lib/geminiAnalysis';
 
 // 拡張されたBetProposalの型定義
 interface ExtendedBetProposal {
@@ -181,13 +182,26 @@ export function BettingAnalysis() {
     );
   }, [horses, latestOdds, latestFukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, sanrenpukuOdds, sanrentanOdds, winProbs, placeProbs]);
 
-  /*
   // Step 2: Geminiによる分析
   const geminiAnalysis = useQuery({
-    queryKey: ['gemini-analysis', bettingOptions],
-    queryFn: () => getGeminiStrategy(bettingOptions, budget, riskRatio)
+    queryKey: ['gemini-analysis', bettingOptions, budget, riskRatio],
+    queryFn: () => analyzeWithGemini({
+      horses: horses?.map(horse => ({
+        name: horse.name,
+        odds: Number(latestOdds?.find(odd => odd.horseId === horse.id)?.odds || 0),
+        winProb: winProbs[horse.id] / 100,
+        placeProb: placeProbs[horse.id] / 100,
+        frame: horse.frame,
+        number: horse.number
+      })) || [],
+      bettingOptions,
+      budget,
+      riskRatio
+    }),
+    enabled: !!horses && !!bettingOptions.length
   });
 
+  /*
   // Step 3: ポートフォリオ最適化
   const optimizedPortfolio = useMemo(() => {
     if (!geminiAnalysis.data) return null;
@@ -219,17 +233,17 @@ export function BettingAnalysis() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {isAnalyzing ? (
+        {geminiAnalysis.isLoading ? (
           <div className="flex justify-center items-center p-4">
             <Spinner />
             <span className="ml-2">分析中...</span>
           </div>
-        ) : analysisResult ? (
+        ) : geminiAnalysis.data ? (
           <div className="space-y-6">
             <div>
               <h4 className="font-medium mb-2">戦略概要</h4>
               <p className="text-sm text-muted-foreground">
-                {analysisResult.strategy.description}
+                {geminiAnalysis.data.summary.riskBasedStrategy}
               </p>
             </div>
 
@@ -237,16 +251,20 @@ export function BettingAnalysis() {
               <h4 className="font-medium mb-2">リスク特性</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">リスクレベル</p>
-                  <p className="text-lg font-bold">
-                    {analysisResult.strategy.summary.riskLevel}
-                  </p>
+                  <p className="text-sm text-muted-foreground">リスク配分</p>
+                  <div className="text-lg font-bold">
+                    <p>低: {geminiAnalysis.data.analysis.riskProfile.recommendedRiskDistribution.lowRisk}</p>
+                    <p>中: {geminiAnalysis.data.analysis.riskProfile.recommendedRiskDistribution.mediumRisk}</p>
+                    <p>高: {geminiAnalysis.data.analysis.riskProfile.recommendedRiskDistribution.highRisk}</p>
+                  </div>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">推奨馬券数</p>
-                  <p className="text-lg font-bold">
-                    {analysisResult.strategy.recommendations.length}点
-                  </p>
+                  <p className="text-sm text-muted-foreground">重要な洞察</p>
+                  <ul className="list-disc pl-4">
+                    {geminiAnalysis.data.summary.keyInsights.slice(0, 2).map((insight, i) => (
+                      <li key={i} className="text-sm">{insight}</li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>

@@ -2,7 +2,7 @@ import { BetProposal, HorseData } from './betCalculator';
 import { calculateJointProbability } from './betJointProbability';
 
 // 条件付き確率の結果を表すインターフェース
-interface BetCorrelation {
+export interface BetCorrelation {
   condition: {
     type: string;
     horses: string;
