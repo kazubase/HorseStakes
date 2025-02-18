@@ -247,10 +247,34 @@ export const calculateBetProposals = (
     
     if (!horse1 || !horse2) return;
 
-    // ワイド的中確率の計算（両方が複勝圏内に入る確率）
-    const wideProb = horse1.placeProb * horse2.placeProb;
+    // ワイド的中確率の計算（考えうる全パターン）
+    let wideProb = 0;
 
-    // ワイドの平均オッズ計算
+    // 1着-2着のパターン
+    wideProb += horse1.winProb * 
+                ((horse2.placeProb - horse2.winProb) / 2);
+
+    // 1着-3着のパターン
+    wideProb += horse1.winProb * 
+                ((horse2.placeProb - horse2.winProb) / 2);
+
+    // 2着-1着のパターン
+    wideProb += horse2.winProb * 
+                ((horse1.placeProb - horse1.winProb) / 2);
+
+    // 2着-3着のパターン
+    wideProb += ((horse1.placeProb - horse1.winProb) / 2) * 
+                ((horse2.placeProb - horse2.winProb) / 2);
+
+    // 3着-1着のパターン
+    wideProb += horse2.winProb * 
+                ((horse1.placeProb - horse1.winProb) / 2);
+
+    // 3着-2着のパターン
+    wideProb += ((horse1.placeProb - horse1.winProb) / 2) * 
+                ((horse2.placeProb - horse2.winProb) / 2);
+
+    // 平均オッズと期待値の計算
     const avgOdds = Math.round(((wide.oddsMin + wide.oddsMax) / 2) * 10) / 10;
     const wideEV = avgOdds * wideProb - 1;
 
@@ -258,15 +282,15 @@ export const calculateBetProposals = (
       bettingOptions.push({
         type: "ワイド",
         horseName: `${horse1.number}-${horse2.number}`,
+        odds: avgOdds,
+        prob: wideProb,
+        ev: wideEV,
         frame1: horse1.frame,
         frame2: horse2.frame,
         frame3: 0,
         horse1: horse1.number,
         horse2: horse2.number,
-        horse3: 0,
-        odds: avgOdds,
-        prob: wideProb,
-        ev: wideEV
+        horse3: 0
       });
       if (process.env.NODE_ENV === 'development') {
         console.log(`ワイド候補: ${horse1.number}-${horse2.number}`, {
