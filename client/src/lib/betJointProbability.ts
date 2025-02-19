@@ -307,7 +307,7 @@ const calculateWinJointProb = (win: BetProposal, other: BetProposal, horses: Hor
           if (!widePartner) return 0;
           
           // 両方の馬が複勝圏内に入る確率
-          return placeHorse.placeProb * widePartner.placeProb;
+          return other.probability;
         } else {
           // 複勝馬がワイドの組み合わせに含まれない場合
           const horse1 = horses.find(h => h.number === other.horse1);
