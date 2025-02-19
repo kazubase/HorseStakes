@@ -47,6 +47,7 @@ export interface GeminiAnalysisResult {
       correlations: string;
       riskProfile: string;
       suitability: number;
+      recommendedCombinations: string[];
     }>;
   };
   summary: {
@@ -57,6 +58,12 @@ export interface GeminiAnalysisResult {
       balanced: string;
       aggressive: string;
       recommended: string;
+    };
+    expectedResults: {
+      minimumReturn: number;
+      averageReturn: number;
+      maximumReturn: number;
+      riskLevel: number;
     };
   };
 }
@@ -158,26 +165,32 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
   const prompt = `
 【投資分析依頼】
 
-以下の出馬表、馬券候補一覧、および条件付き確率一覧に基づき、包括的な分析を行います。
-リスク選好度（riskRatio）は${input.riskRatio}です。（1-20の範囲で、20が最もリスク許容度が高い）
+以下のデータに基づき、具体的な投資戦略を立案してください：
 
-【評価項目】
-1. 各馬券の基本評価（期待値、リスク）
-2. 馬券間の相関関係
-3. リスク分散効果
-4. リスク選好度に応じた推奨組み合わせ
+1. 予想設定の詳細分析
+予算: ${input.budget}円
+リスク選好度: ${input.riskRatio}（1-20の範囲）
 
-【投資条件】
-- 予算: ${input.budget}円
-- リスク許容度: ${input.riskRatio}
+2. 馬券分析の観点
+- 単勝・複勝の的中率と回収率の関係
+- 馬連・ワイドの組み合わせ効果
+- 3連系の期待値とリスクの定量評価
+- 各馬券種別の特徴と相関関係
 
-【出馬表】
+3. 具体的な投資戦略の提案
+- 軸となる馬券と組み合わせるべき馬券
+- 予算配分の具体的な数値（例：複勝40%、馬連30%など）
+- リスクヘッジの具体的な方法
+- 期待できる回収率の試算
+
+【データ】
+出馬表：
 ${raceCardInfo}
 
-【馬券候補一覧】
+馬券候補（期待値順）：
 ${bettingCandidatesList}
 
-【条件付き確率一覧】
+条件付き確率データ：
 ${correlationsText}
 
 以下の形式でJSON形式の分析結果を返してください：
@@ -186,54 +199,70 @@ ${correlationsText}
   "analysis": {
     "riskProfile": {
       "riskRatio": ${input.riskRatio},
-      "interpretation": "リスク選好度の解釈",
+      "interpretation": "具体的なリスク選好度の解釈と、それに基づく投資方針",
       "recommendedRiskDistribution": {
-        "lowRisk": "配分割合（%）",
-        "mediumRisk": "配分割合（%）",
-        "highRisk": "配分割合（%）"
+        "lowRisk": "具体的な配分割合（%）",
+        "mediumRisk": "具体的な配分割合（%）",
+        "highRisk": "具体的な配分割合（%）"
       }
     },
+    "betTypeAnalysis": [
+      {
+        "type": "券種",
+        "characteristics": "具体的な特徴（期待値、リスク、的中率など）",
+        "correlations": "他券種との具体的な相関性と組み合わせ効果",
+        "riskProfile": "具体的なリスク特性と対策",
+        "suitability": "リスク選好度との適合性（0-100）",
+        "recommendedCombinations": ["具体的な組み合わせ例"],
+        "expectedReturnRate": "期待回収率（%）"
+      }
+    ],
     "correlationPatterns": [
       {
-        "strength": "相関の強さ",
+        "strength": "相関の強さ（数値で）",
         "riskLevel": "リスクレベル",
         "patterns": [
           {
-            "description": "相関パターンの説明",
+            "description": "具体的な相関パターンの説明",
             "examples": [
               {
-                "bet1": "馬券1の説明",
-                "bet2": "馬券2の説明",
-                "probability": "条件付き確率",
-                "interpretation": "この相関の意味",
-                "riskConsideration": "リスク選好度との適合性"
+                "bet1": "具体的な馬券1",
+                "bet2": "具体的な馬券2",
+                "probability": "具体的な条件付き確率",
+                "interpretation": "この相関から導かれる具体的な投資戦略",
+                "riskConsideration": "具体的なリスク対策"
               }
             ]
           }
         ]
       }
-    ],
-    "betTypeAnalysis": [
-      {
-        "type": "券種",
-        "characteristics": "特徴",
-        "correlations": "他券種との相関性",
-        "riskProfile": "リスク特性",
-        "suitability": "リスク選好度との適合性（0-100）"
-      }
     ]
   },
   "summary": {
-    "keyInsights": ["重要な洞察"],
-    "riskBasedStrategy": "戦略の説明",
+    "keyInsights": [
+      "具体的な分析結果に基づく重要な洞察"
+    ],
     "recommendedApproach": {
-      "conservative": "ローリスクアプローチ",
-      "balanced": "バランス型アプローチ",
-      "aggressive": "ハイリスクアプローチ",
-      "recommended": "推奨アプローチ"
+      "conservative": "具体的な保守的アプローチ（馬券の組み合わせと配分）",
+      "balanced": "具体的なバランス型アプローチ（馬券の組み合わせと配分）",
+      "aggressive": "具体的な積極的アプローチ（馬券の組み合わせと配分）",
+      "recommended": "設定に最適な具体的なアプローチ（馬券の組み合わせと配分）"
+    },
+    "expectedResults": {
+      "minimumReturn": "最低期待回収率（%）",
+      "averageReturn": "平均期待回収率（%）",
+      "maximumReturn": "最大期待回収率（%）",
+      "riskLevel": "総合リスクレベル（1-10）"
     }
   }
-}`;
+}
+
+注意点：
+1. 一般的な助言は避け、データに基づく具体的な分析を行うこと
+2. 各馬券の期待値とリスクを定量的に評価すること
+3. 投資戦略は実行可能な具体的な内容とすること
+4. 相関分析は実際のデータに基づいて行うこと
+`;
 
 if (process.env.NODE_ENV === 'development') {
     console.log('プロンプト:\n', prompt);

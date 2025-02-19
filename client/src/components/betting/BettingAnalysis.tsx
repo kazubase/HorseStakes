@@ -292,57 +292,77 @@ export function BettingAnalysis() {
                 <span className="ml-2">分析中...</span>
               </div>
             ) : geminiAnalysis.data ? (
-              <div className="space-y-6">
-                {/* リスク配分の可視化 */}
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={[
-                        {
-                          name: '低リスク',
-                          value: parseInt(geminiAnalysis.data.analysis.riskProfile.recommendedRiskDistribution.lowRisk),
-                          color: '#22c55e'
-                        },
-                        {
-                          name: '中リスク',
-                          value: parseInt(geminiAnalysis.data.analysis.riskProfile.recommendedRiskDistribution.mediumRisk),
-                          color: '#eab308'
-                        },
-                        {
-                          name: '高リスク',
-                          value: parseInt(geminiAnalysis.data.analysis.riskProfile.recommendedRiskDistribution.highRisk),
-                          color: '#ef4444'
-                        }
-                      ]}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis label={{ value: '配分 (%)', angle: -90, position: 'insideLeft' }} />
-                      <Tooltip />
-                      <Bar 
-                        dataKey="value" 
-                        fill="#8884d8"
-                        fillOpacity={0.8}
-                        stroke="color" 
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              <div className="grid grid-cols-1 gap-6">
+                {/* 馬券候補の考察 */}
+                <Card className="bg-secondary/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">馬券候補の考察</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {geminiAnalysis.data.analysis.betTypeAnalysis
+                        .sort((a, b) => b.suitability - a.suitability)
+                        .slice(0, 3)
+                        .map((analysis, i) => (
+                          <div key={i} className="bg-primary/10 p-3 rounded-lg">
+                            <div className="flex justify-between items-center mb-2">
+                              <p className="text-sm font-medium">{analysis.type}</p>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs">適合度</span>
+                                <div className="w-20 h-2 bg-gray-200 rounded-full">
+                                  <div 
+                                    className="h-full bg-green-500 rounded-full" 
+                                    style={{ width: `${analysis.suitability}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{analysis.characteristics}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{analysis.riskProfile}</p>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium mb-2">重要な洞察</h4>
-                    <ul className="list-disc pl-4">
-                      {geminiAnalysis.data.summary.keyInsights.map((insight, i) => (
-                        <li key={i} className="text-sm">{insight}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">推奨アプローチ</h4>
-                    <p className="text-sm">{geminiAnalysis.data.summary.recommendedApproach.recommended}</p>
-                  </div>
-                </div>
+                {/* 推奨アプローチ */}
+                <Card className="bg-secondary/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">推奨アプローチ</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* 推奨される馬券組み合わせ */}
+                      <div className="bg-primary/10 p-3 rounded-lg">
+                        <h4 className="text-sm font-medium mb-2">推奨される馬券組み合わせ</h4>
+                        {geminiAnalysis.data.analysis.betTypeAnalysis
+                          .filter(analysis => analysis.suitability > 70)
+                          .map((analysis, i) => (
+                            <div key={i} className="mb-3">
+                              <p className="text-xs font-medium mb-1">{analysis.type}</p>
+                              <div className="grid grid-cols-2 gap-2">
+                                {analysis.recommendedCombinations.map((combo, j) => (
+                                  <div key={j} className="text-xs bg-secondary/30 p-2 rounded">
+                                    {combo}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* 重要な洞察 */}
+                      <div className="bg-primary/10 p-3 rounded-lg">
+                        <h4 className="text-sm font-medium mb-2">重要な洞察</h4>
+                        <ul className="list-disc pl-4 space-y-1">
+                          {geminiAnalysis.data.summary.keyInsights.map((insight, i) => (
+                            <li key={i} className="text-xs">{insight}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             ) : null}
           </CardContent>
