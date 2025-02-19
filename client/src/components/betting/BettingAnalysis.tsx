@@ -70,6 +70,238 @@ interface GeminiOptions {
   conditionalProbabilities: any[];
 }
 
+// リスク分析用のユーティリティ関数を修正
+interface BetTypeStats {
+  type: string;
+  avgEV: number;
+  risk: number;
+  sharpeRatio: number;
+  stdDev: number;
+  betCount: number;
+}
+
+function calculateBetTypeStats(bets: BetProposal[]): BetTypeStats {
+  const returns = bets.map(bet => bet.expectedReturn / bet.stake - 1);
+  const probabilities = bets.map(bet => bet.probability);
+  
+  // 期待値（平均リターン）
+  const avgEV = returns.reduce((sum, r, i) => sum + r * probabilities[i], 0);
+  
+  // 標準偏差（リスク）の計算
+  const squaredDeviations = returns.map((r, i) => {
+    const deviation = r - avgEV;
+    return deviation * deviation * probabilities[i];
+  });
+  const variance = squaredDeviations.reduce((sum, sq) => sum + sq, 0);
+  const stdDev = Math.sqrt(variance);
+  
+  // シャープレシオの計算（リスクフリーレートは0と仮定）
+  const sharpeRatio = stdDev > 0 ? avgEV / stdDev : 0;
+
+  return {
+    type: bets[0].type,
+    avgEV,
+    risk: stdDev,
+    sharpeRatio,
+    stdDev,
+    betCount: bets.length
+  };
+}
+
+function BetTypeAnalysis({ bettingOptions }: { bettingOptions: BetProposal[] }) {
+  const betTypeStats = Object.entries(groupBetsByType(bettingOptions))
+    .map(([type, bets]) => calculateBetTypeStats(bets))
+    .sort((a, b) => b.sharpeRatio - a.sharpeRatio);
+
+  return (
+    <div className="space-y-6">
+      {/* リスク/リターン散布図 */}
+      <Card className="p-4">
+        <CardTitle className="text-base mb-4">券種別リスク/リターン特性</CardTitle>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 60 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                type="number" 
+                dataKey="risk" 
+                name="リスク（標準偏差）"
+                label={{ value: 'リスク（標準偏差）', position: 'bottom' }}
+              />
+              <YAxis 
+                type="number" 
+                dataKey="avgEV" 
+                name="期待リターン"
+                label={{ value: '期待リターン', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                content={({ payload }) => {
+                  if (payload && payload.length) {
+                    const data = payload[0].payload as BetTypeStats;
+                    return (
+                      <div className="bg-white p-2 border rounded shadow-lg">
+                        <p className="font-medium">{data.type}</p>
+                        <p>期待リターン: {(data.avgEV * 100).toFixed(1)}%</p>
+                        <p>リスク: {(data.risk * 100).toFixed(1)}%</p>
+                        <p>シャープレシオ: {data.sharpeRatio.toFixed(2)}</p>
+                        <p>馬券数: {data.betCount}</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Scatter 
+                data={betTypeStats}
+                fill="#8884d8"
+              />
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
+      {/* 券種別詳細情報 */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+        {betTypeStats.map(stats => (
+          <Card key={stats.type} className="p-4">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h4 className="font-medium">{stats.type}</h4>
+                <p className="text-sm text-muted-foreground">
+                  シャープレシオ: {stats.sharpeRatio.toFixed(2)}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm">
+                  期待リターン: {(stats.avgEV * 100).toFixed(1)}%
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  リスク: {(stats.risk * 100).toFixed(1)}%
+                </p>
+              </div>
+            </div>
+            <div className="h-20">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[stats]}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="type" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="avgEV" fill="#8884d8" name="期待リターン" />
+                  <Bar dataKey="risk" fill="#82ca9d" name="リスク" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BetCombinationAnalysis({ bettingOptions }: { bettingOptions: BetProposal[] }) {
+  const betTypeStats = Object.entries(groupBetsByType(bettingOptions))
+    .map(([type, bets]) => calculateBetTypeStats(bets));
+
+  // 券種間の相関を計算
+  const correlations = betTypeStats.flatMap((stat1, i) => 
+    betTypeStats.slice(i + 1).map(stat2 => {
+      const bets1 = bettingOptions.filter(bet => bet.type === stat1.type);
+      const bets2 = bettingOptions.filter(bet => bet.type === stat2.type);
+      
+      return {
+        types: [stat1.type, stat2.type] as [string, string],
+        correlation: calculateCorrelation(bets1, bets2),
+        combinedSharpe: calculateCombinedSharpeRatio(bets1, bets2),
+        diversificationBenefit: calculateDiversificationBenefit(bets1, bets2)
+      };
+    })
+  );
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-4">
+        <CardTitle className="text-base mb-4">券種間の相関とリスク分散効果</CardTitle>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 60 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                type="number" 
+                dataKey="correlation" 
+                name="相関係数"
+                domain={[-1, 1]}
+                label={{ value: '相関係数', position: 'bottom' }}
+              />
+              <YAxis 
+                type="number" 
+                dataKey="diversificationBenefit" 
+                name="リスク分散効果"
+                label={{ value: 'リスク分散効果 (%)', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                content={({ payload }) => {
+                  if (payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="bg-white p-2 border rounded shadow-lg">
+                        <p className="font-medium">{data.types.join(' + ')}</p>
+                        <p>相関係数: {data.correlation.toFixed(2)}</p>
+                        <p>リスク分散効果: {data.diversificationBenefit.toFixed(1)}%</p>
+                        <p>組合せシャープレシオ: {data.combinedSharpe.toFixed(2)}</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Scatter data={correlations} fill="#8884d8" />
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// 新しい補助関数
+function calculateCombinedSharpeRatio(bets1: BetProposal[], bets2: BetProposal[]) {
+  const stats1 = calculateBetTypeStats(bets1);
+  const stats2 = calculateBetTypeStats(bets2);
+  const correlation = calculateCorrelation(bets1, bets2);
+
+  // ポートフォリオの期待リターン
+  const combinedReturn = (stats1.avgEV + stats2.avgEV) / 2;
+
+  // ポートフォリオのリスク（相関を考慮）
+  const combinedRisk = Math.sqrt(
+    Math.pow(stats1.risk, 2) / 4 +
+    Math.pow(stats2.risk, 2) / 4 +
+    correlation * stats1.risk * stats2.risk / 2
+  );
+
+  return combinedRisk > 0 ? combinedReturn / combinedRisk : 0;
+}
+
+function calculateDiversificationBenefit(bets1: BetProposal[], bets2: BetProposal[]) {
+  const stats1 = calculateBetTypeStats(bets1);
+  const stats2 = calculateBetTypeStats(bets2);
+  const correlation = calculateCorrelation(bets1, bets2);
+
+  // 単純な加重平均リスク
+  const weightedRisk = (stats1.risk + stats2.risk) / 2;
+
+  // 分散効果を考慮したポートフォリオリスク
+  const portfolioRisk = Math.sqrt(
+    Math.pow(stats1.risk, 2) / 4 +
+    Math.pow(stats2.risk, 2) / 4 +
+    correlation * stats1.risk * stats2.risk / 2
+  );
+
+  // リスク削減効果をパーセンテージで表現
+  return ((weightedRisk - portfolioRisk) / weightedRisk) * 100;
+}
+
 export function BettingAnalysis() {
   const { id } = useParams();
   const [location] = useLocation();
@@ -369,11 +601,19 @@ export function BettingAnalysis() {
       <TabsContent value="risk">
         <Card>
           <CardHeader>
-            <CardTitle>リスク/リターン分析</CardTitle>
+            <CardTitle>リスク分析</CardTitle>
+            <CardDescription>券種ごとのリスク特性と組み合わせ効果</CardDescription>
           </CardHeader>
-          <CardContent className="h-[500px]">
-            {geminiAnalysis.data && (
-              <div className="h-full w-full">
+          <CardContent>
+            <Tabs defaultValue="scatter" className="w-full">
+              <TabsList>
+                <TabsTrigger value="scatter">散布図</TabsTrigger>
+                <TabsTrigger value="betType">券種分析</TabsTrigger>
+                <TabsTrigger value="combination">組み合わせ効果</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="scatter" className="h-[500px]">
+                {/* 既存の散布図 */}
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -415,6 +655,7 @@ export function BettingAnalysis() {
                     <Scatter
                       data={bettingOptions.map(bet => ({
                         name: `${bet.type} ${bet.horseName}`,
+                        type: bet.type,
                         risk: calculateRisk([bet]),
                         return: (bet.expectedReturn / bet.stake - 1) * 100
                       }))}
@@ -422,8 +663,16 @@ export function BettingAnalysis() {
                     />
                   </ScatterChart>
                 </ResponsiveContainer>
-              </div>
-            )}
+              </TabsContent>
+
+              <TabsContent value="betType">
+                <BetTypeAnalysis bettingOptions={bettingOptions} />
+              </TabsContent>
+
+              <TabsContent value="combination">
+                <BetCombinationAnalysis bettingOptions={bettingOptions} />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </TabsContent>
@@ -474,7 +723,7 @@ export function BettingAnalysis() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div className="lg:col-span-4 space-y-6">
+      <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-4 lg:self-start">
         {/* 予想設定 */}
         <Card>
           <CardHeader>
@@ -566,7 +815,7 @@ export function BettingAnalysis() {
       </div>
 
       {/* AIによる分析 */}
-      <div className="lg:col-span-8">
+      <div className="lg:col-span-8 lg:sticky lg:top-4 lg:self-start">
         {renderAnalysis()}
       </div>
     </div>
@@ -576,4 +825,31 @@ export function BettingAnalysis() {
 function calculateRisk(bets: BetProposal[]): number {
   // 単純な実装例：的中確率が低いほどリスクが高いと仮定
   return bets.reduce((acc, bet) => acc + (1 - bet.probability), 0) / bets.length;
-} 
+}
+
+// 新しいユーティリティ関数
+function groupBetsByType(bets: BetProposal[]) {
+  return bets.reduce((acc, bet) => {
+    if (!acc[bet.type]) acc[bet.type] = [];
+    acc[bet.type].push(bet);
+    return acc;
+  }, {} as Record<string, BetProposal[]>);
+}
+
+function calculateCorrelation(bets1: BetProposal[], bets2: BetProposal[]) {
+  // 簡易的な相関係数の計算
+  const returns1 = bets1.map(bet => bet.expectedReturn / bet.stake);
+  const returns2 = bets2.map(bet => bet.expectedReturn / bet.stake);
+  
+  const mean1 = returns1.reduce((sum, val) => sum + val, 0) / returns1.length;
+  const mean2 = returns2.reduce((sum, val) => sum + val, 0) / returns2.length;
+  
+  const covariance = returns1.reduce((sum, val, i) => 
+    sum + (val - mean1) * (returns2[i % returns2.length] - mean2), 0
+  ) / returns1.length;
+  
+  const std1 = Math.sqrt(returns1.reduce((sum, val) => sum + Math.pow(val - mean1, 2), 0) / returns1.length);
+  const std2 = Math.sqrt(returns2.reduce((sum, val) => sum + Math.pow(val - mean2, 2), 0) / returns2.length);
+  
+  return covariance / (std1 * std2);
+}
