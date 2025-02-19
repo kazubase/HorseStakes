@@ -73,8 +73,8 @@ export const evaluateBettingOptions = (
       const options = [];
       
       // 単勝オプション
-      const winEV = horse.odds * horse.winProb - 1;
-      if (horse.winProb > 0 && winEV > 0) {
+      const winEV = horse.odds * horse.winProb;
+      if (horse.winProb > 0 && winEV > 1) {
         options.push({
           type: "単勝",
           horseName: `${horse.number} ${horse.name}`,
@@ -106,9 +106,9 @@ export const evaluateBettingOptions = (
   
       // 複勝の平均オッズ計算
       const avgOdds = Math.round(((fuku.oddsMin + fuku.oddsMax) / 2) * 10) / 10;
-      const placeEV = avgOdds * horse.placeProb - 1;
+      const placeEV = avgOdds * horse.placeProb;
   
-      if (horse.placeProb > 0 && placeEV > 0) {
+      if (horse.placeProb > 0 && placeEV > 1) {
         bettingOptions.push({
           type: "複勝",
           horseName: `${horse.number} ${horse.name}`,
@@ -170,8 +170,8 @@ export const evaluateBettingOptions = (
         });
       }
   
-      const wakurenEV = wakuren.odds * wakurenProb - 1;
-      if (wakurenProb > 0 && wakurenEV > 0) {
+      const wakurenEV = wakuren.odds * wakurenProb;
+      if (wakurenProb > 0 && wakurenEV > 1) {
         bettingOptions.push({
           type: "枠連",
           horseName: `${wakuren.frame1}-${wakuren.frame2}`,
@@ -213,8 +213,8 @@ export const evaluateBettingOptions = (
       const h1SecondProb = (horse1.placeProb - horse1.winProb) / 2;
       umarenProb += horse2.winProb * h1SecondProb;
   
-      const umarenEV = umaren.odds * umarenProb - 1;
-      if (umarenProb > 0 && umarenEV > 0) {
+      const umarenEV = umaren.odds * umarenProb;
+      if (umarenProb > 0 && umarenEV > 1) {
         bettingOptions.push({
           type: "馬連",
           horseName: `${horse1.number}-${horse2.number}`,
@@ -274,9 +274,9 @@ export const evaluateBettingOptions = (
   
       // 平均オッズと期待値の計算
       const avgOdds = Math.round(((wide.oddsMin + wide.oddsMax) / 2) * 10) / 10;
-      const wideEV = avgOdds * wideProb - 1;
+      const wideEV = avgOdds * wideProb;
   
-      if (wideProb > 0 && wideEV > 0) {
+      if (wideProb > 0 && wideEV > 1) {
         bettingOptions.push({
           type: "ワイド",
           horseName: `${horse1.number}-${horse2.number}`,
@@ -310,8 +310,8 @@ export const evaluateBettingOptions = (
       // 馬単的中確率の計算（1着と2着の順番が重要）
       const umatanProb = horse1.winProb * ((horse2.placeProb - horse2.winProb) / 2);
   
-      const umatanEV = umatan.odds * umatanProb - 1;
-      if (umatanProb > 0 && umatanEV > 0) {
+      const umatanEV = umatan.odds * umatanProb;
+      if (umatanProb > 0 && umatanEV > 1) {
         bettingOptions.push({
           type: "馬単",
           horseName: `${horse1.number}→${horse2.number}`,
@@ -377,8 +377,8 @@ export const evaluateBettingOptions = (
                     ((horse2.placeProb - horse2.winProb) / 2) * 
                     ((horse1.placeProb - horse1.winProb) / 2);
   
-      const sanrenEV = sanren.odds * sanrenProb - 1;
-      if (sanrenProb > 0 && sanrenEV > 0) {
+      const sanrenEV = sanren.odds * sanrenProb;
+      if (sanrenProb > 0 && sanrenEV > 1) {
         bettingOptions.push({
           type: "３連複",
           horseName: `${horse1.number}-${horse2.number}-${horse3.number}`,
@@ -415,8 +415,8 @@ export const evaluateBettingOptions = (
                            ((horse2.placeProb - horse2.winProb) / 2) * 
                            ((horse3.placeProb - horse3.winProb) / 2);
   
-      const sanrentanEV = sanren.odds * sanrentanProb - 1;
-      if (sanrentanProb > 0 && sanrentanEV > 0) {
+      const sanrentanEV = sanren.odds * sanrentanProb;
+      if (sanrentanProb > 0 && sanrentanEV > 1) {
         bettingOptions.push({
           type: "３連単",
           horseName: `${horse1.number}→${horse2.number}→${horse3.number}`,

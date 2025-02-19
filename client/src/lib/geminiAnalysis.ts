@@ -1,6 +1,37 @@
 import { BetProposal, HorseData } from './betEvaluation';
 import { BetCorrelation } from './betConditionalProbability';
 
+export interface GeminiResponse {
+    strategy: GeminiStrategy;
+}
+
+export interface GeminiRecommendation {
+    type: string;
+    horses: string[];
+    odds: number;
+    probability: number | string;
+    reason: string;
+    // 追加するプロパティ
+    frame1?: number;
+    frame2?: number;
+    frame3?: number;
+    horse1?: number;
+    horse2?: number;
+    horse3?: number;
+}
+
+export interface GeminiStrategy {
+    description: string;
+    recommendations: GeminiRecommendation[];
+    bettingTable: {
+        headers: string[];
+        rows: string[][];
+    };
+    summary: {
+        riskLevel: string;  // リスクレベルのみを保持
+    };
+}
+
 interface GeminiAnalysisInput {
   horses: Array<{
     name: string;
@@ -134,7 +165,7 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
       const candidates = input.bettingOptions
         .filter(bet => bet.type === type)
         .map(bet => {
-          const expectedValue = bet.probability * bet.expectedReturn / bet.stake - 1;
+          const expectedValue = bet.probability * bet.expectedReturn / bet.stake;
           return `${bet.horseName} [オッズ:${(bet.expectedReturn / bet.stake).toFixed(1)}, 的中確率:${(bet.probability * 100).toFixed(1)}%, 期待値:${expectedValue.toFixed(2)}]`;
         })
         .join('\n');

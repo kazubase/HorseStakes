@@ -16,7 +16,7 @@ export function BettingOptionsTable({
   // 期待値を計算
   const optionsWithEV = bettingOptions.map(option => {
     const odds = option.expectedReturn / option.stake;
-    const ev = (odds * option.probability) - 1;
+    const ev = odds * option.probability;
     return {
       ...option,
       odds,

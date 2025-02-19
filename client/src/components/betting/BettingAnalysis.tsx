@@ -11,14 +11,11 @@ import {
   placeProbsAtom, 
   analysisResultAtom 
 } from '@/stores/bettingStrategy';
-import { calculateBetProposals } from '@/lib/betCalculator';
 import type { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
-import { RaceAnalytics } from "@/components/RaceAnalytics";
 import { BettingOptionsTable } from "@/components/BettingOptionsTable";
-import { getGeminiStrategy, type BettingCandidate, type GeminiResponse } from '@/lib/geminiApi';
+import { GeminiResponse } from '@/lib/geminiAnalysis';
 import { Spinner } from "@/components/ui/spinner";
-import type { BetProposal, BettingOption } from '@/lib/betCalculator';
-import { evaluateBettingOptions } from '@/lib/betEvaluation';
+import { BetProposal, evaluateBettingOptions } from '@/lib/betEvaluation';
 import { analyzeWithGemini } from '@/lib/geminiAnalysis';
 import { calculateConditionalProbability } from '@/lib/betConditionalProbability';
 import {
