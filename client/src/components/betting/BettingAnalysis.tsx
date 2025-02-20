@@ -140,11 +140,11 @@ function BetTypeAnalysis({ bettingOptions }: { bettingOptions: BetProposal[] }) 
                     const data = payload[0].payload as BetTypeStats;
                     return (
                       <div className="bg-white p-2 border rounded shadow-lg">
-                        <p className="font-medium">{data.type}</p>
-                        <p>期待リターン: {(data.avgEV * 100).toFixed(1)}%</p>
-                        <p>リスク: {(data.risk * 100).toFixed(1)}%</p>
-                        <p>シャープレシオ: {data.sharpeRatio.toFixed(2)}</p>
-                        <p>馬券数: {data.betCount}</p>
+                        <p className="text-black font-medium">{data.type}</p>
+                        <p className="text-black">期待リターン: {(data.avgEV * 100).toFixed(1)}%</p>
+                        <p className="text-black">リスク: {(data.risk * 100).toFixed(1)}%</p>
+                        <p className="text-black">シャープレシオ: {data.sharpeRatio.toFixed(2)}</p>
+                        <p className="text-black">馬券数: {data.betCount}</p>
                       </div>
                     );
                   }
@@ -245,10 +245,10 @@ function BetCombinationAnalysis({ bettingOptions }: { bettingOptions: BetProposa
                     const data = payload[0].payload;
                     return (
                       <div className="bg-white p-2 border rounded shadow-lg">
-                        <p className="font-medium">{data.types.join(' + ')}</p>
-                        <p>相関係数: {data.correlation.toFixed(2)}</p>
-                        <p>リスク分散効果: {data.diversificationBenefit.toFixed(1)}%</p>
-                        <p>組合せシャープレシオ: {data.combinedSharpe.toFixed(2)}</p>
+                        <p className="text-black font-medium">{data.types.join(' + ')}</p>
+                        <p className="text-black">相関係数: {data.correlation.toFixed(2)}</p>
+                        <p className="text-black">リスク分散効果: {data.diversificationBenefit.toFixed(1)}%</p>
+                        <p className="text-black">組合せシャープレシオ: {data.combinedSharpe.toFixed(2)}</p>
                       </div>
                     );
                   }
