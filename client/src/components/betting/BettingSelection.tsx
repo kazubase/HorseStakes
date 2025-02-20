@@ -1,5 +1,6 @@
 import { useAtom } from 'jotai';
 import { selectionStateAtom, bettingOptionsAtom } from '@/stores/bettingStrategy';
+import { BettingOptionsTable } from '@/components/BettingOptionsTable';
 import type { BetProposal } from '@/lib/betEvaluation';
 
 export function BettingSelection() {
@@ -39,47 +40,11 @@ export function BettingSelection() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 単勝・複勝の候補 */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">単勝・複勝候補</h3>
-          <div className="space-y-2">
-            {bettingOptions
-              .filter(bet => ['単勝', '複勝'].includes(bet.type))
-              .map((bet, index) => (
-                <BetCard
-                  key={`${bet.type}-${bet.horses.join('-')}`}
-                  bet={bet}
-                  isSelected={selectionState.selectedBets.some(b => 
-                    b.type === bet.type && 
-                    b.horses.join(',') === bet.horses.join(',')
-                  )}
-                  onSelect={() => handleBetSelection(bet)}
-                />
-              ))}
-          </div>
-        </div>
-
-        {/* 馬連・ワイドの候補 */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">馬連・ワイド候補</h3>
-          <div className="space-y-2">
-            {bettingOptions
-              .filter(bet => ['馬連', 'ワイド'].includes(bet.type))
-              .map((bet, index) => (
-                <BetCard
-                  key={`${bet.type}-${bet.horses.join('-')}`}
-                  bet={bet}
-                  isSelected={selectionState.selectedBets.some(b => 
-                    b.type === bet.type && 
-                    b.horses.join(',') === bet.horses.join(',')
-                  )}
-                  onSelect={() => handleBetSelection(bet)}
-                />
-              ))}
-          </div>
-        </div>
-      </div>
+      <BettingOptionsTable 
+        bettingOptions={bettingOptions}
+        selectedBets={selectionState.selectedBets}
+        onBetSelect={handleBetSelection}
+      />
     </div>
   );
 }

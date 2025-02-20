@@ -282,7 +282,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                     {bet.stake.toLocaleString()}円
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {bet.expectedReturn.toLocaleString()}円
+                    {(Math.round(bet.expectedReturn / 10) * 10).toLocaleString()}円
                   </span>
                 </div>
 
