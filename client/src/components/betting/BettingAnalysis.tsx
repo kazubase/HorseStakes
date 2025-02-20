@@ -9,11 +9,12 @@ import {
   horsesAtom, 
   winProbsAtom, 
   placeProbsAtom, 
-  analysisResultAtom 
+  analysisResultAtom,
+  bettingOptionsAtom
 } from '@/stores/bettingStrategy';
 import type { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
 import { BettingOptionsTable } from "@/components/BettingOptionsTable";
-import { GeminiResponse } from '@/lib/geminiAnalysis';
+import { GeminiAnalysisResult } from '@/lib/geminiAnalysis';
 import { Spinner } from "@/components/ui/spinner";
 import { BetProposal, evaluateBettingOptions } from '@/lib/betEvaluation';
 import { analyzeWithGemini } from '@/lib/geminiAnalysis';
@@ -306,8 +307,11 @@ export function BettingAnalysis() {
   const { id } = useParams();
   const [location] = useLocation();
   const [horses, setHorses] = useAtom(horsesAtom);
-  const [analysisResult, setAnalysisResult] = useAtom<GeminiResponse | null>(analysisResultAtom);
+  const [analysisResult, setAnalysisResult] = useAtom<GeminiAnalysisResult | null>(analysisResultAtom);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [canProceed, setCanProceed] = useState(false);
+  const [, setBettingOptions] = useAtom(bettingOptionsAtom);
+  const [isCalculated, setIsCalculated] = useState(false);
 
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1.0;
@@ -369,10 +373,11 @@ export function BettingAnalysis() {
     }
   }, [horsesData, setHorses]);
 
-  // Step 1: 馬券の期待値計算
+  // bettingOptionsの計算
   const bettingOptions = useMemo(() => {
     if (!horses || !latestOdds || !latestFukuOdds || !wakurenOdds || !umarenOdds || !wideOdds || !umatanOdds || !sanrenpukuOdds || !sanrentanOdds) return [];
-    return evaluateBettingOptions(
+    
+    const options = evaluateBettingOptions(
       horses.map(horse => ({
         name: horse.name,
         odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
@@ -422,7 +427,19 @@ export function BettingAnalysis() {
         odds: Number(odd.odds)
       }))
     );
-  }, [horses, latestOdds, latestFukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, sanrenpukuOdds, sanrentanOdds, winProbs, placeProbs]);
+
+    if (!isCalculated && options.length > 0) {
+      setBettingOptions(options);
+      setIsCalculated(true);
+    }
+
+    return options;
+  }, [horses, latestOdds, latestFukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, sanrenpukuOdds, sanrentanOdds, winProbs, placeProbs, isCalculated]);
+
+  // 計算結果に基づいて次へボタンの状態を更新
+  useEffect(() => {
+    setCanProceed(bettingOptions.length > 0);
+  }, [bettingOptions]);
 
   const conditionalProbabilities = useMemo(() => {
     if (!horses || !bettingOptions) return [];
@@ -478,17 +495,12 @@ export function BettingAnalysis() {
     enabled: !!horses && !!bettingOptions.length
   });
 
-  /*
-  // Step 3: ポートフォリオ最適化
-  const optimizedPortfolio = useMemo(() => {
-    if (!geminiAnalysis.data) return null;
-    return optimizePortfolio(
-      geminiAnalysis.data.strategy.recommendations,
-      budget,
-      riskRatio
-    );
-  }, [geminiAnalysis.data, budget, riskRatio]);
-  */
+  // 分析結果が得られたら次へ進めるようにする
+  useEffect(() => {
+    if (geminiAnalysis.data) {
+      setAnalysisResult(geminiAnalysis.data);
+    }
+  }, [geminiAnalysis.data, setAnalysisResult]);
 
   if (isHorsesError) {
     return (

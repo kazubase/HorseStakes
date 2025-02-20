@@ -1,7 +1,7 @@
 import { atom } from 'jotai';
-import type { BetProposal } from '@/lib/betCalculator';
+import type { BetProposal } from '@/lib/betEvaluation';
 import type { Horse } from '@db/schema';
-import type { GeminiResponse } from '@/lib/geminiApi';
+import type { GeminiAnalysisResult } from '@/lib/geminiAnalysis';
 
 // ステップ管理
 export type BettingStep = 'ANALYSIS' | 'SELECTION' | 'PORTFOLIO';
@@ -21,7 +21,7 @@ export interface AnalysisResult {
     sharpeRatio: number;
   };
 }
-export const analysisResultAtom = atom<GeminiResponse | null>(null);
+export const analysisResultAtom = atom<GeminiAnalysisResult | null>(null);
 
 // 選択状態
 export interface SelectionState {
@@ -45,16 +45,20 @@ export interface Portfolio {
 }
 export const portfolioAtom = atom<Portfolio | null>(null);
 
+// bettingOptionsAtomを追加
+export const bettingOptionsAtom = atom<BetProposal[]>([]);
+
 // ステップ遷移の制御
 export const canProceedAtom = atom((get) => {
   const currentStep = get(currentStepAtom);
-  const analysis = get(analysisResultAtom);
+  const bettingOptions = get(bettingOptionsAtom);
   const selection = get(selectionStateAtom);
   const portfolio = get(portfolioAtom);
 
   switch (currentStep) {
     case 'ANALYSIS':
-      return analysis !== null;
+      // 馬券候補が計算されていれば次に進める
+      return bettingOptions.length > 0;
     case 'SELECTION':
       return selection.selectedBets.length > 0;
     case 'PORTFOLIO':

@@ -1,11 +1,17 @@
 import { useAtom } from 'jotai';
+import { useQuery } from "@tanstack/react-query";
 import { BettingOptionsTable } from "@/components/BettingOptionsTable";
-import { selectionStateAtom, analysisResultAtom } from '@/stores/bettingStrategy';
-import type { BetProposal } from '@/lib/betCalculator';
+import { selectionStateAtom, analysisResultAtom, horsesAtom, winProbsAtom, placeProbsAtom, bettingOptionsAtom } from '@/stores/bettingStrategy';
+import type { BetProposal } from '@/lib/betEvaluation';
+import type { GeminiAnalysisResult } from '@/lib/geminiAnalysis';
+import type { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
+import { evaluateBettingOptions } from '@/lib/betEvaluation';
+import { useMemo } from 'react';
+import { Spinner } from '@/components/ui/spinner';
 
 export function BettingSelection() {
   const [selectionState, setSelectionState] = useAtom(selectionStateAtom);
-  const [analysisResult] = useAtom(analysisResultAtom);
+  const [bettingOptions] = useAtom(bettingOptionsAtom);
 
   const handleBetSelection = (bet: BetProposal) => {
     setSelectionState(prev => {
@@ -30,17 +36,18 @@ export function BettingSelection() {
     });
   };
 
+  if (!bettingOptions.length) {
+    return (
+      <div className="text-center text-muted-foreground p-4">
+        馬券候補を計算できませんでした
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <BettingOptionsTable
-        bettingOptions={analysisResult?.strategy.recommendations.map(rec => ({
-          type: rec.type,
-          horseName: rec.horses.join('-'),
-          horses: rec.horses,
-          stake: 0,
-          expectedReturn: 0,
-          probability: Number(rec.probability)
-        })) || []}
+        bettingOptions={bettingOptions}
         selectedBets={selectionState.selectedBets}
         onBetSelect={handleBetSelection}
       />
