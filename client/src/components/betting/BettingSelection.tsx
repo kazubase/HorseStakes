@@ -1,13 +1,7 @@
 import { useAtom } from 'jotai';
-import { useQuery } from "@tanstack/react-query";
 import { BettingOptionsTable } from "@/components/BettingOptionsTable";
-import { selectionStateAtom, analysisResultAtom, horsesAtom, winProbsAtom, placeProbsAtom, bettingOptionsAtom } from '@/stores/bettingStrategy';
+import { selectionStateAtom, bettingOptionsAtom } from '@/stores/bettingStrategy';
 import type { BetProposal } from '@/lib/betEvaluation';
-import type { GeminiAnalysisResult } from '@/lib/geminiAnalysis';
-import type { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
-import { evaluateBettingOptions } from '@/lib/betEvaluation';
-import { useMemo } from 'react';
-import { Spinner } from '@/components/ui/spinner';
 
 export function BettingSelection() {
   const [selectionState, setSelectionState] = useAtom(selectionStateAtom);
