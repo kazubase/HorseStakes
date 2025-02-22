@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai';
-import { selectionStateAtom, bettingOptionsAtom, horsesAtom } from '@/stores/bettingStrategy';
+import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom } from '@/stores/bettingStrategy';
 import { BettingOptionsTable } from '@/components/BettingOptionsTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BetProposal } from '@/lib/betEvaluation';
@@ -11,6 +11,9 @@ export function BettingSelection() {
   const [selectionState, setSelectionState] = useAtom(selectionStateAtom);
   const [bettingOptions] = useAtom(bettingOptionsAtom);
   const [horses] = useAtom(horsesAtom);
+  const [latestOdds] = useAtom(latestOddsAtom);
+  const [winProbs] = useAtom(winProbsAtom);
+  const [placeProbs] = useAtom(placeProbsAtom);
 
   // 選択された馬券の統計を計算
   const statistics = useMemo(() => {
@@ -44,29 +47,29 @@ export function BettingSelection() {
 
     const horsesWithProbs = horses.map(horse => ({
       ...horse,
-      odds: 0, // TODO: 実際のオッズを設定
-      winProb: 0, // TODO: 実際の確率を設定
-      placeProb: 0 // TODO: 実際の確率を設定
+      odds: latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0,
+      winProb: winProbs[horse.id] / 100 || 0,
+      placeProb: placeProbs[horse.id] / 100 || 0
     }));
 
+    // 選択された全ての馬券を一意のキーでソート
+    const sortedBets = [...selectionState.selectedBets].sort((a, b) => {
+      const keyA = `${a.type}-${a.horseName}`;
+      const keyB = `${b.type}-${b.horseName}`;
+      return keyA.localeCompare(keyB);
+    });
+
+    // 全ての馬券の組み合わせの条件付き確率を計算
     const correlations = calculateConditionalProbability(
-      selectionState.selectedBets,
+      sortedBets,
       horsesWithProbs
     );
 
-    // 相関の強さに基づいてグループ化
-    const strongCorrelations = correlations.filter(c => c.probability > 0.7);
-    const moderateCorrelations = correlations.filter(c => c.probability > 0.3 && c.probability <= 0.7);
-    const weakCorrelations = correlations.filter(c => c.probability > 0 && c.probability <= 0.3);
-
     return {
       correlations,
-      strongCorrelations,
-      moderateCorrelations,
-      weakCorrelations,
       averageCorrelation: correlations.reduce((sum, c) => sum + c.probability, 0) / correlations.length
     };
-  }, [horses, selectionState.selectedBets]);
+  }, [horses, selectionState.selectedBets, latestOdds, winProbs, placeProbs]);
 
   // リスク・リターンデータの計算
   const riskReturnData = useMemo(() => {
@@ -194,72 +197,33 @@ export function BettingSelection() {
                   </div>
                 </div>
 
-                {correlationAnalysis.strongCorrelations.length > 0 && (
-                  <div>
-                    <div className="text-sm font-medium mb-2">強い相関関係</div>
-                    {correlationAnalysis.strongCorrelations.map((corr, i) => (
-                      <div key={i} className="text-sm text-muted-foreground">
-                        {corr.condition.type} {corr.condition.horses} →{' '}
-                        {corr.target.type} {corr.target.horses}:{' '}
-                        {(corr.probability * 100).toFixed(1)}%
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {correlationAnalysis.moderateCorrelations.length > 0 && (
-                  <div>
-                    <div className="text-sm font-medium mb-2">中程度の相関関係</div>
-                    {correlationAnalysis.moderateCorrelations.map((corr, i) => (
-                      <div key={i} className="text-sm text-muted-foreground">
-                        {corr.condition.type} {corr.condition.horses} →{' '}
-                        {corr.target.type} {corr.target.horses}:{' '}
-                        {(corr.probability * 100).toFixed(1)}%
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {correlationAnalysis.weakCorrelations.length > 0 && (
-                  <div>
-                    <div className="text-sm font-medium mb-2">弱い相関関係</div>
-                    {correlationAnalysis.weakCorrelations.map((corr, i) => (
-                      <div key={i} className="text-sm text-muted-foreground">
-                        {corr.condition.type} {corr.condition.horses} →{' '}
-                        {corr.target.type} {corr.target.horses}:{' '}
-                        {(corr.probability * 100).toFixed(1)}%
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 選択された馬券の内訳 */}
-        {statistics && (
-          <Card>
-            <CardHeader className="py-2 px-3">
-              <CardTitle className="text-base">選択された馬券</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                {selectionState.selectedBets.map((bet, index) => (
-                  <div key={index} className="flex justify-between items-center p-2 rounded-md bg-muted/30">
-                    <div>
-                      <div className="font-medium">{bet.type}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {bet.horses.join('-')}
-                      </div>
+                {/* 条件ごとにグループ化して表示 */}
+                {Object.entries(
+                  correlationAnalysis.correlations.reduce((acc, corr) => {
+                    const key = `${corr.condition.type} ${corr.condition.horses}`;
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(corr);
+                    return acc;
+                  }, {} as Record<string, typeof correlationAnalysis.correlations>)
+                ).map(([condition, correlations], i) => (
+                  <div key={i} className="border rounded-lg p-3">
+                    <div className="font-medium mb-2">
+                      {condition} が的中する場合
                     </div>
-                    <div className="text-right">
-                      <div className="font-medium">
-                        {bet.expectedReturn.toLocaleString()}円
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        期待値: {(bet.expectedReturn/bet.stake * bet.probability).toFixed(2)}
-                      </div>
+                    <div className="space-y-2">
+                      {correlations.map((corr, j) => (
+                        <div key={j} 
+                             className={`text-sm p-2 rounded ${
+                               corr.probability > 0.5 ? 'bg-green-100/10' : 'bg-red-100/10'
+                             }`}>
+                          <div className="flex justify-between">
+                            <span>{corr.target.type} {corr.target.horses} も的中する確率:</span>
+                            <span className={corr.probability > 0.5 ? 'text-green-500' : 'text-red-500'}>
+                              {(corr.probability * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}

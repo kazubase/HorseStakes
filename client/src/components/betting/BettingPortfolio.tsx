@@ -7,9 +7,7 @@ import { useLocation } from "wouter";
 
 export function BettingPortfolio() {
   const [selectionState] = useAtom(selectionStateAtom);
-  const [location] = useLocation();
-  const urlParams = new URLSearchParams(location.split('?')[1]);
-  const budget = Number(urlParams.get('budget')) || 10000;
+  const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
 
   const optimizedPortfolio = useMemo(() => {
     if (!selectionState.selectedBets.length) return null;

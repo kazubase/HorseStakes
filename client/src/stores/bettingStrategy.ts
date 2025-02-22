@@ -48,6 +48,9 @@ export const portfolioAtom = atom<Portfolio | null>(null);
 // bettingOptionsAtomを追加
 export const bettingOptionsAtom = atom<BetProposal[]>([]);
 
+// オッズデータ
+export const latestOddsAtom = atom<{ horseId: string; odds: number }[] | null>(null);
+
 // ステップ遷移の制御
 export const canProceedAtom = atom((get) => {
   const currentStep = get(currentStepAtom);
