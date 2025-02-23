@@ -293,6 +293,42 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // オッズ履歴を取得するエンドポイント
+  app.get("/api/tan-odds-history/:raceId", async (req, res) => {
+    try {
+      const raceId = parseInt(req.params.raceId);
+      console.log('=== Odds History Request ===');
+      console.log('RaceId:', raceId);
+      
+      const oddsHistory = await db.select({
+        horseId: tanOddsHistory.horseId,
+        odds: tanOddsHistory.odds,
+        timestamp: sql`date_trunc('minute', ${tanOddsHistory.timestamp})`,
+      })
+        .from(tanOddsHistory)
+        .where(eq(tanOddsHistory.raceId, raceId))
+        .orderBy(tanOddsHistory.timestamp);
+
+      // データの詳細をログ
+      console.log('Records found:', oddsHistory.length);
+      console.log('First record:', oddsHistory[0]);
+      console.log('Last record:', oddsHistory[oddsHistory.length - 1]);
+      console.log('Unique horses:', new Set(oddsHistory.map(o => o.horseId)).size);
+      console.log('Unique timestamps:', new Set(oddsHistory.map(o => o.timestamp)).size);
+      console.log('=========================');
+
+      res.json(oddsHistory);
+    } catch (error: any) {
+      console.error('Error fetching odds history:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      res.status(500).json({ error: "Failed to fetch odds history" });
+    }
+  });
+
   // 新しいエンドポイントを追加
   app.get("/api/tan-odds-history/latest/:raceId", async (req, res) => {
     try {
