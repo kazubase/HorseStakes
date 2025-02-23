@@ -736,7 +736,27 @@ export function BettingAnalysis() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-4 lg:self-start">
-        {/* 予想設定 */}
+        {/* 馬券候補を先に表示 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>馬券候補</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BettingOptionsTable
+              bettingOptions={bettingOptions.map(bet => ({
+                type: bet.type,
+                horses: [bet.horseName],
+                horseName: bet.horseName,
+                stake: bet.stake,
+                expectedReturn: bet.expectedReturn,
+                probability: bet.probability
+              }))}
+              selectedBets={[]}
+            />
+          </CardContent>
+        </Card>
+
+        {/* 予想設定を後に表示 */}
         <Card>
           <CardHeader>
             <CardTitle>予想設定</CardTitle>
@@ -802,26 +822,6 @@ export function BettingAnalysis() {
                 <span className="text-sm text-muted-foreground">読込中...</span>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* 馬券候補 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>馬券候補</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BettingOptionsTable
-              bettingOptions={bettingOptions.map(bet => ({
-                type: bet.type,
-                horses: [bet.horseName],
-                horseName: bet.horseName,
-                stake: bet.stake,
-                expectedReturn: bet.expectedReturn,
-                probability: bet.probability
-              }))}
-              selectedBets={[]}
-            />
           </CardContent>
         </Card>
       </div>
