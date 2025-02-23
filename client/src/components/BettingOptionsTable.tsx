@@ -2,17 +2,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BetProposal } from "@/lib/betCalculator";
 import { useMemo } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { BetCorrelation } from "@/lib/betConditionalProbability";
 
 interface BettingOptionsTableProps {
   bettingOptions: BetProposal[];
   selectedBets?: BetProposal[];
   onBetSelect?: (bet: BetProposal) => void;
+  correlations?: BetCorrelation[];
+  geminiRecommendations?: Array<{
+    type: string;
+    horses: string[];
+    reason: string;
+  }>;
 }
 
 export function BettingOptionsTable({ 
   bettingOptions,
   selectedBets = [],
-  onBetSelect
+  onBetSelect,
+  correlations = [],
+  geminiRecommendations = []
 }: BettingOptionsTableProps) {
   // 期待値を計算して統計情報を取得
   const optionsWithStats = useMemo(() => {
@@ -127,6 +137,45 @@ export function BettingOptionsTable({
     return result;
   };
 
+  // 特定の馬券に関連する条件付き確率を取得
+  const getRelatedCorrelations = (bet: BetProposal) => {
+    return correlations.filter(corr => 
+      (corr.condition.type === bet.type && 
+       corr.condition.horses === bet.horseName) ||
+      (corr.target.type === bet.type && 
+       corr.target.horses === bet.horseName)
+    );
+  };
+
+  // 特定の馬券に関連する推奨組み合わせを取得
+  const getRelatedRecommendations = (bet: BetProposal) => {
+    return geminiRecommendations.filter(rec => 
+      rec.type === bet.type && 
+      rec.horses.includes(bet.horseName)
+    );
+  };
+
+  // 条件付き確率の表示をより見やすく整理する関数
+  const formatCorrelations = (bet: BetProposal, correlations: BetCorrelation[]) => {
+    // 自身の馬券を除外し、重複を除去
+    const uniqueCorrs = correlations
+      .filter(corr => !(
+        // 同じ券種かつ同じ馬番の組み合わせを除外
+        corr.target.type === bet.type && 
+        corr.target.horses === bet.horseName
+      ))
+      .reduce((acc, curr) => {
+        const key = `${curr.target.type}-${curr.target.horses}`;
+        if (!acc[key] || acc[key].probability < curr.probability) {
+          acc[key] = curr;
+        }
+        return acc;
+      }, {} as Record<string, BetCorrelation>);
+
+    return Object.values(uniqueCorrs)
+      .sort((a, b) => b.probability - a.probability);
+  };
+
   return (
     <div className="space-y-3">
       {/* 凡例を追加 */}
@@ -149,51 +198,108 @@ export function BettingOptionsTable({
           return (
             <Card key={betType} className="bg-background/50 backdrop-blur-sm">
               <CardHeader className="py-2 px-3 border-b">
-                <CardTitle className="text-base font-medium">{betType}</CardTitle>
+                <CardTitle className="text-base font-medium">{betType}候補</CardTitle>
               </CardHeader>
               <CardContent className="p-2">
-                {/* 馬券リスト */}
                 <div className="space-y-1.5">
                   {options.map((option, index) => {
                     const evClass = getEvBackgroundClass(option.ev, optionsWithStats.stats.ev);
+                    const relatedCorrelations = getRelatedCorrelations(option);
+                    const relatedRecommendations = getRelatedRecommendations(option);
                     
                     return (
-                      <div 
-                        key={index} 
-                        onClick={() => onBetSelect?.(option)}
-                        className={`
-                          p-2 rounded-md transition-colors cursor-pointer
-                          ${isSelected(option)
-                            ? 'bg-primary/15 border border-primary/30 shadow-sm' 
-                            : `${evClass} border border-transparent`
-                          }
-                        `}
-                      >
-                        <div className="grid grid-cols-2 gap-2">
-                          <span className="font-medium">
-                            {formatHorses(option.horses, betType)}
-                          </span>
-                          <span className={`
-                            text-right font-bold
-                            ${getColorClass(option.odds, optionsWithStats.stats.odds)}
-                          `}>
-                            ×{option.odds.toFixed(1)}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs mt-1">
-                          <span className={
-                            getColorClass(option.probability, optionsWithStats.stats.probability)
-                          }>
-                            {(option.probability * 100).toFixed(1)}%
-                          </span>
-                          <span className={`
-                            text-right font-medium
-                            ${getColorClass(option.ev, optionsWithStats.stats.ev)}
-                          `}>
-                            {(option.ev).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
+                      <Popover key={index}>
+                        <PopoverTrigger asChild>
+                          <div 
+                            onClick={() => onBetSelect?.(option)}
+                            className={`
+                              p-2 rounded-md transition-colors cursor-pointer
+                              ${isSelected(option)
+                                ? 'bg-primary/15 border border-primary/30 shadow-sm' 
+                                : `${evClass} border border-transparent`
+                              }
+                            `}
+                          >
+                            <div className="grid grid-cols-2 gap-2">
+                              <span className="font-medium">
+                                {formatHorses(option.horses, betType)}
+                              </span>
+                              <span className={`
+                                text-right font-bold
+                                ${getColorClass(option.odds, optionsWithStats.stats.odds)}
+                              `}>
+                                ×{option.odds.toFixed(1)}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                              <span className={
+                                getColorClass(option.probability, optionsWithStats.stats.probability)
+                              }>
+                                {(option.probability * 100).toFixed(1)}%
+                              </span>
+                              <span className={`
+                                text-right font-medium
+                                ${getColorClass(option.ev, optionsWithStats.stats.ev)}
+                              `}>
+                                {(option.ev).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 bg-slate-900/95 backdrop-blur-sm border border-slate-800">
+                          <div className="space-y-4">
+                            <div>
+                              <h4 className="font-medium text-slate-300 mb-2 px-1">条件付き確率</h4>
+                              <div className="space-y-0.5 rounded-lg bg-slate-950/50 p-1.5">
+                                {formatCorrelations(option, relatedCorrelations).map((corr, i) => (
+                                  <div key={i} 
+                                    className={`
+                                      flex justify-between items-center px-2.5 py-1.5 rounded-md
+                                      ${corr.probability > 0.8 ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-800/20' : 
+                                        corr.probability > 0.5 ? 'bg-emerald-950/30 text-emerald-400' : 
+                                        corr.probability > 0.3 ? 'bg-amber-950/30 text-amber-400' : 
+                                        'bg-slate-800/30 text-slate-400'
+                                      }
+                                      backdrop-blur-sm hover:bg-opacity-60 transition-all duration-200
+                                    `}
+                                  >
+                                    <span className="text-sm font-medium tracking-tight">
+                                      {corr.target.type} {corr.target.horses}
+                                    </span>
+                                    <span className={`
+                                      text-sm tabular-nums font-semibold
+                                      ${corr.probability > 0.8 ? 'text-emerald-200' : 
+                                        corr.probability > 0.5 ? 'text-emerald-400' : 
+                                        corr.probability > 0.3 ? 'text-amber-400' : 
+                                        'text-slate-400'
+                                      }
+                                    `}>
+                                      {(corr.probability * 100).toFixed(1)}%
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* 推奨組み合わせの表示 */}
+                            {relatedRecommendations.length > 0 && (
+                              <div>
+                                <h4 className="font-medium mb-2">推奨組み合わせ</h4>
+                                <div className="space-y-2">
+                                  {relatedRecommendations.map((rec, i) => (
+                                    <div key={i} className="text-sm">
+                                      <div>{rec.horses.join(' + ')}</div>
+                                      <div className="text-muted-foreground text-xs">
+                                        {rec.reason}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     );
                   })}
                 </div>

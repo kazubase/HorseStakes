@@ -742,17 +742,15 @@ export function BettingAnalysis() {
             <CardTitle>馬券候補</CardTitle>
           </CardHeader>
           <CardContent>
-            <BettingOptionsTable
-              bettingOptions={bettingOptions.map(bet => ({
-                type: bet.type,
-                horses: [bet.horseName],
-                horseName: bet.horseName,
-                stake: bet.stake,
-                expectedReturn: bet.expectedReturn,
-                probability: bet.probability
-              }))}
-              selectedBets={[]}
-            />
+            <Card className="p-4">
+              <CardTitle className="text-base mb-4">馬券候補</CardTitle>
+              <BettingOptionsTable
+                bettingOptions={bettingOptions}
+                selectedBets={[]}
+                correlations={conditionalProbabilities}
+                geminiRecommendations={geminiAnalysis.data?.recommendations}
+              />
+            </Card>
           </CardContent>
         </Card>
 

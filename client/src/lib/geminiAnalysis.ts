@@ -97,6 +97,11 @@ export interface GeminiAnalysisResult {
       riskLevel: number;
     };
   };
+  recommendations: Array<{
+    type: string;
+    horses: string[];
+    reason: string;
+  }>;
 }
 
 const getCsrfToken = (): string => {
