@@ -176,6 +176,28 @@ export function BettingOptionsTable({
       .sort((a, b) => b.probability - a.probability);
   };
 
+  // 馬券種別に応じたタイトル表示を生成する関数
+  const getCorrelationTitle = (bet: BetProposal) => {
+    const horseDisplay = bet.horses.join('-');
+    switch (bet.type) {
+      case '単勝':
+      case '複勝':
+        return `${bet.type}${horseDisplay}が的中した場合`;
+      case '枠連':
+      case 'ワイド':
+      case '馬連':
+        return `${bet.type}${horseDisplay}が的中した場合`;
+      case '馬単':
+        return `${bet.type}${bet.horses.join('→')}が的中した場合`;
+      case '３連複':
+        return `${bet.type}${horseDisplay}が的中した場合`;
+      case '３連単':
+        return `${bet.type}${bet.horses.join('→')}が的中した場合`;
+      default:
+        return `${bet.type}が的中した場合`;
+    }
+  };
+
   return (
     <div className="space-y-3">
       {/* 凡例を追加 */}
@@ -249,7 +271,9 @@ export function BettingOptionsTable({
                         <PopoverContent className="w-80 bg-slate-900/95 backdrop-blur-sm border border-slate-800">
                           <div className="space-y-4">
                             <div>
-                              <h4 className="font-medium text-slate-300 mb-2 px-1">条件付き確率</h4>
+                              <h4 className="font-medium text-slate-300 mb-2 px-1">
+                                {getCorrelationTitle(option)}
+                              </h4>
                               <div className="space-y-0.5 rounded-lg bg-slate-950/50 p-1.5">
                                 {formatCorrelations(option, relatedCorrelations).map((corr, i) => (
                                   <div key={i} 
