@@ -738,18 +738,16 @@ export function BettingAnalysis() {
       <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-4 lg:self-start">
         {/* 馬券候補を先に表示 */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle>馬券候補</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Card className="p-4">
-              <BettingOptionsTable
-                bettingOptions={bettingOptions}
-                selectedBets={[]}
-                correlations={conditionalProbabilities}
-                geminiRecommendations={geminiAnalysis.data?.recommendations}
-              />
-            </Card>
+          <CardContent className="pt-0">
+            <BettingOptionsTable
+              bettingOptions={bettingOptions}
+              selectedBets={[]}
+              correlations={conditionalProbabilities}
+              geminiRecommendations={geminiAnalysis.data?.recommendations}
+            />
           </CardContent>
         </Card>
 
