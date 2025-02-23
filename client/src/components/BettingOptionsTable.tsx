@@ -198,7 +198,7 @@ export function BettingOptionsTable({
           return (
             <Card key={betType} className="bg-background/50 backdrop-blur-sm">
               <CardHeader className="py-2 px-3 border-b">
-                <CardTitle className="text-base font-medium">{betType}候補</CardTitle>
+                <CardTitle className="text-base font-medium">{betType}</CardTitle>
               </CardHeader>
               <CardContent className="p-2">
                 <div className="space-y-1.5">

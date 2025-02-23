@@ -743,7 +743,6 @@ export function BettingAnalysis() {
           </CardHeader>
           <CardContent>
             <Card className="p-4">
-              <CardTitle className="text-base mb-4">馬券候補</CardTitle>
               <BettingOptionsTable
                 bettingOptions={bettingOptions}
                 selectedBets={[]}
@@ -769,7 +768,7 @@ export function BettingAnalysis() {
                 </div>
                 <div className="bg-secondary/50 p-4 rounded-lg">
                   <p className="text-2xl font-bold">×{riskRatio.toFixed(1)}</p>
-                  <p className="text-xs text-muted-foreground">リスク</p>
+                  <p className="text-xs text-muted-foreground">リスクリワード</p>
                 </div>
               </div>
             </div>
