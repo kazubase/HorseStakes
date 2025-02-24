@@ -110,8 +110,20 @@ export default function Home() {
       }));
   }, [oddsHistory]);
 
-  // 選択された馬を配列で管理するように変更
+  // 初期値を空配列に設定
   const [selectedHorses, setSelectedHorses] = useState<number[]>([]);
+
+  // latestOddsが取得されたら上位5頭を選択
+  useEffect(() => {
+    if (latestOdds.length > 0) {
+      const top5Horses = latestOdds
+        .sort((a, b) => parseFloat(a.odds) - parseFloat(b.odds))
+        .slice(0, 5)
+        .map(odd => Number(odd.horseId));
+      
+      setSelectedHorses(top5Horses);
+    }
+  }, [latestOdds]);
 
   // 馬の選択/解除を処理する関数
   const toggleHorseSelection = (horseNumber: number) => {
