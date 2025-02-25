@@ -861,10 +861,10 @@ export function BettingAnalysis() {
       <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-4 lg:self-start">
         {/* 馬券候補を先に表示 */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader>
             <CardTitle>馬券候補</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="p-0">
             <BettingOptionsTable
               bettingOptions={bettingOptions}
               selectedBets={[]}
