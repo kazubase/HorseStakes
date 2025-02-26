@@ -1,25 +1,71 @@
 import { useAtom } from 'jotai';
 import { selectionStateAtom } from '@/stores/bettingStrategy';
 import { BettingStrategyTable } from "@/components/BettingStrategyTable";
-import { optimizeBetAllocation } from "@/lib/betOptimizer";
 import { useMemo } from 'react';
-import { useLocation } from "wouter";
+import type { GeminiStrategy } from '@/lib/geminiApi';
+import { normalizeStringProbability } from '@/lib/utils/probability';
 
 export function BettingPortfolio() {
   const [selectionState] = useAtom(selectionStateAtom);
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
+  const isAiOptimized = Boolean(new URLSearchParams(window.location.search).get("aiOptimized"));
 
-  const optimizedPortfolio = useMemo(() => {
-    if (!selectionState.selectedBets.length) return null;
-    return optimizeBetAllocation(selectionState.selectedBets.map(bet => ({
-      ...bet,
+  const strategy: GeminiStrategy = useMemo(() => {
+    if (!selectionState.selectedBets.length) {
+      return {
+        description: '選択された馬券がありません',
+        recommendations: [],
+        summary: {
+          riskLevel: isAiOptimized ? 'AI_OPTIMIZED' : 'USER_SELECTED',
+          description: ''
+        },
+        bettingTable: {
+          headers: ['券種', '買い目', 'オッズ', '的中率', '投資額', '理由'],
+          rows: []
+        }
+      };
+    }
+
+    const recommendations = selectionState.selectedBets.map(bet => ({
+      type: bet.type,
+      horses: bet.horses,
       odds: bet.expectedReturn / bet.stake,
-      probability: bet.probability,
-      reason: ''
-    })), budget);
-  }, [selectionState.selectedBets, budget]);
+      probability: normalizeStringProbability(bet.probability),
+      reason: bet.reason || '',
+      frame1: bet.frame1,
+      frame2: bet.frame2,
+      frame3: bet.frame3,
+      horse1: bet.horse1,
+      horse2: bet.horse2,
+      horse3: bet.horse3
+    }));
 
-  if (!optimizedPortfolio) {
+    return {
+      description: isAiOptimized ? 'AI自動最適化ポートフォリオ' : 'ユーザー選択ポートフォリオ',
+      recommendations,
+      summary: {
+        riskLevel: isAiOptimized ? 'AI_OPTIMIZED' : 'USER_SELECTED',
+        description: isAiOptimized
+          ? 'AIが選択した馬券の最適な組み合わせです'
+          : 'ユーザーが選択した馬券の最適な資金配分です'
+      },
+      bettingTable: {
+        headers: ['券種', '買い目', 'オッズ', '的中率', '投資額', '理由'],
+        rows: recommendations.map(rec => [
+          rec.type,
+          rec.horses.join('-'),
+          rec.odds.toFixed(1),
+          typeof rec.probability === 'number' 
+            ? `${(rec.probability * 100).toFixed(1)}%`
+            : rec.probability,
+          Math.round(budget * (1 / recommendations.length)).toLocaleString(),
+          rec.reason || ''
+        ])
+      }
+    };
+  }, [selectionState.selectedBets, budget, isAiOptimized]);
+
+  if (!strategy.recommendations.length) {
     return (
       <div className="text-center py-8">
         <p>馬券が選択されていません</p>
@@ -30,20 +76,7 @@ export function BettingPortfolio() {
   return (
     <div className="space-y-6">
       <BettingStrategyTable
-        strategy={{
-          description: '最適化されたポートフォリオ',
-          bettingTable: {
-            headers: ['券種', '買い目', 'オッズ', '的中率', '投資額', '理由'],
-            rows: []
-          },
-          recommendations: optimizedPortfolio.map(bet => ({
-            ...bet,
-            odds: bet.expectedReturn / bet.stake,
-            probability: bet.probability,
-            reason: ''
-          })),
-          summary: { riskLevel: 'MEDIUM' }
-        }}
+        strategy={strategy}
         totalBudget={budget}
       />
     </div>

@@ -7,7 +7,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import html2canvas from 'html2canvas';
-import { Camera } from 'lucide-react';
+import { Camera, Sparkles } from 'lucide-react';
 import type { BetProposal } from "@/lib/betEvaluation";
 
 interface BettingStrategyTableProps {
@@ -227,7 +227,15 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     <Card data-card-container>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>AI最適化戦略</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>{strategy.description}</CardTitle>
+            {strategy.summary.riskLevel === 'AI_OPTIMIZED' && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                <Sparkles className="h-3 w-3 mr-1" />
+                AI最適化
+              </span>
+            )}
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -238,6 +246,11 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             保存
           </Button>
         </div>
+        {strategy.summary.description && (
+          <p className="text-sm text-muted-foreground mt-2">
+            {strategy.summary.description}
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

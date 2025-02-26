@@ -1,6 +1,7 @@
 import { GeminiStrategy, getGeminiStrategy } from './geminiApi';
 import type { GeminiRecommendation } from './geminiApi';
 import { calculateConditionalProbability } from './betConditionalProbability';
+import { normalizeStringProbability } from './utils/probability';
 
 export interface BettingOption {
   type: "単勝" | "複勝" | "枠連" | "ワイド" | "馬連" | "馬単" | "３連複" | "３連単";
@@ -636,9 +637,7 @@ export const optimizeBetAllocation = (
   
   const processedRecs = recommendations.map(rec => ({
     ...rec,
-    probability: typeof rec.probability === 'string' 
-      ? parseFloat(rec.probability.replace('%', '')) / 100 
-      : rec.probability
+    probability: normalizeStringProbability(rec.probability)
   }));
 
   // 馬券間の排反関係を計算する関数

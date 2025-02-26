@@ -2,6 +2,8 @@ import { atom } from 'jotai';
 import type { BetProposal } from '@/lib/betEvaluation';
 import type { Horse } from '@db/schema';
 import type { GeminiAnalysisResult } from '@/lib/geminiAnalysis';
+import type { HorseData } from '@/lib/betCalculator';
+import type { BettingOption } from '@/lib/betEvaluation';
 
 // ステップ管理
 export type BettingStep = 'ANALYSIS' | 'SELECTION' | 'PORTFOLIO';
@@ -25,12 +27,14 @@ export const analysisResultAtom = atom<GeminiAnalysisResult | null>(null);
 
 // 選択状態
 export interface SelectionState {
-  mode: 'manual' | 'ai';
   selectedBets: BetProposal[];
+  availableHorses: HorseData[];
+  availableBets: BettingOption[];
 }
 export const selectionStateAtom = atom<SelectionState>({
-  mode: 'manual',
-  selectedBets: []
+  selectedBets: [],
+  availableHorses: [],
+  availableBets: []
 });
 
 // ポートフォリオ

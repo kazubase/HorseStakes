@@ -30,8 +30,7 @@ export interface GeminiRecommendation {
   horses: string[];
   odds: number;
   probability: number | string;
-  reason: string;
-  // 追加するプロパティ
+  reason?: string;
   frame1?: number;
   frame2?: number;
   frame3?: number;
@@ -43,12 +42,13 @@ export interface GeminiRecommendation {
 export interface GeminiStrategy {
   description: string;
   recommendations: GeminiRecommendation[];
+  summary: {
+    riskLevel: 'AI_OPTIMIZED' | 'USER_SELECTED';
+    description?: string;
+  };
   bettingTable: {
     headers: string[];
-    rows: string[][];
-  };
-  summary: {
-    riskLevel: string;  // リスクレベルのみを保持
+    rows: any[][];
   };
 }
 

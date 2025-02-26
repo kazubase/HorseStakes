@@ -3,11 +3,16 @@ import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, win
 import { BettingOptionsTable } from '@/components/BettingOptionsTable';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { BetProposal } from '@/lib/betEvaluation';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { calculateConditionalProbability } from '@/lib/betConditionalProbability';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Button } from "@/components/ui/button";
+import { calculateBetProposalsWithGemini } from "@/lib/betOptimizer";
+import { useLocation } from "wouter";
+import { Sparkles } from 'lucide-react';
 
 export function BettingSelection() {
+  const [, setLocation] = useLocation();
   const [selectionState, setSelectionState] = useAtom(selectionStateAtom);
   const [bettingOptions] = useAtom(bettingOptionsAtom);
   const [horses] = useAtom(horsesAtom);
@@ -15,6 +20,7 @@ export function BettingSelection() {
   const [winProbs] = useAtom(winProbsAtom);
   const [placeProbs] = useAtom(placeProbsAtom);
   const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
+  const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
 
   // 選択された馬券の統計を計算
   const statistics = useMemo(() => {
@@ -125,6 +131,26 @@ export function BettingSelection() {
     });
   };
 
+  const handleAiOptimization = useCallback(async () => {
+    try {
+      const aiProposals = await calculateBetProposalsWithGemini(
+        selectionState.availableHorses,
+        budget,
+        { bettingOptions: selectionState.availableBets },
+        0.5 // デフォルトのリスク比率
+      );
+
+      setSelectionState(prev => ({
+        ...prev,
+        selectedBets: aiProposals
+      }));
+
+      setLocation(`/portfolio?budget=${budget}&aiOptimized=true`);
+    } catch (error) {
+      console.error('AI最適化エラー:', error);
+    }
+  }, [selectionState.availableHorses, selectionState.availableBets, budget, setSelectionState, setLocation]);
+
   if (!bettingOptions.length) {
     return (
       <div className="text-center text-muted-foreground p-4">
@@ -134,37 +160,50 @@ export function BettingSelection() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* 左側: 馬券候補 */}
-      <div>
-        <BettingOptionsTable 
-          bettingOptions={bettingOptions}
-          selectedBets={selectionState.selectedBets}
-          onBetSelect={handleBetSelection}
-        />
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 左側: 馬券候補 */}
+        <div>
+          <BettingOptionsTable 
+            bettingOptions={bettingOptions}
+            selectedBets={selectionState.selectedBets}
+            onBetSelect={handleBetSelection}
+          />
+        </div>
+
+        {/* 右側: メモ欄 */}
+        <div>
+          <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
+            <CardHeader className="relative pb-4">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
+              <CardTitle className="relative">メモ</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="relative overflow-hidden rounded-lg bg-black/40 backdrop-blur-sm border border-primary/10">
+                <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+                <textarea
+                  value={raceNotes}
+                  onChange={(e) => setRaceNotes(e.target.value)}
+                  className="w-full h-32 p-3 bg-transparent border-0 resize-none 
+                    focus:outline-none focus:ring-1 focus:ring-primary/30
+                    placeholder:text-muted-foreground text-foreground relative"
+                  placeholder="レース分析のメモを入力してください..."
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* 右側: メモ欄 */}
-      <div>
-        <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
-          <CardHeader className="relative pb-4">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
-            <CardTitle className="relative">メモ</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative overflow-hidden rounded-lg bg-black/40 backdrop-blur-sm border border-primary/10">
-              <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-              <textarea
-                value={raceNotes}
-                onChange={(e) => setRaceNotes(e.target.value)}
-                className="w-full h-32 p-3 bg-transparent border-0 resize-none 
-                  focus:outline-none focus:ring-1 focus:ring-primary/30
-                  placeholder:text-muted-foreground text-foreground relative"
-                placeholder="レース分析のメモを入力してください..."
-              />
-            </div>
-          </CardContent>
-        </Card>
+      {/* AI最適化ボタン */}
+      <div className="flex justify-center mt-6">
+        <Button
+          onClick={handleAiOptimization}
+          className="gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+        >
+          <Sparkles className="h-4 w-4" />
+          AI自動最適化
+        </Button>
       </div>
     </div>
   );

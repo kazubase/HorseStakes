@@ -2,6 +2,7 @@ import type { GeminiRecommendation } from './geminiApi';
 import { type BetProposal, type HorseData, type BettingOption, evaluateBettingOptions } from './betEvaluation';
 import { calculateConditionalProbability } from './betConditionalProbability';
 import { getGeminiStrategy } from './geminiApi';
+import { normalizeStringProbability } from './utils/probability';
 
 export const optimizeBetAllocation = (
     recommendations: GeminiRecommendation[],
@@ -13,9 +14,7 @@ export const optimizeBetAllocation = (
     
     const processedRecs = recommendations.map(rec => ({
       ...rec,
-      probability: typeof rec.probability === 'string' 
-        ? parseFloat(rec.probability.replace('%', '')) / 100 
-        : rec.probability
+      probability: normalizeStringProbability(rec.probability)
     }));
   
     // 馬券間の排反関係を計算する関数
