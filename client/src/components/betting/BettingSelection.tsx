@@ -144,22 +144,25 @@ export function BettingSelection() {
         />
       </div>
 
-      {/* 右側: メモ欄のみ */}
+      {/* 右側: メモ欄 */}
       <div>
-        <Card>
-          <CardHeader>
-            <CardTitle>メモ</CardTitle>
-            <CardDescription>レース分析のメモを残すことができます</CardDescription>
+        <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
+          <CardHeader className="relative pb-4">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
+            <CardTitle className="relative">メモ</CardTitle>
           </CardHeader>
           <CardContent>
-            <textarea
-              value={raceNotes}
-              onChange={(e) => setRaceNotes(e.target.value)}
-              className="w-full h-32 p-3 rounded-lg bg-secondary/50 border-0 resize-none 
-                focus:outline-none focus:ring-2 focus:ring-primary 
-                placeholder:text-muted-foreground text-foreground"
-              placeholder="レース分析のメモを入力してください..."
-            />
+            <div className="relative overflow-hidden rounded-lg bg-black/40 backdrop-blur-sm border border-primary/10">
+              <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+              <textarea
+                value={raceNotes}
+                onChange={(e) => setRaceNotes(e.target.value)}
+                className="w-full h-32 p-3 bg-transparent border-0 resize-none 
+                  focus:outline-none focus:ring-1 focus:ring-primary/30
+                  placeholder:text-muted-foreground text-foreground relative"
+                placeholder="レース分析のメモを入力してください..."
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
