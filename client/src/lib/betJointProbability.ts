@@ -1,4 +1,4 @@
-import { BetProposal, HorseData } from './betCalculator';
+import { BetProposal, HorseData } from './betEvaluation';
 
 // 2つの馬券が同時に的中する確率を計算
 export const calculateJointProbability = (

@@ -1,7 +1,7 @@
 import { useAtom } from 'jotai';
 import { selectionStateAtom } from '@/stores/bettingStrategy';
 import { BettingStrategyTable } from "@/components/BettingStrategyTable";
-import { optimizeBetAllocation } from "@/lib/betCalculator";
+import { optimizeBetAllocation } from "@/lib/betOptimizer";
 import { useMemo } from 'react';
 import { useLocation } from "wouter";
 

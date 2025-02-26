@@ -1,4 +1,4 @@
-import { BetProposal, HorseData } from './betCalculator';
+import { BetProposal, HorseData } from './betEvaluation';
 import { calculateJointProbability } from './betJointProbability';
 
 // 条件付き確率の結果を表すインターフェース

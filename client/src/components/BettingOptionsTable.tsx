@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BetProposal } from "@/lib/betCalculator";
+import { BetProposal } from "@/lib/betEvaluation";
 import { useMemo } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { BetCorrelation } from "@/lib/betConditionalProbability";

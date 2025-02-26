@@ -2,13 +2,13 @@ import { memo, useMemo, useRef, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { GeminiStrategy } from "@/lib/geminiApi";
-import { optimizeBetAllocation } from "@/lib/betCalculator";
+import { optimizeBetAllocation } from "@/lib/betOptimizer";
 import * as Popover from '@radix-ui/react-popover';
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import html2canvas from 'html2canvas';
 import { Camera } from 'lucide-react';
-import type { BetProposal } from "@/lib/betCalculator";
+import type { BetProposal } from "@/lib/betEvaluation";
 
 interface BettingStrategyTableProps {
   strategy: GeminiStrategy;
