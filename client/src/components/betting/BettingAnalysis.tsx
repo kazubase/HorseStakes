@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, memo, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAtom } from 'jotai';
 import { useQuery } from "@tanstack/react-query";
@@ -43,6 +43,12 @@ interface GeminiOptions {
   conditionalProbabilities: any[];
 }
 
+interface BetTypeAnalysis {
+  type: string;
+  suitability: number;
+  recommendedCombinations: string[];
+}
+
 // メモ入力用のコンポーネントを分離
 const RaceNotesCard = () => {
   const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
@@ -66,6 +72,184 @@ const RaceNotesCard = () => {
     </Card>
   );
 };
+
+// 馬券候補テーブルを分離
+const BettingOptionsSection = memo(({ 
+  bettingOptions, 
+  conditionalProbabilities, 
+  geminiRecommendations 
+}: {
+  bettingOptions: any[];
+  conditionalProbabilities: any[];
+  geminiRecommendations?: any;
+}) => (
+  <Card>
+    <CardHeader>
+      <CardTitle>馬券候補</CardTitle>
+    </CardHeader>
+    <CardContent className="p-0">
+      <BettingOptionsTable
+        bettingOptions={bettingOptions}
+        selectedBets={[]}
+        correlations={conditionalProbabilities}
+        geminiRecommendations={geminiRecommendations}
+      />
+    </CardContent>
+  </Card>
+));
+
+// 予想設定セクションを分離
+const PredictionSettingsSection = memo(({ 
+  budget, 
+  riskRatio, 
+  horses,
+  winProbs,
+  placeProbs 
+}: {
+  budget: number;
+  riskRatio: number;
+  horses: Horse[];
+  winProbs: Record<string, number>;
+  placeProbs: Record<string, number>;
+}) => {
+  const getFrameColor = useCallback((frame: number) => {
+    const colors = {
+      1: 'bg-white text-black border border-gray-200',
+      2: 'bg-black text-white',
+      3: 'bg-red-600 text-white',
+      4: 'bg-blue-600 text-white',
+      5: 'bg-yellow-400 text-black',
+      6: 'bg-green-600 text-white',
+      7: 'bg-orange-500 text-white',
+      8: 'bg-pink-400 text-white'
+    };
+    return colors[frame as keyof typeof colors] || 'bg-gray-200';
+  }, []);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>予想設定</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {/* 投資条件 */}
+        <div className="mb-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-secondary/50 p-4 rounded-lg">
+              <p className="text-2xl font-bold">{budget.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">予算</p>
+            </div>
+            <div className="bg-secondary/50 p-4 rounded-lg">
+              <p className="text-2xl font-bold">×{riskRatio.toFixed(1)}</p>
+              <p className="text-xs text-muted-foreground">リスクリワード</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 予想確率 */}
+        {horses && horses.length > 0 ? (
+          <div className="space-y-2">
+            {horses
+              .map(horse => ({
+                ...horse,
+                winProb: Number(winProbs[horse.id]) / 100 || 0,
+                placeProb: Number(placeProbs[horse.id]) / 100 || 0
+              }))
+              .sort((a, b) => {
+                if (b.winProb !== a.winProb) {
+                  return b.winProb - a.winProb;
+                }
+                return b.placeProb - a.placeProb;
+              })
+              .slice(0, 5)
+              .map(horse => (
+                <div key={horse.id} 
+                     className="flex items-center p-2 rounded-lg hover:bg-secondary/50 transition-colors">
+                  <div className="flex items-center gap-2 flex-1">
+                    <div className="flex items-center">
+                      <span className={`px-2 py-1 rounded text-sm ${getFrameColor(horse.frame)}`}>
+                        {horse.number}
+                      </span>
+                    </div>
+                    <span className="text-sm truncate">{horse.name}</span>
+                  </div>
+                  <div className="flex gap-3 text-right">
+                    <div className="w-14">
+                      <p className="text-sm font-bold">{(horse.winProb * 100).toFixed(0)}%</p>
+                      <p className="text-[10px] text-muted-foreground">単勝</p>
+                    </div>
+                    <div className="w-14">
+                      <p className="text-sm font-bold">{(horse.placeProb * 100).toFixed(0)}%</p>
+                      <p className="text-[10px] text-muted-foreground">複勝</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        ) : (
+          <div className="flex justify-center items-center h-32">
+            <Spinner className="w-4 h-4 mr-2" />
+            <span className="text-sm text-muted-foreground">読込中...</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+
+// Gemini分析セクションを分離
+const GeminiAnalysisSection = memo(({ 
+  isLoading, 
+  data 
+}: { 
+  isLoading: boolean; 
+  data: any; 
+}) => (
+  <Card>
+    <CardHeader>
+      <CardTitle>推奨アプローチ</CardTitle>
+    </CardHeader>
+    <CardContent>
+      {isLoading ? (
+        <div className="flex justify-center items-center p-4">
+          <Spinner />
+          <span className="ml-2">分析中...</span>
+        </div>
+      ) : data ? (
+        <div className="space-y-4">
+          {/* 推奨される馬券組み合わせ */}
+          <div className="bg-secondary/50 p-3 rounded-lg">
+            <h4 className="text-sm font-medium mb-2">推奨される馬券組み合わせ</h4>
+            {data.analysis.betTypeAnalysis
+              .filter((analysis: BetTypeAnalysis) => analysis.suitability > 70)
+              .map((analysis: BetTypeAnalysis, i: number) => (
+                <div key={i} className="mb-3">
+                  <p className="text-xs font-medium mb-1">{analysis.type}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {analysis.recommendedCombinations.map((combo, j) => (
+                      <div key={j} className="text-xs bg-primary/10 p-2 rounded">
+                        {combo}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </div>
+
+          {/* 重要な洞察 */}
+          <div className="bg-secondary/50 p-3 rounded-lg">
+            <h4 className="text-sm font-medium mb-2">重要な洞察</h4>
+            <ul className="list-disc pl-4 space-y-1">
+              {data.summary.keyInsights.map((insight: string, i: number) => (
+                <li key={i} className="text-xs">{insight}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
+    </CardContent>
+  </Card>
+));
 
 export function BettingAnalysis() {
   const { id } = useParams();
@@ -131,29 +315,11 @@ export function BettingAnalysis() {
     enabled: !!id,
   });
 
-  useEffect(() => {
-    if (horsesData) {
-      setHorses(horsesData);
-    }
-  }, [horsesData, setHorses]);
-
-
-  // bettingOptionsの計算を最適化し、計算時にログを出力
+  // メモ化された値の計算
   const bettingOptions = useMemo(() => {
-    console.log('Recalculating betting options');
-    
-    if (!horses || !latestOdds || !latestFukuOdds || !wakurenOdds || !umarenOdds || !wideOdds || !umatanOdds || !sanrenpukuOdds || !sanrentanOdds) {
-      console.log('Missing required data:', {
-        horses: !horses,
-        latestOdds: !latestOdds,
-        latestFukuOdds: !latestFukuOdds,
-        wakurenOdds: !wakurenOdds,
-        umarenOdds: !umarenOdds,
-        wideOdds: !wideOdds,
-        umatanOdds: !umatanOdds,
-        sanrenpukuOdds: !sanrenpukuOdds,
-        sanrentanOdds: !sanrentanOdds
-      });
+    if (!horses?.length || !latestOdds?.length || !latestFukuOdds?.length || 
+        !wakurenOdds?.length || !umarenOdds?.length || !wideOdds?.length || 
+        !umatanOdds?.length || !sanrenpukuOdds?.length || !sanrentanOdds?.length) {
       return [];
     }
 
@@ -165,19 +331,6 @@ export function BettingAnalysis() {
       frame: horse.frame,
       number: horse.number
     }));
-
-    console.log('Calculating with:', {
-      horsesCount: mappedHorses.length,
-      budget,
-      riskRatio,
-      fukuOddsCount: latestFukuOdds.length,
-      wakurenOddsCount: wakurenOdds.length,
-      umarenOddsCount: umarenOdds.length,
-      wideOddsCount: wideOdds.length,
-      umatanOddsCount: umatanOdds.length,
-      sanrenpukuOddsCount: sanrenpukuOdds.length,
-      sanrentanOddsCount: sanrentanOdds.length
-    });
 
     return evaluateBettingOptions(
       mappedHorses,
@@ -223,25 +376,18 @@ export function BettingAnalysis() {
       }))
     );
   }, [
-    horses,
-    latestOdds,
-    latestFukuOdds,
-    wakurenOdds,
-    umarenOdds,
-    wideOdds,
-    umatanOdds,
-    sanrenpukuOdds,
-    sanrentanOdds,
-    winProbs,
-    placeProbs,
+    horses?.length,
+    latestOdds?.length,
+    latestFukuOdds?.length,
+    wakurenOdds?.length,
+    umarenOdds?.length,
+    wideOdds?.length,
+    umatanOdds?.length,
+    sanrenpukuOdds?.length,
+    sanrentanOdds?.length,
     budget,
     riskRatio
   ]);
-
-  // 計算結果に基づいて次へボタンの状態を更新
-  useEffect(() => {
-    setCanProceed(bettingOptions.length > 0);
-  }, [bettingOptions]);
 
   const conditionalProbabilities = useMemo(() => {
     if (!horses || !bettingOptions) return [];
@@ -297,7 +443,17 @@ export function BettingAnalysis() {
     enabled: !!horses && !!bettingOptions.length
   });
 
-  // 分析結果が得られたら次へ進めるようにする
+  // 副作用の最適化
+  useEffect(() => {
+    if (horsesData) {
+      setHorses(horsesData);
+    }
+  }, [horsesData, setHorses]);
+
+  useEffect(() => {
+    setCanProceed(bettingOptions.length > 0);
+  }, [bettingOptions]);
+
   useEffect(() => {
     if (geminiAnalysis.data) {
       setAnalysisResult(geminiAnalysis.data);
@@ -315,223 +471,29 @@ export function BettingAnalysis() {
     );
   }
 
-  const renderAnalysis = () => (
-    <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="overview">概要</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="overview">
-        <Card>
-          <CardHeader>
-            <CardTitle>分析概要</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {geminiAnalysis.isLoading ? (
-              <div className="flex justify-center items-center p-4">
-                <Spinner />
-                <span className="ml-2">分析中...</span>
-              </div>
-            ) : geminiAnalysis.data ? (
-              <div className="grid grid-cols-1 gap-6">
-                {/* 推奨アプローチ */}
-                <Card className="bg-secondary/30">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">推奨アプローチ</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {/* 推奨される馬券組み合わせ */}
-                      <div className="bg-primary/10 p-3 rounded-lg">
-                        <h4 className="text-sm font-medium mb-2">推奨される馬券組み合わせ</h4>
-                        {geminiAnalysis.data.analysis.betTypeAnalysis
-                          .filter(analysis => analysis.suitability > 70)
-                          .map((analysis, i) => (
-                            <div key={i} className="mb-3">
-                              <p className="text-xs font-medium mb-1">{analysis.type}</p>
-                              <div className="grid grid-cols-2 gap-2">
-                                {analysis.recommendedCombinations.map((combo, j) => (
-                                  <div key={j} className="text-xs bg-secondary/30 p-2 rounded">
-                                    {combo}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-
-                      {/* 重要な洞察 */}
-                      <div className="bg-primary/10 p-3 rounded-lg">
-                        <h4 className="text-sm font-medium mb-2">重要な洞察</h4>
-                        <ul className="list-disc pl-4 space-y-1">
-                          {geminiAnalysis.data.summary.keyInsights.map((insight, i) => (
-                            <li key={i} className="text-xs">{insight}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
-  );
-
-  const getFrameColor = (frame: number) => {
-    const colors = {
-      1: 'bg-white text-black border border-gray-200',
-      2: 'bg-black text-white',
-      3: 'bg-red-600 text-white',
-      4: 'bg-blue-600 text-white',
-      5: 'bg-yellow-400 text-black',
-      6: 'bg-green-600 text-white',
-      7: 'bg-orange-500 text-white',
-      8: 'bg-pink-400 text-white'
-    };
-    return colors[frame as keyof typeof colors] || 'bg-gray-200';
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-6 lg:sticky lg:top-4 lg:self-start">
-        {/* 馬券候補を先に表示 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>馬券候補</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <BettingOptionsTable
-              bettingOptions={bettingOptions}
-              selectedBets={[]}
-              correlations={conditionalProbabilities}
-              geminiRecommendations={geminiAnalysis.data?.recommendations}
-            />
-          </CardContent>
-        </Card>
-
-        {/* 予想設定を後に表示 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>予想設定</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* 投資条件 */}
-            <div className="mb-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-secondary/50 p-4 rounded-lg">
-                  <p className="text-2xl font-bold">{budget.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">予算</p>
-                </div>
-                <div className="bg-secondary/50 p-4 rounded-lg">
-                  <p className="text-2xl font-bold">×{riskRatio.toFixed(1)}</p>
-                  <p className="text-xs text-muted-foreground">リスクリワード</p>
-                </div>
-              </div>
-            </div>
-
-            {/* 予想確率 */}
-            {horses && horses.length > 0 ? (
-              <div className="space-y-2">
-                {horses
-                  .map(horse => ({
-                    ...horse,
-                    winProb: Number(winProbs[horse.id]) / 100 || 0,
-                    placeProb: Number(placeProbs[horse.id]) / 100 || 0
-                  }))
-                  .sort((a, b) => {
-                    if (b.winProb !== a.winProb) {
-                      return b.winProb - a.winProb;
-                    }
-                    return b.placeProb - a.placeProb;
-                  })
-                  .slice(0, 5)
-                  .map(horse => (
-                    <div key={horse.id} 
-                         className="flex items-center p-2 rounded-lg hover:bg-secondary/50 transition-colors">
-                      <div className="flex items-center gap-2 flex-1">
-                        <div className="flex items-center">
-                          <span className={`px-2 py-1 rounded text-sm ${getFrameColor(horse.frame)}`}>
-                            {horse.number}
-                          </span>
-                        </div>
-                        <span className="text-sm truncate">{horse.name}</span>
-                      </div>
-                      <div className="flex gap-3 text-right">
-                        <div className="w-14">
-                          <p className="text-sm font-bold">{(horse.winProb * 100).toFixed(0)}%</p>
-                          <p className="text-[10px] text-muted-foreground">単勝</p>
-                        </div>
-                        <div className="w-14">
-                          <p className="text-sm font-bold">{(horse.placeProb * 100).toFixed(0)}%</p>
-                          <p className="text-[10px] text-muted-foreground">複勝</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            ) : (
-              <div className="flex justify-center items-center h-32">
-                <Spinner className="w-4 h-4 mr-2" />
-                <span className="text-sm text-muted-foreground">読込中...</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <BettingOptionsSection
+          bettingOptions={bettingOptions}
+          conditionalProbabilities={conditionalProbabilities}
+          geminiRecommendations={geminiAnalysis.data?.recommendations}
+        />
+        <PredictionSettingsSection
+          budget={budget}
+          riskRatio={riskRatio}
+          horses={horses || []}
+          winProbs={winProbs}
+          placeProbs={placeProbs}
+        />
       </div>
-
-      {/* 右側のカラム */}
+      
       <div className="space-y-6">
-        {/* メモ欄をコンポーネントとして分離 */}
         <RaceNotesCard />
-
-        {/* 分析概要 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>推奨アプローチ</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {geminiAnalysis.isLoading ? (
-              <div className="flex justify-center items-center p-4">
-                <Spinner />
-                <span className="ml-2">分析中...</span>
-              </div>
-            ) : geminiAnalysis.data ? (
-              <div className="space-y-4">
-                {/* 推奨される馬券組み合わせ */}
-                <div className="bg-secondary/50 p-3 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">推奨される馬券組み合わせ</h4>
-                  {geminiAnalysis.data.analysis.betTypeAnalysis
-                    .filter(analysis => analysis.suitability > 70)
-                    .map((analysis, i) => (
-                      <div key={i} className="mb-3">
-                        <p className="text-xs font-medium mb-1">{analysis.type}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {analysis.recommendedCombinations.map((combo, j) => (
-                            <div key={j} className="text-xs bg-primary/10 p-2 rounded">
-                              {combo}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-
-                {/* 重要な洞察 */}
-                <div className="bg-secondary/50 p-3 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">重要な洞察</h4>
-                  <ul className="list-disc pl-4 space-y-1">
-                    {geminiAnalysis.data.summary.keyInsights.map((insight, i) => (
-                      <li key={i} className="text-xs">{insight}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+        <GeminiAnalysisSection
+          isLoading={geminiAnalysis.isLoading}
+          data={geminiAnalysis.data}
+        />
       </div>
     </div>
   );
