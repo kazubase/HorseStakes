@@ -238,43 +238,62 @@ export function BettingOptionsTable({
                         onClick={() => onBetSelect?.(option)}
                         className={`
                           relative overflow-hidden
-                          p-2 rounded-md transition-all cursor-pointer
+                          p-2 rounded-md 
+                          transition-all duration-300 ease-out
+                          cursor-pointer
                           ${evClass}
                           ${isSelected(option)
-                            ? 'bg-primary/15 border border-primary/30 shadow-sm' 
-                            : 'border border-transparent'
+                            ? 'bg-primary/15 border border-primary/30 shadow-md scale-[1.02] -translate-y-0.5' 
+                            : 'border border-transparent hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-sm'
                           }
                         `}
                       >
+                        {/* 選択時のリップルエフェクト */}
+                        {isSelected(option) && (
+                          <div className="absolute inset-0 animate-ripple">
+                            <div className="absolute inset-0 bg-primary/20 animate-pulse" />
+                          </div>
+                        )}
+
                         {/* グラデーション背景レイヤー */}
                         <div className={`
                           absolute inset-0 
                           bg-gradient-to-r from-primary/10 via-background/5 to-transparent
-                          ${isSelected(option) ? 'opacity-0' : 'opacity-100'}
+                          transition-opacity duration-300
+                          ${isSelected(option) ? 'opacity-100' : 'opacity-0'}
                         `} />
 
-                        {/* コンテンツレイヤー - relative追加で背景より前面に */}
+                        {/* コンテンツレイヤー */}
                         <div className="relative">
                           <div className="grid grid-cols-2 gap-2">
-                            <span className="font-medium">
+                            <span className={`
+                              font-medium
+                              transition-colors duration-300
+                              ${isSelected(option) ? 'text-primary' : ''}
+                            `}>
                               {formatHorses(option.horses, betType)}
                             </span>
                             <span className={`
                               text-right font-bold
+                              transition-all duration-300
                               ${getColorClass(option.odds, optionsWithStats.stats.odds)}
+                              ${isSelected(option) ? 'scale-105' : ''}
                             `}>
                               ×{option.odds.toFixed(1)}
                             </span>
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-xs mt-1">
-                            <span className={
-                              getColorClass(option.probability, optionsWithStats.stats.probability)
-                            }>
+                            <span className={`
+                              transition-colors duration-300
+                              ${getColorClass(option.probability, optionsWithStats.stats.probability)}
+                            `}>
                               {(option.probability * 100).toFixed(1)}%
                             </span>
                             <span className={`
                               text-right font-medium
+                              transition-all duration-300
                               ${getColorClass(option.ev, optionsWithStats.stats.ev)}
+                              ${isSelected(option) ? 'scale-105' : ''}
                             `}>
                               {(option.ev).toFixed(2)}
                             </span>
