@@ -80,12 +80,10 @@ const RaceNotesCard = () => {
 // 馬券候補テーブルを分離
 const BettingOptionsSection = memo(({ 
   bettingOptions, 
-  conditionalProbabilities, 
-  geminiRecommendations 
+  conditionalProbabilities 
 }: {
   bettingOptions: any[];
   conditionalProbabilities: any[];
-  geminiRecommendations?: any;
 }) => (
   <Card>
     <CardHeader>
@@ -96,7 +94,6 @@ const BettingOptionsSection = memo(({
         bettingOptions={bettingOptions}
         selectedBets={[]}
         correlations={conditionalProbabilities}
-        geminiRecommendations={geminiRecommendations}
         className="[&_tr:hover]:bg-transparent"
       />
     </CardContent>
@@ -219,7 +216,7 @@ const PredictionSettingsSection = memo(({
   );
 });
 
-// Gemini分析セクションを分離
+// Gemini分析セクションを修正
 const GeminiAnalysisSection = memo(({ 
   isLoading, 
   data 
@@ -230,54 +227,37 @@ const GeminiAnalysisSection = memo(({
   <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
     <CardHeader className="relative pb-4">
       <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
-      <CardTitle className="relative">推奨アプローチ</CardTitle>
+      <CardTitle className="relative">重要な洞察</CardTitle>
+      <CardDescription className="relative">
+        データ分析から得られた重要なパターンと示唆
+      </CardDescription>
     </CardHeader>
     <CardContent>
       {isLoading ? (
         <div className="flex justify-center items-center p-4">
-          <Spinner />
-          <span className="ml-2">分析中...</span>
+          <Spinner className="w-4 h-4" />
+          <span className="ml-2 text-muted-foreground">分析中...</span>
         </div>
       ) : data ? (
-        <div className="space-y-6">
-          {/* 推奨される馬券組み合わせ */}
-          <div>
-            <h4 className="text-sm font-medium mb-3">推奨される馬券組み合わせ</h4>
-            {data.analysis.betTypeAnalysis
-              .filter((analysis: BetTypeAnalysis) => analysis.suitability > 70)
-              .map((analysis: BetTypeAnalysis, i: number) => (
-                <div key={i} className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="text-xs font-medium px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
-                      {analysis.type}
-                    </div>
+        <div className="space-y-4">
+          {data.summary.keyInsights.map((insight: string, i: number) => (
+            <div key={i} 
+                 className="relative overflow-hidden group bg-black/40 backdrop-blur-sm rounded-lg border border-primary/10">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-medium text-primary">
+                      {i + 1}
+                    </span>
                   </div>
-                  <div className="space-y-2">
-                    {analysis.recommendedCombinations.map((combo, j) => (
-                      <div key={j} 
-                           className="relative overflow-hidden group bg-black/40 backdrop-blur-sm rounded-lg p-3 border border-primary/10">
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <p className="relative text-sm">{combo}</p>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-sm leading-relaxed">
+                    {insight}
+                  </p>
                 </div>
-              ))}
-          </div>
-
-          {/* 重要な洞察 */}
-          <div>
-            <h4 className="text-sm font-medium mb-3">重要な洞察</h4>
-            <div className="space-y-2">
-              {data.summary.keyInsights.map((insight: string, i: number) => (
-                <div key={i} 
-                     className="relative overflow-hidden group bg-black/40 backdrop-blur-sm rounded-lg p-3 border border-primary/10">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <p className="relative text-sm">{insight}</p>
-                </div>
-              ))}
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       ) : null}
     </CardContent>
@@ -514,7 +494,6 @@ export function BettingAnalysis() {
         <BettingOptionsSection
           bettingOptions={calculatedBettingOptions || []}
           conditionalProbabilities={conditionalProbabilities}
-          geminiRecommendations={geminiAnalysis.data?.recommendations}
         />
       </div>
       

@@ -47,61 +47,11 @@ interface GeminiAnalysisInput {
   correlations?: BetCorrelation[];
 }
 
+// 簡素化したレスポンス型
 export interface GeminiAnalysisResult {
-  analysis: {
-    riskProfile: {
-      riskRatio: number;
-      interpretation: string;
-      recommendedRiskDistribution: {
-        lowRisk: string;
-        mediumRisk: string;
-        highRisk: string;
-      };
-    };
-    correlationPatterns: Array<{
-      strength: "強い相関（0.8以上）" | "中程度の相関（0.5-0.8）" | "弱い相関（0.5未満）";
-      riskLevel: "低" | "中" | "高";
-      patterns: Array<{
-        description: string;
-        examples: Array<{
-          bet1: string;
-          bet2: string;
-          probability: string;
-          interpretation: string;
-          riskConsideration: string;
-        }>;
-      }>;
-    }>;
-    betTypeAnalysis: Array<{
-      type: string;
-      characteristics: string;
-      correlations: string;
-      riskProfile: string;
-      suitability: number;
-      recommendedCombinations: string[];
-    }>;
-  };
   summary: {
     keyInsights: string[];
-    riskBasedStrategy: string;
-    recommendedApproach: {
-      conservative: string;
-      balanced: string;
-      aggressive: string;
-      recommended: string;
-    };
-    expectedResults: {
-      minimumReturn: number;
-      averageReturn: number;
-      maximumReturn: number;
-      riskLevel: number;
-    };
-  };
-  recommendations: Array<{
-    type: string;
-    horses: string[];
-    reason: string;
-  }>;
+  }
 }
 
 const getCsrfToken = (): string => {
@@ -179,125 +129,57 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
     .filter(section => section.length > 0)
     .join('\n');
 
-  // 条件付き確率一覧の作成
-  const correlationsText = input.correlations && input.correlations.length > 0
-    ? `条件付き確率データ:\n${JSON.stringify(
-        input.correlations.reduce((acc, c) => {
-          // 券種でグループ化
-          if (!acc[c.condition.type]) {
-            acc[c.condition.type] = {};
-          }
-          // 馬番組み合わせでグループ化
-          if (!acc[c.condition.type][c.condition.horses]) {
-            acc[c.condition.type][c.condition.horses] = {};
-          }
-          // ターゲットの馬券と確率を追加
-          acc[c.condition.type][c.condition.horses][`${c.target.type}[${c.target.horses}]`] = c.probability;
-          return acc;
-        }, {} as Record<string, Record<string, Record<string, number>>>
-      ), null, 2)}`
-    : '条件付き確率データなし';
+  // 条件付き確率データの整形
+  const formattedCorrelations = input.correlations?.map(c => {
+    return `条件「${c.condition.type}[${c.condition.horses}]」が的中した場合、
+「${c.target.type}[${c.target.horses}]」の的中確率は${(c.probability * 100).toFixed(1)}%`;
+  }).join('\n') || '条件付き確率データなし';
 
   const prompt = `
-【投資分析依頼】
+【レース分析依頼】
 
-以下のデータに基づき、具体的な投資戦略を立案してください：
+以下のデータから、人間が見落としがちな重要な洞察を2つ程度抽出してください。
+特に、データ間の関連性や隠れたパターンに注目し、実践的で価値のある分析をお願いします。
 
-1. 予想設定の詳細分析
-予算: ${input.budget}円
-リスク選好度: ${input.riskRatio}（1-20の範囲）
-
-2. 馬券分析の観点
-- 単勝・複勝の的中率と回収率の関係
-- 馬連・ワイドの組み合わせ効果
-- 3連系の期待値とリスクの定量評価
-- 各馬券種別の特徴と相関関係
-
-3. 具体的な投資戦略の提案
-- 軸となる馬券と組み合わせるべき馬券
-- 予算配分の具体的な数値（例：複勝40%、馬連30%など）
-- リスクヘッジの具体的な方法
-- 期待できる回収率の試算
-
-【データ】
+1. 分析対象データ
 出馬表：
 ${raceCardInfo}
 
-馬券候補（期待値順）：
+期待値データ：
 ${bettingCandidatesList}
 
-条件付き確率データ：
-${correlationsText}
+条件付き確率：
+${formattedCorrelations}
 
-以下の形式でJSON形式の分析結果を返してください：
+2. 分析の観点
+- オッズと予想確率の不整合から見える投資機会
+- 馬の特徴や過去実績からの示唆
+- 条件付き確率から見える隠れた相関関係
+- 通常見落とされがちな統計的パターン
+- 市場の過小評価・過大評価の可能性
+- データ間の矛盾や特異な点
+
+3. 返却フォーマット
+以下の構造に厳密に従ったJSONを返してください：
 
 {
-  "analysis": {
-    "riskProfile": {
-      "riskRatio": ${input.riskRatio},
-      "interpretation": "具体的なリスク選好度の解釈と、それに基づく投資方針",
-      "recommendedRiskDistribution": {
-        "lowRisk": "具体的な配分割合（%）",
-        "mediumRisk": "具体的な配分割合（%）",
-        "highRisk": "具体的な配分割合（%）"
-      }
-    },
-    "betTypeAnalysis": [
-      {
-        "type": "券種",
-        "characteristics": "具体的な特徴（期待値、リスク、的中率など）",
-        "correlations": "他券種との具体的な相関性と組み合わせ効果",
-        "riskProfile": "具体的なリスク特性と対策",
-        "suitability": "リスク選好度との適合性（0-100）",
-        "recommendedCombinations": ["具体的な組み合わせ例"],
-        "expectedReturnRate": "期待回収率（%）"
-      }
-    ],
-    "correlationPatterns": [
-      {
-        "strength": "相関の強さ（数値で）",
-        "riskLevel": "リスクレベル",
-        "patterns": [
-          {
-            "description": "具体的な相関パターンの説明",
-            "examples": [
-              {
-                "bet1": "具体的な馬券1",
-                "bet2": "具体的な馬券2",
-                "probability": "具体的な条件付き確率",
-                "interpretation": "この相関から導かれる具体的な投資戦略",
-                "riskConsideration": "具体的なリスク対策"
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  },
   "summary": {
     "keyInsights": [
-      "具体的な分析結果に基づく重要な洞察"
-    ],
-    "recommendedApproach": {
-      "conservative": "具体的な保守的アプローチ（馬券の組み合わせと配分）",
-      "balanced": "具体的なバランス型アプローチ（馬券の組み合わせと配分）",
-      "aggressive": "具体的な積極的アプローチ（馬券の組み合わせと配分）",
-      "recommended": "設定に最適な具体的なアプローチ（馬券の組み合わせと配分）"
-    },
-    "expectedResults": {
-      "minimumReturn": "最低期待回収率（%）",
-      "averageReturn": "平均期待回収率（%）",
-      "maximumReturn": "最大期待回収率（%）",
-      "riskLevel": "総合リスクレベル（1-10）"
-    }
+      "具体的な数値や根拠を含む重要な発見",
+      "見落としがちなパターンや機会",
+      "統計的に有意な相関や傾向",
+      "市場の誤評価の可能性",
+      "実践的な示唆"
+    ]
   }
 }
 
-注意点：
-1. 一般的な助言は避け、データに基づく具体的な分析を行うこと
-2. 各馬券の期待値とリスクを定量的に評価すること
-3. 投資戦略は実行可能な具体的な内容とすること
-4. 相関分析は実際のデータに基づいて行うこと
+4. 分析の注意点：
+- 表面的な分析は避け、深い洞察を提供してください
+- 具体的な数値や根拠を含めてください
+- 実践的で活用可能な示唆を心がけてください
+- 人間が見落としがちな観点を重視してください
+- 各洞察は明確で具体的な内容にしてください
 `;
 
 if (process.env.NODE_ENV === 'development') {
@@ -325,22 +207,46 @@ if (process.env.NODE_ENV === 'development') {
 
   const data = await response.json();
   
-  // JSONレスポンスのパース
+  // JSONレスポンスのパース処理を改善
   try {
-    const jsonRegex = /```json\s*\n([\s\S]*?)\n```/;
+    // JSONコードブロックを探す
+    const jsonRegex = /```(?:json)?\s*\n([\s\S]*?)\n```/;
     const match = jsonRegex.exec(data.strategy.description);
+    
     if (!match || !match[1]) {
+      console.error('Raw response:', data.strategy.description);
       throw new Error('JSONコードブロックが見つかりません');
     }
 
-    const parsedData = JSON.parse(match[1]);
-    if (!parsedData.analysis || !parsedData.summary) {
-      throw new Error('パースされたデータの形式が不正です');
+    let parsedData: GeminiAnalysisResult;
+    
+    try {
+      parsedData = JSON.parse(match[1]);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Attempted to parse:', match[1]);
+      throw new Error('JSONのパースに失敗しました');
     }
 
-    return parsedData as GeminiAnalysisResult;
+    // 必要な構造の検証
+    if (!parsedData.summary?.keyInsights?.length) {
+      console.error('Invalid data structure:', parsedData);
+      throw new Error('レスポンスの構造が不正です');
+    }
+
+    return {
+      summary: {
+        keyInsights: parsedData.summary.keyInsights
+      }
+    };
+
   } catch (error: any) {
     console.error('Gemini response parsing error:', error);
-    throw new Error('分析結果のパースに失敗しました: ' + error.message);
+    // フォールバック: エラーメッセージを洞察として返す
+    return {
+      summary: {
+        keyInsights: ['分析結果の処理中にエラーが発生しました。']
+      }
+    };
   }
 } 
