@@ -188,6 +188,17 @@ export function BettingSelection() {
 
   return (
     <div className="space-y-4">
+      {/* モバイルでのAI最適化ボタン */}
+      <div className="lg:hidden">
+        <Button
+          onClick={handleAiOptimization}
+          className="w-full gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+        >
+          <Sparkles className="h-4 w-4" />
+          AI自動最適化
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 左側: 馬券候補 */}
         <div>
@@ -198,8 +209,19 @@ export function BettingSelection() {
           />
         </div>
 
-        {/* 右側: メモ欄 */}
-        <div>
+        {/* 右側: AI最適化ボタンとメモ欄 */}
+        <div className="space-y-4">
+          {/* デスクトップでのAI最適化ボタン */}
+          <div className="hidden lg:block">
+            <Button
+              onClick={handleAiOptimization}
+              className="w-full gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+            >
+              <Sparkles className="h-4 w-4" />
+              AI自動最適化
+            </Button>
+          </div>
+
           <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
             <CardHeader className="relative pb-4">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
@@ -220,17 +242,6 @@ export function BettingSelection() {
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      {/* AI最適化ボタン */}
-      <div className="flex justify-center mt-6">
-        <Button
-          onClick={handleAiOptimization}
-          className="gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-        >
-          <Sparkles className="h-4 w-4" />
-          AI自動最適化
-        </Button>
       </div>
     </div>
   );
