@@ -225,7 +225,7 @@ const GeminiAnalysisSection = memo(({
               .map((analysis: BetTypeAnalysis, i: number) => (
                 <div key={i} className="mb-3">
                   <p className="text-xs font-medium mb-1">{analysis.type}</p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid gap-2">
                     {analysis.recommendedCombinations.map((combo, j) => (
                       <div key={j} className="text-xs bg-primary/10 p-2 rounded">
                         {combo}
