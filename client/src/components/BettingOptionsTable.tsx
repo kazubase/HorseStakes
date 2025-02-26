@@ -303,7 +303,7 @@ export function BettingOptionsTable({
                           absolute inset-0 
                           bg-gradient-to-r from-primary/10 via-background/5 to-transparent
                           transition-opacity duration-300
-                          ${isSelected(option) ? 'opacity-100' : 'opacity-0'}
+                          ${isSelected(option) ? 'opacity-0' : 'opacity-100'}
                         `} />
 
                         {/* コンテンツレイヤー */}
@@ -314,7 +314,7 @@ export function BettingOptionsTable({
                               transition-colors duration-300
                               ${isSelected(option) ? 'text-primary' : ''}
                             `}>
-                              {formatHorses(option.horses, betType)}
+                              {formatHorses(option.horses, option.type)}
                             </span>
                             <span className={`
                               text-right font-bold
