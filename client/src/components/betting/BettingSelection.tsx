@@ -2,7 +2,7 @@ import { useAtom } from 'jotai';
 import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom, raceNotesAtom } from '@/stores/bettingStrategy';
 import { BettingOptionsTable } from '@/components/BettingOptionsTable';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import type { BetProposal } from '@/lib/betEvaluation';
+import type { BetProposal, BettingOption } from '@/lib/betEvaluation';
 import { useMemo, useCallback } from 'react';
 import { calculateConditionalProbability } from '@/lib/betConditionalProbability';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { calculateBetProposalsWithGemini } from "@/lib/betOptimizer";
 import { useLocation } from "wouter";
 import { Sparkles } from 'lucide-react';
+import { getAiOptimizedStrategy } from '@/lib/aiOptimizer';
 
 export function BettingSelection() {
   const [, setLocation] = useLocation();
@@ -133,12 +134,38 @@ export function BettingSelection() {
 
   const handleAiOptimization = useCallback(async () => {
     try {
-      const aiProposals = await calculateBetProposalsWithGemini(
-        selectionState.availableHorses,
+      if (!horses || !latestOdds || !winProbs || !placeProbs) {
+        console.error('必要なデータが不足しています');
+        return;
+      }
+
+      const horsesWithProbs = horses.map(horse => ({
+        name: horse.name,
+        number: horse.number,
+        odds: Number(latestOdds.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
+        winProb: winProbs[horse.id] / 100,
+        placeProb: placeProbs[horse.id] / 100,
+        frame: horse.frame
+      }));
+
+      const aiProposals = await getAiOptimizedStrategy({
+        horses: horsesWithProbs,
+        bettingOptions: bettingOptions.map(opt => ({
+          ...opt,
+          type: opt.type as "単勝" | "複勝" | "枠連" | "ワイド" | "馬連" | "馬単" | "３連複" | "３連単",
+          odds: opt.expectedReturn / opt.stake,
+          prob: opt.probability,
+          ev: opt.expectedReturn/opt.stake*opt.probability,
+          frame1: opt.frame1 || 0,
+          frame2: opt.frame2 || 0,
+          frame3: opt.frame3 || 0,
+          horse1: opt.horse1 || 0,
+          horse2: opt.horse2 || 0,
+          horse3: opt.horse3 || 0
+        })),
         budget,
-        { bettingOptions: selectionState.availableBets },
-        0.5 // デフォルトのリスク比率
-      );
+        riskRatio: 10
+      });
 
       setSelectionState(prev => ({
         ...prev,
@@ -149,7 +176,7 @@ export function BettingSelection() {
     } catch (error) {
       console.error('AI最適化エラー:', error);
     }
-  }, [selectionState.availableHorses, selectionState.availableBets, budget, setSelectionState, setLocation]);
+  }, [horses, latestOdds, winProbs, placeProbs, bettingOptions, budget, setSelectionState, setLocation]);
 
   if (!bettingOptions.length) {
     return (
