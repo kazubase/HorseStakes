@@ -16,6 +16,7 @@ interface BettingOptionsTableProps {
     reason: string;
   }>;
   className?: string;
+  showAnalysis?: boolean;
 }
 
 export function BettingOptionsTable({ 
@@ -24,7 +25,8 @@ export function BettingOptionsTable({
   onBetSelect,
   correlations = [],
   geminiRecommendations = [],
-  className
+  className,
+  showAnalysis = false
 }: BettingOptionsTableProps) {
   // 期待値を計算して統計情報を取得
   const optionsWithStats = useMemo(() => {
@@ -228,59 +230,64 @@ export function BettingOptionsTable({
                 <div className="space-y-1.5">
                   {options.map((option, index) => {
                     const evClass = getEvBackgroundClass(option.ev, optionsWithStats.stats.ev);
-                    const relatedCorrelations = getRelatedCorrelations(option);
-                    const relatedRecommendations = getRelatedRecommendations(option);
+                    const relatedCorrelations = showAnalysis ? getRelatedCorrelations(option) : [];
+                    const relatedRecommendations = showAnalysis ? getRelatedRecommendations(option) : [];
                     
-                    return (
+                    const BetContent = (
+                      <div 
+                        onClick={() => onBetSelect?.(option)}
+                        className={`
+                          relative overflow-hidden
+                          p-2 rounded-md transition-all cursor-pointer
+                          ${evClass}
+                          ${isSelected(option)
+                            ? 'bg-primary/15 border border-primary/30 shadow-sm' 
+                            : 'border border-transparent'
+                          }
+                        `}
+                      >
+                        {/* グラデーション背景レイヤー */}
+                        <div className={`
+                          absolute inset-0 
+                          bg-gradient-to-r from-primary/10 via-background/5 to-transparent
+                          ${isSelected(option) ? 'opacity-0' : 'opacity-100'}
+                        `} />
+
+                        {/* コンテンツレイヤー - relative追加で背景より前面に */}
+                        <div className="relative">
+                          <div className="grid grid-cols-2 gap-2">
+                            <span className="font-medium">
+                              {formatHorses(option.horses, betType)}
+                            </span>
+                            <span className={`
+                              text-right font-bold
+                              ${getColorClass(option.odds, optionsWithStats.stats.odds)}
+                            `}>
+                              ×{option.odds.toFixed(1)}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                            <span className={
+                              getColorClass(option.probability, optionsWithStats.stats.probability)
+                            }>
+                              {(option.probability * 100).toFixed(1)}%
+                            </span>
+                            <span className={`
+                              text-right font-medium
+                              ${getColorClass(option.ev, optionsWithStats.stats.ev)}
+                            `}>
+                              {(option.ev).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+
+                    // 分析画面の場合のみPopoverでラップ
+                    return showAnalysis ? (
                       <Popover key={index}>
                         <PopoverTrigger asChild>
-                          <div 
-                            onClick={() => onBetSelect?.(option)}
-                            className={`
-                              relative overflow-hidden
-                              p-2 rounded-md transition-all cursor-pointer
-                              ${evClass}
-                              ${isSelected(option)
-                                ? 'bg-primary/15 border border-primary/30 shadow-sm' 
-                                : 'border border-transparent'
-                              }
-                            `}
-                          >
-                            {/* グラデーション背景レイヤー */}
-                            <div className={`
-                              absolute inset-0 
-                              bg-gradient-to-r from-primary/10 via-background/5 to-transparent
-                              ${isSelected(option) ? 'opacity-0' : 'opacity-100'}
-                            `} />
-
-                            {/* コンテンツレイヤー - relative追加で背景より前面に */}
-                            <div className="relative">
-                              <div className="grid grid-cols-2 gap-2">
-                                <span className="font-medium">
-                                  {formatHorses(option.horses, betType)}
-                                </span>
-                                <span className={`
-                                  text-right font-bold
-                                  ${getColorClass(option.odds, optionsWithStats.stats.odds)}
-                                `}>
-                                  ×{option.odds.toFixed(1)}
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 text-xs mt-1">
-                                <span className={
-                                  getColorClass(option.probability, optionsWithStats.stats.probability)
-                                }>
-                                  {(option.probability * 100).toFixed(1)}%
-                                </span>
-                                <span className={`
-                                  text-right font-medium
-                                  ${getColorClass(option.ev, optionsWithStats.stats.ev)}
-                                `}>
-                                  {(option.ev).toFixed(2)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
+                          {BetContent}
                         </PopoverTrigger>
                         <PopoverContent className="w-80 bg-slate-900/95 backdrop-blur-sm border border-slate-800">
                           <div className="space-y-4">
@@ -338,6 +345,10 @@ export function BettingOptionsTable({
                           </div>
                         </PopoverContent>
                       </Popover>
+                    ) : (
+                      <div key={index}>
+                        {BetContent}
+                      </div>
                     );
                   })}
                 </div>

@@ -95,6 +95,7 @@ const BettingOptionsSection = memo(({
         selectedBets={[]}
         correlations={conditionalProbabilities}
         className="[&_tr:hover]:bg-transparent"
+        showAnalysis={true}
       />
     </CardContent>
   </Card>
