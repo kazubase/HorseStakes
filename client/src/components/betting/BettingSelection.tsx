@@ -1,7 +1,7 @@
 import { useAtom } from 'jotai';
-import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom } from '@/stores/bettingStrategy';
+import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom, raceNotesAtom } from '@/stores/bettingStrategy';
 import { BettingOptionsTable } from '@/components/BettingOptionsTable';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { BetProposal } from '@/lib/betEvaluation';
 import { useMemo } from 'react';
 import { calculateConditionalProbability } from '@/lib/betConditionalProbability';
@@ -14,6 +14,7 @@ export function BettingSelection() {
   const [latestOdds] = useAtom(latestOddsAtom);
   const [winProbs] = useAtom(winProbsAtom);
   const [placeProbs] = useAtom(placeProbsAtom);
+  const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
 
   // 選択された馬券の統計を計算
   const statistics = useMemo(() => {
@@ -143,142 +144,24 @@ export function BettingSelection() {
         />
       </div>
 
-      {/* 右側: 分析ダッシュボード */}
-      <div className="space-y-6">
-        {/* 統計サマリー */}
-        {statistics && (
-          <Card>
-            <CardHeader className="py-2 px-3">
-              <CardTitle className="text-base">選択された馬券の分析</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">投資額</div>
-                  <div className="text-lg font-bold">
-                    {statistics.totalInvestment.toLocaleString()}円
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">期待収益</div>
-                  <div className="text-lg font-bold">
-                    {statistics.expectedProfit.toLocaleString()}円
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">リスク</div>
-                  <div className="text-lg font-bold">
-                    {statistics.risk.toFixed(2)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">シャープレシオ</div>
-                  <div className="text-lg font-bold">
-                    {statistics.sharpeRatio.toFixed(2)}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 相関分析の表示 */}
-        {correlationAnalysis && (
-          <Card>
-            <CardHeader className="py-2 px-3">
-              <CardTitle className="text-base">馬券間の相関分析</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="space-y-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">平均相関</div>
-                  <div className="text-lg font-bold">
-                    {(correlationAnalysis.averageCorrelation * 100).toFixed(1)}%
-                  </div>
-                </div>
-
-                {/* 条件ごとにグループ化して表示 */}
-                {Object.entries(
-                  correlationAnalysis.correlations.reduce((acc, corr) => {
-                    const key = `${corr.condition.type} ${corr.condition.horses}`;
-                    if (!acc[key]) acc[key] = [];
-                    acc[key].push(corr);
-                    return acc;
-                  }, {} as Record<string, typeof correlationAnalysis.correlations>)
-                ).map(([condition, correlations], i) => (
-                  <div key={i} className="border rounded-lg p-3">
-                    <div className="font-medium mb-2">
-                      {condition} が的中する場合
-                    </div>
-                    <div className="space-y-2">
-                      {correlations.map((corr, j) => (
-                        <div key={j} 
-                             className={`text-sm p-2 rounded ${
-                               corr.probability > 0.5 ? 'bg-green-100/10' : 'bg-red-100/10'
-                             }`}>
-                          <div className="flex justify-between">
-                            <span>{corr.target.type} {corr.target.horses} も的中する確率:</span>
-                            <span className={corr.probability > 0.5 ? 'text-green-500' : 'text-red-500'}>
-                              {(corr.probability * 100).toFixed(1)}%
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* リスク・リターン分析グラフ */}
-        {riskReturnData && (
-          <Card>
-            <CardHeader className="py-2 px-3">
-              <CardTitle className="text-base">リスク・リターン分析</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    type="number" 
-                    dataKey="risk" 
-                    name="リスク" 
-                    label={{ value: 'リスク', position: 'bottom' }} 
-                  />
-                  <YAxis 
-                    type="number" 
-                    dataKey="return" 
-                    name="期待リターン" 
-                    label={{ value: '期待リターン', angle: -90, position: 'insideLeft' }} 
-                  />
-                  <Tooltip 
-                    content={({ payload }) => {
-                      if (!payload?.[0]) return null;
-                      const data = payload[0].payload;
-                      return (
-                        <div className="bg-background/95 p-2 rounded-lg border shadow-sm">
-                          <div className="font-medium">{data.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            リスク: {data.risk}<br />
-                            リターン: {data.return}<br />
-                            相関: {data.correlation}%
-                          </div>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Scatter 
-                    data={riskReturnData} 
-                    fill="#22c55e"
-                  />
-                </ScatterChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )}
+      {/* 右側: メモ欄のみ */}
+      <div>
+        <Card>
+          <CardHeader>
+            <CardTitle>メモ</CardTitle>
+            <CardDescription>レース分析のメモを残すことができます</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <textarea
+              value={raceNotes}
+              onChange={(e) => setRaceNotes(e.target.value)}
+              className="w-full h-32 p-3 rounded-lg bg-secondary/50 border-0 resize-none 
+                focus:outline-none focus:ring-2 focus:ring-primary 
+                placeholder:text-muted-foreground text-foreground"
+              placeholder="レース分析のメモを入力してください..."
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

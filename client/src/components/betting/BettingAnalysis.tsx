@@ -7,53 +7,18 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { 
   horsesAtom, 
-  winProbsAtom, 
-  placeProbsAtom, 
   analysisResultAtom,
-  bettingOptionsAtom
+  bettingOptionsAtom,
+  raceNotesAtom
 } from '@/stores/bettingStrategy';
 import type { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
 import { BettingOptionsTable } from "@/components/BettingOptionsTable";
 import { GeminiAnalysisResult } from '@/lib/geminiAnalysis';
 import { Spinner } from "@/components/ui/spinner";
-import { BetProposal, evaluateBettingOptions } from '@/lib/betEvaluation';
+import { evaluateBettingOptions } from '@/lib/betEvaluation';
 import { analyzeWithGemini } from '@/lib/geminiAnalysis';
 import { calculateConditionalProbability } from '@/lib/betConditionalProbability';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Scatter,
-  ScatterChart,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar
-} from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CircularProgressIndicator } from "@/components/CircularProgressIndicator";
-import { BetCorrelation } from '@/lib/betConditionalProbability';
-
-// 拡張されたBetProposalの型定義
-interface ExtendedBetProposal {
-  type: string;
-  horseName: string;
-  horses: string[];
-  stake: number;
-  expectedReturn: number;
-  probability: number;
-  frame1?: number;
-  frame2?: number;
-  frame3?: number;
-  horse1?: number;
-  horse2?: number;
-  horse3?: number;
-}
 
 // Geminiオプションの型定義
 interface GeminiOptions {
@@ -78,353 +43,29 @@ interface GeminiOptions {
   conditionalProbabilities: any[];
 }
 
-// リスク分析用のユーティリティ関数を修正
-interface BetTypeStats {
-  type: string;
-  avgEV: number;
-  risk: number;
-  sharpeRatio: number;
-  stdDev: number;
-  betCount: number;
-}
-
-function calculateBetTypeStats(bets: BetProposal[]): BetTypeStats {
-  const returns = bets.map(bet => bet.expectedReturn / bet.stake - 1);
-  const probabilities = bets.map(bet => bet.probability);
+// メモ入力用のコンポーネントを分離
+const RaceNotesCard = () => {
+  const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
   
-  // 期待値（平均リターン）
-  const avgEV = returns.reduce((sum, r, i) => sum + r * probabilities[i], 0);
-  
-  // 標準偏差（リスク）の計算
-  const squaredDeviations = returns.map((r, i) => {
-    const deviation = r - avgEV;
-    return deviation * deviation * probabilities[i];
-  });
-  const variance = squaredDeviations.reduce((sum, sq) => sum + sq, 0);
-  const stdDev = Math.sqrt(variance);
-  
-  // シャープレシオの計算（リスクフリーレートは0と仮定）
-  const sharpeRatio = stdDev > 0 ? avgEV / stdDev : 0;
-
-  return {
-    type: bets[0].type,
-    avgEV,
-    risk: stdDev,
-    sharpeRatio,
-    stdDev,
-    betCount: bets.length
-  };
-}
-
-function BetTypeAnalysis({ bettingOptions }: { bettingOptions: BetProposal[] }) {
-  const betTypeStats = Object.entries(groupBetsByType(bettingOptions))
-    .map(([type, bets]) => calculateBetTypeStats(bets))
-    .sort((a, b) => b.sharpeRatio - a.sharpeRatio);
-
-  return (
-    <div className="space-y-6">
-      {/* リスク/リターン散布図 */}
-      <Card className="p-4">
-        <CardTitle className="text-base mb-4">券種別リスク/リターン特性</CardTitle>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                type="number" 
-                dataKey="risk" 
-                name="リスク（標準偏差）"
-                label={{ value: 'リスク（標準偏差）', position: 'bottom' }}
-              />
-              <YAxis 
-                type="number" 
-                dataKey="avgEV" 
-                name="期待リターン"
-                label={{ value: '期待リターン', angle: -90, position: 'insideLeft' }}
-              />
-              <Tooltip 
-                content={({ payload }) => {
-                  if (payload && payload.length) {
-                    const data = payload[0].payload as BetTypeStats;
-                    return (
-                      <div className="bg-white p-2 border rounded shadow-lg">
-                        <p className="text-black font-medium">{data.type}</p>
-                        <p className="text-black">期待リターン: {(data.avgEV * 100).toFixed(1)}%</p>
-                        <p className="text-black">リスク: {(data.risk * 100).toFixed(1)}%</p>
-                        <p className="text-black">シャープレシオ: {data.sharpeRatio.toFixed(2)}</p>
-                        <p className="text-black">馬券数: {data.betCount}</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Scatter 
-                data={betTypeStats}
-                fill="#8884d8"
-              />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
-
-      {/* 券種別詳細情報 */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-        {betTypeStats.map(stats => (
-          <Card key={stats.type} className="p-4">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h4 className="font-medium">{stats.type}</h4>
-                <p className="text-sm text-muted-foreground">
-                  シャープレシオ: {stats.sharpeRatio.toFixed(2)}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm">
-                  期待リターン: {(stats.avgEV * 100).toFixed(1)}%
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  リスク: {(stats.risk * 100).toFixed(1)}%
-                </p>
-              </div>
-            </div>
-            <div className="h-20">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={[stats]}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="type" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="avgEV" fill="#8884d8" name="期待リターン" />
-                  <Bar dataKey="risk" fill="#82ca9d" name="リスク" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function BetCombinationAnalysis({ bettingOptions }: { bettingOptions: BetProposal[] }) {
-  const betTypeStats = Object.entries(groupBetsByType(bettingOptions))
-    .map(([type, bets]) => calculateBetTypeStats(bets));
-
-  // 券種間の相関を計算
-  const correlations = betTypeStats.flatMap((stat1, i) => 
-    betTypeStats.slice(i + 1).map(stat2 => {
-      const bets1 = bettingOptions.filter(bet => bet.type === stat1.type);
-      const bets2 = bettingOptions.filter(bet => bet.type === stat2.type);
-      
-      return {
-        types: [stat1.type, stat2.type] as [string, string],
-        correlation: calculateCorrelation(bets1, bets2),
-        combinedSharpe: calculateCombinedSharpeRatio(bets1, bets2),
-        diversificationBenefit: calculateDiversificationBenefit(bets1, bets2)
-      };
-    })
-  );
-
-  return (
-    <div className="space-y-6">
-      <Card className="p-4">
-        <CardTitle className="text-base mb-4">券種間の相関とリスク分散効果</CardTitle>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                type="number" 
-                dataKey="correlation" 
-                name="相関係数"
-                domain={[-1, 1]}
-                label={{ value: '相関係数', position: 'bottom' }}
-              />
-              <YAxis 
-                type="number" 
-                dataKey="diversificationBenefit" 
-                name="リスク分散効果"
-                label={{ value: 'リスク分散効果 (%)', angle: -90, position: 'insideLeft' }}
-              />
-              <Tooltip 
-                content={({ payload }) => {
-                  if (payload && payload.length) {
-                    const data = payload[0].payload;
-                    return (
-                      <div className="bg-white p-2 border rounded shadow-lg">
-                        <p className="text-black font-medium">{data.types.join(' + ')}</p>
-                        <p className="text-black">相関係数: {data.correlation.toFixed(2)}</p>
-                        <p className="text-black">リスク分散効果: {data.diversificationBenefit.toFixed(1)}%</p>
-                        <p className="text-black">組合せシャープレシオ: {data.combinedSharpe.toFixed(2)}</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Scatter data={correlations} fill="#8884d8" />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-// 新しい補助関数
-function calculateCombinedSharpeRatio(bets1: BetProposal[], bets2: BetProposal[]) {
-  const stats1 = calculateBetTypeStats(bets1);
-  const stats2 = calculateBetTypeStats(bets2);
-  const correlation = calculateCorrelation(bets1, bets2);
-
-  // ポートフォリオの期待リターン
-  const combinedReturn = (stats1.avgEV + stats2.avgEV) / 2;
-
-  // ポートフォリオのリスク（相関を考慮）
-  const combinedRisk = Math.sqrt(
-    Math.pow(stats1.risk, 2) / 4 +
-    Math.pow(stats2.risk, 2) / 4 +
-    correlation * stats1.risk * stats2.risk / 2
-  );
-
-  return combinedRisk > 0 ? combinedReturn / combinedRisk : 0;
-}
-
-function calculateDiversificationBenefit(bets1: BetProposal[], bets2: BetProposal[]) {
-  const stats1 = calculateBetTypeStats(bets1);
-  const stats2 = calculateBetTypeStats(bets2);
-  const correlation = calculateCorrelation(bets1, bets2);
-
-  // 単純な加重平均リスク
-  const weightedRisk = (stats1.risk + stats2.risk) / 2;
-
-  // 分散効果を考慮したポートフォリオリスク
-  const portfolioRisk = Math.sqrt(
-    Math.pow(stats1.risk, 2) / 4 +
-    Math.pow(stats2.risk, 2) / 4 +
-    correlation * stats1.risk * stats2.risk / 2
-  );
-
-  // リスク削減効果をパーセンテージで表現
-  return ((weightedRisk - portfolioRisk) / weightedRisk) * 100;
-}
-
-// 新しいコンポーネントを追加
-function RiskBalanceChart({ selectedBets, correlations }: { 
-  selectedBets: BetProposal[], 
-  correlations: BetCorrelation[] 
-}) {
-  const metrics = useMemo(() => {
-    if (selectedBets.length === 0) return null;
-
-    // 期待値の計算
-    const expectedValue = selectedBets.reduce((acc, bet) => 
-      acc + (bet.expectedReturn / bet.stake - 1), 0) / selectedBets.length;
-
-    // リスク分散効果の計算
-    const diversificationEffect = correlations
-      .filter(corr => 
-        selectedBets.some(bet1 => bet1.type === corr.condition.type) &&
-        selectedBets.some(bet2 => bet2.type === corr.target.type)
-      )
-      .reduce((acc, corr) => acc + (1 - corr.probability), 0);
-
-    // 的中確率の平均
-    const hitProbability = selectedBets.reduce((acc, bet) => 
-      acc + bet.probability, 0) / selectedBets.length;
-
-    // リターンの安定性（期待値の標準偏差の逆数）
-    const returnStability = 1 / calculateStandardDeviation(
-      selectedBets.map(bet => bet.expectedReturn / bet.stake)
-    );
-
-    return {
-      expectedValue: expectedValue * 100, // パーセント表示
-      diversification: Math.min(diversificationEffect * 100, 100),
-      probability: hitProbability * 100,
-      stability: Math.min(returnStability * 100, 100)
-    };
-  }, [selectedBets, correlations]);
-
-  if (!metrics) return null;
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle>ポートフォリオ分析</CardTitle>
+        <CardTitle>メモ</CardTitle>
+        <CardDescription>レース分析のメモを残すことができます</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-4">
-          {/* ラジアルチャート */}
-          <div className="aspect-square">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={[
-                { name: '期待値', value: metrics.expectedValue },
-                { name: 'リスク分散', value: metrics.diversification },
-                { name: '的中確率', value: metrics.probability },
-                { name: '安定性', value: metrics.stability }
-              ]}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="name" />
-                <PolarRadiusAxis domain={[0, 100]} />
-                <Radar
-                  name="バランス"
-                  dataKey="value"
-                  stroke="#8884d8"
-                  fill="#8884d8"
-                  fillOpacity={0.6}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* ラジアルゲージ */}
-          <div className="grid grid-cols-2 gap-2">
-            {Object.entries(metrics).map(([key, value]) => (
-              <div key={key} className="relative aspect-square">
-                <CircularProgressIndicator
-                  value={value}
-                  maxValue={100}
-                  label={key === 'expectedValue' ? '期待値' :
-                         key === 'diversification' ? 'リスク分散' :
-                         key === 'probability' ? '的中確率' : '安定性'}
-                  color={
-                    key === 'expectedValue' ? '#8884d8' :
-                    key === 'diversification' ? '#82ca9d' :
-                    key === 'probability' ? '#ffc658' : '#ff8042'
-                  }
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 分析サマリー */}
-        <div className="mt-4 space-y-2">
-          <Alert variant={metrics.diversification > 70 ? "default" : "destructive"}>
-            <AlertTitle>リスク分散効果</AlertTitle>
-            <AlertDescription>
-              {metrics.diversification > 70 
-                ? "選択された馬券の組み合わせは良好なリスク分散効果が期待できます。"
-                : "より効果的なリスク分散のため、異なる券種の組み合わせを検討してください。"}
-            </AlertDescription>
-          </Alert>
-          
-          <Alert variant={metrics.expectedValue > 100 ? "default" : "destructive"}>
-            <AlertTitle>期待値分析</AlertTitle>
-            <AlertDescription>
-              平均期待値: {metrics.expectedValue.toFixed(1)}%
-              {metrics.expectedValue > 100 
-                ? "（プラス期待値を確保できています）"
-                : "（期待値の改善余地があります）"}
-            </AlertDescription>
-          </Alert>
-        </div>
+        <textarea
+          value={raceNotes}
+          onChange={(e) => setRaceNotes(e.target.value)}
+          className="w-full h-32 p-3 rounded-lg bg-secondary/50 border-0 resize-none 
+            focus:outline-none focus:ring-2 focus:ring-primary 
+            placeholder:text-muted-foreground text-foreground"
+          placeholder="レース分析のメモを入力してください..."
+        />
       </CardContent>
     </Card>
   );
-}
+};
 
 export function BettingAnalysis() {
   const { id } = useParams();
@@ -496,19 +137,50 @@ export function BettingAnalysis() {
     }
   }, [horsesData, setHorses]);
 
-  // bettingOptionsの計算
+
+  // bettingOptionsの計算を最適化し、計算時にログを出力
   const bettingOptions = useMemo(() => {
-    if (!horses || !latestOdds || !latestFukuOdds || !wakurenOdds || !umarenOdds || !wideOdds || !umatanOdds || !sanrenpukuOdds || !sanrentanOdds) return [];
+    console.log('Recalculating betting options');
     
-    const options = evaluateBettingOptions(
-      horses.map(horse => ({
-        name: horse.name,
-        odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
-        winProb: winProbs[horse.id] / 100,
-        placeProb: placeProbs[horse.id] / 100,
-        frame: horse.frame,
-        number: horse.number
-      })),
+    if (!horses || !latestOdds || !latestFukuOdds || !wakurenOdds || !umarenOdds || !wideOdds || !umatanOdds || !sanrenpukuOdds || !sanrentanOdds) {
+      console.log('Missing required data:', {
+        horses: !horses,
+        latestOdds: !latestOdds,
+        latestFukuOdds: !latestFukuOdds,
+        wakurenOdds: !wakurenOdds,
+        umarenOdds: !umarenOdds,
+        wideOdds: !wideOdds,
+        umatanOdds: !umatanOdds,
+        sanrenpukuOdds: !sanrenpukuOdds,
+        sanrentanOdds: !sanrentanOdds
+      });
+      return [];
+    }
+
+    const mappedHorses = horses.map(horse => ({
+      name: horse.name,
+      odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
+      winProb: winProbs[horse.id] / 100,
+      placeProb: placeProbs[horse.id] / 100,
+      frame: horse.frame,
+      number: horse.number
+    }));
+
+    console.log('Calculating with:', {
+      horsesCount: mappedHorses.length,
+      budget,
+      riskRatio,
+      fukuOddsCount: latestFukuOdds.length,
+      wakurenOddsCount: wakurenOdds.length,
+      umarenOddsCount: umarenOdds.length,
+      wideOddsCount: wideOdds.length,
+      umatanOddsCount: umatanOdds.length,
+      sanrenpukuOddsCount: sanrenpukuOdds.length,
+      sanrentanOddsCount: sanrentanOdds.length
+    });
+
+    return evaluateBettingOptions(
+      mappedHorses,
       budget,
       riskRatio,
       latestFukuOdds.map(odd => ({
@@ -550,14 +222,21 @@ export function BettingAnalysis() {
         odds: Number(odd.odds)
       }))
     );
-
-    if (!isCalculated && options.length > 0) {
-      setBettingOptions(options);
-      setIsCalculated(true);
-    }
-
-    return options;
-  }, [horses, latestOdds, latestFukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, sanrenpukuOdds, sanrentanOdds, winProbs, placeProbs, isCalculated]);
+  }, [
+    horses,
+    latestOdds,
+    latestFukuOdds,
+    wakurenOdds,
+    umarenOdds,
+    wideOdds,
+    umatanOdds,
+    sanrenpukuOdds,
+    sanrentanOdds,
+    winProbs,
+    placeProbs,
+    budget,
+    riskRatio
+  ]);
 
   // 計算結果に基づいて次へボタンの状態を更新
   useEffect(() => {
@@ -640,8 +319,6 @@ export function BettingAnalysis() {
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="overview">概要</TabsTrigger>
-        <TabsTrigger value="risk">リスク分析</TabsTrigger>
-        <TabsTrigger value="correlation">相関分析</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview">
@@ -657,38 +334,6 @@ export function BettingAnalysis() {
               </div>
             ) : geminiAnalysis.data ? (
               <div className="grid grid-cols-1 gap-6">
-                {/* 馬券候補の考察 */}
-                <Card className="bg-secondary/30">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">馬券候補の考察</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {geminiAnalysis.data.analysis.betTypeAnalysis
-                        .sort((a, b) => b.suitability - a.suitability)
-                        .slice(0, 3)
-                        .map((analysis, i) => (
-                          <div key={i} className="bg-primary/10 p-3 rounded-lg">
-                            <div className="flex justify-between items-center mb-2">
-                              <p className="text-sm font-medium">{analysis.type}</p>
-                              <div className="flex items-center gap-1">
-                                <span className="text-xs">適合度</span>
-                                <div className="w-20 h-2 bg-gray-200 rounded-full">
-                                  <div 
-                                    className="h-full bg-green-500 rounded-full" 
-                                    style={{ width: `${analysis.suitability}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-                            </div>
-                            <p className="text-xs text-muted-foreground">{analysis.characteristics}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{analysis.riskProfile}</p>
-                          </div>
-                        ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
                 {/* 推奨アプローチ */}
                 <Card className="bg-secondary/30">
                   <CardHeader className="pb-2">
@@ -732,113 +377,6 @@ export function BettingAnalysis() {
           </CardContent>
         </Card>
       </TabsContent>
-
-      <TabsContent value="risk">
-        <Card>
-          <CardHeader>
-            <CardTitle>リスク分析</CardTitle>
-            <CardDescription>券種ごとのリスク特性と組み合わせ効果</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="scatter" className="w-full">
-              <TabsList>
-                <TabsTrigger value="scatter">散布図</TabsTrigger>
-                <TabsTrigger value="betType">券種分析</TabsTrigger>
-                <TabsTrigger value="combination">組み合わせ効果</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="scatter" className="h-[500px]">
-                {/* 既存の散布図 */}
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      type="number" 
-                      dataKey="risk" 
-                      name="リスク" 
-                      label={{ value: 'リスク', position: 'bottom' }}
-                    />
-                    <YAxis 
-                      type="number" 
-                      dataKey="return" 
-                      name="期待リターン" 
-                      label={{ value: '期待リターン (%)', angle: -90, position: 'insideLeft' }}
-                    />
-                    <Tooltip 
-                      cursor={{ strokeDasharray: '3 3' }}
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        padding: '8px',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                      }}
-                      content={({ payload }) => {
-                        if (payload && payload.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="bg-white p-2 border rounded shadow-lg">
-                              <p className="text-black font-medium">{data.name}</p>
-                              <p className="text-black">リスク: {data.risk.toFixed(2)}</p>
-                              <p className="text-black">期待リターン: {data.return.toFixed(2)}%</p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Scatter
-                      data={bettingOptions.map(bet => ({
-                        name: `${bet.type} ${bet.horseName}`,
-                        type: bet.type,
-                        risk: calculateRisk([bet]),
-                        return: (bet.expectedReturn / bet.stake - 1) * 100
-                      }))}
-                      fill="#8884d8"
-                    />
-                  </ScatterChart>
-                </ResponsiveContainer>
-              </TabsContent>
-
-              <TabsContent value="betType">
-                <BetTypeAnalysis bettingOptions={bettingOptions} />
-              </TabsContent>
-
-              <TabsContent value="combination">
-                <BetCombinationAnalysis bettingOptions={bettingOptions} />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="correlation">
-        <Card>
-          <CardHeader>
-            <CardTitle>相関分析</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {geminiAnalysis.data?.analysis.correlationPatterns.map((pattern, i) => (
-              <div key={i} className="mb-4">
-                <h4 className="font-medium mb-2">{pattern.strength}</h4>
-                {pattern.patterns.map((p, j) => (
-                  <div key={j} className="bg-secondary/50 p-3 rounded-lg mb-2">
-                    <p className="text-sm mb-2">{p.description}</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {p.examples.map((example, k) => (
-                        <div key={k} className="text-xs">
-                          <p>{example.bet1} ↔ {example.bet2}</p>
-                          <p className="text-muted-foreground">確率: {example.probability}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </TabsContent>
     </Tabs>
   );
 
@@ -857,8 +395,8 @@ export function BettingAnalysis() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-4 lg:self-start">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-6 lg:sticky lg:top-4 lg:self-start">
         {/* 馬券候補を先に表示 */}
         <Card>
           <CardHeader>
@@ -944,258 +482,57 @@ export function BettingAnalysis() {
         </Card>
       </div>
 
-      {/* 右側のカラム（更新） */}
-      <div className="lg:col-span-8 space-y-6">
-        {/* 新しい分析チャート */}
-        <RiskBalanceChart 
-          selectedBets={bettingOptions} 
-          correlations={conditionalProbabilities} 
-        />
+      {/* 右側のカラム */}
+      <div className="space-y-6">
+        {/* メモ欄をコンポーネントとして分離 */}
+        <RaceNotesCard />
 
-        {/* 既存の分析タブ（必要に応じて表示） */}
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview">概要</TabsTrigger>
-            <TabsTrigger value="risk">リスク分析</TabsTrigger>
-            <TabsTrigger value="correlation">相関分析</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview">
-            <Card>
-              <CardHeader>
-                <CardTitle>分析概要</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {geminiAnalysis.isLoading ? (
-                  <div className="flex justify-center items-center p-4">
-                    <Spinner />
-                    <span className="ml-2">分析中...</span>
-                  </div>
-                ) : geminiAnalysis.data ? (
-                  <div className="grid grid-cols-1 gap-6">
-                    {/* 馬券候補の考察 */}
-                    <Card className="bg-secondary/30">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">馬券候補の考察</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          {geminiAnalysis.data.analysis.betTypeAnalysis
-                            .sort((a, b) => b.suitability - a.suitability)
-                            .slice(0, 3)
-                            .map((analysis, i) => (
-                              <div key={i} className="bg-primary/10 p-3 rounded-lg">
-                                <div className="flex justify-between items-center mb-2">
-                                  <p className="text-sm font-medium">{analysis.type}</p>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-xs">適合度</span>
-                                    <div className="w-20 h-2 bg-gray-200 rounded-full">
-                                      <div 
-                                        className="h-full bg-green-500 rounded-full" 
-                                        style={{ width: `${analysis.suitability}%` }}
-                                      ></div>
-                                    </div>
-                                  </div>
-                                </div>
-                                <p className="text-xs text-muted-foreground">{analysis.characteristics}</p>
-                                <p className="text-xs text-muted-foreground mt-1">{analysis.riskProfile}</p>
-                              </div>
-                            ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* 推奨アプローチ */}
-                    <Card className="bg-secondary/30">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">推奨アプローチ</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          {/* 推奨される馬券組み合わせ */}
-                          <div className="bg-primary/10 p-3 rounded-lg">
-                            <h4 className="text-sm font-medium mb-2">推奨される馬券組み合わせ</h4>
-                            {geminiAnalysis.data.analysis.betTypeAnalysis
-                              .filter(analysis => analysis.suitability > 70)
-                              .map((analysis, i) => (
-                                <div key={i} className="mb-3">
-                                  <p className="text-xs font-medium mb-1">{analysis.type}</p>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    {analysis.recommendedCombinations.map((combo, j) => (
-                                      <div key={j} className="text-xs bg-secondary/30 p-2 rounded">
-                                        {combo}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-
-                          {/* 重要な洞察 */}
-                          <div className="bg-primary/10 p-3 rounded-lg">
-                            <h4 className="text-sm font-medium mb-2">重要な洞察</h4>
-                            <ul className="list-disc pl-4 space-y-1">
-                              {geminiAnalysis.data.summary.keyInsights.map((insight, i) => (
-                                <li key={i} className="text-xs">{insight}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="risk">
-            <Card>
-              <CardHeader>
-                <CardTitle>リスク分析</CardTitle>
-                <CardDescription>券種ごとのリスク特性と組み合わせ効果</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="scatter" className="w-full">
-                  <TabsList>
-                    <TabsTrigger value="scatter">散布図</TabsTrigger>
-                    <TabsTrigger value="betType">券種分析</TabsTrigger>
-                    <TabsTrigger value="combination">組み合わせ効果</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="scatter" className="h-[500px]">
-                    {/* 既存の散布図 */}
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 20, right: 20, bottom: 40, left: 60 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          type="number" 
-                          dataKey="risk" 
-                          name="リスク" 
-                          label={{ value: 'リスク', position: 'bottom' }}
-                        />
-                        <YAxis 
-                          type="number" 
-                          dataKey="return" 
-                          name="期待リターン" 
-                          label={{ value: '期待リターン (%)', angle: -90, position: 'insideLeft' }}
-                        />
-                        <Tooltip 
-                          cursor={{ strokeDasharray: '3 3' }}
-                          contentStyle={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            padding: '8px',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                          }}
-                          content={({ payload }) => {
-                            if (payload && payload.length) {
-                              const data = payload[0].payload;
-                              return (
-                                <div className="bg-white p-2 border rounded shadow-lg">
-                                  <p className="text-black font-medium">{data.name}</p>
-                                  <p className="text-black">リスク: {data.risk.toFixed(2)}</p>
-                                  <p className="text-black">期待リターン: {data.return.toFixed(2)}%</p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                        <Scatter
-                          data={bettingOptions.map(bet => ({
-                            name: `${bet.type} ${bet.horseName}`,
-                            type: bet.type,
-                            risk: calculateRisk([bet]),
-                            return: (bet.expectedReturn / bet.stake - 1) * 100
-                          }))}
-                          fill="#8884d8"
-                        />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                  </TabsContent>
-
-                  <TabsContent value="betType">
-                    <BetTypeAnalysis bettingOptions={bettingOptions} />
-                  </TabsContent>
-
-                  <TabsContent value="combination">
-                    <BetCombinationAnalysis bettingOptions={bettingOptions} />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="correlation">
-            <Card>
-              <CardHeader>
-                <CardTitle>相関分析</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {geminiAnalysis.data?.analysis.correlationPatterns.map((pattern, i) => (
-                  <div key={i} className="mb-4">
-                    <h4 className="font-medium mb-2">{pattern.strength}</h4>
-                    {pattern.patterns.map((p, j) => (
-                      <div key={j} className="bg-secondary/50 p-3 rounded-lg mb-2">
-                        <p className="text-sm mb-2">{p.description}</p>
+        {/* 分析概要 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>推奨アプローチ</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {geminiAnalysis.isLoading ? (
+              <div className="flex justify-center items-center p-4">
+                <Spinner />
+                <span className="ml-2">分析中...</span>
+              </div>
+            ) : geminiAnalysis.data ? (
+              <div className="space-y-4">
+                {/* 推奨される馬券組み合わせ */}
+                <div className="bg-secondary/50 p-3 rounded-lg">
+                  <h4 className="text-sm font-medium mb-2">推奨される馬券組み合わせ</h4>
+                  {geminiAnalysis.data.analysis.betTypeAnalysis
+                    .filter(analysis => analysis.suitability > 70)
+                    .map((analysis, i) => (
+                      <div key={i} className="mb-3">
+                        <p className="text-xs font-medium mb-1">{analysis.type}</p>
                         <div className="grid grid-cols-2 gap-2">
-                          {p.examples.map((example, k) => (
-                            <div key={k} className="text-xs">
-                              <p>{example.bet1} ↔ {example.bet2}</p>
-                              <p className="text-muted-foreground">確率: {example.probability}</p>
+                          {analysis.recommendedCombinations.map((combo, j) => (
+                            <div key={j} className="text-xs bg-primary/10 p-2 rounded">
+                              {combo}
                             </div>
                           ))}
                         </div>
                       </div>
                     ))}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                </div>
+
+                {/* 重要な洞察 */}
+                <div className="bg-secondary/50 p-3 rounded-lg">
+                  <h4 className="text-sm font-medium mb-2">重要な洞察</h4>
+                  <ul className="list-disc pl-4 space-y-1">
+                    {geminiAnalysis.data.summary.keyInsights.map((insight, i) => (
+                      <li key={i} className="text-xs">{insight}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
-}
-
-function calculateRisk(bets: BetProposal[]): number {
-  // 単純な実装例：的中確率が低いほどリスクが高いと仮定
-  return bets.reduce((acc, bet) => acc + (1 - bet.probability), 0) / bets.length;
-}
-
-// 新しいユーティリティ関数
-function groupBetsByType(bets: BetProposal[]) {
-  return bets.reduce((acc, bet) => {
-    if (!acc[bet.type]) acc[bet.type] = [];
-    acc[bet.type].push(bet);
-    return acc;
-  }, {} as Record<string, BetProposal[]>);
-}
-
-function calculateCorrelation(bets1: BetProposal[], bets2: BetProposal[]) {
-  // 簡易的な相関係数の計算
-  const returns1 = bets1.map(bet => bet.expectedReturn / bet.stake);
-  const returns2 = bets2.map(bet => bet.expectedReturn / bet.stake);
-  
-  const mean1 = returns1.reduce((sum, val) => sum + val, 0) / returns1.length;
-  const mean2 = returns2.reduce((sum, val) => sum + val, 0) / returns2.length;
-  
-  const covariance = returns1.reduce((sum, val, i) => 
-    sum + (val - mean1) * (returns2[i % returns2.length] - mean2), 0
-  ) / returns1.length;
-  
-  const std1 = Math.sqrt(returns1.reduce((sum, val) => sum + Math.pow(val - mean1, 2), 0) / returns1.length);
-  const std2 = Math.sqrt(returns2.reduce((sum, val) => sum + Math.pow(val - mean2, 2), 0) / returns2.length);
-  
-  return covariance / (std1 * std2);
-}
-
-function calculateStandardDeviation(values: number[]): number {
-  const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-  const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
-  const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / values.length;
-  return Math.sqrt(variance) || 1; // 0除算を防ぐため
 }
