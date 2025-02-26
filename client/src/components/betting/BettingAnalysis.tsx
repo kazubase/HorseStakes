@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, memo, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAtom } from 'jotai';
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -315,85 +315,88 @@ export function BettingAnalysis() {
     enabled: !!id,
   });
 
-  // メモ化された値の計算
-  const bettingOptions = useMemo(() => {
-    if (!horses?.length || !latestOdds?.length || !latestFukuOdds?.length || 
-        !wakurenOdds?.length || !umarenOdds?.length || !wideOdds?.length || 
-        !umatanOdds?.length || !sanrenpukuOdds?.length || !sanrentanOdds?.length) {
-      return [];
-    }
-
-    const mappedHorses = horses.map(horse => ({
-      name: horse.name,
-      odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
-      winProb: winProbs[horse.id] / 100,
-      placeProb: placeProbs[horse.id] / 100,
-      frame: horse.frame,
-      number: horse.number
-    }));
-
-    return evaluateBettingOptions(
-      mappedHorses,
+  // bettingOptionsの計算をクエリとしてキャッシュ
+  const { data: calculatedBettingOptions } = useQuery({
+    queryKey: ['betting-options', {
+      horsesLength: horses?.length,
+      latestOddsLength: latestOdds?.length,
+      latestFukuOddsLength: latestFukuOdds?.length,
+      wakurenOddsLength: wakurenOdds?.length,
+      umarenOddsLength: umarenOdds?.length,
+      wideOddsLength: wideOdds?.length,
+      umatanOddsLength: umatanOdds?.length,
+      sanrenpukuOddsLength: sanrenpukuOdds?.length,
+      sanrentanOddsLength: sanrentanOdds?.length,
       budget,
-      riskRatio,
-      latestFukuOdds.map(odd => ({
-        horse1: Number(odd.horseId),
-        oddsMin: Number(odd.oddsMin),
-        oddsMax: Number(odd.oddsMax)
-      })),
-      wakurenOdds.map(odd => ({
-        frame1: odd.frame1,
-        frame2: odd.frame2,
-        odds: Number(odd.odds)
-      })),
-      umarenOdds.map(odd => ({
-        horse1: Number(odd.horse1),
-        horse2: Number(odd.horse2),
-        odds: Number(odd.odds)
-      })),
-      wideOdds.map(odd => ({
-        horse1: Number(odd.horse1),
-        horse2: Number(odd.horse2),
-        oddsMin: Number(odd.oddsMin),
-        oddsMax: Number(odd.oddsMax)
-      })),
-      umatanOdds.map(odd => ({
-        horse1: Number(odd.horse1),
-        horse2: Number(odd.horse2),
-        odds: Number(odd.odds)
-      })),
-      sanrenpukuOdds.map(odd => ({
-        horse1: Number(odd.horse1),
-        horse2: Number(odd.horse2),
-        horse3: Number(odd.horse3),
-        odds: Number(odd.odds)
-      })),
-      sanrentanOdds.map(odd => ({
-        horse1: Number(odd.horse1),
-        horse2: Number(odd.horse2),
-        horse3: Number(odd.horse3),
-        odds: Number(odd.odds)
-      }))
-    );
-  }, [
-    horses?.length,
-    latestOdds?.length,
-    latestFukuOdds?.length,
-    wakurenOdds?.length,
-    umarenOdds?.length,
-    wideOdds?.length,
-    umatanOdds?.length,
-    sanrenpukuOdds?.length,
-    sanrentanOdds?.length,
-    budget,
-    riskRatio
-  ]);
+      riskRatio
+    }],
+    queryFn: () => {
+      if (!horses?.length || !latestOdds?.length || !latestFukuOdds?.length || 
+          !wakurenOdds?.length || !umarenOdds?.length || !wideOdds?.length || 
+          !umatanOdds?.length || !sanrenpukuOdds?.length || !sanrentanOdds?.length) {
+        return [];
+      }
+      const mappedHorses = horses.map(horse => ({
+        name: horse.name,
+        odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
+        winProb: winProbs[horse.id] / 100,
+        placeProb: placeProbs[horse.id] / 100,
+        frame: horse.frame,
+        number: horse.number
+      }));
+
+      return evaluateBettingOptions(
+        mappedHorses,
+        budget,
+        riskRatio,
+        latestFukuOdds.map(odd => ({
+          horse1: Number(odd.horseId),
+          oddsMin: Number(odd.oddsMin),
+          oddsMax: Number(odd.oddsMax)
+        })),
+        wakurenOdds.map(odd => ({
+          frame1: odd.frame1,
+          frame2: odd.frame2,
+          odds: Number(odd.odds)
+        })),
+        umarenOdds.map(odd => ({
+          horse1: Number(odd.horse1),
+          horse2: Number(odd.horse2),
+          odds: Number(odd.odds)
+        })),
+        wideOdds.map(odd => ({
+          horse1: Number(odd.horse1),
+          horse2: Number(odd.horse2),
+          oddsMin: Number(odd.oddsMin),
+          oddsMax: Number(odd.oddsMax)
+        })),
+        umatanOdds.map(odd => ({
+          horse1: Number(odd.horse1),
+          horse2: Number(odd.horse2),
+          odds: Number(odd.odds)
+        })),
+        sanrenpukuOdds.map(odd => ({
+          horse1: Number(odd.horse1),
+          horse2: Number(odd.horse2),
+          horse3: Number(odd.horse3),
+          odds: Number(odd.odds)
+        })),
+        sanrentanOdds.map(odd => ({
+          horse1: Number(odd.horse1),
+          horse2: Number(odd.horse2),
+          horse3: Number(odd.horse3),
+          odds: Number(odd.odds)
+        }))
+      );
+    },
+    staleTime: Infinity, // データを永続的にキャッシュ
+  });
 
   const conditionalProbabilities = useMemo(() => {
-    if (!horses || !bettingOptions) return [];
+    if (!horses || !calculatedBettingOptions) return [];
     
     return calculateConditionalProbability(
-      bettingOptions,
+      calculatedBettingOptions,
       horses.map(horse => ({
         name: horse.name,
         odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
@@ -413,11 +416,11 @@ export function BettingAnalysis() {
       },
       probability: corr.probability
     }));
-  }, [horses, bettingOptions, latestOdds, winProbs, placeProbs]);
+  }, [horses, calculatedBettingOptions, latestOdds, winProbs, placeProbs]);
 
   // Step 2: Geminiによる分析
   const geminiAnalysis = useQuery({
-    queryKey: ['gemini-analysis', bettingOptions, budget, riskRatio],
+    queryKey: ['gemini-analysis', calculatedBettingOptions, budget, riskRatio],
     queryFn: () => analyzeWithGemini({
       horses: horses?.map(horse => ({
         name: horse.name,
@@ -427,7 +430,7 @@ export function BettingAnalysis() {
         frame: horse.frame,
         number: horse.number
       })) || [],
-      bettingOptions: bettingOptions.map(bet => ({
+      bettingOptions: calculatedBettingOptions?.map(bet => ({
         type: bet.type,
         horses: bet.horses,
         horseName: bet.horses.join(bet.type.includes('単') ? '→' : '-'),
@@ -435,12 +438,12 @@ export function BettingAnalysis() {
         probability: bet.probability,
         expectedReturn: bet.expectedReturn,
         stake: bet.stake
-      })),
+      })) || [],
       budget,
       riskRatio,
       correlations: conditionalProbabilities
     }),
-    enabled: !!horses && !!bettingOptions.length
+    enabled: !!horses && !!calculatedBettingOptions?.length
   });
 
   // 副作用の最適化
@@ -451,8 +454,10 @@ export function BettingAnalysis() {
   }, [horsesData, setHorses]);
 
   useEffect(() => {
-    setBettingOptions(bettingOptions);
-  }, [bettingOptions, setBettingOptions]);
+    if (calculatedBettingOptions) {
+      setBettingOptions(calculatedBettingOptions);
+    }
+  }, [calculatedBettingOptions, setBettingOptions]);
 
   useEffect(() => {
     if (geminiAnalysis.data) {
@@ -475,7 +480,7 @@ export function BettingAnalysis() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-6 lg:sticky lg:top-4 lg:self-start">
         <BettingOptionsSection
-          bettingOptions={bettingOptions}
+          bettingOptions={calculatedBettingOptions || []}
           conditionalProbabilities={conditionalProbabilities}
           geminiRecommendations={geminiAnalysis.data?.recommendations}
         />
