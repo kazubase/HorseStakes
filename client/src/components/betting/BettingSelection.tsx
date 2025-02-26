@@ -200,8 +200,8 @@ export function BettingSelection() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 左側: 馬券候補 */}
-        <div>
+        {/* 左側: 馬券候補 - stickyスクロール適用 */}
+        <div className="lg:h-fit lg:sticky lg:top-4">
           <BettingOptionsTable 
             bettingOptions={bettingOptions}
             selectedBets={selectionState.selectedBets}
@@ -209,8 +209,8 @@ export function BettingSelection() {
           />
         </div>
 
-        {/* 右側: AI最適化ボタンとメモ欄 */}
-        <div className="space-y-4">
+        {/* 右側: AI最適化ボタンとメモ欄 - stickyスクロール適用 */}
+        <div className="space-y-4 lg:h-fit lg:sticky lg:top-4">
           {/* デスクトップでのAI最適化ボタン */}
           <div className="hidden lg:block">
             <Button
