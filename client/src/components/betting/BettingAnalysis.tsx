@@ -58,7 +58,6 @@ const RaceNotesCard = () => {
     <Card>
       <CardHeader>
         <CardTitle>メモ</CardTitle>
-        <CardDescription>レース分析のメモを残すことができます</CardDescription>
       </CardHeader>
       <CardContent>
         <textarea
@@ -94,6 +93,7 @@ const BettingOptionsSection = memo(({
         selectedBets={[]}
         correlations={conditionalProbabilities}
         geminiRecommendations={geminiRecommendations}
+        className="[&_tr:hover]:bg-transparent"
       />
     </CardContent>
   </Card>
@@ -128,71 +128,88 @@ const PredictionSettingsSection = memo(({
   }, []);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>予想設定</CardTitle>
+    <Card className="overflow-hidden bg-gradient-to-br from-background to-primary/5">
+      <CardHeader className="relative pb-4">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-50" />
+        <CardTitle className="relative">予想設定</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         {/* 投資条件 */}
-        <div className="mb-6">
+        <div className="p-4 bg-gradient-to-b from-primary/5">
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-secondary/50 p-4 rounded-lg">
-              <p className="text-2xl font-bold">{budget.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">予算</p>
+            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
+              <p className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                ￥{budget.toLocaleString()}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">予算</p>
             </div>
-            <div className="bg-secondary/50 p-4 rounded-lg">
-              <p className="text-2xl font-bold">×{riskRatio.toFixed(1)}</p>
-              <p className="text-xs text-muted-foreground">リスクリワード</p>
+            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
+              <p className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                ×{riskRatio.toFixed(1)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">リスクリワード</p>
             </div>
           </div>
         </div>
 
         {/* 予想確率 */}
-        {horses && horses.length > 0 ? (
-          <div className="space-y-2">
-            {horses
+        <div className="divide-y divide-border/30">
+          {horses && horses.length > 0 ? (
+            horses
               .map(horse => ({
                 ...horse,
                 winProb: Number(winProbs[horse.id]) / 100 || 0,
                 placeProb: Number(placeProbs[horse.id]) / 100 || 0
               }))
               .sort((a, b) => {
-                if (b.winProb !== a.winProb) {
-                  return b.winProb - a.winProb;
-                }
+                if (b.winProb !== a.winProb) return b.winProb - a.winProb;
                 return b.placeProb - a.placeProb;
               })
               .slice(0, 5)
               .map(horse => (
                 <div key={horse.id} 
-                     className="flex items-center p-2 rounded-lg hover:bg-secondary/50 transition-colors">
-                  <div className="flex items-center gap-2 flex-1">
-                    <div className="flex items-center">
-                      <span className={`px-2 py-1 rounded text-sm ${getFrameColor(horse.frame)}`}>
+                     className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative flex items-center px-4 py-3">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className={`
+                        w-8 h-8 flex items-center justify-center rounded-lg font-bold shadow-sm
+                        ${getFrameColor(horse.frame)}
+                      `}>
                         {horse.number}
-                      </span>
+                      </div>
+                      <span className="text-sm font-medium">{horse.name}</span>
                     </div>
-                    <span className="text-sm truncate">{horse.name}</span>
-                  </div>
-                  <div className="flex gap-3 text-right">
-                    <div className="w-14">
-                      <p className="text-sm font-bold">{(horse.winProb * 100).toFixed(0)}%</p>
-                      <p className="text-[10px] text-muted-foreground">単勝</p>
-                    </div>
-                    <div className="w-14">
-                      <p className="text-sm font-bold">{(horse.placeProb * 100).toFixed(0)}%</p>
-                      <p className="text-[10px] text-muted-foreground">複勝</p>
+                    <div className="flex gap-6">
+                      <div className="text-right">
+                        <p className={`text-sm font-bold ${
+                          horse.winProb >= 0.3 ? 'text-primary' : 
+                          horse.winProb >= 0.15 ? 'text-primary/80' : 'text-muted-foreground'
+                        }`}>
+                          {(horse.winProb * 100).toFixed(0)}%
+                        </p>
+                        <p className="text-[10px] text-muted-foreground font-medium">単勝</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-bold ${
+                          horse.placeProb >= 0.5 ? 'text-primary' : 
+                          horse.placeProb >= 0.3 ? 'text-primary/80' : 'text-muted-foreground'
+                        }`}>
+                          {(horse.placeProb * 100).toFixed(0)}%
+                        </p>
+                        <p className="text-[10px] text-muted-foreground font-medium">複勝</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
-          </div>
-        ) : (
-          <div className="flex justify-center items-center h-32">
-            <Spinner className="w-4 h-4 mr-2" />
-            <span className="text-sm text-muted-foreground">読込中...</span>
-          </div>
-        )}
+              ))
+          ) : (
+            <div className="flex justify-center items-center h-32">
+              <Spinner className="w-4 h-4 mr-2" />
+              <span className="text-sm text-muted-foreground">読込中...</span>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -478,26 +495,26 @@ export function BettingAnalysis() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="space-y-6 lg:sticky lg:top-4 lg:self-start">
+      <div className="space-y-6 lg:h-fit lg:sticky lg:top-4">
         <BettingOptionsSection
           bettingOptions={calculatedBettingOptions || []}
           conditionalProbabilities={conditionalProbabilities}
           geminiRecommendations={geminiAnalysis.data?.recommendations}
         />
+      </div>
+      
+      <div className="space-y-6 lg:h-fit lg:sticky lg:top-4">
+        <GeminiAnalysisSection
+          isLoading={geminiAnalysis.isLoading}
+          data={geminiAnalysis.data}
+        />
+        <RaceNotesCard />
         <PredictionSettingsSection
           budget={budget}
           riskRatio={riskRatio}
           horses={horses || []}
           winProbs={winProbs}
           placeProbs={placeProbs}
-        />
-      </div>
-      
-      <div className="space-y-6">
-        <RaceNotesCard />
-        <GeminiAnalysisSection
-          isLoading={geminiAnalysis.isLoading}
-          data={geminiAnalysis.data}
         />
       </div>
     </div>

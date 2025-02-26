@@ -15,6 +15,7 @@ interface BettingOptionsTableProps {
     horses: string[];
     reason: string;
   }>;
+  className?: string;
 }
 
 export function BettingOptionsTable({ 
@@ -22,7 +23,8 @@ export function BettingOptionsTable({
   selectedBets = [],
   onBetSelect,
   correlations = [],
-  geminiRecommendations = []
+  geminiRecommendations = [],
+  className
 }: BettingOptionsTableProps) {
   // 期待値を計算して統計情報を取得
   const optionsWithStats = useMemo(() => {
@@ -199,7 +201,7 @@ export function BettingOptionsTable({
   };
 
   return (
-    <div className="space-y-3">
+    <div className={`space-y-3 ${className || ''}`}>
       {/* 凡例を追加 */}
       <div className="bg-secondary/30 p-2 rounded-lg text-xs text-muted-foreground">
         <div className="grid grid-cols-2 gap-2 mb-1">
@@ -235,36 +237,48 @@ export function BettingOptionsTable({
                           <div 
                             onClick={() => onBetSelect?.(option)}
                             className={`
-                              p-2 rounded-md transition-colors cursor-pointer
+                              relative overflow-hidden
+                              p-2 rounded-md transition-all cursor-pointer
+                              ${evClass}
                               ${isSelected(option)
                                 ? 'bg-primary/15 border border-primary/30 shadow-sm' 
-                                : `${evClass} border border-transparent`
+                                : 'border border-transparent'
                               }
                             `}
                           >
-                            <div className="grid grid-cols-2 gap-2">
-                              <span className="font-medium">
-                                {formatHorses(option.horses, betType)}
-                              </span>
-                              <span className={`
-                                text-right font-bold
-                                ${getColorClass(option.odds, optionsWithStats.stats.odds)}
-                              `}>
-                                ×{option.odds.toFixed(1)}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 text-xs mt-1">
-                              <span className={
-                                getColorClass(option.probability, optionsWithStats.stats.probability)
-                              }>
-                                {(option.probability * 100).toFixed(1)}%
-                              </span>
-                              <span className={`
-                                text-right font-medium
-                                ${getColorClass(option.ev, optionsWithStats.stats.ev)}
-                              `}>
-                                {(option.ev).toFixed(2)}
-                              </span>
+                            {/* グラデーション背景レイヤー */}
+                            <div className={`
+                              absolute inset-0 
+                              bg-gradient-to-r from-primary/10 via-background/5 to-transparent
+                              ${isSelected(option) ? 'opacity-0' : 'opacity-100'}
+                            `} />
+
+                            {/* コンテンツレイヤー - relative追加で背景より前面に */}
+                            <div className="relative">
+                              <div className="grid grid-cols-2 gap-2">
+                                <span className="font-medium">
+                                  {formatHorses(option.horses, betType)}
+                                </span>
+                                <span className={`
+                                  text-right font-bold
+                                  ${getColorClass(option.odds, optionsWithStats.stats.odds)}
+                                `}>
+                                  ×{option.odds.toFixed(1)}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                                <span className={
+                                  getColorClass(option.probability, optionsWithStats.stats.probability)
+                                }>
+                                  {(option.probability * 100).toFixed(1)}%
+                                </span>
+                                <span className={`
+                                  text-right font-medium
+                                  ${getColorClass(option.ev, optionsWithStats.stats.ev)}
+                                `}>
+                                  {(option.ev).toFixed(2)}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </PopoverTrigger>
