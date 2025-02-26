@@ -55,19 +55,23 @@ const RaceNotesCard = () => {
   const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>メモ</CardTitle>
+    <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
+      <CardHeader className="relative pb-4">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
+        <CardTitle className="relative">メモ</CardTitle>
       </CardHeader>
       <CardContent>
-        <textarea
-          value={raceNotes}
-          onChange={(e) => setRaceNotes(e.target.value)}
-          className="w-full h-32 p-3 rounded-lg bg-secondary/50 border-0 resize-none 
-            focus:outline-none focus:ring-2 focus:ring-primary 
-            placeholder:text-muted-foreground text-foreground"
-          placeholder="レース分析のメモを入力してください..."
-        />
+        <div className="relative overflow-hidden rounded-lg bg-black/40 backdrop-blur-sm border border-primary/10">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+          <textarea
+            value={raceNotes}
+            onChange={(e) => setRaceNotes(e.target.value)}
+            className="w-full h-32 p-3 bg-transparent border-0 resize-none 
+              focus:outline-none focus:ring-1 focus:ring-primary/30
+              placeholder:text-muted-foreground text-foreground relative"
+            placeholder="レース分析のメモを入力してください..."
+          />
+        </div>
       </CardContent>
     </Card>
   );
@@ -138,13 +142,13 @@ const PredictionSettingsSection = memo(({
         <div className="p-4 bg-gradient-to-b from-primary/5">
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
-              <p className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent truncate">
                 ￥{budget.toLocaleString()}
               </p>
               <p className="text-xs text-muted-foreground mt-1 font-medium">予算</p>
             </div>
             <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
-              <p className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
                 ×{riskRatio.toFixed(1)}
               </p>
               <p className="text-xs text-muted-foreground mt-1 font-medium">リスクリワード</p>
@@ -223,9 +227,10 @@ const GeminiAnalysisSection = memo(({
   isLoading: boolean; 
   data: any; 
 }) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>推奨アプローチ</CardTitle>
+  <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
+    <CardHeader className="relative pb-4">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
+      <CardTitle className="relative">推奨アプローチ</CardTitle>
     </CardHeader>
     <CardContent>
       {isLoading ? (
@@ -234,19 +239,25 @@ const GeminiAnalysisSection = memo(({
           <span className="ml-2">分析中...</span>
         </div>
       ) : data ? (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* 推奨される馬券組み合わせ */}
-          <div className="bg-secondary/50 p-3 rounded-lg">
-            <h4 className="text-sm font-medium mb-2">推奨される馬券組み合わせ</h4>
+          <div>
+            <h4 className="text-sm font-medium mb-3">推奨される馬券組み合わせ</h4>
             {data.analysis.betTypeAnalysis
               .filter((analysis: BetTypeAnalysis) => analysis.suitability > 70)
               .map((analysis: BetTypeAnalysis, i: number) => (
-                <div key={i} className="mb-3">
-                  <p className="text-xs font-medium mb-1">{analysis.type}</p>
-                  <div className="grid gap-2">
+                <div key={i} className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="text-xs font-medium px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
+                      {analysis.type}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
                     {analysis.recommendedCombinations.map((combo, j) => (
-                      <div key={j} className="text-xs bg-primary/10 p-2 rounded">
-                        {combo}
+                      <div key={j} 
+                           className="relative overflow-hidden group bg-black/40 backdrop-blur-sm rounded-lg p-3 border border-primary/10">
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <p className="relative text-sm">{combo}</p>
                       </div>
                     ))}
                   </div>
@@ -255,13 +266,17 @@ const GeminiAnalysisSection = memo(({
           </div>
 
           {/* 重要な洞察 */}
-          <div className="bg-secondary/50 p-3 rounded-lg">
-            <h4 className="text-sm font-medium mb-2">重要な洞察</h4>
-            <ul className="list-disc pl-4 space-y-1">
+          <div>
+            <h4 className="text-sm font-medium mb-3">重要な洞察</h4>
+            <div className="space-y-2">
               {data.summary.keyInsights.map((insight: string, i: number) => (
-                <li key={i} className="text-xs">{insight}</li>
+                <div key={i} 
+                     className="relative overflow-hidden group bg-black/40 backdrop-blur-sm rounded-lg p-3 border border-primary/10">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <p className="relative text-sm">{insight}</p>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
       ) : null}
