@@ -202,6 +202,24 @@ export function BettingOptionsTable({
     }
   };
 
+  // 券種ごとの統計を計算する関数を追加
+  const calculateTypeStats = (
+    options: typeof optionsWithStats.options,
+    selectedBets: BetProposal[],
+    type: string
+  ) => {
+    const selectedOfType = selectedBets.filter(bet => bet.type === type);
+    if (!selectedOfType.length) return null;
+
+    const totalProbability = selectedOfType.reduce((sum, bet) => sum + bet.probability, 0);
+    const averageEv = selectedOfType.reduce((sum, bet) => sum + (bet.expectedReturn / bet.stake) * bet.probability, 0) / selectedOfType.length;
+
+    return {
+      totalProbability,
+      averageEv
+    };
+  };
+
   return (
     <div className={`space-y-3 ${className || ''}`}>
       {/* 凡例を追加 */}
@@ -224,7 +242,32 @@ export function BettingOptionsTable({
           return (
             <Card key={betType} className="bg-background/50 backdrop-blur-sm">
               <CardHeader className="py-2 px-3 border-b">
-                <CardTitle className="text-base font-medium">{betType}</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-base font-medium">{betType}</CardTitle>
+                  {/* 券種ごとの統計情報を表示 */}
+                  {calculateTypeStats(optionsWithStats.options, selectedBets, betType) && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className={`
+                        font-medium
+                        ${getColorClass(
+                          calculateTypeStats(optionsWithStats.options, selectedBets, betType)!.totalProbability,
+                          optionsWithStats.stats.probability
+                        )}
+                      `}>
+                        {(calculateTypeStats(optionsWithStats.options, selectedBets, betType)!.totalProbability * 100).toFixed(1)}%
+                      </span>
+                      <span className={`
+                        font-medium
+                        ${getColorClass(
+                          calculateTypeStats(optionsWithStats.options, selectedBets, betType)!.averageEv,
+                          optionsWithStats.stats.ev
+                        )}
+                      `}>
+                        {calculateTypeStats(optionsWithStats.options, selectedBets, betType)!.averageEv.toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-2">
                 <div className="space-y-1.5">
