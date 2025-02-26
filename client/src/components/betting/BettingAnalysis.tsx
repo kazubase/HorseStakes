@@ -9,7 +9,8 @@ import {
   horsesAtom, 
   analysisResultAtom,
   bettingOptionsAtom,
-  raceNotesAtom
+  raceNotesAtom,
+  canProceedAtom
 } from '@/stores/bettingStrategy';
 import type { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
 import { BettingOptionsTable } from "@/components/BettingOptionsTable";
@@ -257,7 +258,6 @@ export function BettingAnalysis() {
   const [horses, setHorses] = useAtom(horsesAtom);
   const [analysisResult, setAnalysisResult] = useAtom<GeminiAnalysisResult | null>(analysisResultAtom);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [canProceed, setCanProceed] = useState(false);
   const [, setBettingOptions] = useAtom(bettingOptionsAtom);
   const [isCalculated, setIsCalculated] = useState(false);
 
@@ -451,8 +451,8 @@ export function BettingAnalysis() {
   }, [horsesData, setHorses]);
 
   useEffect(() => {
-    setCanProceed(bettingOptions.length > 0);
-  }, [bettingOptions]);
+    setBettingOptions(bettingOptions);
+  }, [bettingOptions, setBettingOptions]);
 
   useEffect(() => {
     if (geminiAnalysis.data) {
