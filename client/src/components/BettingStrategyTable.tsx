@@ -225,9 +225,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     <Card className="overflow-hidden bg-gradient-to-br from-background to-primary/5">
       <CardHeader className="relative pb-4 border-b border-border/50">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-50" />
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-2">
-            <CardTitle>{strategy.description}</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">{strategy.description}</CardTitle>
             {strategy.summary.riskLevel === 'AI_OPTIMIZED' && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200">
                 <Sparkles className="h-3 w-3 mr-1" />
@@ -239,7 +239,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             variant="outline"
             size="sm"
             onClick={captureTable}
-            className="gap-2"
+            className="gap-2 w-full sm:w-auto"
           >
             <Camera className="h-4 w-4" />
             保存
@@ -257,9 +257,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           {sortedBets.map((bet, index) => (
             <div key={index} className="relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative flex items-center px-4 py-3">
+              <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4">
                 {/* 券種と買い目 */}
-                <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-center gap-3 w-full sm:w-auto sm:flex-1">
                   <div className="w-16 text-xs font-medium text-muted-foreground">
                     {normalizeTicketType(bet.type)}
                   </div>
@@ -268,23 +268,21 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                   </span>
                 </div>
 
-                {/* オッズと的中率 */}
-                <div className="flex gap-6">
-                  <div className="text-right w-20">
+                {/* オッズ、的中率、投資額のグループ */}
+                <div className="flex justify-between sm:justify-end items-center w-full sm:w-auto gap-4 sm:gap-6">
+                  <div className="text-right min-w-[80px]">
                     <p className="text-sm font-bold">×{Number(bet.expectedReturn / bet.stake).toFixed(1)}</p>
                     <p className="text-xs text-muted-foreground">{(bet.probability * 100).toFixed(1)}%</p>
                   </div>
 
-                  {/* 投資額と払戻金 */}
-                  <div className="text-right w-28">
+                  <div className="text-right min-w-[100px]">
                     <p className="text-sm font-bold">{bet.stake.toLocaleString()}円</p>
                     <p className="text-xs text-muted-foreground">
-                      {bet.expectedReturn.toLocaleString()}円
+                      {(Math.round(bet.stake * (bet.expectedReturn / bet.stake) / 10) * 10 ).toLocaleString()}円
                     </p>
                   </div>
 
-                  {/* 選定理由 */}
-                  <div className="flex items-center w-8 justify-center">
+                  <div className="flex items-center justify-center w-8">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -292,7 +290,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent 
-                        className="w-80 rounded-lg border border-border/30 bg-black/70 p-4 shadow-lg z-[9999] backdrop-blur-sm" 
+                        className="w-[280px] sm:w-80 rounded-lg border border-border/30 bg-black/70 p-4 shadow-lg backdrop-blur-sm" 
                         sideOffset={5}
                       >
                         <p className="text-sm text-foreground/90 leading-relaxed">
@@ -308,21 +306,21 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 
           {/* 集計情報 */}
           <div className="p-4 bg-gradient-to-b from-primary/5">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <p className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
                   {totals.totalInvestment.toLocaleString()}円
                 </p>
                 <p className="text-xs text-muted-foreground mt-1 font-medium">総投資額</p>
               </div>
               <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <p className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
                   {Math.round(totals.totalExpectedReturn).toLocaleString()}円
                 </p>
                 <p className="text-xs text-muted-foreground mt-1 font-medium">推定期待収益</p>
               </div>
               <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <p className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
                   +{totals.expectedReturnRate}%
                 </p>
                 <p className="text-xs text-muted-foreground mt-1 font-medium">期待収益率</p>
