@@ -72,27 +72,33 @@ export default function Budget() {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <label className="text-sm font-medium">購入予算 (円)</label>
-                <TooltipProvider>
+                <TooltipProvider delayDuration={0}>
                   <Tooltip>
                     <TooltipTrigger 
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                       }} 
-                      onTouchEnd={(e) => {
+                      onPointerDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                       }}
+                      className="cursor-pointer touch-none"
                       asChild
                     >
-                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-transparent">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-4 w-4 p-0 hover:bg-transparent"
+                        style={{ touchAction: 'none' }}
+                      >
                         <Info className="h-4 w-4 text-muted-foreground" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent 
                       side="right" 
                       sideOffset={5}
-                      className="max-w-[calc(100vw-12rem)] sm:max-w-sm break-words"
+                      className="max-w-[calc(100vw-12rem)] sm:max-w-sm break-words touch-none"
                     >
                       予算に応じて最適な馬券購入プランを提案します
                     </TooltipContent>

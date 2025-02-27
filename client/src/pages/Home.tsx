@@ -152,8 +152,12 @@ export default function Home() {
     }, [latestOdds, topFiveHorses, selectedHorses]);
   }
 
-  // 馬の選択/解除を処理する関数
-  const toggleHorseSelection = useCallback((horseNumber: number) => {
+  // 馬の選択/解除を処理する関数を修正
+  const toggleHorseSelection = useCallback((horseNumber: number, event: React.MouseEvent | React.TouchEvent) => {
+    // イベントの伝播を停止
+    event.preventDefault();
+    event.stopPropagation();
+    
     setSelectedHorses(current => {
       if (current.includes(horseNumber)) {
         return current.filter(num => num !== horseNumber);
@@ -370,7 +374,8 @@ export default function Home() {
                       return (
                         <TableRow 
                           key={horse.id}
-                          onClick={() => toggleHorseSelection(horse.number)}
+                          onClick={(e) => toggleHorseSelection(horse.number, e)}
+                          onTouchEnd={(e) => toggleHorseSelection(horse.number, e)}  // タッチイベントを追加
                           className={`
                             relative
                             cursor-pointer 
