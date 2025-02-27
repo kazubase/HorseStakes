@@ -74,10 +74,16 @@ export default function Budget() {
                 <label className="text-sm font-medium">購入予算 (円)</label>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-4 w-4 text-muted-foreground" />
+                    <TooltipTrigger onClick={(e) => e.preventDefault()} asChild>
+                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-transparent">
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </Button>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent 
+                      side="right" 
+                      sideOffset={5}
+                      className="max-w-[calc(100vw-12rem)] sm:max-w-sm break-words"
+                    >
                       予算に応じて最適な馬券購入プランを提案します
                     </TooltipContent>
                   </Tooltip>
@@ -109,10 +115,16 @@ export default function Budget() {
                 <label className="text-sm font-medium">リスクリワード</label>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-4 w-4 text-muted-foreground" />
+                    <TooltipTrigger onClick={(e) => e.preventDefault()} asChild>
+                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-transparent">
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </Button>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-slate-900/95 backdrop-blur-sm border border-slate-800">
+                    <TooltipContent 
+                      side="right" 
+                      sideOffset={5}
+                      className="max-w-[calc(100vw-12rem)] sm:max-w-sm break-words"
+                    >
                       <p>リスクに対してどの程度のリターンを求めるかを設定します。</p>
                       <p>例：5.0は「リスクの5倍のリターン」を意味します。</p>
                     </TooltipContent>

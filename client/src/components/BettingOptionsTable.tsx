@@ -263,7 +263,7 @@ export function BettingOptionsTable({
                           optionsWithStats.stats.ev
                         )}
                       `}>
-                        {calculateTypeStats(optionsWithStats.options, selectedBets, betType)!.averageEv.toFixed(1)}
+                        {calculateTypeStats(optionsWithStats.options, selectedBets, betType)!.averageEv.toFixed(2)}
                       </span>
                     </div>
                   )}
