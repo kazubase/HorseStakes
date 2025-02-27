@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { calculateBetProposalsWithGemini } from "@/lib/betOptimizer";
 import { useLocation } from "wouter";
 import { Sparkles } from 'lucide-react';
-import { getAiOptimizedStrategy } from '@/lib/aiOptimizer';
+import { getAiOptimizedStrategy } from '@/lib/geminiOptimizer';
 
 export function BettingSelection() {
   const [, setLocation] = useLocation();
