@@ -10,6 +10,7 @@ import { BettingPortfolio } from "@/components/betting/BettingPortfolio";
 import { BettingStepProgress } from "@/components/betting/BettingStepProgress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { format } from "date-fns";
 
 export function BettingStrategy() {
   const { id } = useParams();
@@ -43,7 +44,7 @@ export function BettingStrategy() {
           {race?.name || 'レース名を読み込み中...'}
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          {race?.venue} - {race?.startTime ? new Date(race.startTime).toLocaleString('ja-JP') : ''}
+            {format(new Date(race?.startTime!), 'yyyy年M月d日 HH:mm')} 発走
           </p>
         </div>
       </div>
