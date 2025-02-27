@@ -39,13 +39,24 @@ export function BettingStrategy() {
     <MainLayout>
     <div className="space-y-6">
       {/* レース情報ヘッダー */}
-      <div className="rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm p-4">
-        <h2 className="text-xl font-bold">
-          {race?.name || 'レース名を読み込み中...'}
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-            {format(new Date(race?.startTime!), 'yyyy年M月d日 HH:mm')} 発走
-          </p>
+      <div className="relative overflow-hidden rounded-xl border border-border/50 bg-gradient-to-br from-card/50 via-card/30 to-card/20 backdrop-blur-sm shadow-sm">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent" />
+        <div className="relative p-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                {race?.name || 'レース名を読み込み中...'}
+              </h2>
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-primary/80 animate-pulse" />
+                {race?.startTime ? (
+                  format(new Date(race.startTime), 'yyyy年M月d日 HH:mm')
+                ) : (
+                  '読み込み中...'
+                )} 発走
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -68,6 +79,7 @@ export function BettingStrategy() {
           )}
         </div>
       </div>
-    </MainLayout>
+    </div>
+  </MainLayout>
   );
 } 
