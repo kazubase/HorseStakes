@@ -206,7 +206,7 @@ export default function RaceList() {
           
           <div className="w-full sm:w-auto">
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary/50 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/50 h-4 w-4 z-10" />
               <Input
                 type="text"
                 placeholder="レース名またはレースIDで検索..."
