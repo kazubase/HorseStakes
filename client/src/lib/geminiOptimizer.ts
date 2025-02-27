@@ -128,7 +128,7 @@ ${conditionalProbabilities.map(corr =>
       },
       body: JSON.stringify({
         prompt,
-        model: 'gemini-pro',
+        model: 'gemini-2.0-flash-001',
         temperature: 0.7
       })
     });

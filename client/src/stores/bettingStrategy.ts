@@ -2,7 +2,7 @@ import { atom } from 'jotai';
 import type { BetProposal } from '@/lib/betEvaluation';
 import type { Horse } from '@db/schema';
 import type { GeminiAnalysisResult } from '@/lib/geminiAnalysis';
-import type { HorseData } from '@/lib/betCalculator';
+import type { HorseData } from '@/lib/betEvaluation';
 import type { BettingOption } from '@/lib/betEvaluation';
 
 // ステップ管理

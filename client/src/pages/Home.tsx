@@ -10,7 +10,7 @@ import { RefreshCw, Trophy, Target, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import RaceList from "@/pages/RaceList";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { groupBy } from 'lodash';
 
 export default function Home() {
@@ -39,22 +39,39 @@ export default function Home() {
   const sortedHorses = [...horses].sort((a, b) => a.number - b.number);
 
   // オッズデータを取得する新しいクエリを追加
-  const { data: latestOdds = [] } = useQuery<TanOddsHistory[]>({
+  const { 
+    data: latestOdds = [], 
+    isLoading: latestOddsLoading 
+  } = useQuery<TanOddsHistory[]>({
     queryKey: [`/api/tan-odds-history/latest/${id}`],
     enabled: !!id,
+    staleTime: 30000,
+    retry: 1,
   });
+
+  // オッズでソートされた上位5頭を計算するメモ化関数
+  const topFiveHorses = useMemo(() => {
+    if (!latestOdds || latestOdds.length === 0) return [];
+    
+    return [...latestOdds]
+      .sort((a, b) => parseFloat(a.odds) - parseFloat(b.odds))
+      .slice(0, 5)
+      .map(odd => Number(odd.horseId));
+  }, [latestOdds]);
 
   // オッズ履歴データを取得
   const { data: oddsHistory = [], isLoading: oddsLoading, error: oddsError } = useQuery<TanOddsHistory[]>({
     queryKey: [`/api/tan-odds-history/${id}`],
     queryFn: async () => {
       try {
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';  // 環境変数からベースURLを取得
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
         const url = `${baseUrl}/api/tan-odds-history/${id}`;
-        console.log('Fetching from URL:', url);
+        
+        if (import.meta.env.DEV) {
+          console.log('Fetching odds history from:', url);
+        }
         
         const response = await fetch(url);
-        console.log('Response status:', response.status);
         
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`);
@@ -63,7 +80,9 @@ export default function Home() {
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
-        console.error('Error in queryFn:', error);
+        if (import.meta.env.DEV) {
+          console.error('Error fetching odds history:', error);
+        }
         throw error;
       }
     },
@@ -73,13 +92,13 @@ export default function Home() {
 
   // エラー状態のログ
   useEffect(() => {
-    if (oddsError) {
+    if (import.meta.env.DEV && oddsError) {
       console.error('Query error:', oddsError);
     }
   }, [oddsError]);
 
   useEffect(() => {
-    if (oddsHistory.length > 0) {
+    if (import.meta.env.DEV && oddsHistory.length > 0) {
       console.log('=== Odds History Data ===');
       console.log('Data received:', oddsHistory.length, 'records');
       console.log('Sample:', oddsHistory.slice(0, 2));
@@ -110,23 +129,31 @@ export default function Home() {
       }));
   }, [oddsHistory]);
 
-  // 初期値を空配列に設定
+  // selectedHorsesの状態管理
   const [selectedHorses, setSelectedHorses] = useState<number[]>([]);
 
-  // latestOddsが取得されたら上位5頭を選択
+  // 初期選択を設定するuseEffect
   useEffect(() => {
-    if (latestOdds.length > 0) {
-      const top5Horses = latestOdds
-        .sort((a, b) => parseFloat(a.odds) - parseFloat(b.odds))
-        .slice(0, 5)
-        .map(odd => Number(odd.horseId));
-      
-      setSelectedHorses(top5Horses);
+    if (!latestOddsLoading && topFiveHorses.length > 0) {
+      setSelectedHorses(topFiveHorses);
     }
-  }, [latestOdds]);
+  }, [latestOddsLoading, topFiveHorses]);
+
+  // デバッグ用のuseEffect
+  if (import.meta.env.DEV) {
+    useEffect(() => {
+      console.log('=== Debug Info ===');
+      console.log('Environment:', import.meta.env.MODE);
+      console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
+      console.log('Latest odds length:', latestOdds?.length);
+      console.log('Top five horses:', topFiveHorses);
+      console.log('Selected horses:', selectedHorses);
+      console.log('================');
+    }, [latestOdds, topFiveHorses, selectedHorses]);
+  }
 
   // 馬の選択/解除を処理する関数
-  const toggleHorseSelection = (horseNumber: number) => {
+  const toggleHorseSelection = useCallback((horseNumber: number) => {
     setSelectedHorses(current => {
       if (current.includes(horseNumber)) {
         return current.filter(num => num !== horseNumber);
@@ -134,7 +161,7 @@ export default function Home() {
         return [...current, horseNumber];
       }
     });
-  };
+  }, []);
 
   const getFrameColor = (frame: number) => {
     const colors = {
@@ -288,10 +315,10 @@ export default function Home() {
 
   return (
     <MainLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* レース情報カード */}
         <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
             <div className="flex justify-between items-start relative">
               <div>
@@ -323,21 +350,15 @@ export default function Home() {
         </Card>
 
         {/* 2カラムレイアウト */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* 左カラム: 出馬表 */}
           <Card className="bg-background/50 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">出馬表</h2>
+            <CardContent className="p-0 sm:p-6">
+              <div className="flex justify-between items-center p-4 sm:p-0 sm:mb-4">
+                <h2 className="text-lg sm:text-xl font-semibold">出馬表</h2>
               </div>
 
-              {horsesLoading ? (
-                <div className="space-y-2">
-                  {[...Array(8)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : (
+              <div className="overflow-x-auto">
                 <Table>
                   <TableBody>
                     {sortedHorses.map((horse) => {
@@ -362,10 +383,12 @@ export default function Home() {
                             }
                           `}
                         >
-                          <TableCell className="relative border-0">
+                          <TableCell className="relative border-0 w-16 px-3 py-2.5">
                             <span className={`
                               relative z-10
-                              px-2 py-1 rounded text-sm
+                              inline-flex items-center justify-center
+                              w-8 h-8
+                              rounded-lg text-sm font-bold
                               ${getFrameColor(horse.frame)}
                               transition-transform duration-300
                               group-hover:scale-105
@@ -374,16 +397,17 @@ export default function Home() {
                             </span>
                           </TableCell>
                           
-                          <TableCell className="relative border-0">
-                            <span className="relative z-10 font-medium">
+                          <TableCell className="relative border-0 py-2.5">
+                            <span className="relative z-10 font-medium text-sm sm:text-base">
                               {horse.name}
                             </span>
                           </TableCell>
                           
-                          <TableCell className="relative border-0">
+                          <TableCell className="relative border-0 text-right w-24 px-4 py-2.5">
                             <div className="relative z-10 flex items-center justify-end gap-2">
                               <span className={`
                                 transition-all duration-300
+                                text-sm sm:text-base tabular-nums
                                 ${isSelected ? 'text-primary font-semibold' : 'text-foreground'}
                               `}>
                                 {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
@@ -399,7 +423,7 @@ export default function Home() {
                     })}
                   </TableBody>
                 </Table>
-              )}
+              </div>
             </CardContent>
           </Card>
 

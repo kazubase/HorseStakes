@@ -74,7 +74,17 @@ export default function Budget() {
                 <label className="text-sm font-medium">購入予算 (円)</label>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger onClick={(e) => e.preventDefault()} asChild>
+                    <TooltipTrigger 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }} 
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      asChild
+                    >
                       <Button variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-transparent">
                         <Info className="h-4 w-4 text-muted-foreground" />
                       </Button>
@@ -115,7 +125,17 @@ export default function Budget() {
                 <label className="text-sm font-medium">リスクリワード</label>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger onClick={(e) => e.preventDefault()} asChild>
+                    <TooltipTrigger 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }} 
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      asChild
+                    >
                       <Button variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-transparent">
                         <Info className="h-4 w-4 text-muted-foreground" />
                       </Button>
