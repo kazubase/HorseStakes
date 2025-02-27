@@ -61,13 +61,13 @@ const RaceNotesCard = () => {
         <CardTitle className="relative">メモ</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="relative overflow-hidden rounded-lg bg-black/40 backdrop-blur-sm border border-primary/10">
+        <div className="relative overflow-hidden rounded-lg bg-black/40 backdrop-blur-sm border border-primary/10 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all duration-200">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
           <textarea
             value={raceNotes}
             onChange={(e) => setRaceNotes(e.target.value)}
             className="w-full h-32 p-3 bg-transparent border-0 resize-none 
-              focus:outline-none focus:ring-1 focus:ring-primary/30
+              focus:outline-none
               placeholder:text-muted-foreground text-foreground relative"
             placeholder="レース分析のメモを入力してください..."
           />
