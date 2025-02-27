@@ -165,42 +165,12 @@ export default function Home() {
     return colors[frame as keyof typeof colors] || '#9CA3AF';
   };
 
-  // TableRowコンポーネントを更新
-  const TableRowComponent = ({ horse, latestOdd }: { horse: Horse, latestOdd?: TanOddsHistory }) => {
-    const isSelected = selectedHorses.includes(horse.number);
-    
-    return (
-      <TableRow 
-        key={horse.id}
-        className={`
-          cursor-pointer 
-          transition-all 
-          group
-          relative
-          ${isSelected ? 'bg-muted/50 after:absolute after:left-0 after:top-0 after:h-full after:w-1 after:bg-primary' : 'hover:bg-muted/30'}
-        `}
-        onClick={() => toggleHorseSelection(horse.number)}
-      >
-        <TableCell>
-          <span className={`px-2 py-1 rounded text-sm ${getFrameColor(horse.frame)}`}>
-            {horse.number}
-          </span>
-        </TableCell>
-        <TableCell>{horse.name}</TableCell>
-        <TableCell className="text-right flex items-center justify-end gap-2">
-          <span>{latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}</span>
-          <ChevronRight className={`w-4 h-4 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
-        </TableCell>
-      </TableRow>
-    );
-  };
-
   // グラフに表示する馬をフィルタリング
   const visibleHorses = selectedHorses.length > 0 
     ? sortedHorses.filter(h => selectedHorses.includes(h.number))
     : sortedHorses;
 
-  // オッズ推移グラフコンポーネント
+  // オッズ推移グラフコンポーネントを更新
   const OddsChart = () => {
     if (formattedOddsData.length === 0) {
       return (
@@ -216,16 +186,41 @@ export default function Home() {
           data={formattedOddsData}
           margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
         >
-          <CartesianGrid strokeDasharray="3 3" />
+          <defs>
+            {/* グラデーションの定義 */}
+            <linearGradient id="chartBackground" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="hsl(var(--primary)/0.1)" stopOpacity={0.4}/>
+              <stop offset="100%" stopColor="hsl(var(--primary)/0.1)" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          
+          {/* グリッド */}
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            stroke="hsl(var(--muted-foreground)/0.2)"
+            vertical={false}
+          />
+          
+          {/* X軸 */}
           <XAxis 
             dataKey="timestamp"
             interval="preserveStartEnd"
             minTickGap={50}
+            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+            axisLine={{ stroke: 'hsl(var(--border))' }}
+            tickLine={{ stroke: 'hsl(var(--border))' }}
           />
+          
+          {/* Y軸 */}
           <YAxis 
             domain={['dataMin', 'dataMax']}
             tickFormatter={(value) => value.toFixed(1)}
+            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+            axisLine={{ stroke: 'hsl(var(--border))' }}
+            tickLine={{ stroke: 'hsl(var(--border))' }}
           />
+          
+          {/* ツールチップ */}
           <Tooltip 
             formatter={(value: number, name: string) => {
               const horse = sortedHorses.find(h => `horse${h.number}` === name);
@@ -237,23 +232,53 @@ export default function Home() {
             contentStyle={{
               backgroundColor: 'hsl(var(--background))',
               borderColor: 'hsl(var(--border))',
-              color: 'hsl(var(--foreground))',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              padding: '8px 12px'
+            }}
+            itemStyle={{
+              padding: '4px 0'
+            }}
+            labelStyle={{
+              color: 'hsl(var(--muted-foreground))',
+              marginBottom: '4px'
             }}
           />
-          {visibleHorses.map((horse) => (
-            <Line
-              key={horse.id}
-              type="monotone"
-              dataKey={`horse${horse.number}`}
-              name={`${horse.number}番: ${horse.name}`}
-              stroke={getLineColor(horse.frame)}
-              strokeWidth={selectedHorses.includes(horse.number) ? 3 : 2}
-              dot={false}
-              connectNulls={true}
-              opacity={selectedHorses.includes(horse.number) ? 1 : 0.7}
-            />
-          ))}
+
+          {/* 背景エリア */}
+          <rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill="url(#chartBackground)"
+          />
+
+          {/* データライン */}
+          {visibleHorses.map((horse) => {
+            const isSelected = selectedHorses.includes(horse.number);
+            return (
+              <Line
+                key={horse.id}
+                type="monotone"
+                dataKey={`horse${horse.number}`}
+                name={`${horse.number}番: ${horse.name}`}
+                stroke={getLineColor(horse.frame)}
+                strokeWidth={isSelected ? 3 : 1.5}
+                dot={false}
+                connectNulls={true}
+                opacity={isSelected ? 1 : 0.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                activeDot={{
+                  r: 4,
+                  strokeWidth: 2,
+                  stroke: 'hsl(var(--background))',
+                  fill: getLineColor(horse.frame)
+                }}
+              />
+            );
+          })}
         </LineChart>
       </ResponsiveContainer>
     );
@@ -265,9 +290,10 @@ export default function Home() {
     <MainLayout>
       <div className="space-y-6">
         {/* レース情報カード */}
-        <Card>
+        <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
           <CardContent className="p-6">
-            <div className="flex justify-between items-start">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
+            <div className="flex justify-between items-start relative">
               <div>
                 {raceLoading ? (
                   <div className="space-y-2">
@@ -299,7 +325,7 @@ export default function Home() {
         {/* 2カラムレイアウト */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* 左カラム: 出馬表 */}
-          <Card>
+          <Card className="bg-background/50 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">出馬表</h2>
@@ -318,12 +344,57 @@ export default function Home() {
                       const latestOdd = latestOdds?.find(odd => 
                         Number(odd.horseId) === horse.number
                       );
+                      const isSelected = selectedHorses.includes(horse.number);
+                      
                       return (
-                        <TableRowComponent 
-                          key={horse.id} 
-                          horse={horse} 
-                          latestOdd={latestOdd}
-                        />
+                        <TableRow 
+                          key={horse.id}
+                          onClick={() => toggleHorseSelection(horse.number)}
+                          className={`
+                            relative
+                            cursor-pointer 
+                            transition-all duration-300
+                            group
+                            before:absolute before:inset-0 before:transition-all before:duration-300
+                            ${isSelected ? 
+                              'before:bg-primary/15 before:shadow-[inset_2px_0_0_var(--primary)]' : 
+                              'hover:before:bg-muted/30 hover:before:shadow-[inset_2px_0_0_var(--primary-foreground)]'
+                            }
+                          `}
+                        >
+                          <TableCell className="relative border-0">
+                            <span className={`
+                              relative z-10
+                              px-2 py-1 rounded text-sm
+                              ${getFrameColor(horse.frame)}
+                              transition-transform duration-300
+                              group-hover:scale-105
+                            `}>
+                              {horse.number}
+                            </span>
+                          </TableCell>
+                          
+                          <TableCell className="relative border-0">
+                            <span className="relative z-10 font-medium">
+                              {horse.name}
+                            </span>
+                          </TableCell>
+                          
+                          <TableCell className="relative border-0">
+                            <div className="relative z-10 flex items-center justify-end gap-2">
+                              <span className={`
+                                transition-all duration-300
+                                ${isSelected ? 'text-primary font-semibold' : 'text-foreground'}
+                              `}>
+                                {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
+                              </span>
+                              <ChevronRight className={`
+                                w-4 h-4 transition-all duration-300
+                                ${isSelected ? 'opacity-100 text-primary' : 'opacity-0 group-hover:opacity-100'}
+                              `} />
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
                   </TableBody>
@@ -333,11 +404,21 @@ export default function Home() {
           </Card>
 
           {/* 右カラム: オッズ推移グラフ */}
-          <Card>
+          <Card className="bg-background/50 backdrop-blur-sm overflow-hidden">
             <CardContent className="p-2 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">オッズ推移</h2>
-              <div className="h-[300px] sm:h-[400px]">
-                <OddsChart />
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg sm:text-xl font-semibold">オッズ推移</h2>
+                <div className="text-xs text-muted-foreground">
+                  {formattedOddsData.length > 0 && 
+                    `${formattedOddsData[0].timestamp} - ${formattedOddsData[formattedOddsData.length - 1].timestamp}`
+                  }
+                </div>
+              </div>
+              <div className="h-[300px] sm:h-[400px] relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-30" />
+                <div className="relative h-full">
+                  <OddsChart />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -347,11 +428,14 @@ export default function Home() {
         <div className="flex justify-center">
           <Button 
             size="lg" 
-            className="w-full max-w-md h-16"
+            className="w-full max-w-md h-16 relative overflow-hidden group"
             onClick={() => window.location.href = `/predict/win/${id}`}
           >
-            <Trophy className="mr-2 h-5 w-5" />
-            単勝予想
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative flex items-center justify-center">
+              <Trophy className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+              <span className="font-semibold">単勝予想</span>
+            </div>
           </Button>
         </div>
       </div>
