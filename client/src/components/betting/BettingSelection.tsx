@@ -56,7 +56,7 @@ export function BettingSelection() {
   const [placeProbs] = useAtom(placeProbsAtom);
   const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
-  const riskRatio = Number(new URLSearchParams(window.location.search).get("riskRatio")) || 1;
+  const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1;
   const [isExpanded, setIsExpanded] = useState(false);
   const [, setCurrentStep] = useAtom(currentStepAtom);
   
