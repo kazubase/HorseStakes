@@ -539,17 +539,28 @@ export function BettingAnalysis() {
         </div>
         
         <div className="space-y-6 lg:h-fit lg:sticky lg:top-4">
+          <div className="hidden lg:block">
+            <PredictionSettingsSection
+              budget={budget}
+              riskRatio={riskRatio}
+              horses={horses || []}
+              winProbs={winProbs}
+              placeProbs={placeProbs}
+            />
+          </div>
           <GeminiAnalysisSection
             isLoading={geminiAnalysis.isLoading}
             data={geminiAnalysis.data}
           />
-          <PredictionSettingsSection
-            budget={budget}
-            riskRatio={riskRatio}
-            horses={horses || []}
-            winProbs={winProbs}
-            placeProbs={placeProbs}
-          />
+          <div className="lg:hidden">
+            <PredictionSettingsSection
+              budget={budget}
+              riskRatio={riskRatio}
+              horses={horses || []}
+              winProbs={winProbs}
+              placeProbs={placeProbs}
+            />
+          </div>
         </div>
       </div>
       <RaceNotesFooter />

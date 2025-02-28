@@ -234,7 +234,10 @@ export function BettingOptionsTable({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
+      <div className={`
+        grid grid-cols-2 gap-3
+        ${showAnalysis ? '' : 'md:grid-cols-4'}
+      `}>
         {[...simpleTypes, ...complexTypes].map(betType => {
           const options = groupedOptions[betType];
           if (!options?.length) return null;

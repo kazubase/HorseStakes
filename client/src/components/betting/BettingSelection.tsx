@@ -135,8 +135,8 @@ export function BettingSelection() {
 
   return (
     <div className="relative min-h-screen pb-[calc(3rem+var(--footer-height))]">
-      {/* モバイルでのAI最適化ボタン */}
-      <div className="lg:hidden">
+      {/* AI最適化ボタン */}
+      <div className="mb-6">
         <Button
           onClick={handleAiOptimization}
           className="w-full gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
@@ -146,29 +146,15 @@ export function BettingSelection() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 左側: 馬券候補 */}
-        <div className="lg:h-fit lg:sticky lg:top-4">
-          <BettingOptionsTable 
-            bettingOptions={bettingOptions}
-            selectedBets={selectionState.selectedBets}
-            onBetSelect={handleBetSelection}
-          />
-        </div>
-
-        {/* 右側: AI最適化ボタン */}
-        <div className="space-y-4 lg:h-fit lg:sticky lg:top-4">
-          <div className="hidden lg:block">
-            <Button
-              onClick={handleAiOptimization}
-              className="w-full gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-            >
-              <Sparkles className="h-4 w-4" />
-              AI自動最適化
-            </Button>
-          </div>
-        </div>
+      {/* 馬券候補 */}
+      <div>
+        <BettingOptionsTable 
+          bettingOptions={bettingOptions}
+          selectedBets={selectionState.selectedBets}
+          onBetSelect={handleBetSelection}
+        />
       </div>
+
       <RaceNotesFooter />
     </div>
   );
