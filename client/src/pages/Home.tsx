@@ -469,7 +469,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative flex items-center justify-center">
               <Trophy className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-              <span className="font-semibold">単勝予想</span>
+              <span className="relative">単勝予想</span>
             </div>
           </Button>
         </div>
