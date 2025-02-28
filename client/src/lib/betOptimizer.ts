@@ -200,93 +200,98 @@ export const optimizeBetAllocation = (
     return proposals;
   };
   
-  export const calculateBetProposalsWithGemini = async (
-    horses: HorseData[], 
-    totalBudget: number, 
-    allBettingOptions: { bettingOptions: BettingOption[] },
-    riskRatio: number
-  ): Promise<BetProposal[]> => {
-    try {
-      if (process.env.NODE_ENV === 'development') {
-        console.group('calculateBetProposalsWithGemini');
-        console.log('Input parameters:', {
-          horses: horses.length,
-          totalBudget,
-          bettingOptions: allBettingOptions.bettingOptions.length,
-          riskRatio
-        });
-      }
-  
-      const proposals = evaluateBettingOptions(
-        horses, 
-        totalBudget, 
-        riskRatio,
-        allBettingOptions.bettingOptions.filter(b => b.type === "複勝")
-          .map(b => ({ horse1: b.horse1, oddsMin: b.odds, oddsMax: b.odds })),
-        allBettingOptions.bettingOptions.filter(b => b.type === "枠連")
-          .map(b => ({ frame1: b.frame1, frame2: b.frame2, odds: b.odds })),
-        allBettingOptions.bettingOptions.filter(b => b.type === "馬連")
-          .map(b => ({ horse1: b.horse1, horse2: b.horse2, odds: b.odds })),
-        allBettingOptions.bettingOptions.filter(b => b.type === "ワイド")
-          .map(b => ({ horse1: b.horse1, horse2: b.horse2, oddsMin: b.odds, oddsMax: b.odds })),
-        allBettingOptions.bettingOptions.filter(b => b.type === "馬単")
-          .map(b => ({ horse1: b.horse1, horse2: b.horse2, odds: b.odds })),
-        allBettingOptions.bettingOptions.filter(b => b.type === "３連複")
-          .map(b => ({ horse1: b.horse1, horse2: b.horse2, horse3: b.horse3, odds: b.odds })),
-        allBettingOptions.bettingOptions.filter(b => b.type === "３連単")
-          .map(b => ({ horse1: b.horse1, horse2: b.horse2, horse3: b.horse3, odds: b.odds }))
-      );
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Generated proposals:', {
-          count: proposals.length,
-          proposals: proposals.map(p => ({
-            type: p.type,
-            horses: p.horses,
-            stake: p.stake
-          }))
-        });
-      }
-  
-      const conditionalProbabilities = proposals.length > 0 ? calculateConditionalProbability(proposals, horses) : [];
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Conditional probabilities:', {
-          count: conditionalProbabilities.length,
-          probabilities: conditionalProbabilities
-        });
-      }
-      
-      const geminiOptions = {
-        horses: horses.map(h => ({
-          name: h.name,
-          odds: h.odds,
-          winProb: h.winProb,
-          placeProb: h.placeProb,
-          frame: h.frame,
-          number: h.number
-        })),
-        bettingOptions: allBettingOptions.bettingOptions,
+interface OptimizationInput {
+  bettingOptions: BettingOption[];
+}
+
+export const calculateBetProposalsWithGemini = async (
+  horses: HorseData[],
+  totalBudget: number,
+  input: OptimizationInput,
+  riskRatio: number
+): Promise<BetProposal[]> => {
+  if (process.env.NODE_ENV === 'development') {
+    console.group('Geminiによる馬券最適化');
+    console.log('入力パラメータ:', {
+      horses: horses.map(h => ({
+        name: h.name,
+        odds: h.odds,
+        winProb: (h.winProb * 100).toFixed(1) + '%',
+        placeProb: (h.placeProb * 100).toFixed(1) + '%'
+      })),
+      totalBudget,
+      riskRatio
+    });
+  }
+
+  try {
+    // 馬券候補を生成
+    const bettingCandidates = input.bettingOptions.map(opt => ({
+      type: opt.type,
+      horseName: `${opt.horse1}${opt.horse2 ? `-${opt.horse2}` : ''}${opt.horse3 ? `-${opt.horse3}` : ''}`,
+      odds: opt.odds,
+      probability: String(opt.prob),
+      expectedValue: String(opt.ev)
+    }));
+
+    // 条件付き確率を計算
+    const conditionalProbabilities = calculateConditionalProbability(
+      input.bettingOptions.map(opt => ({
+        type: opt.type,
+        horses: [opt.horse1, opt.horse2, opt.horse3].filter(Boolean).map(String),
+        horseName: `${opt.horse1}${opt.horse2 ? `-${opt.horse2}` : ''}${opt.horse3 ? `-${opt.horse3}` : ''}`,
+        stake: 0,
+        expectedReturn: 0,
+        probability: opt.prob
+      })),
+      horses
+    );
+
+    // Gemini APIから戦略を取得
+    const geminiResponse = await getGeminiStrategy(
+      bettingCandidates,
+      totalBudget,
+      {
+        horses,
+        bettingOptions: input.bettingOptions,
         conditionalProbabilities
-      };
-  
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Gemini options prepared:', {
-          horsesCount: geminiOptions.horses.length,
-          bettingOptionsCount: geminiOptions.bettingOptions.length,
-          conditionalProbabilitiesCount: geminiOptions.conditionalProbabilities.length
-        });
-        console.groupEnd();
-      }
-      
-      const geminiResponse = await getGeminiStrategy([], totalBudget, geminiOptions, riskRatio);
-      return optimizeBetAllocation(geminiResponse.strategy.recommendations, totalBudget);
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Bet calculation error:', error);
-        console.groupEnd();
-      }
-      return [];
+      },
+      riskRatio
+    );
+
+    if (!geminiResponse?.strategy?.recommendations) {
+      throw new Error('Gemini APIからの応答が不正です');
     }
-  };
+
+    // 推奨馬券を最適化
+    const recommendations = geminiResponse.strategy.recommendations.map(rec => ({
+      ...rec,
+      probability: normalizeStringProbability(rec.probability)
+    }));
+
+    // Sharpe比による資金配分の最適化
+    const optimizedBets = optimizeBetAllocation(recommendations, totalBudget);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('最適化結果:', {
+        totalBets: optimizedBets.length,
+        totalInvestment: optimizedBets.reduce((sum, bet) => sum + bet.stake, 0),
+        bets: optimizedBets.map(bet => ({
+          type: bet.type,
+          horses: bet.horses,
+          stake: bet.stake,
+          expectedReturn: bet.expectedReturn,
+          probability: (bet.probability * 100).toFixed(1) + '%'
+        }))
+      });
+      console.groupEnd();
+    }
+
+    return optimizedBets;
+
+  } catch (error: any) {
+    console.error('Gemini最適化エラー:', error);
+    throw new Error(`馬券最適化に失敗しました: ${error.message}`);
+  }
+};
   

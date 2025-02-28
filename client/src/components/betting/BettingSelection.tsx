@@ -22,6 +22,7 @@ export function BettingSelection() {
   const [placeProbs] = useAtom(placeProbsAtom);
   const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
+  const riskRatio = Number(new URLSearchParams(window.location.search).get("riskRatio")) || 1;
 
   // 選択された馬券の統計を計算
   const statistics = useMemo(() => {
@@ -132,51 +133,44 @@ export function BettingSelection() {
     });
   };
 
-  const handleAiOptimization = useCallback(async () => {
+  const handleAiOptimization = async () => {
     try {
-      if (!horses || !latestOdds || !winProbs || !placeProbs) {
-        console.error('必要なデータが不足しています');
-        return;
+      if (!horses) {
+        throw new Error('馬データが読み込まれていません');
       }
 
-      const horsesWithProbs = horses.map(horse => ({
+      // 馬データを準備
+      const horseData = horses.map(horse => ({
         name: horse.name,
-        number: horse.number,
-        odds: Number(latestOdds.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
+        odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
         winProb: winProbs[horse.id] / 100,
         placeProb: placeProbs[horse.id] / 100,
-        frame: horse.frame
+        frame: horse.frame,
+        number: horse.number
       }));
 
-      const aiProposals = await getAiOptimizedStrategy({
-        horses: horsesWithProbs,
-        bettingOptions: bettingOptions.map(opt => ({
-          ...opt,
-          type: opt.type as "単勝" | "複勝" | "枠連" | "ワイド" | "馬連" | "馬単" | "３連複" | "３連単",
-          odds: opt.expectedReturn / opt.stake,
-          prob: opt.probability,
-          ev: opt.expectedReturn/opt.stake*opt.probability,
-          frame1: opt.frame1 || 0,
-          frame2: opt.frame2 || 0,
-          frame3: opt.frame3 || 0,
-          horse1: opt.horse1 || 0,
-          horse2: opt.horse2 || 0,
-          horse3: opt.horse3 || 0
-        })),
+      // Geminiを使用して最適化された馬券提案を取得
+      const optimizedProposals = await calculateBetProposalsWithGemini(
+        horseData,
         budget,
-        riskRatio: 10
-      });
+        { bettingOptions: selectionState.availableBets },
+        riskRatio
+      );
 
+      // 最適化された馬券を選択状態に設定
       setSelectionState(prev => ({
         ...prev,
-        selectedBets: aiProposals
+        selectedBets: optimizedProposals
       }));
 
-      setLocation(`/portfolio?budget=${budget}&aiOptimized=true`);
+      // ポートフォリオページに遷移
+      setLocation(`?step=PORTFOLIO&aiOptimized=true&budget=${budget}&riskRatio=${riskRatio}`);
+
     } catch (error) {
       console.error('AI最適化エラー:', error);
+      // エラー処理（UIでのエラー表示など）
     }
-  }, [horses, latestOdds, winProbs, placeProbs, bettingOptions, budget, setSelectionState, setLocation]);
+  };
 
   if (!bettingOptions.length) {
     return (
@@ -270,15 +264,7 @@ function BetCard({ bet, isSelected, onSelect }: BetCardProps) {
             {bet.horses.join('-')}
           </div>
         </div>
-        <div className="text-right">
-          <div className="font-medium">
-            ×{(bet.expectedReturn/bet.stake).toFixed(1)}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            期待値: {(bet.expectedReturn/bet.stake * bet.probability).toFixed(2)}
-          </div>
-        </div>
       </div>
     </button>
   );
-} 
+}
