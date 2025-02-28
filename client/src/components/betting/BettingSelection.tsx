@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai';
-import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom, raceNotesAtom } from '@/stores/bettingStrategy';
+import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom, raceNotesAtom, currentStepAtom } from '@/stores/bettingStrategy';
 import { BettingOptionsTable } from '@/components/BettingOptionsTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BetProposal } from '@/lib/betEvaluation';
@@ -58,6 +58,7 @@ export function BettingSelection() {
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("riskRatio")) || 1;
   const [isExpanded, setIsExpanded] = useState(false);
+  const [, setCurrentStep] = useAtom(currentStepAtom);
   
   useEffect(() => {
     document.documentElement.style.setProperty('--footer-height', isExpanded ? '12rem' : '3rem');
@@ -110,18 +111,24 @@ export function BettingSelection() {
         riskRatio
       );
 
+      // 各馬券に投資額を追加
+      const proposalsWithStakes = optimizedProposals.map((proposal, index) => ({
+        ...proposal,
+        stake: Math.round(budget * (1 / optimizedProposals.length)) // 均等配分
+      }));
+
       // 最適化された馬券を選択状態に設定
       setSelectionState(prev => ({
         ...prev,
-        selectedBets: optimizedProposals
+        selectedBets: proposalsWithStakes,
+        isAiOptimized: true  // AIによる最適化フラグを追加
       }));
 
-      // ポートフォリオページに遷移
-      setLocation(`?step=PORTFOLIO&aiOptimized=true&budget=${budget}&riskRatio=${riskRatio}`);
+      // ポートフォリオステップに遷移
+      setCurrentStep('PORTFOLIO');
 
     } catch (error) {
       console.error('AI最適化エラー:', error);
-      // エラー処理（UIでのエラー表示など）
     }
   };
 

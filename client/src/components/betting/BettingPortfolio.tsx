@@ -8,7 +8,6 @@ import { normalizeStringProbability } from '@/lib/utils/probability';
 export function BettingPortfolio() {
   const [selectionState] = useAtom(selectionStateAtom);
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
-  const isAiOptimized = Boolean(new URLSearchParams(window.location.search).get("aiOptimized"));
 
   const strategy: GeminiStrategy = useMemo(() => {
     if (!selectionState.selectedBets.length) {
@@ -16,7 +15,7 @@ export function BettingPortfolio() {
         description: '選択された馬券がありません',
         recommendations: [],
         summary: {
-          riskLevel: isAiOptimized ? 'AI_OPTIMIZED' : 'USER_SELECTED',
+          riskLevel: selectionState.isAiOptimized ? 'AI_OPTIMIZED' : 'USER_SELECTED',
           description: ''
         },
         bettingTable: {
@@ -41,11 +40,11 @@ export function BettingPortfolio() {
     }));
 
     return {
-      description: isAiOptimized ? 'AI自動最適化ポートフォリオ' : 'ユーザー選択ポートフォリオ',
+      description: selectionState.isAiOptimized ? 'AI自動最適化ポートフォリオ' : 'ユーザー選択ポートフォリオ',
       recommendations,
       summary: {
-        riskLevel: isAiOptimized ? 'AI_OPTIMIZED' : 'USER_SELECTED',
-        description: isAiOptimized
+        riskLevel: selectionState.isAiOptimized ? 'AI_OPTIMIZED' : 'USER_SELECTED',
+        description: selectionState.isAiOptimized
           ? 'AIが選択した馬券の最適な組み合わせです'
           : 'ユーザーが選択した馬券の最適な資金配分です'
       },
@@ -63,7 +62,7 @@ export function BettingPortfolio() {
         ])
       }
     };
-  }, [selectionState.selectedBets, budget, isAiOptimized]);
+  }, [selectionState.selectedBets, selectionState.isAiOptimized, budget]);
 
   if (!strategy.recommendations.length) {
     return (

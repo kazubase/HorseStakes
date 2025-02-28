@@ -30,11 +30,13 @@ export interface SelectionState {
   selectedBets: BetProposal[];
   availableHorses: HorseData[];
   availableBets: BettingOption[];
+  isAiOptimized: boolean;
 }
 export const selectionStateAtom = atom<SelectionState>({
   selectedBets: [],
   availableHorses: [],
-  availableBets: []
+  availableBets: [],
+  isAiOptimized: false
 });
 
 // ポートフォリオ
