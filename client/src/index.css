@@ -68,3 +68,12 @@
     display: none;  /* Chrome, Safari and Opera */
   }
 }
+
+@supports (backdrop-filter: blur(1px)) {
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+  .backdrop-blur-md {
+    backdrop-filter: blur(8px);
+  }
+}

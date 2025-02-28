@@ -356,78 +356,84 @@ export default function Home() {
         {/* 2カラムレイアウト */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* 左カラム: 出馬表 */}
-          <Card className="bg-background/50 backdrop-blur-sm">
-            <CardContent className="p-0 sm:p-6">
-              <div className="flex justify-between items-center p-4 sm:p-0 sm:mb-4">
-                <h2 className="text-lg sm:text-xl font-semibold">出馬表</h2>
-              </div>
+          <Card className="bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
+            <CardContent className="p-0 sm:p-6 relative">
+              {/* グラデーションオーバーレイ */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+              
+              <div className="relative">
+                <div className="flex justify-between items-center p-4 sm:p-0 sm:mb-4">
+                  <h2 className="text-lg sm:text-xl font-semibold">出馬表</h2>
+                </div>
 
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableBody>
-                    {sortedHorses.map((horse) => {
-                      const latestOdd = latestOdds?.find(odd => 
-                        Number(odd.horseId) === horse.number
-                      );
-                      const isSelected = selectedHorses.includes(horse.number);
-                      
-                      return (
-                        <TableRow 
-                          key={horse.id}
-                          onClick={(e) => toggleHorseSelection(horse.number, e)}
-                          onTouchEnd={(e) => toggleHorseSelection(horse.number, e)}  // タッチイベントを追加
-                          className={`
-                            relative
-                            cursor-pointer 
-                            transition-all duration-300
-                            group
-                            before:absolute before:inset-0 before:transition-all before:duration-300
-                            ${isSelected ? 
-                              'before:bg-primary/15 before:shadow-[inset_2px_0_0_var(--primary)]' : 
-                              'hover:before:bg-muted/30 hover:before:shadow-[inset_2px_0_0_var(--primary-foreground)]'
-                            }
-                          `}
-                        >
-                          <TableCell className="relative border-0 w-16 px-3 py-2.5">
-                            <span className={`
-                              relative z-10
-                              inline-flex items-center justify-center
-                              w-8 h-8
-                              rounded-lg text-sm font-bold
-                              ${getFrameColor(horse.frame)}
-                              transition-transform duration-300
-                              group-hover:scale-105
-                            `}>
-                              {horse.number}
-                            </span>
-                          </TableCell>
-                          
-                          <TableCell className="relative border-0 py-2.5">
-                            <span className="relative z-10 font-medium text-sm sm:text-base">
-                              {horse.name}
-                            </span>
-                          </TableCell>
-                          
-                          <TableCell className="relative border-0 text-right w-24 px-4 py-2.5">
-                            <div className="relative z-10 flex items-center justify-end gap-2">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableBody>
+                      {sortedHorses.map((horse) => {
+                        const latestOdd = latestOdds?.find(odd => 
+                          Number(odd.horseId) === horse.number
+                        );
+                        const isSelected = selectedHorses.includes(horse.number);
+                        
+                        return (
+                          <TableRow 
+                            key={horse.id}
+                            onClick={(e) => toggleHorseSelection(horse.number, e)}
+                            onTouchEnd={(e) => toggleHorseSelection(horse.number, e)}
+                            className={`
+                              relative
+                              cursor-pointer 
+                              transition-all duration-300
+                              group
+                              bg-background/80 dark:bg-background/40
+                              backdrop-blur-[2px]
+                              ${isSelected ? 
+                                'bg-primary/10 shadow-[inset_2px_0_0_var(--primary)]' : 
+                                'hover:bg-muted/30 hover:shadow-[inset_2px_0_0_var(--primary-foreground)]'
+                              }
+                            `}
+                          >
+                            <TableCell className="relative border-0 w-16 px-3 py-2.5">
                               <span className={`
-                                transition-all duration-300
-                                text-sm sm:text-base tabular-nums
-                                ${isSelected ? 'text-primary font-semibold' : 'text-foreground'}
+                                relative z-10
+                                inline-flex items-center justify-center
+                                w-8 h-8
+                                rounded-lg text-sm font-bold
+                                ${getFrameColor(horse.frame)}
+                                transition-transform duration-300
+                                group-hover:scale-105
                               `}>
-                                {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
+                                {horse.number}
                               </span>
-                              <ChevronRight className={`
-                                w-4 h-4 transition-all duration-300
-                                ${isSelected ? 'opacity-100 text-primary' : 'opacity-0 group-hover:opacity-100'}
-                              `} />
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                            </TableCell>
+                            
+                            <TableCell className="relative border-0 py-2.5">
+                              <span className="relative z-10 font-medium text-sm sm:text-base">
+                                {horse.name}
+                              </span>
+                            </TableCell>
+                            
+                            <TableCell className="relative border-0 text-right w-24 px-4 py-2.5">
+                              <div className="relative z-10 flex items-center justify-end gap-2">
+                                <span className={`
+                                  transition-all duration-300
+                                  text-sm sm:text-base tabular-nums
+                                  ${isSelected ? 'text-primary font-semibold' : 'text-foreground'}
+                                `}>
+                                  {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
+                                </span>
+                                <ChevronRight className={`
+                                  w-4 h-4 transition-all duration-300
+                                  ${isSelected ? 'opacity-100 text-primary' : 'opacity-0 group-hover:opacity-100'}
+                                `} />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </CardContent>
           </Card>
