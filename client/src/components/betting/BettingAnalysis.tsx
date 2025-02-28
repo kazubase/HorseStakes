@@ -20,6 +20,7 @@ import { evaluateBettingOptions } from '@/lib/betEvaluation';
 import { analyzeWithGemini } from '@/lib/geminiAnalysis';
 import { calculateConditionalProbability } from '@/lib/betConditionalProbability';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChevronUp } from "lucide-react";
 
 // Geminiオプションの型定義
 interface GeminiOptions {
@@ -262,6 +263,42 @@ const GeminiAnalysisSection = memo(({
   </Card>
 ));
 
+// メモ入力用のスティッキーフッターコンポーネント
+const RaceNotesFooter = () => {
+  const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  return (
+    <div className={`
+      fixed bottom-12 left-0 right-0 
+      bg-background/80 backdrop-blur-sm
+      border-t border-primary/10
+      transition-all duration-200
+      ${isExpanded ? 'h-48' : 'h-12'}
+      z-40
+    `}>
+      <div 
+        className="flex items-center justify-between px-4 h-12 cursor-pointer hover:bg-primary/5"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <span className="text-sm font-medium">メモ</span>
+        <ChevronUp className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+      </div>
+      {isExpanded && (
+        <div className="p-4 pt-0">
+          <textarea
+            value={raceNotes}
+            onChange={(e) => setRaceNotes(e.target.value)}
+            className="w-full h-32 bg-transparent border-0 resize-none focus:outline-none
+              placeholder:text-muted-foreground text-foreground"
+            placeholder="レース分析のメモを入力してください..."
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 export function BettingAnalysis() {
   const { id } = useParams();
   const [location] = useLocation();
@@ -270,6 +307,7 @@ export function BettingAnalysis() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [, setBettingOptions] = useAtom(bettingOptionsAtom);
   const [isCalculated, setIsCalculated] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1.0;
@@ -475,6 +513,10 @@ export function BettingAnalysis() {
     }
   }, [geminiAnalysis.data, setAnalysisResult]);
 
+  useEffect(() => {
+    document.documentElement.style.setProperty('--footer-height', isExpanded ? '12rem' : '3rem');
+  }, [isExpanded]);
+
   if (isHorsesError) {
     return (
       <Alert variant="destructive">
@@ -487,28 +529,30 @@ export function BettingAnalysis() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="space-y-6 lg:h-fit lg:sticky lg:top-4">
-        <BettingOptionsSection
-          bettingOptions={calculatedBettingOptions || []}
-          conditionalProbabilities={conditionalProbabilities}
-        />
+    <div className="relative min-h-screen pb-[calc(3rem+var(--footer-height))]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6 lg:h-fit lg:sticky lg:top-4">
+          <BettingOptionsSection
+            bettingOptions={calculatedBettingOptions || []}
+            conditionalProbabilities={conditionalProbabilities}
+          />
+        </div>
+        
+        <div className="space-y-6 lg:h-fit lg:sticky lg:top-4">
+          <GeminiAnalysisSection
+            isLoading={geminiAnalysis.isLoading}
+            data={geminiAnalysis.data}
+          />
+          <PredictionSettingsSection
+            budget={budget}
+            riskRatio={riskRatio}
+            horses={horses || []}
+            winProbs={winProbs}
+            placeProbs={placeProbs}
+          />
+        </div>
       </div>
-      
-      <div className="space-y-6 lg:h-fit lg:sticky lg:top-4">
-        <GeminiAnalysisSection
-          isLoading={geminiAnalysis.isLoading}
-          data={geminiAnalysis.data}
-        />
-        <RaceNotesCard />
-        <PredictionSettingsSection
-          budget={budget}
-          riskRatio={riskRatio}
-          horses={horses || []}
-          winProbs={winProbs}
-          placeProbs={placeProbs}
-        />
-      </div>
+      <RaceNotesFooter />
     </div>
   );
 }

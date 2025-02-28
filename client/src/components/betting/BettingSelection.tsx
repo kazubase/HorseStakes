@@ -7,6 +7,44 @@ import { Button } from "@/components/ui/button";
 import { calculateBetProposalsWithGemini } from "@/lib/betOptimizer";
 import { useLocation } from "wouter";
 import { Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronUp } from 'lucide-react';
+
+// メモ入力用のスティッキーフッターコンポーネント
+const RaceNotesFooter = () => {
+  const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  return (
+    <div className={`
+      fixed bottom-12 left-0 right-0 
+      bg-background/80 backdrop-blur-sm
+      border-t border-primary/10
+      transition-all duration-200
+      ${isExpanded ? 'h-48' : 'h-12'}
+      z-40
+    `}>
+      <div 
+        className="flex items-center justify-between px-4 h-12 cursor-pointer hover:bg-primary/5"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <span className="text-sm font-medium">メモ</span>
+        <ChevronUp className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+      </div>
+      {isExpanded && (
+        <div className="p-4 pt-0">
+          <textarea
+            value={raceNotes}
+            onChange={(e) => setRaceNotes(e.target.value)}
+            className="w-full h-32 bg-transparent border-0 resize-none focus:outline-none
+              placeholder:text-muted-foreground text-foreground"
+            placeholder="レース分析のメモを入力してください..."
+          />
+        </div>
+      )}
+    </div>
+  );
+};
 
 export function BettingSelection() {
   const [, setLocation] = useLocation();
@@ -19,7 +57,11 @@ export function BettingSelection() {
   const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("riskRatio")) || 1;
-
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  useEffect(() => {
+    document.documentElement.style.setProperty('--footer-height', isExpanded ? '12rem' : '3rem');
+  }, [isExpanded]);
 
   const handleBetSelection = (bet: BetProposal) => {
     setSelectionState(prev => {
@@ -92,7 +134,7 @@ export function BettingSelection() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="relative min-h-screen pb-[calc(3rem+var(--footer-height))]">
       {/* モバイルでのAI最適化ボタン */}
       <div className="lg:hidden">
         <Button
@@ -105,7 +147,7 @@ export function BettingSelection() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 左側: 馬券候補 - stickyスクロール適用 */}
+        {/* 左側: 馬券候補 */}
         <div className="lg:h-fit lg:sticky lg:top-4">
           <BettingOptionsTable 
             bettingOptions={bettingOptions}
@@ -114,9 +156,8 @@ export function BettingSelection() {
           />
         </div>
 
-        {/* 右側: AI最適化ボタンとメモ欄 - stickyスクロール適用 */}
+        {/* 右側: AI最適化ボタン */}
         <div className="space-y-4 lg:h-fit lg:sticky lg:top-4">
-          {/* デスクトップでのAI最適化ボタン */}
           <div className="hidden lg:block">
             <Button
               onClick={handleAiOptimization}
@@ -126,28 +167,9 @@ export function BettingSelection() {
               AI自動最適化
             </Button>
           </div>
-
-          <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
-            <CardHeader className="relative pb-4">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
-              <CardTitle className="relative">メモ</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="relative overflow-hidden rounded-lg bg-black/40 backdrop-blur-sm border border-primary/10 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all duration-200">
-                <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-                <textarea
-                  value={raceNotes}
-                  onChange={(e) => setRaceNotes(e.target.value)}
-                  className="w-full h-32 p-3 bg-transparent border-0 resize-none 
-                    focus:outline-none
-                    placeholder:text-muted-foreground text-foreground relative"
-                  placeholder="レース分析のメモを入力してください..."
-                />
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
+      <RaceNotesFooter />
     </div>
   );
 }
