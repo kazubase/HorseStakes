@@ -228,10 +228,7 @@ const GeminiAnalysisSection = memo(({
   <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
     <CardHeader className="relative pb-4">
       <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
-      <CardTitle className="relative">重要な洞察</CardTitle>
-      <CardDescription className="relative">
-        データ分析から得られた重要なパターンと示唆
-      </CardDescription>
+      <CardTitle className="relative">分析結果</CardTitle>
     </CardHeader>
     <CardContent>
       {isLoading ? (

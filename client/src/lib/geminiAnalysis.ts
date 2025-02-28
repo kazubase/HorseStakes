@@ -107,7 +107,7 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
   // 出馬表情報の作成
   const raceCardInfo = input.horses
     .sort((a, b) => a.number - b.number)
-    .map(horse => `${horse.frame}枠${horse.number}番 ${horse.name.padEnd(20)} 単勝${(horse.winProb * 100).toFixed(1).padStart(4)}% 複勝${(horse.placeProb * 100).toFixed(1).padStart(4)}%`)
+    .map(horse => `${horse.frame}枠${horse.number}番 ${horse.name.padEnd(20)} 単勝予想${(horse.winProb * 100).toFixed(1).padStart(4)}%, 複勝予想${(horse.placeProb * 100).toFixed(1).padStart(4)}%`)
     .join('\n');
 
   // 馬券候補一覧の作成
@@ -130,56 +130,93 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
     .join('\n');
 
   // 条件付き確率データの整形
-  const formattedCorrelations = input.correlations?.map(c => {
-    return `条件「${c.condition.type}[${c.condition.horses}]」が的中した場合、
-「${c.target.type}[${c.target.horses}]」の的中確率は${(c.probability * 100).toFixed(1)}%`;
-  }).join('\n') || '条件付き確率データなし';
+  const typeOrder: Record<string, number> = {
+    "単勝": 1,
+    "複勝": 2,
+    "枠連": 3,
+    "ワイド": 4,
+    "馬連": 5,
+    "馬単": 6,
+    "３連複": 7,
+    "３連単": 8
+  };
+
+  const formattedCorrelations = input.correlations
+    ?.sort((a, b) => {
+      // まずtypeOrderに従ってtypeを比較
+      const typeA = typeOrder[a.condition.type] || 999;
+      const typeB = typeOrder[b.condition.type] || 999;
+      if (typeA !== typeB) {
+        return typeA - typeB;
+      }
+
+      // typeが同じ場合、対応する馬券候補から期待値を取得してソート
+      const getBetExpectedValue = (condition: { type: string, horses: string }) => {
+        const bet = input.bettingOptions.find(b => 
+          b.type === condition.type && 
+          b.horseName === condition.horses
+        );
+        if (!bet) return -1;
+        return (bet.probability * bet.expectedReturn) / bet.stake;
+      };
+
+      const expectedValueA = getBetExpectedValue(a.condition);
+      const expectedValueB = getBetExpectedValue(b.condition);
+
+      // 期待値の降順でソート（大きい順）
+      if (expectedValueA !== expectedValueB) {
+        return expectedValueB - expectedValueA;
+      }
+
+      // 期待値が同じ場合はhorsesで比較
+      return a.condition.horses.localeCompare(b.condition.horses);
+    })
+    .reduce((acc: string[], c, index, array) => {
+      if (index === 0 || 
+          array[index - 1].condition.type !== c.condition.type || 
+          array[index - 1].condition.horses !== c.condition.horses) {
+        acc.push(`\n■ ${c.condition.type}[${c.condition.horses}]が的中した場合：`);
+      }
+      
+      acc.push(`・${c.target.type}[${c.target.horses}]の的中確率は${(c.probability * 100).toFixed(1)}%`);
+      
+      return acc;
+    }, [])
+    .join('\n') || '条件付き確率データなし';
 
   const prompt = `
-【レース分析依頼】
+あなたは馬券専門のアナリストです。以下の分析の観点に従って、分析を行ってください。
 
-以下のデータから、人間が見落としがちな重要な洞察を2つ程度抽出してください。
-特に、データ間の関連性や隠れたパターンに注目し、実践的で価値のある分析をお願いします。
 
-1. 分析対象データ
-出馬表：
-${raceCardInfo}
+1. 分析の観点
+- 出馬表に記載されている、各馬に対するユーザーの予想確率から、ユーザーがどの馬に期待しているのかを理解する
+- 馬券候補から期待値の高い馬券をいくつか探し出す。ここで、的中確率も考慮する
+- 馬券候補から見つけ出した有望な馬券候補の条件付き確率から、適度に相関がある馬券候補を見つけ出す
+- 上記の分析フローを3回繰り返し、ユーザーにとって最も価値のある馬券候補に対して興味深い考察を行う
 
-期待値データ：
-${bettingCandidatesList}
-
-条件付き確率：
-${formattedCorrelations}
-
-2. 分析の観点
-- オッズと予想確率の不整合から見える投資機会
-- 馬の特徴や過去実績からの示唆
-- 条件付き確率から見える隠れた相関関係
-- 通常見落とされがちな統計的パターン
-- 市場の過小評価・過大評価の可能性
-- データ間の矛盾や特異な点
-
-3. 返却フォーマット
+2. 出力フォーマット
 以下の構造に厳密に従ったJSONを返してください：
 
 {
   "summary": {
     "keyInsights": [
-      "具体的な数値や根拠を含む重要な発見",
-      "見落としがちなパターンや機会",
-      "統計的に有意な相関や傾向",
-      "市場の誤評価の可能性",
-      "実践的な示唆"
+      "馬券１に対する考察",
+      "馬券２に対する考察",
+      "馬券３に対する考察"
     ]
   }
 }
 
-4. 分析の注意点：
-- 表面的な分析は避け、深い洞察を提供してください
-- 具体的な数値や根拠を含めてください
-- 実践的で活用可能な示唆を心がけてください
-- 人間が見落としがちな観点を重視してください
-- 各洞察は明確で具体的な内容にしてください
+3. 分析対象データ
+【出馬表】
+${raceCardInfo}
+
+【馬券候補】
+${bettingCandidatesList}
+
+【条件付き確率】
+${formattedCorrelations}
+
 `;
 
 if (process.env.NODE_ENV === 'development') {

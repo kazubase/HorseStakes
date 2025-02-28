@@ -387,23 +387,6 @@ export function BettingOptionsTable({
                                 ))}
                               </div>
                             </div>
-
-                            {/* 推奨組み合わせの表示 */}
-                            {relatedRecommendations.length > 0 && (
-                              <div>
-                                <h4 className="font-medium mb-2">推奨組み合わせ</h4>
-                                <div className="space-y-2">
-                                  {relatedRecommendations.map((rec, i) => (
-                                    <div key={i} className="text-sm">
-                                      <div>{rec.horses.join(' + ')}</div>
-                                      <div className="text-muted-foreground text-xs">
-                                        {rec.reason}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
                           </div>
                         </PopoverContent>
                       </Popover>
