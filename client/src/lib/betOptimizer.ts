@@ -1,8 +1,8 @@
 import type { GeminiRecommendation } from './geminiApi';
 import { type BetProposal, type HorseData, type BettingOption, evaluateBettingOptions } from './betEvaluation';
-import { calculateConditionalProbability } from './betConditionalProbability';
 import { getGeminiStrategy } from './geminiApi';
 import { normalizeStringProbability } from './utils/probability';
+import { BetCorrelation } from './betConditionalProbability';
 
 export const optimizeBetAllocation = (
     recommendations: GeminiRecommendation[],
@@ -202,6 +202,7 @@ export const optimizeBetAllocation = (
   
 interface OptimizationInput {
   bettingOptions: BettingOption[];
+  conditionalProbabilities?: BetCorrelation[];
 }
 
 export const calculateBetProposalsWithGemini = async (
@@ -234,19 +235,6 @@ export const calculateBetProposalsWithGemini = async (
       expectedValue: String(opt.ev)
     }));
 
-    // 条件付き確率を計算
-    const conditionalProbabilities = calculateConditionalProbability(
-      input.bettingOptions.map(opt => ({
-        type: opt.type,
-        horses: [opt.horse1, opt.horse2, opt.horse3].filter(Boolean).map(String),
-        horseName: `${opt.horse1}${opt.horse2 ? `-${opt.horse2}` : ''}${opt.horse3 ? `-${opt.horse3}` : ''}`,
-        stake: 0,
-        expectedReturn: 0,
-        probability: opt.prob
-      })),
-      horses
-    );
-
     // Gemini APIから戦略を取得
     const geminiResponse = await getGeminiStrategy(
       bettingCandidates,
@@ -254,7 +242,7 @@ export const calculateBetProposalsWithGemini = async (
       {
         horses,
         bettingOptions: input.bettingOptions,
-        conditionalProbabilities
+        conditionalProbabilities: input.conditionalProbabilities || [] // 条件付き確率を渡す
       },
       riskRatio
     );

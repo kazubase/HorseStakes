@@ -4,6 +4,7 @@ import type { Horse } from '@db/schema';
 import type { GeminiAnalysisResult } from '@/lib/geminiAnalysis';
 import type { HorseData } from '@/lib/betEvaluation';
 import type { BettingOption } from '@/lib/betEvaluation';
+import type { BetCorrelation } from '@/lib/geminiApi';
 
 // ステップ管理
 export type BettingStep = 'ANALYSIS' | 'SELECTION' | 'PORTFOLIO';
@@ -31,13 +32,18 @@ export interface SelectionState {
   availableHorses: HorseData[];
   availableBets: BettingOption[];
   isAiOptimized: boolean;
+  conditionalProbabilities: BetCorrelation[];
 }
 export const selectionStateAtom = atom<SelectionState>({
   selectedBets: [],
   availableHorses: [],
   availableBets: [],
-  isAiOptimized: false
+  isAiOptimized: false,
+  conditionalProbabilities: []
 });
+
+// 追加: 条件付き確率用の独立したatom
+export const conditionalProbabilitiesAtom = atom<BetCorrelation[]>([]);
 
 // ポートフォリオ
 export interface Portfolio {

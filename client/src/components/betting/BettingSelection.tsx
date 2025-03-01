@@ -1,5 +1,5 @@
-import { useAtom } from 'jotai';
-import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom, raceNotesAtom, currentStepAtom } from '@/stores/bettingStrategy';
+import { useAtom, useAtomValue } from 'jotai';
+import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom, raceNotesAtom, currentStepAtom, conditionalProbabilitiesAtom } from '@/stores/bettingStrategy';
 import { BettingOptionsTable } from '@/components/BettingOptionsTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BetProposal } from '@/lib/betEvaluation';
@@ -55,6 +55,7 @@ export function BettingSelection() {
   const [winProbs] = useAtom(winProbsAtom);
   const [placeProbs] = useAtom(placeProbsAtom);
   const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
+  const conditionalProbabilities = useAtomValue(conditionalProbabilitiesAtom);
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1;
   const [isExpanded, setIsExpanded] = useState(false);
@@ -107,7 +108,10 @@ export function BettingSelection() {
       const optimizedProposals = await calculateBetProposalsWithGemini(
         horseData,
         budget,
-        { bettingOptions: selectionState.availableBets },
+        { 
+          bettingOptions: selectionState.availableBets,
+          conditionalProbabilities
+        },
         riskRatio
       );
 

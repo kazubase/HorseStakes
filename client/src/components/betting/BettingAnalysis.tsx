@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, memo, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -10,7 +10,8 @@ import {
   analysisResultAtom,
   bettingOptionsAtom,
   raceNotesAtom,
-  canProceedAtom
+  canProceedAtom,
+  conditionalProbabilitiesAtom
 } from '@/stores/bettingStrategy';
 import type { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
 import { BettingOptionsTable } from "@/components/BettingOptionsTable";
@@ -306,6 +307,8 @@ export function BettingAnalysis() {
   const [analysisResult, setAnalysisResult] = useAtom<GeminiAnalysisResult | null>(analysisResultAtom);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [, setBettingOptions] = useAtom(bettingOptionsAtom);
+  const [, setConditionalProbabilities] = useAtom(conditionalProbabilitiesAtom);
+  const conditionalProbabilities = useAtomValue(conditionalProbabilitiesAtom);
   const [isCalculated, setIsCalculated] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -440,35 +443,34 @@ export function BettingAnalysis() {
     staleTime: Infinity, // データを永続的にキャッシュ
   });
 
-  const conditionalProbabilities = useMemo(() => {
-    if (!horses || !calculatedBettingOptions) return [];
-    
-    return calculateConditionalProbability(
-      calculatedBettingOptions,
-      horses.map(horse => ({
+  // 条件付き確率の計算と保存をuseQueryで行う
+  const { data: correlations } = useQuery({
+    queryKey: ['conditional-probabilities', calculatedBettingOptions?.length],
+    queryFn: () => calculateConditionalProbability(
+      calculatedBettingOptions || [],
+      horses?.map(horse => ({
         name: horse.name,
         odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
         winProb: winProbs[horse.id] / 100,
         placeProb: placeProbs[horse.id] / 100,
         frame: horse.frame,
         number: horse.number
-      }))
-    ).map(corr => ({
-      condition: {
-        type: corr.condition.type,
-        horses: corr.condition.horses
-      },
-      target: {
-        type: corr.target.type,
-        horses: corr.target.horses
-      },
-      probability: corr.probability
-    }));
-  }, [horses, calculatedBettingOptions, latestOdds, winProbs, placeProbs]);
+      })) || []
+    ),
+    enabled: !!horses && !!calculatedBettingOptions?.length,
+    staleTime: Infinity // 結果をキャッシュ
+  });
 
-  // Step 2: Geminiによる分析
+  // correlationsが更新されたらatomに保存
+  useEffect(() => {
+    if (correlations) {
+      setConditionalProbabilities(correlations);
+    }
+  }, [correlations]);
+
+  // Gemini分析のクエリは条件付き確率の計算が完了してから実行
   const geminiAnalysis = useQuery({
-    queryKey: ['gemini-analysis', calculatedBettingOptions, budget, riskRatio],
+    queryKey: ['gemini-analysis', calculatedBettingOptions?.length, correlations?.length],
     queryFn: () => analyzeWithGemini({
       horses: horses?.map(horse => ({
         name: horse.name,
@@ -478,20 +480,12 @@ export function BettingAnalysis() {
         frame: horse.frame,
         number: horse.number
       })) || [],
-      bettingOptions: calculatedBettingOptions?.map(bet => ({
-        type: bet.type,
-        horses: bet.horses,
-        horseName: bet.horses.join(bet.type.includes('単') ? '→' : '-'),
-        odds: bet.expectedReturn / bet.stake,
-        probability: bet.probability,
-        expectedReturn: bet.expectedReturn,
-        stake: bet.stake
-      })) || [],
+      bettingOptions: calculatedBettingOptions || [],
       budget,
       riskRatio,
-      correlations: conditionalProbabilities
+      correlations: correlations || []
     }),
-    enabled: !!horses && !!calculatedBettingOptions?.length
+    enabled: !!horses && !!calculatedBettingOptions?.length && !!correlations?.length
   });
 
   // 副作用の最適化
