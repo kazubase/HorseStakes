@@ -152,6 +152,9 @@ export default function Home() {
     }, [latestOdds, topFiveHorses, selectedHorses]);
   }
 
+  // タッチ開始位置を保存するための状態を追加
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+
   // 馬の選択/解除を処理する関数を修正
   const toggleHorseSelection = useCallback((horseNumber: number, event: React.MouseEvent | React.TouchEvent) => {
     // イベントの伝播を停止
@@ -166,6 +169,31 @@ export default function Home() {
       }
     });
   }, []);
+
+  // タッチ開始時のハンドラを追加
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setTouchStart({
+      x: touch.clientX,
+      y: touch.clientY
+    });
+  }, []);
+
+  // タッチ終了時のハンドラを追加
+  const handleTouchEnd = useCallback((e: React.TouchEvent, horseNumber: number) => {
+    if (!touchStart) return;
+
+    const touch = e.changedTouches[0];
+    const deltaX = Math.abs(touch.clientX - touchStart.x);
+    const deltaY = Math.abs(touch.clientY - touchStart.y);
+
+    // 移動距離が10px未満の場合のみ選択処理を実行
+    if (deltaX < 10 && deltaY < 10) {
+      toggleHorseSelection(horseNumber, e);
+    }
+    
+    setTouchStart(null);
+  }, [touchStart, toggleHorseSelection]);
 
   const getFrameColor = (frame: number) => {
     const colors = {
@@ -379,7 +407,8 @@ export default function Home() {
                           <TableRow 
                             key={horse.id}
                             onClick={(e) => toggleHorseSelection(horse.number, e)}
-                            onTouchEnd={(e) => toggleHorseSelection(horse.number, e)}
+                            onTouchStart={handleTouchStart}
+                            onTouchEnd={(e) => handleTouchEnd(e, horse.number)}
                             className={`
                               relative
                               cursor-pointer 
