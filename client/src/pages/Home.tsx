@@ -268,6 +268,19 @@ export default function Home() {
             tick={{ fill: 'hsl(var(--muted-foreground))' }}
             axisLine={{ stroke: 'hsl(var(--border))' }}
             tickLine={{ stroke: 'hsl(var(--border))' }}
+            allowDataOverflow={true}
+            type="category"
+            scale="point"
+            padding={{ left: 0, right: 0 }}
+            width={2000}
+            xAxisId={0}
+          />
+          
+          {/* スクロール用のX軸を追加 */}
+          <XAxis 
+            dataKey="timestamp"
+            hide
+            xAxisId="scroll"
           />
           
           {/* Y軸 */}
@@ -293,15 +306,28 @@ export default function Home() {
               borderColor: 'hsl(var(--border))',
               borderRadius: '8px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              padding: '8px 12px'
+              padding: '8px 12px',
+              maxWidth: '80vw',
+              fontSize: '0.875rem',
+              whiteSpace: 'normal',
             }}
             itemStyle={{
-              padding: '4px 0'
+              padding: '2px 0',
+              fontSize: '0.875rem',
             }}
             labelStyle={{
               color: 'hsl(var(--muted-foreground))',
-              marginBottom: '4px'
+              marginBottom: '2px',
+              fontSize: '0.75rem',
             }}
+            position={{ x: 0, y: 0 }}
+            offset={10}
+            wrapperStyle={{
+              zIndex: 1000,
+              touchAction: 'none',
+            }}
+            coordinate={{ x: 0, y: 0 }}
+            cursor={{ strokeDasharray: '3 3' }}
           />
 
           {/* 背景エリア */}
@@ -478,9 +504,9 @@ export default function Home() {
                   }
                 </div>
               </div>
-              <div className="h-[300px] sm:h-[400px] relative">
+              <div className="h-[300px] sm:h-[400px] relative overflow-x-auto">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-30" />
-                <div className="relative h-full">
+                <div className="relative h-full min-w-[800px]">
                   <OddsChart />
                 </div>
               </div>
