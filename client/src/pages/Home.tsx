@@ -9,8 +9,8 @@ import MainLayout from "@/components/layout/MainLayout";
 import { RefreshCw, Trophy, Target, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import RaceList from "@/pages/RaceList";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useMemo, useEffect, useState, useCallback } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import { groupBy } from 'lodash';
 
 export default function Home() {
@@ -293,8 +293,8 @@ export default function Home() {
           />
           
           {/* ツールチップ */}
-          <Tooltip 
-            formatter={(value: number, name: string) => {
+          <Tooltip<any, any> 
+            formatter={(value: any, name: any) => {
               const horse = sortedHorses.find(h => `horse${h.number}` === name);
               return [
                 value.toFixed(1),
@@ -320,14 +320,18 @@ export default function Home() {
               marginBottom: '2px',
               fontSize: '0.75rem',
             }}
-            position={{ x: 0, y: 0 }}
-            offset={10}
             wrapperStyle={{
+              visibility: 'visible',
               zIndex: 1000,
-              touchAction: 'none',
             }}
-            coordinate={{ x: 0, y: 0 }}
-            cursor={{ strokeDasharray: '3 3' }}
+          />
+
+          {/* 垂直の参照線を追加 */}
+          <ReferenceLine
+            isFront={true}
+            x={formattedOddsData[0]?.timestamp}
+            stroke="hsl(var(--muted-foreground))"
+            strokeDasharray="3 3"
           />
 
           {/* 背景エリア */}
@@ -368,6 +372,16 @@ export default function Home() {
       </ResponsiveContainer>
     );
   };
+
+  // グラフコンテナのref追加
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  // 初期表示時に右端にスクロール
+  useEffect(() => {
+    if (chartContainerRef.current) {
+      chartContainerRef.current.scrollLeft = chartContainerRef.current.scrollWidth;
+    }
+  }, [formattedOddsData]);
 
   if (!race && !raceLoading) return null;
 
@@ -504,7 +518,7 @@ export default function Home() {
                   }
                 </div>
               </div>
-              <div className="h-[300px] sm:h-[400px] relative overflow-x-auto">
+              <div className="h-[300px] sm:h-[400px] relative overflow-x-auto" ref={chartContainerRef}>
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-30" />
                 <div className="relative h-full min-w-[800px]">
                   <OddsChart />
