@@ -225,23 +225,60 @@ export const getGeminiStrategy = async (
     const bettingCandidatesList = generateBettingCandidatesList();
     
     // 条件付き確率一覧を生成
+    const typeOrder: Record<string, number> = {
+      "単勝": 1,
+      "複勝": 2,
+      "枠連": 3,
+      "ワイド": 4,
+      "馬連": 5,
+      "馬単": 6,
+      "３連複": 7,
+      "３連単": 8
+    };
+
     const correlationsText = correlations && correlations.length > 0 
-      ? `条件付き確率データ:
-${JSON.stringify(
-  correlations.reduce((acc, c) => {
-    // 券種でグループ化
-    if (!acc[c.condition.type]) {
-      acc[c.condition.type] = {};
-    }
-    // 馬番組み合わせでグループ化
-    if (!acc[c.condition.type][c.condition.horses]) {
-      acc[c.condition.type][c.condition.horses] = {};
-    }
-    // ターゲットの馬券と確率を追加
-    acc[c.condition.type][c.condition.horses][`${c.target.type}[${c.target.horses}]`] = c.probability;
-    return acc;
-  }, {} as Record<string, Record<string, Record<string, number>>>
-), null, 2)}`
+      ? `条件付き確率データ:${correlations
+          .sort((a, b) => {
+            // まずtypeOrderに従ってtypeを比較
+            const typeA = typeOrder[a.condition.type] || 999;
+            const typeB = typeOrder[b.condition.type] || 999;
+            if (typeA !== typeB) {
+              return typeA - typeB;
+            }
+
+            // typeが同じ場合、対応する馬券候補から期待値を取得してソート
+            const getBetExpectedValue = (condition: { type: string, horses: string }) => {
+              const bet = allBettingOptions.bettingOptions.find(b => 
+                b.type === condition.type && 
+                b.horseName === condition.horses
+              );
+              if (!bet) return -1;
+              return (bet.prob * bet.ev) / bet.odds;
+            };
+
+            const expectedValueA = getBetExpectedValue(a.condition);
+            const expectedValueB = getBetExpectedValue(b.condition);
+
+            // 期待値の降順でソート（大きい順）
+            if (expectedValueA !== expectedValueB) {
+              return expectedValueB - expectedValueA;
+            }
+
+            // 期待値が同じ場合はhorsesで比較
+            return a.condition.horses.localeCompare(b.condition.horses);
+          })
+          .reduce((acc: string[], c, index, array) => {
+            if (index === 0 || 
+                array[index - 1].condition.type !== c.condition.type || 
+                array[index - 1].condition.horses !== c.condition.horses) {
+              acc.push(`\n■ ${c.condition.type}[${c.condition.horses}]が的中した場合：`);
+            }
+            
+            acc.push(`・${c.target.type}[${c.target.horses}]の的中確率は${(c.probability * 100).toFixed(1)}%`);
+            
+            return acc;
+          }, [])
+          .join('\n')}`
       : '条件付き確率データなし';
 
     /*
