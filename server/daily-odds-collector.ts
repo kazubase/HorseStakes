@@ -5,6 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { Browser, Page, chromium } from 'playwright';
 import * as cheerio from 'cheerio';
 import schedule from 'node-schedule';
+import url from 'url';
 
 interface RaceInfo {
   id: number;
@@ -303,7 +304,6 @@ class DailyOddsCollector {
   // オッズ収集実行の改善
   public async collectOdds(raceId: number) {
     try {
-      // データベースクエリをリトライ処理で包む
       const race = await this.withDbRetry(() => 
         db.query.races.findFirst({
           where: eq(races.id, raceId)
@@ -313,6 +313,21 @@ class DailyOddsCollector {
       if (!race || race.status === 'done') return;
 
       const now = new Date();
+      
+      // レース前日18:00から当日9:00までの間は収集を停止
+      const raceDate = new Date(race.startTime);
+      const previousDay = new Date(raceDate);
+      previousDay.setDate(previousDay.getDate() - 1);
+      previousDay.setHours(18, 0, 0, 0);
+
+      const raceDay = new Date(raceDate);
+      raceDay.setHours(9, 0, 0, 0);
+
+      if (now >= previousDay && now < raceDay) {
+        console.log(`Skipping odds collection for race ${raceId} during overnight period (18:00-09:00)`);
+        return;
+      }
+
       console.log(`Current time: ${now.toISOString()}`);
       console.log(`Race start time: ${race.startTime.toISOString()}`);
 
@@ -357,7 +372,7 @@ class DailyOddsCollector {
       }
     } catch (error) {
       console.error('Error in collectOdds:', error);
-      throw error; // エラーを上位に伝播させる
+      throw error;
     }
   }
 
@@ -520,5 +535,62 @@ async function main() {
   }
 }
 
-// スクリプト実行
-main().catch(console.error); 
+async function runWithAutoRestart() {
+  while (true) {
+    try {
+      const collector = new DailyOddsCollector();
+      await collector.initialize();
+      
+      // プロセス終了時のクリーンアップを設定
+      process.on('SIGTERM', async () => {
+        console.log('Received SIGTERM. Cleaning up...');
+        await collector.cleanup();
+        process.exit(0);
+      });
+
+      if (process.env.NODE_ENV === 'production') {
+        // 本番環境では単発実行のみ
+        console.log('Production mode: Running single collection cycle');
+        const races = await collector.getTodayGradeRaces();
+        for (const race of races) {
+          await collector.registerRace(race);
+          await collector.collectOdds(race.id);
+        }
+      } else {
+        // 開発環境では定期実行を設定
+        console.log('Setting up 5-min check schedule');
+        schedule.scheduleJob('*/5 * * * *', async () => {
+          console.log('Running upcoming races check...');
+          await collector.checkUpcomingRaces();
+        });
+
+        // 毎日8:55に再取得
+        console.log('Setting up 8:55 schedule');
+        schedule.scheduleJob('55 8 * * *', async () => {
+          console.log('Running 8:55 race collection...');
+          const races = await collector.getTodayGradeRaces();
+          for (const race of races) {
+            await collector.registerRace(race);
+            await collector.scheduleOddsCollection(race);
+          }
+        });
+
+        // 初回実行
+        await collector.checkUpcomingRaces();
+      }
+
+      // 無限ループを防ぐために待機
+      await new Promise(() => {});
+
+    } catch (error) {
+      console.error('Fatal error occurred:', error);
+      console.log('Restarting process in 30 seconds...');
+      await new Promise(resolve => setTimeout(resolve, 30000));
+    }
+  }
+}
+
+// ESモジュール用のエントリーポイントチェック
+if (import.meta.url === url.pathToFileURL(process.argv[1]).href) {
+  runWithAutoRestart().catch(console.error);
+} 
