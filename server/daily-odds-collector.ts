@@ -18,6 +18,8 @@ class DailyOddsCollector {
   private browser: Browser | null = null;
   private collector: OddsCollector;
   private activeJobs: Map<number, schedule.Job> = new Map();
+  private readonly MAX_RETRIES = 3;
+  private readonly RETRY_DELAY = 5000; // 5秒
 
   constructor() {
     this.collector = new OddsCollector();
@@ -283,25 +285,43 @@ class DailyOddsCollector {
     }
   }
 
-  // オッズ収集実行
+  // データベース接続のリトライ処理を追加
+  private async withDbRetry<T>(operation: () => Promise<T>): Promise<T> {
+    for (let i = 0; i < this.MAX_RETRIES; i++) {
+      try {
+        return await operation();
+      } catch (error) {
+        if (i === this.MAX_RETRIES - 1) throw error;
+        
+        console.log(`Database operation failed, retrying in ${this.RETRY_DELAY}ms...`, error);
+        await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
+      }
+    }
+    throw new Error('Max retries exceeded');
+  }
+
+  // オッズ収集実行の改善
   public async collectOdds(raceId: number) {
     try {
-      const race = await db.query.races.findFirst({
-        where: eq(races.id, raceId)
-      });
+      // データベースクエリをリトライ処理で包む
+      const race = await this.withDbRetry(() => 
+        db.query.races.findFirst({
+          where: eq(races.id, raceId)
+        })
+      );
 
       if (!race || race.status === 'done') return;
 
       const now = new Date();
-      
       console.log(`Current time: ${now.toISOString()}`);
       console.log(`Race start time: ${race.startTime.toISOString()}`);
-      
+
       if (race.startTime < now && race.status === 'upcoming') {
-        console.log(`Race ${raceId} has finished. Updating status to done`);
-        await db.update(races)
-          .set({ status: 'done' })
-          .where(eq(races.id, raceId));
+        await this.withDbRetry(() =>
+          db.update(races)
+            .set({ status: 'done' })
+            .where(eq(races.id, raceId))
+        );
         return;
       }
 
@@ -309,71 +329,86 @@ class DailyOddsCollector {
       const betTypes = ['tanpuku', 'wakuren', 'umaren', 'wide', 'umatan', 'fuku3', 'tan3'] as const;
       
       for (const betType of betTypes) {
-        try {
-          console.log(`Collecting ${betType} odds for race ID: ${raceId}`);
-          const odds = await this.collector.collectOddsForBetType(raceId, betType);
-          console.log(`Collected ${betType} odds data:`, odds);
-          
-          if (odds.length > 0) {
-            if (betType === 'tanpuku') {
-              // 馬のデータを先に登録（単複オッズの場合のみ）
-              for (const odd of odds) {
-                try {
-                  const existingHorse = await db.query.horses.findFirst({
-                    where: and(
-                      eq(horses.name, odd.horseName),
-                      eq(horses.raceId, raceId)
-                    )
-                  });
-
-                  if (!existingHorse) {
-                    console.log(`Registering horse: ${odd.horseName} (Race: ${raceId}, Frame: ${odd.frame}, Number: ${odd.number})`);
-                    await db.insert(horses).values({
-                      name: odd.horseName,
-                      raceId: raceId,
-                      frame: odd.frame,
-                      number: odd.number,
-                      status: odd.odds === '取消' ? 'scratched' : 'running'
-                    });
-                  } else {
-                    // 既存の馬のステータスを更新（取消になった場合など）
-                    if (odd.odds === '取消' && existingHorse.status !== 'scratched') {
-                      console.log(`Updating horse status to scratched: ${odd.horseName} (Race: ${raceId})`);
-                      await db.update(horses)
-                        .set({ status: 'scratched' })
-                        .where(and(
-                          eq(horses.name, odd.horseName),
-                          eq(horses.raceId, raceId)
-                        ));
-                    }
-                  }
-                } catch (error) {
-                  console.error(`Error handling horse ${odd.horseName} for race ${raceId}:`, error);
-                }
+        let retryCount = 0;
+        while (retryCount < this.MAX_RETRIES) {
+          try {
+            console.log(`Collecting ${betType} odds for race ID: ${raceId} (attempt ${retryCount + 1})`);
+            const odds = await this.collector.collectOddsForBetType(raceId, betType);
+            
+            if (odds.length > 0) {
+              if (betType === 'tanpuku') {
+                await this.handleTanpukuOdds(raceId, odds);
+              } else {
+                await this.handleOtherOdds(betType, odds);
               }
-              await this.collector.saveOddsHistory(odds);
-            } else {
-              // 他の馬券種別の保存
-              const updateMethod = {
-                wakuren: this.collector.updateWakurenOdds.bind(this.collector),
-                umaren: this.collector.updateUmarenOdds.bind(this.collector),
-                wide: this.collector.updateWideOdds.bind(this.collector),
-                umatan: this.collector.updateUmatanOdds.bind(this.collector),
-                fuku3: this.collector.updateFuku3Odds.bind(this.collector),
-                tan3: this.collector.updateTan3Odds.bind(this.collector)
-              }[betType];
-
-              await updateMethod(odds);
+              console.log(`${betType} odds data saved successfully`);
+              break;
             }
-            console.log(`${betType} odds data saved successfully`);
+          } catch (error) {
+            console.error(`Error collecting ${betType} odds for race ${raceId} (attempt ${retryCount + 1}):`, error);
+            if (retryCount === this.MAX_RETRIES - 1) {
+              console.error(`Max retries exceeded for ${betType} odds collection`);
+              break;
+            }
+            retryCount++;
+            await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
           }
-        } catch (error) {
-          console.error(`Error collecting ${betType} odds for race ${raceId}:`, error);
         }
       }
     } catch (error) {
       console.error('Error in collectOdds:', error);
+      throw error; // エラーを上位に伝播させる
     }
+  }
+
+  // 単複オッズ処理を分離
+  private async handleTanpukuOdds(raceId: number, odds: any[]) {
+    for (const odd of odds) {
+      await this.withDbRetry(async () => {
+        const existingHorse = await db.query.horses.findFirst({
+          where: and(
+            eq(horses.name, odd.horseName),
+            eq(horses.raceId, raceId)
+          )
+        });
+
+        if (!existingHorse) {
+          await db.insert(horses).values({
+            name: odd.horseName,
+            raceId: raceId,
+            frame: odd.frame,
+            number: odd.number,
+            status: odd.odds === '取消' ? 'scratched' : 'running'
+          });
+        } else if (odd.odds === '取消' && existingHorse.status !== 'scratched') {
+          await db.update(horses)
+            .set({ status: 'scratched' })
+            .where(and(
+              eq(horses.name, odd.horseName),
+              eq(horses.raceId, raceId)
+            ));
+        }
+      });
+    }
+    await this.collector.saveOddsHistory(odds);
+  }
+
+  // その他のオッズ処理を分離
+  private async handleOtherOdds(betType: string, odds: any[]) {
+    const updateMethod = {
+      wakuren: this.collector.updateWakurenOdds.bind(this.collector),
+      umaren: this.collector.updateUmarenOdds.bind(this.collector),
+      wide: this.collector.updateWideOdds.bind(this.collector),
+      umatan: this.collector.updateUmatanOdds.bind(this.collector),
+      fuku3: this.collector.updateFuku3Odds.bind(this.collector),
+      tan3: this.collector.updateTan3Odds.bind(this.collector)
+    }[betType];
+
+    if (!updateMethod) {
+      throw new Error(`Invalid bet type: ${betType}`);
+    }
+
+    await this.withDbRetry(() => updateMethod(odds));
   }
 
   private getVenueCode(venue: string): string {
