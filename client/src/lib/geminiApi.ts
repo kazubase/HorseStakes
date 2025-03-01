@@ -213,7 +213,7 @@ export const getGeminiStrategy = async (
         const candidates = allBettingOptions.bettingOptions
           .filter(opt => opt.type === type)
           .map(opt => {
-            const expectedValue = opt.odds * opt.prob - 1;
+            const expectedValue = opt.odds * opt.prob;
             return `${opt.horseName} [オッズ:${opt.odds.toFixed(1)}, 的中確率:${(opt.prob * 100).toFixed(2)}%, 期待値:${expectedValue.toFixed(2)}]`;
           })
           .join('\n');

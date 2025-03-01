@@ -90,8 +90,8 @@ export function BettingSelection() {
 
   const handleAiOptimization = async () => {
     try {
-      if (!horses) {
-        throw new Error('馬データが読み込まれていません');
+      if (!horses || !bettingOptions) {
+        throw new Error('データが読み込まれていません');
       }
 
       // 馬データを準備
@@ -109,7 +109,19 @@ export function BettingSelection() {
         horseData,
         budget,
         { 
-          bettingOptions: selectionState.availableBets,
+          bettingOptions: bettingOptions.map(bet => ({
+            type: bet.type as "単勝" | "複勝" | "枠連" | "ワイド" | "馬連" | "馬単" | "３連複" | "３連単",
+            horseName: bet.horseName,
+            odds: bet.expectedReturn / bet.stake,
+            prob: bet.probability,
+            ev: (bet.probability * bet.expectedReturn) / bet.stake,
+            frame1: bet.frame1 || 0,
+            frame2: bet.frame2 || 0,
+            frame3: bet.frame3 || 0,
+            horse1: bet.horse1 || 0,
+            horse2: bet.horse2 || 0,
+            horse3: bet.horse3 || 0,
+          })),
           conditionalProbabilities
         },
         riskRatio
