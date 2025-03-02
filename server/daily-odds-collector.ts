@@ -548,35 +548,58 @@ async function runWithAutoRestart() {
         process.exit(0);
       });
 
-      // 本番環境でも開発環境と同様の機能を実装
-      console.log('Setting up 5-min check schedule');
-      schedule.scheduleJob('*/5 * * * *', async () => {
-        console.log('Running upcoming races check...');
-        await collector.checkUpcomingRaces();
-      });
+      // レース開催日（土日祝）のチェック関数
+      const isRaceDay = () => {
+        const now = new Date();
+        const day = now.getDay();
+        // 土曜日(6)または日曜日(0)または月曜日(1)
+        return day === 6 || day === 0 || day === 1;
+      };
 
-      // 毎日8:55に再取得
-      console.log('Setting up 8:55 schedule');
-      schedule.scheduleJob('55 8 * * *', async () => {
-        console.log('Running 8:55 race collection...');
+      // レース開催日の場合のみ実行する処理
+      const runRaceDayOperations = async () => {
+        if (!isRaceDay()) {
+          console.log('Not a race day. Skipping operations.');
+          return;
+        }
+
+        console.log('Race day detected. Starting operations...');
         const races = await collector.getTodayGradeRaces();
+        
+        if (races.length === 0) {
+          console.log('No races found for today.');
+          return;
+        }
+
+        console.log(`Found ${races.length} races for today:`, races);
         for (const race of races) {
           await collector.registerRace(race);
           await collector.scheduleOddsCollection(race);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+      };
+
+      // 毎日8:55にレース情報取得（レース開催日のみ実行）
+      console.log('Setting up 8:55 schedule');
+      schedule.scheduleJob('55 8 * * *', runRaceDayOperations);
+
+      // レース開催日の場合のみ5分間隔でチェック
+      console.log('Setting up 5-min check schedule');
+      schedule.scheduleJob('*/5 * * * *', async () => {
+        if (!isRaceDay()) return;
+        
+        const now = new Date();
+        const hour = now.getHours();
+        
+        // 9:00から17:00の間のみ実行
+        if (hour >= 9 && hour < 17) {
+          console.log('Running upcoming races check...');
+          await collector.checkUpcomingRaces();
         }
       });
 
       // 初回実行
-      console.log('Running initial race collection...');
-      const races = await collector.getTodayGradeRaces();
-      console.log('Found races:', races);
-      
-      for (const race of races) {
-        console.log('Processing race:', race);
-        await collector.registerRace(race);
-        await collector.scheduleOddsCollection(race);
-        await new Promise(resolve => setTimeout(resolve, 5000));
-      }
+      await runRaceDayOperations();
 
       // 無限ループを防ぐために待機
       await new Promise(() => {});
