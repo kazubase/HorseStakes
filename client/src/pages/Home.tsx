@@ -106,11 +106,11 @@ export default function Home() {
     }
   }, [oddsHistory]);
 
-  // 時刻フォーマットを9時間遅らせる
+  // 時刻フォーマットを日付も含めるように修正
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     date.setHours(date.getHours() + 9);
-    return format(date, 'HH:mm');
+    return format(date, 'M/d HH:mm');
   };
 
   // オッズデータを整形
@@ -265,7 +265,10 @@ export default function Home() {
             dataKey="timestamp"
             interval="preserveStartEnd"
             minTickGap={50}
-            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+            tick={{ 
+              fill: 'hsl(var(--muted-foreground))',
+              fontSize: '0.75rem'
+            }}
             axisLine={{ stroke: 'hsl(var(--border))' }}
             tickLine={{ stroke: 'hsl(var(--border))' }}
             allowDataOverflow={true}
