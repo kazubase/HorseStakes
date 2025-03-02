@@ -548,35 +548,34 @@ async function runWithAutoRestart() {
         process.exit(0);
       });
 
-      if (process.env.NODE_ENV === 'production') {
-        // 本番環境では単発実行のみ
-        console.log('Production mode: Running single collection cycle');
+      // 本番環境でも開発環境と同様の機能を実装
+      console.log('Setting up 5-min check schedule');
+      schedule.scheduleJob('*/5 * * * *', async () => {
+        console.log('Running upcoming races check...');
+        await collector.checkUpcomingRaces();
+      });
+
+      // 毎日8:55に再取得
+      console.log('Setting up 8:55 schedule');
+      schedule.scheduleJob('55 8 * * *', async () => {
+        console.log('Running 8:55 race collection...');
         const races = await collector.getTodayGradeRaces();
         for (const race of races) {
           await collector.registerRace(race);
-          await collector.collectOdds(race.id);
+          await collector.scheduleOddsCollection(race);
         }
-      } else {
-        // 開発環境では定期実行を設定
-        console.log('Setting up 5-min check schedule');
-        schedule.scheduleJob('*/5 * * * *', async () => {
-          console.log('Running upcoming races check...');
-          await collector.checkUpcomingRaces();
-        });
+      });
 
-        // 毎日8:55に再取得
-        console.log('Setting up 8:55 schedule');
-        schedule.scheduleJob('55 8 * * *', async () => {
-          console.log('Running 8:55 race collection...');
-          const races = await collector.getTodayGradeRaces();
-          for (const race of races) {
-            await collector.registerRace(race);
-            await collector.scheduleOddsCollection(race);
-          }
-        });
-
-        // 初回実行
-        await collector.checkUpcomingRaces();
+      // 初回実行
+      console.log('Running initial race collection...');
+      const races = await collector.getTodayGradeRaces();
+      console.log('Found races:', races);
+      
+      for (const race of races) {
+        console.log('Processing race:', race);
+        await collector.registerRace(race);
+        await collector.scheduleOddsCollection(race);
+        await new Promise(resolve => setTimeout(resolve, 5000));
       }
 
       // 無限ループを防ぐために待機
