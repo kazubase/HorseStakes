@@ -329,41 +329,49 @@ export function BettingAnalysis() {
   const { data: latestOdds } = useQuery<TanOddsHistory[]>({
     queryKey: [`/api/tan-odds-history/latest/${id}`],
     enabled: !!id,
+    refetchInterval: 600000,
   });
 
   const { data: latestFukuOdds } = useQuery<FukuOdds[]>({
     queryKey: [`/api/fuku-odds/latest/${id}`],
     enabled: !!id,
+    refetchInterval: 600000,
   });
 
   const { data: wakurenOdds } = useQuery<WakurenOdds[]>({
     queryKey: [`/api/wakuren-odds/latest/${id}`],
     enabled: !!id,
+    refetchInterval: 600000,
   });
 
   const { data: umarenOdds } = useQuery<UmarenOdds[]>({
     queryKey: [`/api/umaren-odds/latest/${id}`],
     enabled: !!id,
+    refetchInterval: 600000,
   });
 
   const { data: wideOdds } = useQuery<WideOdds[]>({
     queryKey: [`/api/wide-odds/latest/${id}`],
     enabled: !!id,
+    refetchInterval: 600000,
   });
 
   const { data: umatanOdds } = useQuery<UmatanOdds[]>({
     queryKey: [`/api/umatan-odds/latest/${id}`],
     enabled: !!id,
+    refetchInterval: 600000,
   });
 
   const { data: sanrenpukuOdds } = useQuery<Fuku3Odds[]>({
     queryKey: [`/api/sanrenpuku-odds/latest/${id}`],
     enabled: !!id,
+    refetchInterval: 600000,
   });
 
   const { data: sanrentanOdds } = useQuery<Tan3Odds[]>({
     queryKey: [`/api/sanrentan-odds/latest/${id}`],
     enabled: !!id,
+    refetchInterval: 600000,
   });
 
   // bettingOptionsの計算をクエリとしてキャッシュ
@@ -440,7 +448,8 @@ export function BettingAnalysis() {
         }))
       );
     },
-    staleTime: Infinity, // データを永続的にキャッシュ
+    staleTime: 600000,
+    gcTime: 601000,
   });
 
   // 条件付き確率の計算と保存をuseQueryで行う
@@ -458,7 +467,8 @@ export function BettingAnalysis() {
       })) || []
     ),
     enabled: !!horses && !!calculatedBettingOptions?.length,
-    staleTime: Infinity // 結果をキャッシュ
+    staleTime: 600000,
+    gcTime: 601000,
   });
 
   // correlationsが更新されたらatomに保存
