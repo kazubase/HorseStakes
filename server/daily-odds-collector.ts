@@ -1,11 +1,12 @@
 import { OddsCollector } from './odds-collector';
 import { db } from '../db';
-import { races, horses } from '../db/schema';
+import { races, horses, tanOddsHistory, fukuOdds, wakurenOdds, umarenOdds, wideOdds, umatanOdds, fuku3Odds, tan3Odds } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { Browser, Page, chromium } from 'playwright';
 import * as cheerio from 'cheerio';
 import schedule from 'node-schedule';
 import url from 'url';
+import { sql } from 'drizzle-orm';
 
 interface RaceInfo {
   id: number;
@@ -472,6 +473,57 @@ class DailyOddsCollector {
       }
     }
   }
+
+  // 古いレースデータを削除する関数を追加
+  private async cleanupOldRaceData() {
+    try {
+      // 2週間前の日付を計算
+      const twoWeeksAgo = new Date();
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+      
+      console.log(`Cleaning up race data older than ${twoWeeksAgo.toISOString()}`);
+
+      // 古いレースを取得
+      const oldRaces = await db.query.races.findMany({
+        where: sql`${races.startTime} < ${twoWeeksAgo}`
+      });
+
+      if (oldRaces.length === 0) {
+        console.log('No old races to clean up');
+        return;
+      }
+
+      console.log(`Found ${oldRaces.length} races to clean up`);
+      const raceIds = oldRaces.map(race => race.id);
+
+      // トランザクションで関連データを一括削除
+      await db.transaction(async (tx) => {
+        // 関連テーブルのデータを削除
+        await tx.delete(tanOddsHistory).where(sql`${tanOddsHistory.raceId} = ANY(${raceIds})`);
+        await tx.delete(fukuOdds).where(sql`${fukuOdds.raceId} = ANY(${raceIds})`);
+        await tx.delete(wakurenOdds).where(sql`${wakurenOdds.raceId} = ANY(${raceIds})`);
+        await tx.delete(umarenOdds).where(sql`${umarenOdds.raceId} = ANY(${raceIds})`);
+        await tx.delete(wideOdds).where(sql`${wideOdds.raceId} = ANY(${raceIds})`);
+        await tx.delete(umatanOdds).where(sql`${umatanOdds.raceId} = ANY(${raceIds})`);
+        await tx.delete(fuku3Odds).where(sql`${fuku3Odds.raceId} = ANY(${raceIds})`);
+        await tx.delete(tan3Odds).where(sql`${tan3Odds.raceId} = ANY(${raceIds})`);
+        await tx.delete(horses).where(sql`${horses.raceId} = ANY(${raceIds})`);
+        await tx.delete(races).where(sql`${races.id} = ANY(${raceIds})`);
+      });
+
+      console.log(`Successfully cleaned up ${oldRaces.length} races and their related data`);
+    } catch (error) {
+      console.error('Error cleaning up old race data:', error);
+    }
+  }
+
+  // runWithAutoRestart 関数内で使用するスケジュール設定を追加
+  public setupCleanupSchedule() {
+    schedule.scheduleJob('0 17 * * 0', async () => {
+      console.log('Starting weekly cleanup of old race data');
+      await this.cleanupOldRaceData();
+    });
+  }
 }
 
 // メイン実行関数
@@ -482,53 +534,35 @@ async function main() {
     console.log('Starting odds collector with NODE_ENV:', process.env.NODE_ENV);
     await dailyCollector.initialize();
     
-    if (process.env.NODE_ENV === 'production') {
-      // 本番環境では単発実行のみ
-      console.log('Production mode: Running single collection cycle');
-      const races = await dailyCollector.getTodayGradeRaces();
-      console.log('Found races:', races);
-      
-      for (const race of races) {
-        console.log('Processing race:', race);
-        await dailyCollector.registerRace(race);
-        await dailyCollector.collectOdds(race.id);
-      }
-    } else {
-      // 開発環境では全ての機能を使用
-      // 定期的にupcomingレースをチェック（5分ごと）
-      console.log('Setting up 5-min check schedule');
-      schedule.scheduleJob('*/5 * * * *', async () => {
-        console.log('Running upcoming races check...');
-        await dailyCollector.checkUpcomingRaces();
-      });
+    // 定期的にupcomingレースをチェック（5分ごと）
+    console.log('Setting up 5-min check schedule');
+    schedule.scheduleJob('*/5 * * * *', async () => {
+      console.log('Running upcoming races check...');
+      await dailyCollector.checkUpcomingRaces();
+    });
 
-      // 初回実行
-      console.log('Running initial race collection...');
+    // 初回実行
+    console.log('Running initial race collection...');
+    const races = await dailyCollector.getTodayGradeRaces();
+    console.log('Found races:', races);
+    
+    for (const race of races) {
+      console.log('Processing race:', race);
+      await dailyCollector.registerRace(race);
+      await dailyCollector.scheduleOddsCollection(race);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+
+    // 毎日8:55に再取得
+    console.log('Setting up 8:55 schedule');
+    schedule.scheduleJob('55 8 * * *', async () => {
+      console.log('Running 8:55 race collection...');
       const races = await dailyCollector.getTodayGradeRaces();
-      console.log('Found races:', races);
-      
       for (const race of races) {
-        console.log('Processing race:', race);
         await dailyCollector.registerRace(race);
         await dailyCollector.scheduleOddsCollection(race);
-        // テスト用レースの場合は即時収集も実行
-        if (race.venue === '東京' && race.name.includes('春菜賞')) {
-          await dailyCollector.collectOdds(race.id);
-        }
-        await new Promise(resolve => setTimeout(resolve, 5000));
       }
-
-      // 毎日8:55に再取得
-      console.log('Setting up 8:55 schedule');
-      schedule.scheduleJob('55 8 * * *', async () => {
-        console.log('Running 8:55 race collection...');
-        const races = await dailyCollector.getTodayGradeRaces();
-        for (const race of races) {
-          await dailyCollector.registerRace(race);
-          await dailyCollector.scheduleOddsCollection(race);
-        }
-      });
-    }
+    });
 
   } catch (error) {
     console.error('Error in main process:', error);
@@ -540,6 +574,9 @@ async function runWithAutoRestart() {
     try {
       const collector = new DailyOddsCollector();
       await collector.initialize();
+      
+      // クリーンアップスケジュールを設定
+      collector.setupCleanupSchedule();
       
       // プロセス終了時のクリーンアップを設定
       process.on('SIGTERM', async () => {
