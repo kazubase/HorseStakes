@@ -139,17 +139,21 @@ export function BettingSelection() {
 
   const handleBetSelection = (bet: BetProposal) => {
     // デバッグ情報を追加
-    console.log('馬券選択処理開始:', {
-      type: bet.type,
-      horses: bet.horses,
-      horseName: bet.horseName
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('馬券選択処理開始:', {
+        type: bet.type,
+        horses: bet.horses,
+        horseName: bet.horseName
+      });
+    }
     
-    console.log('現在の選択状態:', selectionState.selectedBets.map(b => ({
-      type: b.type,
-      horses: b.horses,
-      horseName: b.horseName
-    })));
+    if (process.env.NODE_ENV === 'development') {
+      console.log('現在の選択状態:', selectionState.selectedBets.map(b => ({
+        type: b.type,
+        horses: b.horses,
+        horseName: b.horseName
+      })));
+    }
     
     // 馬券の比較方法を修正
     // horseName を正規化して比較する
@@ -166,11 +170,13 @@ export function BettingSelection() {
       normalizeHorseName(b.horseName || '') === normalizeHorseName(bet.horseName || '')
     );
     
-    console.log('比較結果:', {
-      clickedBet: `${bet.type}:${bet.horseName}`,
-      normalizedClickedBet: `${bet.type}:${normalizeHorseName(bet.horseName || '')}`,
-      exists
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('比較結果:', {
+        clickedBet: `${bet.type}:${bet.horseName}`,
+        normalizedClickedBet: `${bet.type}:${normalizeHorseName(bet.horseName || '')}`,
+        exists
+      });
+    }
     
     setSelectionState(prev => {
       if (exists) {
@@ -178,13 +184,17 @@ export function BettingSelection() {
           !(b.type === bet.type && 
             normalizeHorseName(b.horseName || '') === normalizeHorseName(bet.horseName || ''))
         );
-        console.log('馬券を解除:', newSelectedBets.length);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('馬券を解除:', newSelectedBets.length);
+        }
         return {
           ...prev,
           selectedBets: newSelectedBets
         };
       }
-      console.log('馬券を追加');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('馬券を追加');
+      }
       return {
         ...prev,
         selectedBets: [...prev.selectedBets, bet]
