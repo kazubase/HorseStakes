@@ -4,7 +4,7 @@ import { BettingOptionsTable } from '@/components/BettingOptionsTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BetProposal } from '@/lib/betEvaluation';
 import { Button } from "@/components/ui/button";
-import { calculateBetProposalsWithGemini } from "@/lib/betOptimizer";
+import { calculateBetProposalsWithGemini, optimizeBetAllocation } from "@/lib/betOptimizer";
 import { useLocation } from "wouter";
 import { Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -59,11 +59,68 @@ export function BettingSelection() {
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1;
   const [isExpanded, setIsExpanded] = useState(false);
-  const [, setCurrentStep] = useAtom(currentStepAtom);
+  const [currentStep, setCurrentStep] = useAtom(currentStepAtom);
   
   useEffect(() => {
     document.documentElement.style.setProperty('--footer-height', isExpanded ? '12rem' : '3rem');
   }, [isExpanded]);
+
+  // 次へボタンが押されたときに呼び出される関数を追加
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ステップ変更検知:', {
+        currentStep,
+        selectedBetsCount: selectionState.selectedBets.length,
+        isAiOptimized: selectionState.isAiOptimized
+      });
+    }
+    
+    if (currentStep === "PORTFOLIO" && selectionState.selectedBets.length > 0 && !selectionState.isAiOptimized) {
+      // 選択された馬券の資金配分を最適化
+      const optimizeBets = async () => {
+        try {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('資金配分最適化開始:', {
+              selectedBets: selectionState.selectedBets,
+              budget
+            });
+          }
+          
+          // 選択された馬券を最適化用の形式に変換
+          const recommendations = selectionState.selectedBets.map(bet => ({
+            type: bet.type,
+            horses: bet.horses,
+            odds: bet.odds || bet.expectedReturn / bet.stake,
+            probability: bet.probability,
+            reason: bet.reason || '手動選択された馬券',
+            frame1: bet.frame1,
+            frame2: bet.frame2,
+            frame3: bet.frame3,
+            horse1: bet.horse1,
+            horse2: bet.horse2,
+            horse3: bet.horse3
+          }));
+
+          // 資金配分を最適化
+          const optimizedBets = optimizeBetAllocation(recommendations, budget);
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('最適化結果:', optimizedBets);
+          }
+
+          // 最適化された馬券を選択状態に設定
+          setSelectionState(prev => ({
+            ...prev,
+            selectedBets: optimizedBets
+          }));
+        } catch (error) {
+          console.error('資金配分最適化エラー:', error);
+        }
+      };
+
+      optimizeBets();
+    }
+  }, [currentStep, selectionState.selectedBets.length, selectionState.isAiOptimized, budget, setSelectionState]);
 
   const handleBetSelection = (bet: BetProposal) => {
     setSelectionState(prev => {
@@ -156,6 +213,53 @@ export function BettingSelection() {
     }
   };
 
+  // 馬券選択後に手動で最適化を行うボタンを追加
+  const handleOptimizeBets = () => {
+    if (selectionState.selectedBets.length > 0 && !selectionState.isAiOptimized) {
+      try {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('資金配分最適化開始:', {
+            selectedBets: selectionState.selectedBets,
+            budget
+          });
+        }
+        
+        // 選択された馬券を最適化用の形式に変換
+        const recommendations = selectionState.selectedBets.map(bet => ({
+          type: bet.type,
+          horses: bet.horses,
+          odds: bet.odds || bet.expectedReturn / bet.stake,
+          probability: bet.probability,
+          reason: bet.reason || '手動選択された馬券',
+          frame1: bet.frame1,
+          frame2: bet.frame2,
+          frame3: bet.frame3,
+          horse1: bet.horse1,
+          horse2: bet.horse2,
+          horse3: bet.horse3
+        }));
+
+        // 資金配分を最適化
+        const optimizedBets = optimizeBetAllocation(recommendations, budget);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('最適化結果:', optimizedBets);
+        }
+
+        // 最適化された馬券を選択状態に設定
+        setSelectionState(prev => ({
+          ...prev,
+          selectedBets: optimizedBets
+        }));
+        
+        // ポートフォリオステップに遷移
+        setCurrentStep('PORTFOLIO');
+      } catch (error) {
+        console.error('資金配分最適化エラー:', error);
+      }
+    }
+  };
+
   if (!bettingOptions.length) {
     return (
       <div className="text-center text-muted-foreground p-4">
@@ -176,6 +280,18 @@ export function BettingSelection() {
           AI自動最適化
         </Button>
       </div>
+
+      {/* 手動最適化ボタンを追加 */}
+      {selectionState.selectedBets.length > 0 && (
+        <div className="mb-6">
+          <Button
+            onClick={handleOptimizeBets}
+            className="w-full gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+          >
+            選択した馬券で最適化
+          </Button>
+        </div>
+      )}
 
       {/* 馬券候補 */}
       <div>

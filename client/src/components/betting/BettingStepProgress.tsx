@@ -92,18 +92,21 @@ export function BettingStepProgress() {
           戻る
         </Button>
 
-        <Button
-          onClick={handleNext}
-          disabled={!canProceed || currentIndex === steps.length - 1}
-          className={`
-            gap-2 transition-all duration-300
-            ${!canProceed || currentIndex === steps.length - 1 ? 'opacity-50' : 
-            'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary'}
-          `}
-        >
-          次へ
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        {/* 選択画面では次へボタンを非表示にする */}
+        {currentStep !== 'SELECTION' && (
+          <Button
+            onClick={handleNext}
+            disabled={!canProceed || currentIndex === steps.length - 1}
+            className={`
+              gap-2 transition-all duration-300
+              ${!canProceed || currentIndex === steps.length - 1 ? 'opacity-50' : 
+              'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary'}
+            `}
+          >
+            次へ
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
