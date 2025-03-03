@@ -28,6 +28,7 @@ export interface BettingOption {
     horse1?: number;
     horse2?: number;
     horse3?: number;
+    odds?: number;
   }
   
   export interface HorseData {

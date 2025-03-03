@@ -165,7 +165,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       <div className="text-center">
         {formatHorseNumbers(bet.type, bet.horses)}
       </div>,
-      <div className="text-center">{Number(bet.expectedReturn / bet.stake).toFixed(1)}</div>,
+      <div className="text-center">{bet.odds ? bet.odds.toFixed(1) : Number(bet.expectedReturn / bet.stake).toFixed(1)}</div>,
       <div className="text-center">{(bet.probability * 100).toFixed(1)}%</div>,
       <div className="text-center">{bet.stake.toLocaleString()}円</div>,
       <div className="text-center">{bet.expectedReturn.toLocaleString()}円</div>,
@@ -271,7 +271,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                 {/* オッズ、的中率、投資額のグループ */}
                 <div className="flex justify-between sm:justify-end items-center w-full sm:w-auto gap-4 sm:gap-6">
                   <div className="text-right min-w-[80px]">
-                    <p className="text-sm font-bold">×{Number(bet.expectedReturn / bet.stake).toFixed(1)}</p>
+                    <p className="text-sm font-bold">×{bet.odds ? bet.odds.toFixed(1) : Number(bet.expectedReturn / bet.stake).toFixed(1)}</p>
                     <p className="text-xs text-muted-foreground">{(bet.probability * 100).toFixed(1)}%</p>
                   </div>
 

@@ -128,23 +128,27 @@ export const optimizeBetAllocation = (
       console.groupEnd();
     }
   
-    let proposals = processedRecs.map((rec, i) => ({
-      type: rec.type,
-      horses: rec.horses,
-      horseName: ["馬単", "３連単"].includes(rec.type) 
-        ? rec.horses.join('→')
-        : rec.horses.join('-'),
-      stake: Math.floor(totalBudget * bestWeights[i] / 100) * 100,
-      expectedReturn: rec.odds * Math.floor(totalBudget * bestWeights[i] / 100) * 100,
-      probability: rec.probability,
-      reason: rec.reason,
-      frame1: rec.frame1,
-      frame2: rec.frame2,
-      frame3: rec.frame3,
-      horse1: rec.horse1,
-      horse2: rec.horse2,
-      horse3: rec.horse3
-    }))
+    let proposals = processedRecs.map((rec, i) => {
+      const odds = rec.odds;
+      return {
+        type: rec.type,
+        horses: rec.horses,
+        horseName: ["馬単", "３連単"].includes(rec.type) 
+          ? rec.horses.join('→')
+          : rec.horses.join('-'),
+        stake: Math.floor(totalBudget * bestWeights[i] / 100) * 100,
+        odds: odds,
+        expectedReturn: odds * Math.floor(totalBudget * bestWeights[i] / 100) * 100,
+        probability: rec.probability,
+        reason: rec.reason,
+        frame1: rec.frame1,
+        frame2: rec.frame2,
+        frame3: rec.frame3,
+        horse1: rec.horse1,
+        horse2: rec.horse2,
+        horse3: rec.horse3
+      };
+    })
     .filter(bet => bet.stake >= 100)
     .sort((a, b) => {
       const typeOrder: Record<string, number> = {
@@ -178,7 +182,7 @@ export const optimizeBetAllocation = (
       const distributionOrder = [...proposals]
         .map((bet, index) => ({
           index,
-          expectedValue: bet.probability * bet.expectedReturn / bet.stake
+          expectedValue: bet.probability * bet.odds
         }))
         .sort((a, b) => a.expectedValue - b.expectedValue);
   
@@ -186,9 +190,14 @@ export const optimizeBetAllocation = (
       for (let i = 0; i < numIncrements; i++) {
         const targetIndex = distributionOrder[i % proposals.length].index;
         proposals[targetIndex].stake += 100;
-        proposals[targetIndex].expectedReturn = 
-          proposals[targetIndex].expectedReturn / (proposals[targetIndex].stake - 100) * proposals[targetIndex].stake;
+        // オッズを使って期待収益を正確に再計算
+        proposals[targetIndex].expectedReturn = proposals[targetIndex].odds * proposals[targetIndex].stake;
       }
+  
+      // 最終的なオッズを再計算
+      proposals.forEach(bet => {
+        bet.odds = bet.expectedReturn / bet.stake;
+      });
   
       if (process.env.NODE_ENV === 'development') {
         console.log('予算調整完了:', {
@@ -197,6 +206,23 @@ export const optimizeBetAllocation = (
         });
       }
     }
+  
+    // デバッグ出力にもオッズを含める
+    if (process.env.NODE_ENV === 'development') {
+      console.log('最適化結果:', {
+        totalBets: proposals.length,
+        totalInvestment: proposals.reduce((sum, bet) => sum + bet.stake, 0),
+        bets: proposals.map(bet => ({
+          type: bet.type,
+          horses: bet.horses,
+          stake: bet.stake,
+          odds: bet.odds.toFixed(1),
+          expectedReturn: bet.expectedReturn,
+          probability: (bet.probability * 100).toFixed(1) + '%'
+        }))
+      });
+    }
+  
     return proposals;
   };
   
@@ -268,6 +294,7 @@ export const calculateBetProposalsWithGemini = async (
           type: bet.type,
           horses: bet.horses,
           stake: bet.stake,
+          odds: bet.odds ? bet.odds.toFixed(1) : undefined,
           expectedReturn: bet.expectedReturn,
           probability: (bet.probability * 100).toFixed(1) + '%'
         }))
