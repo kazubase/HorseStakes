@@ -155,7 +155,7 @@ export function BettingOptionsTable({
   const getRelatedRecommendations = (bet: BetProposal) => {
     return geminiRecommendations.filter(rec => 
       rec.type === bet.type && 
-      rec.horses.includes(bet.horseName)
+      rec.horses.includes(bet.horseName || '')
     );
   };
 

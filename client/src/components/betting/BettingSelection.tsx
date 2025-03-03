@@ -122,22 +122,69 @@ export function BettingSelection() {
     }
   }, [currentStep, selectionState.selectedBets.length, selectionState.isAiOptimized, budget, setSelectionState]);
 
-  const handleBetSelection = (bet: BetProposal) => {
-    setSelectionState(prev => {
-      const exists = prev.selectedBets.some(b => 
-        b.type === bet.type && 
-        b.horses.join(',') === bet.horses.join(',')
-      );
+  // AI最適化フラグをリセットする処理を追加
+  useEffect(() => {
+    if (currentStep === 'SELECTION' && selectionState.isAiOptimized) {
+      // AI最適化フラグをリセット
+      setSelectionState(prev => ({
+        ...prev,
+        isAiOptimized: false
+      }));
       
+      if (process.env.NODE_ENV === 'development') {
+        console.log('AI最適化フラグをリセットしました');
+      }
+    }
+  }, [currentStep, selectionState.isAiOptimized, setSelectionState]);
+
+  const handleBetSelection = (bet: BetProposal) => {
+    // デバッグ情報を追加
+    console.log('馬券選択処理開始:', {
+      type: bet.type,
+      horses: bet.horses,
+      horseName: bet.horseName
+    });
+    
+    console.log('現在の選択状態:', selectionState.selectedBets.map(b => ({
+      type: b.type,
+      horses: b.horses,
+      horseName: b.horseName
+    })));
+    
+    // 馬券の比較方法を修正
+    // horseName を正規化して比較する
+    const normalizeHorseName = (name: string) => {
+      // 単勝・複勝の場合は馬番だけを取り出す
+      if (name.includes(' ')) {
+        return name.split(' ')[0];
+      }
+      return name;
+    };
+    
+    const exists = selectionState.selectedBets.some(b => 
+      b.type === bet.type && 
+      normalizeHorseName(b.horseName || '') === normalizeHorseName(bet.horseName || '')
+    );
+    
+    console.log('比較結果:', {
+      clickedBet: `${bet.type}:${bet.horseName}`,
+      normalizedClickedBet: `${bet.type}:${normalizeHorseName(bet.horseName || '')}`,
+      exists
+    });
+    
+    setSelectionState(prev => {
       if (exists) {
+        const newSelectedBets = prev.selectedBets.filter(b => 
+          !(b.type === bet.type && 
+            normalizeHorseName(b.horseName || '') === normalizeHorseName(bet.horseName || ''))
+        );
+        console.log('馬券を解除:', newSelectedBets.length);
         return {
           ...prev,
-          selectedBets: prev.selectedBets.filter(b => 
-            b.type !== bet.type || 
-            b.horses.join(',') !== bet.horses.join(',')
-          )
+          selectedBets: newSelectedBets
         };
       }
+      console.log('馬券を追加');
       return {
         ...prev,
         selectedBets: [...prev.selectedBets, bet]
