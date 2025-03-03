@@ -130,7 +130,6 @@ export function BettingSelection() {
       // 各馬券に投資額を追加
       const proposalsWithStakes = optimizedProposals.map((proposal, index) => ({
         ...proposal,
-        stake: Math.round(budget * (1 / optimizedProposals.length)) // 均等配分
       }));
 
       // 最適化された馬券を選択状態に設定
