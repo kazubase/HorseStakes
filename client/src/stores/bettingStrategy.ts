@@ -84,4 +84,11 @@ export const canProceedAtom = atom((get) => {
     default:
       return false;
   }
+});
+
+// Gemini API進捗状態を管理するatom
+export const geminiProgressAtom = atom({
+  step: 0, // 0: 開始前, 1: ステップ1実行中, 2: ステップ2実行中, 3: ステップ3実行中, 4: 完了
+  message: '',
+  error: null as string | null
 }); 

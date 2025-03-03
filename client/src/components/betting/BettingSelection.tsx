@@ -204,6 +204,9 @@ export function BettingSelection() {
 
   const handleAiOptimization = async () => {
     try {
+      // まずポートフォリオ画面に遷移
+      setCurrentStep('PORTFOLIO');
+      
       if (!horses || !bettingOptions) {
         throw new Error('データが読み込まれていません');
       }
@@ -261,9 +264,6 @@ export function BettingSelection() {
         selectedBets: proposalsWithStakes,
         isAiOptimized: true  // AIによる最適化フラグを追加
       }));
-
-      // ポートフォリオステップに遷移
-      setCurrentStep('PORTFOLIO');
 
     } catch (error) {
       console.error('AI最適化エラー:', error);

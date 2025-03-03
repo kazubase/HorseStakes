@@ -1,13 +1,17 @@
 import { useAtom } from 'jotai';
-import { selectionStateAtom } from '@/stores/bettingStrategy';
+import { selectionStateAtom, geminiProgressAtom } from '@/stores/bettingStrategy';
 import { BettingStrategyTable } from "@/components/BettingStrategyTable";
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { GeminiStrategy } from '@/lib/geminiApi';
 import { normalizeStringProbability } from '@/lib/utils/probability';
+import { Loader2 } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
 
 export function BettingPortfolio() {
   const [selectionState] = useAtom(selectionStateAtom);
+  const [geminiProgress] = useAtom(geminiProgressAtom);
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
+  const [isLoading, setIsLoading] = useState(true);
 
   const strategy: GeminiStrategy = useMemo(() => {
     if (!selectionState.selectedBets.length) {
@@ -82,10 +86,48 @@ export function BettingPortfolio() {
     };
   }, [selectionState.selectedBets, selectionState.isAiOptimized, budget]);
 
+  // 馬券データが読み込まれたらローディングを終了
+  useEffect(() => {
+    if (selectionState.selectedBets.length > 0 && geminiProgress.step === 4) {
+      // 少し遅延を入れてアニメーションを見せる
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 800);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [selectionState.selectedBets, geminiProgress.step]);
+
+  if (isLoading) {
+    const progressValue = geminiProgress.step * 25; // 0, 25, 50, 75, 100
+    
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+        <p className="text-muted-foreground mb-4">{geminiProgress.message || 'ポートフォリオを最適化中...'}</p>
+        
+        {/* 進捗バー */}
+        <div className="w-full max-w-md mb-2">
+          <Progress value={progressValue} className="h-2" />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          ステップ {geminiProgress.step}/4: {getStepDescription(geminiProgress.step)}
+        </p>
+        
+        {/* エラーメッセージ */}
+        {geminiProgress.error && (
+          <div className="mt-4 p-3 bg-destructive/10 text-destructive rounded-md">
+            {geminiProgress.error}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (!strategy.recommendations.length) {
     return (
-      <div className="text-center py-8">
-        <p>馬券が選択されていません</p>
+      <div className="text-center text-muted-foreground p-4">
+        馬券が選択されていません
       </div>
     );
   }
@@ -98,4 +140,22 @@ export function BettingPortfolio() {
       />
     </div>
   );
+}
+
+// ステップの説明を取得する関数
+function getStepDescription(step: number): string {
+  switch (step) {
+    case 0:
+      return "準備中";
+    case 1:
+      return "馬券間の相関関係とリスク評価";
+    case 2:
+      return "予算制約下での購入戦略策定";
+    case 3:
+      return "最終的な戦略の生成";
+    case 4:
+      return "完了";
+    default:
+      return "処理中";
+  }
 } 

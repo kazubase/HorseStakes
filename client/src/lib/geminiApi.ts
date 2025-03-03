@@ -176,6 +176,9 @@ const fetchWithRetry = async (
   throw new Error('リクエストが失敗しました');
 };
 
+import { getDefaultStore } from 'jotai';
+import { geminiProgressAtom } from '@/stores/bettingStrategy';
+
 // getGeminiStrategy関数を更新
 export const getGeminiStrategy = async (
   bettingCandidates: BettingCandidate[],
@@ -196,6 +199,16 @@ export const getGeminiStrategy = async (
   feedback?: StrategyFeedback[]
 ): Promise<GeminiResponse> => {
   try {
+    // Jotaiのストアを取得
+    const store = getDefaultStore();
+    
+    // 進捗状態を初期化
+    store.set(geminiProgressAtom, {
+      step: 0,
+      message: 'AI最適化を開始します...',
+      error: null
+    });
+    
     // correlationsをallBettingOptionsから取得
     const correlations = allBettingOptions.conditionalProbabilities || [];
 
@@ -288,6 +301,13 @@ export const getGeminiStrategy = async (
      * Step 1: 馬券間の相関関係とリスク評価
      * -------------------------
      */
+    // ステップ1の進捗状態を更新
+    store.set(geminiProgressAtom, {
+      step: 1,
+      message: '馬券間の相関関係とリスク評価を分析中...',
+      error: null
+    });
+
     const step1Prompt = `【ステップ1：馬券間の相関関係とリスク評価】
 
 以下の出馬表、馬券候補一覧、および条件付き確率一覧に基づき、包括的な分析を行います。
@@ -410,6 +430,13 @@ ${correlationsText}
      * Step 2: 予算制約下での馬券選択と購入戦略の策定
      * -------------------------
      */
+    // ステップ2の進捗状態を更新
+    store.set(geminiProgressAtom, {
+      step: 2,
+      message: '予算制約下での購入戦略を策定中...',
+      error: null
+    });
+
     const step2Prompt = `【ステップ2：予算制約下での購入戦略策定】
 
 ■ ステップ1の分析結果
@@ -533,6 +560,13 @@ ${bettingCandidatesList}
      * Step 3: 最終的な戦略の出力（JSON形式）
      * -------------------------
      */
+    // ステップ3の進捗状態を更新
+    store.set(geminiProgressAtom, {
+      step: 3,
+      message: '最終的な戦略を生成中...',
+      error: null
+    });
+
     let feedbackPrompt = '';
     if (feedback && feedback.length) {
       feedbackPrompt = `
@@ -659,6 +693,13 @@ json
       throw new Error('パースされた戦略データが不正です');
     }
 
+    // 完了状態に更新
+    store.set(geminiProgressAtom, {
+      step: 4,
+      message: '最適化が完了しました',
+      error: null
+    });
+
     return {
       strategy: {
         description: parsedStrategy.strategy.description,
@@ -688,6 +729,14 @@ json
       }
     };
   } catch (error: any) {
+    // エラー状態を更新
+    const store = getDefaultStore();
+    store.set(geminiProgressAtom, {
+      step: -1,
+      message: 'エラーが発生しました',
+      error: error.message
+    });
+    
     throw new Error(`Gemini APIエラー (多段階フロー): ${error.message}`);
   }
 };
