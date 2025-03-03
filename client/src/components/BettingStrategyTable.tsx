@@ -207,14 +207,17 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             </Button>
           </PopoverTrigger>
           <PopoverContent 
-            className="w-[280px] sm:w-80 rounded-lg border border-border/30 bg-background/95 backdrop-blur-sm p-4 shadow-lg" 
+            className="w-[280px] sm:w-80 rounded-lg border border-primary/20 bg-black/70 backdrop-blur-sm p-4 shadow-lg" 
             sideOffset={5}
           >
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-foreground">選択理由</h4>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {bet.reason || '理由なし'}
-              </p>
+              <h4 className="text-sm font-medium text-primary/90">選択理由</h4>
+              <div className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-30 pointer-events-none" />
+                <p className="text-sm text-white/90 leading-relaxed relative">
+                  {bet.reason || '理由なし'}
+                </p>
+              </div>
             </div>
           </PopoverContent>
         </Popover>
@@ -324,14 +327,17 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent 
-                        className="w-[280px] sm:w-80 rounded-lg border border-border/30 bg-background/95 backdrop-blur-sm p-4 shadow-lg" 
+                        className="w-[280px] sm:w-80 rounded-lg border border-primary/20 bg-black/70 backdrop-blur-sm p-4 shadow-lg" 
                         sideOffset={5}
                       >
                         <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-foreground">選択理由</h4>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {bet.reason || '理由なし'}
-                          </p>
+                          <h4 className="text-sm font-medium text-primary/90">選択理由</h4>
+                          <div className="relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-30 pointer-events-none" />
+                            <p className="text-sm text-white/90 leading-relaxed relative">
+                              {bet.reason || '理由なし'}
+                            </p>
+                          </div>
                         </div>
                       </PopoverContent>
                     </Popover>
