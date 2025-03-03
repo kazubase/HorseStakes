@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import html2canvas from 'html2canvas';
 import { Camera, Sparkles } from 'lucide-react';
 import type { BetProposal } from "@/lib/betEvaluation";
+import { InfoIcon } from "lucide-react";
 
 interface BettingStrategyTableProps {
   strategy: GeminiStrategy;
@@ -28,7 +29,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       console.log('Using provided strategy recommendations...', {
         recommendationsCount: strategy.recommendations.length,
         budget: totalBudget,
-        renderCount: renderCount.current
+        renderCount: renderCount.current,
+        // デバッグ用：reasonプロパティを確認
+        reasons: strategy.recommendations.map(rec => rec.reason)
       });
     }
     
@@ -40,7 +43,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       odds: rec.odds,
       probability: typeof rec.probability === 'number' ? rec.probability : parseFloat(rec.probability),
       expectedReturn: rec.expectedReturn || (rec.odds * (rec.stake || Math.floor(totalBudget / strategy.recommendations.length))),
-      reason: rec.reason
+      reason: rec.reason // reasonプロパティを確実に保持
     }));
   }, [strategy.recommendations, totalBudget]);
 
@@ -65,13 +68,31 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       "3連複": 7,
       "3連単": 8
     };
+    
     // optimizationResult は既に useMemo で算出済みなので、ここでは単にソートするだけにする
+    // reasonプロパティを確実に引き継ぐ
     return [...optimizationResult].sort((a, b) => {
       const typeA = normalizeTicketType(a.type);
       const typeB = normalizeTicketType(b.type);
       return (typeOrder[typeA] || 0) - (typeOrder[typeB] || 0);
     });
   }, [optimizationResult]);
+
+  // デバッグ用：sortedBetsのreasonプロパティを確認
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('sortedBets reasons:', sortedBets.map(bet => bet.reason));
+    }
+  }, [sortedBets]);
+
+  // デバッグ用：各馬券のreasonプロパティを確認
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      sortedBets.forEach((bet, index) => {
+        console.log(`馬券 ${index + 1} (${bet.type} ${bet.horses.join('-')}) の理由:`, bet.reason);
+      });
+    }
+  }, [sortedBets]);
 
   // 馬券間の排反関係を計算する関数
   const calculateMutualExclusivity = (bet1: BetProposal, bet2: BetProposal): number => {
@@ -178,20 +199,23 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       <div className="text-center">{(bet.probability * 100).toFixed(1)}%</div>,
       <div className="text-center">{bet.stake.toLocaleString()}円</div>,
       <div className="text-center">{bet.expectedReturn.toLocaleString()}円</div>,
-      <div key={bet.horses.join('-')} className="flex justify-center items-center">
+      <div className="relative group">
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-6 w-6">
-              <InfoCircledIcon className="h-4 w-4" />
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <InfoIcon className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
           <PopoverContent 
-            className="w-80 rounded-lg border border-border/30 bg-black/70 p-4 shadow-lg z-[9999] backdrop-blur-sm" 
+            className="w-[280px] sm:w-80 rounded-lg border border-border/30 bg-background/95 backdrop-blur-sm p-4 shadow-lg" 
             sideOffset={5}
           >
-            <p className="text-sm text-white/90 leading-relaxed whitespace-normal break-words">
-              {bet.reason || '理由なし'}
-            </p>
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-foreground">選択理由</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {bet.reason || '理由なし'}
+              </p>
+            </div>
           </PopoverContent>
         </Popover>
       </div>
@@ -291,20 +315,24 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-center w-8">
+                  {/* 理由を直接表示 */}
+                  <div className="relative group">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <InfoCircledIcon className="h-4 w-4" />
+                          <InfoIcon className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent 
-                        className="w-[280px] sm:w-80 rounded-lg border border-border/30 bg-black/70 p-4 shadow-lg backdrop-blur-sm" 
+                        className="w-[280px] sm:w-80 rounded-lg border border-border/30 bg-background/95 backdrop-blur-sm p-4 shadow-lg" 
                         sideOffset={5}
                       >
-                        <p className="text-sm text-foreground/90 leading-relaxed">
-                          {bet.reason || '理由なし'}
-                        </p>
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-foreground">選択理由</h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {bet.reason || '理由なし'}
+                          </p>
+                        </div>
                       </PopoverContent>
                     </Popover>
                   </div>

@@ -25,12 +25,20 @@ export function BettingPortfolio() {
       };
     }
 
+    if (process.env.NODE_ENV === 'development') {
+      console.log('選択された馬券:', selectionState.selectedBets.map(bet => ({
+        type: bet.type,
+        horses: bet.horses.join('-'),
+        reason: bet.reason
+      })));
+    }
+
     const recommendations = selectionState.selectedBets.map(bet => ({
       type: bet.type,
       horses: bet.horses,
       odds: bet.odds || bet.expectedReturn / bet.stake,
       probability: normalizeStringProbability(bet.probability),
-      reason: bet.reason || '',
+      reason: bet.reason || '理由なし',
       frame1: bet.frame1,
       frame2: bet.frame2,
       frame3: bet.frame3,
@@ -40,6 +48,14 @@ export function BettingPortfolio() {
       stake: bet.stake,
       expectedReturn: bet.expectedReturn
     }));
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('変換後のrecommendations:', recommendations.map(rec => ({
+        type: rec.type,
+        horses: rec.horses.join('-'),
+        reason: rec.reason
+      })));
+    }
 
     return {
       description: selectionState.isAiOptimized ? 'AI自動最適化ポートフォリオ' : 'ユーザー選択ポートフォリオ',
@@ -60,7 +76,7 @@ export function BettingPortfolio() {
             ? `${(rec.probability * 100).toFixed(1)}%`
             : rec.probability,
           rec.stake ? rec.stake.toLocaleString() : Math.round(budget * (1 / recommendations.length)).toLocaleString(),
-          rec.reason || ''
+          rec.reason
         ])
       }
     };

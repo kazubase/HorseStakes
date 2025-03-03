@@ -127,6 +127,15 @@ export function BettingSelection() {
         riskRatio
       );
 
+      // デバッグ用：最適化された馬券提案のreasonプロパティを確認
+      if (process.env.NODE_ENV === 'development') {
+        console.log('最適化された馬券提案:', optimizedProposals.map(proposal => ({
+          type: proposal.type,
+          horses: proposal.horses.join('-'),
+          reason: proposal.reason
+        })));
+      }
+
       // 各馬券に投資額を追加
       const proposalsWithStakes = optimizedProposals.map((proposal, index) => ({
         ...proposal,
