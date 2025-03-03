@@ -57,11 +57,11 @@ export const calculateConditionalProbability = (
         correlations.push({
           condition: {
             type: bet1.type,
-            horses: bet1.horseName
+            horses: bet1.horseName || ''
           },
           target: {
             type: bet2.type,
-            horses: bet2.horseName
+            horses: bet2.horseName || ''
           },
           probability: Number(conditionalProb1Given2.toFixed(3))
         });
@@ -71,11 +71,11 @@ export const calculateConditionalProbability = (
         correlations.push({
           condition: {
             type: bet2.type,
-            horses: bet2.horseName
+            horses: bet2.horseName || ''
           },
           target: {
             type: bet1.type,
-            horses: bet1.horseName
+            horses: bet1.horseName || ''
           },
           probability: Number(conditionalProb2Given1.toFixed(3))
         });
