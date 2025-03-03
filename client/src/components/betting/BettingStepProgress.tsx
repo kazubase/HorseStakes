@@ -92,8 +92,8 @@ export function BettingStepProgress() {
           戻る
         </Button>
 
-        {/* 選択画面では次へボタンを非表示にする */}
-        {currentStep !== 'SELECTION' && (
+        {/* 選択画面とポートフォリオ画面では次へボタンを非表示にする */}
+        {currentStep !== 'SELECTION' && currentStep !== 'PORTFOLIO' && (
           <Button
             onClick={handleNext}
             disabled={!canProceed || currentIndex === steps.length - 1}

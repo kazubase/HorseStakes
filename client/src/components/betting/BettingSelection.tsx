@@ -317,8 +317,9 @@ export function BettingSelection() {
 
   return (
     <div className="relative min-h-screen pb-[calc(3rem+var(--footer-height))]">
-      {/* AI最適化ボタン */}
-      <div className="mb-6">
+      {/* ボタンを2列で表示 */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        {/* AI最適化ボタン */}
         <Button
           onClick={handleAiOptimization}
           className="w-full gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
@@ -326,19 +327,21 @@ export function BettingSelection() {
           <Sparkles className="h-4 w-4" />
           AI自動最適化
         </Button>
-      </div>
 
-      {/* 手動最適化ボタンを追加 */}
-      {selectionState.selectedBets.length > 0 && (
-        <div className="mb-6">
-          <Button
-            onClick={handleOptimizeBets}
-            className="w-full gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
-          >
-            選択した馬券で最適化
-          </Button>
-        </div>
-      )}
+        {/* 手動最適化ボタン */}
+        <Button
+          onClick={handleOptimizeBets}
+          disabled={selectionState.selectedBets.length === 0}
+          className={`
+            w-full gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 
+            hover:from-blue-700 hover:to-cyan-700
+            transition-opacity duration-300
+            ${selectionState.selectedBets.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
+          `}
+        >
+          選択した馬券で最適化
+        </Button>
+      </div>
 
       {/* 馬券候補 */}
       <div>
