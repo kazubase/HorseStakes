@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from 'jotai';
-import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom, raceNotesAtom, currentStepAtom, conditionalProbabilitiesAtom } from '@/stores/bettingStrategy';
+import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom, raceNotesAtom, currentStepAtom, conditionalProbabilitiesAtom, geminiProgressAtom } from '@/stores/bettingStrategy';
 import { BettingOptionsTable } from '@/components/BettingOptionsTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BetProposal } from '@/lib/betEvaluation';
@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ChevronUp } from 'lucide-react';
+import { getDefaultStore } from 'jotai';
 
 // メモ入力用のスティッキーフッターコンポーネント
 const RaceNotesFooter = () => {
@@ -113,8 +114,16 @@ export function BettingSelection() {
             ...prev,
             selectedBets: optimizedBets
           }));
-        } catch (error) {
+        } catch (error: any) {
           console.error('資金配分最適化エラー:', error);
+          
+          // エラー状態を更新
+          const store = getDefaultStore();
+          store.set(geminiProgressAtom, {
+            step: -1,
+            message: 'エラーが発生しました',
+            error: error.message
+          });
         }
       };
 
@@ -265,7 +274,7 @@ export function BettingSelection() {
         isAiOptimized: true  // AIによる最適化フラグを追加
       }));
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('AI最適化エラー:', error);
     }
   };
@@ -274,6 +283,14 @@ export function BettingSelection() {
   const handleOptimizeBets = () => {
     if (selectionState.selectedBets.length > 0 && !selectionState.isAiOptimized) {
       try {
+        // 進捗状態を更新
+        const store = getDefaultStore();
+        store.set(geminiProgressAtom, {
+          step: 4, // 手動最適化は即時完了とする
+          message: '最適化が完了しました',
+          error: null
+        });
+        
         if (process.env.NODE_ENV === 'development') {
           console.log('資金配分最適化開始:', {
             selectedBets: selectionState.selectedBets,
@@ -311,8 +328,16 @@ export function BettingSelection() {
         
         // ポートフォリオステップに遷移
         setCurrentStep('PORTFOLIO');
-      } catch (error) {
+      } catch (error: any) {
         console.error('資金配分最適化エラー:', error);
+        
+        // エラー状態を更新
+        const store = getDefaultStore();
+        store.set(geminiProgressAtom, {
+          step: -1,
+          message: 'エラーが発生しました',
+          error: error.message
+        });
       }
     }
   };

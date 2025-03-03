@@ -88,15 +88,18 @@ export function BettingPortfolio() {
 
   // 馬券データが読み込まれたらローディングを終了
   useEffect(() => {
-    if (selectionState.selectedBets.length > 0 && geminiProgress.step === 4) {
-      // 少し遅延を入れてアニメーションを見せる
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 800);
-      
-      return () => clearTimeout(timer);
+    if (selectionState.selectedBets.length > 0) {
+      // Gemini APIを使用しない場合（手動最適化）は即時表示
+      if (!selectionState.isAiOptimized || geminiProgress.step === 4) {
+        // 少し遅延を入れてアニメーションを見せる
+        const timer = setTimeout(() => {
+          setIsLoading(false);
+        }, 800);
+        
+        return () => clearTimeout(timer);
+      }
     }
-  }, [selectionState.selectedBets, geminiProgress.step]);
+  }, [selectionState.selectedBets, selectionState.isAiOptimized, geminiProgress.step]);
 
   if (isLoading) {
     const progressValue = geminiProgress.step * 25; // 0, 25, 50, 75, 100
