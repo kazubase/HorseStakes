@@ -1,6 +1,6 @@
 export interface BettingCandidate {
   type: string;
-  horseName: string;
+  horseName?: string;
   odds: number;
   probability: string;
   expectedValue: string;
@@ -13,7 +13,7 @@ export interface GeminiResponse {
 
 interface BettingOption {
   type: string;
-  horseName: string;
+  horseName?: string;
   odds: number;
   prob: number;
   ev: number;
@@ -37,6 +37,8 @@ export interface GeminiRecommendation {
   horse1?: number;
   horse2?: number;
   horse3?: number;
+  stake?: number;
+  expectedReturn?: number;
 }
 
 export interface GeminiStrategy {

@@ -2,7 +2,7 @@ import { calculateConditionalProbability } from './betConditionalProbability';
 
 export interface BettingOption {
     type: "単勝" | "複勝" | "枠連" | "ワイド" | "馬連" | "馬単" | "３連複" | "３連単";
-    horseName: string;
+    horseName?: string;
     odds: number;
     prob: number;
     ev: number;
@@ -17,7 +17,7 @@ export interface BettingOption {
   export interface BetProposal {
     type: string;
     horses: string[];
-    horseName: string;
+    horseName?: string;
     stake: number;
     expectedReturn: number;
     probability: number;

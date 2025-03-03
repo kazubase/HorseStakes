@@ -283,7 +283,7 @@ export const calculateBetProposalsWithGemini = async (
       probability: normalizeStringProbability(rec.probability)
     }));
 
-    // Sharpe比による資金配分の最適化
+    // Sharpe比による資金配分の最適化（一度だけ実行）
     const optimizedBets = optimizeBetAllocation(recommendations, totalBudget);
 
     if (process.env.NODE_ENV === 'development') {
@@ -302,6 +302,7 @@ export const calculateBetProposalsWithGemini = async (
       console.groupEnd();
     }
 
+    // 最適化結果を一度だけ返す
     return optimizedBets;
 
   } catch (error: any) {

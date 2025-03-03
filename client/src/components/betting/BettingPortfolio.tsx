@@ -28,7 +28,7 @@ export function BettingPortfolio() {
     const recommendations = selectionState.selectedBets.map(bet => ({
       type: bet.type,
       horses: bet.horses,
-      odds: bet.expectedReturn / bet.stake,
+      odds: bet.odds || bet.expectedReturn / bet.stake,
       probability: normalizeStringProbability(bet.probability),
       reason: bet.reason || '',
       frame1: bet.frame1,
@@ -36,7 +36,9 @@ export function BettingPortfolio() {
       frame3: bet.frame3,
       horse1: bet.horse1,
       horse2: bet.horse2,
-      horse3: bet.horse3
+      horse3: bet.horse3,
+      stake: bet.stake,
+      expectedReturn: bet.expectedReturn
     }));
 
     return {
@@ -57,7 +59,7 @@ export function BettingPortfolio() {
           typeof rec.probability === 'number' 
             ? `${(rec.probability * 100).toFixed(1)}%`
             : rec.probability,
-          Math.round(budget * (1 / recommendations.length)).toLocaleString(),
+          rec.stake ? rec.stake.toLocaleString() : Math.round(budget * (1 / recommendations.length)).toLocaleString(),
           rec.reason || ''
         ])
       }

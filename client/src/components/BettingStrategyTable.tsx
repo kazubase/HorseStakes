@@ -25,14 +25,23 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   // 最適化計算の結果をメモ化
   const optimizationResult = useMemo(() => {
     if (process.env.NODE_ENV === 'development') {
-      console.log('Optimizing bet allocation...', {
+      console.log('Using provided strategy recommendations...', {
         recommendationsCount: strategy.recommendations.length,
         budget: totalBudget,
         renderCount: renderCount.current
       });
     }
     
-    return optimizeBetAllocation(strategy.recommendations, totalBudget);
+    // 既に最適化された推奨を使用（stakeとexpectedReturnを保持）
+    return strategy.recommendations.map(rec => ({
+      type: rec.type,
+      horses: rec.horses,
+      stake: rec.stake || Math.floor(totalBudget / strategy.recommendations.length), // 既存のstakeを使用
+      odds: rec.odds,
+      probability: typeof rec.probability === 'number' ? rec.probability : parseFloat(rec.probability),
+      expectedReturn: rec.expectedReturn || (rec.odds * (rec.stake || Math.floor(totalBudget / strategy.recommendations.length))),
+      reason: rec.reason
+    }));
   }, [strategy.recommendations, totalBudget]);
 
   // 馬券種別の表記を統一する関数
