@@ -199,6 +199,39 @@ export const getGeminiStrategy = async (
   feedback?: StrategyFeedback[]
 ): Promise<GeminiResponse> => {
   try {
+    // 入力値のバリデーション
+    if (!Array.isArray(bettingCandidates) || !bettingCandidates.length) {
+      throw new Error('馬券候補が無効です');
+    }
+    
+    if (totalBudget < 100 || totalBudget > 1000000) {
+      throw new Error('予算が範囲外です');
+    }
+    
+    if (riskRatio < 2 || riskRatio > 20) {
+      throw new Error('リスク選好度が範囲外です');
+    }
+
+    // プロンプトのサニタイズ
+    const sanitizeText = (text: string): string => {
+      return text
+        .replace(/[<>]/g, '') // HTMLタグの除去
+        .replace(/[`'"]/g, '') // クォートの除去
+        .trim();
+    };
+
+    // 馬データのサニタイズ
+    const sanitizedHorses = allBettingOptions.horses.map(horse => ({
+      ...horse,
+      name: sanitizeText(horse.name)
+    }));
+
+    // 出馬表情報の作成（サニタイズ済み）
+    const raceCardInfo = sanitizedHorses
+      .sort((a, b) => a.number - b.number)
+      .map(horse => `${horse.frame}枠${horse.number}番 ${horse.name}`)
+      .join('\n');
+
     // Jotaiのストアを取得
     const store = getDefaultStore();
     
@@ -211,12 +244,6 @@ export const getGeminiStrategy = async (
     
     // correlationsをallBettingOptionsから取得
     const correlations = allBettingOptions.conditionalProbabilities || [];
-
-    // 出馬表情報の作成
-    const raceCardInfo = allBettingOptions.horses
-      .sort((a, b) => a.number - b.number)
-      .map(horse => `${horse.frame}枠${horse.number}番 ${horse.name}`)
-      .join('\n');
 
     // 馬券候補一覧作成（※既存の実装に合わせる）
     const generateBettingCandidatesList = (): string => {
@@ -408,7 +435,20 @@ ${correlationsText}
       console.log('ステップ1プロンプト:\n', step1Prompt);
     }
 
-    const step1Response = await fetchWithRetry('/api/gemini', {
+    // リクエストのレート制限
+    const rateLimitKey = 'gemini_api_last_request';
+    const minRequestInterval = 1000; // 1秒
+    const lastRequest = Number(localStorage.getItem(rateLimitKey)) || 0;
+    const now = Date.now();
+    
+    if (now - lastRequest < minRequestInterval) {
+      throw new Error('リクエストが頻繁すぎます。しばらく待ってから再試行してください。');
+    }
+    
+    localStorage.setItem(rateLimitKey, String(now));
+
+    // APIリクエストの実行
+    const response = await fetchWithRetry('/api/gemini', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -419,11 +459,22 @@ ${correlationsText}
         prompt: step1Prompt,
         model: 'gemini-2.0-flash-001',
         thought: false,
-        apiVersion: 'v1alpha'
+        apiVersion: 'v1alpha',
+        maxTokens: 2048 // トークン数の制限
       })
-    }) ?? throwError('ステップ1の解析結果の取得に失敗しました');
-    const step1Data = await step1Response.json();
+    });
 
+    // レスポンスのバリデーション
+    if (!response.ok) {
+      throw new Error(`APIリクエストエラー: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // レスポンスデータの構造チェック
+    if (!data || typeof data !== 'object') {
+      throw new Error('無効なレスポンス形式です');
+    }
 
     /*
      * -------------------------
@@ -440,7 +491,7 @@ ${correlationsText}
     const step2Prompt = `【ステップ2：予算制約下での購入戦略策定】
 
 ■ ステップ1の分析結果
-${typeof step1Data === 'object' ? JSON.stringify(step1Data, null, 2) : step1Data}
+${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}
 
 上記の分析結果を踏まえ、予算${totalBudget.toLocaleString()}円の制約下で、最適な馬券購入戦略を策定します。
 リスク選好度（riskRatio）は${riskRatio}です。（2-20の範囲で、20が最もリスク許容度が高い）
@@ -597,7 +648,7 @@ ${feedback.map(f => {
 以下はこれまでの分析結果です。
 
 ■ ステップ1：相関関係とリスク分散効果の分析
-${typeof step1Data === 'object' ? JSON.stringify(step1Data, null, 2) : step1Data}
+${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}
 
 ■ ステップ2：予算制約下での購入戦略策定
 ${typeof step2Data === 'object' ? JSON.stringify(step2Data, null, 2) : step2Data}
@@ -729,15 +780,13 @@ json
       }
     };
   } catch (error: any) {
-    // エラー状態を更新
-    const store = getDefaultStore();
-    store.set(geminiProgressAtom, {
-      step: -1,
-      message: 'エラーが発生しました',
-      error: error.message
+    // エラーログの記録（機密情報を除去）
+    console.error('Gemini APIエラー:', {
+      message: error.message,
+      timestamp: new Date().toISOString()
     });
     
-    throw new Error(`Gemini APIエラー (多段階フロー): ${error.message}`);
+    throw new Error(`Gemini APIエラー: ${error.message}`);
   }
 };
 

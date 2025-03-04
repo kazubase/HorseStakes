@@ -104,30 +104,87 @@ const getCsrfToken = (): string => {
   };
 
 export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<GeminiAnalysisResult> {
-  // 出馬表情報の作成
+  // 入力値のバリデーション
+  if (!input.horses || !Array.isArray(input.horses) || input.horses.length === 0) {
+    throw new Error('出走馬データが無効です');
+  }
+
+  if (!input.bettingOptions || !Array.isArray(input.bettingOptions) || input.bettingOptions.length === 0) {
+    throw new Error('馬券候補データが無効です');
+  }
+
+  if (typeof input.budget !== 'number' || input.budget < 100 || input.budget > 1000000) {
+    throw new Error('予算が無効です');
+  }
+
+  if (typeof input.riskRatio !== 'number' || input.riskRatio < 2 || input.riskRatio > 20) {
+    throw new Error('リスク選好度が無効です');
+  }
+
+  // データのサニタイズ
+  const sanitizeText = (text: string): string => {
+    return text
+      .replace(/[<>]/g, '') // HTMLタグの除去
+      .replace(/[`'"]/g, '') // クォートの除去
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // 制御文字の除去
+      .trim();
+  };
+
+  // 出馬表情報の作成（サニタイズ済み）
   const raceCardInfo = input.horses
     .sort((a, b) => a.number - b.number)
-    .map(horse => `${horse.frame}枠${horse.number}番 ${horse.name.padEnd(20)} 単勝予想${(horse.winProb * 100).toFixed(1).padStart(4)}%, 複勝予想${(horse.placeProb * 100).toFixed(1).padStart(4)}%`)
+    .map(horse => {
+      const sanitizedName = sanitizeText(horse.name);
+      return `${horse.frame}枠${horse.number}番 ${sanitizedName.padEnd(20)} 単勝予想${(horse.winProb * 100).toFixed(1).padStart(4)}%, 複勝予想${(horse.placeProb * 100).toFixed(1).padStart(4)}%`;
+    })
     .join('\n');
 
-  // 馬券候補一覧の作成
+  // 馬券候補一覧の作成（型安全な券種の定義）
   const types: Array<"単勝" | "複勝" | "枠連" | "ワイド" | "馬連" | "馬単" | "３連複" | "３連単"> = [
     "単勝", "複勝", "枠連", "ワイド", "馬連", "馬単", "３連複", "３連単"
   ];
   
+  // 馬券候補のサニタイズと検証
   const bettingCandidatesList = types
     .map(type => {
       const candidates = input.bettingOptions
         .filter(bet => bet.type === type)
         .map(bet => {
+          // 数値のバリデーション
+          if (typeof bet.expectedReturn !== 'number' || bet.expectedReturn < 0) {
+            throw new Error('期待値が無効です');
+          }
+          if (typeof bet.probability !== 'number' || bet.probability < 0 || bet.probability > 1) {
+            throw new Error('確率が無効です');
+          }
+          if (typeof bet.stake !== 'number' || bet.stake < 100) {
+            throw new Error('投資額が無効です');
+          }
+
           const expectedValue = bet.probability * bet.expectedReturn / bet.stake;
-          return `${bet.horseName} [オッズ:${(bet.expectedReturn / bet.stake).toFixed(1)}, 的中確率:${(bet.probability * 100).toFixed(1)}%, 期待値:${expectedValue.toFixed(2)}]`;
+          const sanitizedHorseName = bet.horseName ? sanitizeText(bet.horseName) : '';
+          return `${sanitizedHorseName} [オッズ:${(bet.expectedReturn / bet.stake).toFixed(1)}, 的中確率:${(bet.probability * 100).toFixed(1)}%, 期待値:${expectedValue.toFixed(2)}]`;
         })
         .join('\n');
       return candidates ? `\n${type}候補:\n${candidates}` : '';
     })
     .filter(section => section.length > 0)
     .join('\n');
+
+  // 条件付き確率データの検証とサニタイズ
+  if (input.correlations) {
+    input.correlations.forEach(correlation => {
+      if (typeof correlation.probability !== 'number' || 
+          correlation.probability < 0 || 
+          correlation.probability > 1) {
+        throw new Error('条件付き確率が無効です');
+      }
+      if (!types.includes(correlation.condition.type as any) || 
+          !types.includes(correlation.target.type as any)) {
+        throw new Error('無効な券種が指定されています');
+      }
+    });
+  }
 
   // 条件付き確率データの整形
   const typeOrder: Record<string, number> = {
@@ -184,7 +241,8 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
     }, [])
     .join('\n') || '条件付き確率データなし';
 
-  const prompt = `
+  // プロンプトの作成とサニタイズ
+  const prompt = sanitizeText(`
 あなたは馬券専門のアナリストです。以下の分析の観点に従って、分析を行ってください。
 
 
@@ -217,12 +275,21 @@ ${bettingCandidatesList}
 【条件付き確率】
 ${formattedCorrelations}
 
-`;
+`);
 
-if (process.env.NODE_ENV === 'development') {
-    console.log('プロンプト:\n', prompt);
+  // レート制限の実装
+  const rateLimitKey = 'gemini_analysis_last_request';
+  const minRequestInterval = 1000; // 1秒
+  const lastRequest = Number(localStorage.getItem(rateLimitKey)) || 0;
+  const now = Date.now();
+  
+  if (now - lastRequest < minRequestInterval) {
+    throw new Error('リクエストが頻繁すぎます。しばらく待ってから再試行してください。');
   }
+  
+  localStorage.setItem(rateLimitKey, String(now));
 
+  // APIリクエストの実行
   const response = await fetchWithRetry('/api/gemini', {
     method: 'POST',
     headers: {
@@ -234,7 +301,8 @@ if (process.env.NODE_ENV === 'development') {
       prompt: prompt,
       model: 'gemini-2.0-flash-001',
       thought: false,
-      apiVersion: 'v1alpha'
+      apiVersion: 'v1alpha',
+      maxTokens: 2048 // トークン数の制限
     })
   });
 
@@ -246,7 +314,7 @@ if (process.env.NODE_ENV === 'development') {
   
   // JSONレスポンスのパース処理を改善
   try {
-    // JSONコードブロックを探す
+    // JSONコードブロックを探す（安全なパターンマッチング）
     const jsonRegex = /```(?:json)?\s*\n([\s\S]*?)\n```/;
     const match = jsonRegex.exec(data.strategy.description);
     
@@ -265,21 +333,26 @@ if (process.env.NODE_ENV === 'development') {
       throw new Error('JSONのパースに失敗しました');
     }
 
-    // 必要な構造の検証
+    // レスポンスの構造検証
     if (!parsedData.summary?.keyInsights?.length) {
       console.error('Invalid data structure:', parsedData);
       throw new Error('レスポンスの構造が不正です');
     }
 
+    // 機密情報を除去したレスポンスを返す
     return {
       summary: {
-        keyInsights: parsedData.summary.keyInsights
+        keyInsights: parsedData.summary.keyInsights.map(insight => sanitizeText(insight))
       }
     };
 
   } catch (error: any) {
-    console.error('Gemini response parsing error:', error);
-    // フォールバック: エラーメッセージを洞察として返す
+    // エラーログの記録（機密情報を除去）
+    console.error('Gemini response parsing error:', {
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+    
     return {
       summary: {
         keyInsights: ['分析結果の処理中にエラーが発生しました。']
