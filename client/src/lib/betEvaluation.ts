@@ -452,21 +452,21 @@ export const evaluateBettingOptions = (
       const getBetTypeRiskFactor = (type: string) => {
         switch (type) {
           case "単勝":
-            return 1.5;  // 単勝のリスク
+            return 2.0;  // 単勝のリスク
           case "複勝":
             return 1.0;  // 基準
           case "枠連":
-            return 2.0;  // 枠連のリスク
+            return 3.0;  // 枠連のリスク
           case "ワイド":
-            return 2.0;  // ワイドのリスク
+            return 3.0;  // ワイドのリスク
           case "馬連":
-            return 3.0;  // 馬連のリスク
+            return 5.8;  // 馬連のリスク
           case "馬単":
-            return 4.0;  // 馬単のリスク
+            return 10.5;  // 馬単のリスク
           case "３連複":
-            return 6.0;  // 3連複のリスク
+            return 12.7;  // 3連複のリスク
           case "３連単":
-            return 8.0;  // 3連単のリスク
+            return 59.0;  // 3連単のリスク
           default:
             return 1.0;
         }
@@ -477,14 +477,28 @@ export const evaluateBettingOptions = (
         .filter(opt => {
           const riskFactor = getBetTypeRiskFactor(opt.type);
           
-          // オッズの下限のみを設定
-          const minOdds = Math.max(1.0, Math.pow(riskRatio, 0.5) * Math.pow(riskFactor, 1.5));
+          // オッズの下限を設定（より緩やかなスケーリング）
+          // 指数を0.8に下げて極端な値を抑制
+          const minOdds = Math.max(1.0, Math.pow(riskRatio, 0.5) * Math.pow(riskFactor, 0.8));
           
-          // リスクリワード比率に応じて最小確率を調整
-          const minProbability = Math.max(0.005, 1 / (riskRatio * riskFactor));
+          // 最小確率を調整（対数スケールの導入）
+          // 高リスク馬券でも現実的な確率閾値になるよう調整
+          const minProbability = Math.max(0.001, 0.2 / (riskRatio * Math.log10(riskFactor + 2)));
           
-          // 最低期待値
-          const minEV = Math.max(0.3, Math.pow(riskFactor, 0.5) / Math.pow(riskRatio, 0.5));
+          // 最低期待値（対数スケールの導入）
+          // 期待値1.0を基準に、リスクに応じて緩やかに上昇
+          const minEV = Math.max(1.0, 1.0 + Math.log10(riskFactor) / Math.pow(riskRatio, 0.5));
+          
+          if (process.env.NODE_ENV === 'development') {
+            // フィルタリング条件のデバッグ出力
+            if (opt.odds >= minOdds && opt.prob >= minProbability && opt.ev >= minEV) {
+              console.log(`フィルタリング通過: ${opt.type} ${opt.horseName}`, {
+                オッズ: `${opt.odds.toFixed(1)} >= ${minOdds.toFixed(2)}`,
+                確率: `${(opt.prob * 100).toFixed(2)}% >= ${(minProbability * 100).toFixed(2)}%`,
+                期待値: `${opt.ev.toFixed(2)} >= ${minEV.toFixed(2)}`
+              });
+            }
+          }
   
           return opt.odds >= minOdds && 
                  opt.prob >= minProbability && 
@@ -494,17 +508,48 @@ export const evaluateBettingOptions = (
   
       // 馬券種別ごとの選択数を調整
       const adjustBetsByType = (options: typeof preFilteredOptions) => {
+        // riskFactorに基づいて馬券種ごとの選択数を動的に決定
+        const getBetTypeRange = (betType: string) => {
+          const riskFactor = getBetTypeRiskFactor(betType);
+          
+          // 基本的な考え方:
+          // 1. 基準点数: 複勝(riskFactor=1.0)を基準に3点とする
+          // 2. 最大点数: riskFactorの平方根に比例して増加（高リスク馬券ほど多くの選択肢が必要）
+          // 3. 上限調整: 極端に多くならないよう対数スケールで抑制
+          
+          // 基準となる最大点数（複勝の場合は3点）
+          const baseBetCount = 3;
+          
+          // riskFactorに基づく点数の計算（平方根スケール + 対数補正）
+          const maxBets = Math.min(
+            30, // 絶対上限
+            Math.ceil(baseBetCount * Math.sqrt(riskFactor) * (1 + Math.log10(riskFactor) / 2))
+          );
+          
+          // 最小点数は基本的に0だが、低リスク馬券は最低1点確保することも検討可能
+          const minBets = riskFactor <= 2.0 ? 0 : 0;
+          
+          return { min: minBets, max: maxBets };
+        };
+        
         // 馬券種別ごとの最小・最大点数を定義
         const betTypeRanges: Record<BetProposal['type'], { min: number; max: number }> = {
-          "複勝": { min: 0, max: 2 },
-          "単勝": { min: 0, max: 3 },
-          "枠連": { min: 0, max: 4 },
-          "ワイド": { min: 0, max: 4 },
-          "馬連": { min: 0, max: 6 },
-          "馬単": { min: 0, max: 8 },
-          "３連複": { min: 0, max: 12 },
-          "３連単": { min: 0, max: 16 }
+          "複勝": getBetTypeRange("複勝"),
+          "単勝": getBetTypeRange("単勝"),
+          "枠連": getBetTypeRange("枠連"),
+          "ワイド": getBetTypeRange("ワイド"),
+          "馬連": getBetTypeRange("馬連"),
+          "馬単": getBetTypeRange("馬単"),
+          "３連複": getBetTypeRange("３連複"),
+          "３連単": getBetTypeRange("３連単")
         };
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('馬券種別ごとの選択数範囲:', Object.entries(betTypeRanges).reduce((acc, [type, range]) => {
+            acc[type] = `${range.min}～${range.max}点`;
+            return acc;
+          }, {} as Record<string, string>));
+        }
         
         // 馬券種別にグループ化
         const betsByType = options.reduce((acc, bet) => {

@@ -277,6 +277,15 @@ ${formattedCorrelations}
 
 `);
 
+  if (process.env.NODE_ENV === 'development') {
+    // 改行を保持したまま出力する
+    console.log('Gemini分析プロンプト:');
+    console.log(prompt);
+    
+    // または長すぎる場合は要約情報のみ表示する
+    console.log(`プロンプト長: ${prompt.length}文字, 出馬表: ${input.horses.length}頭, 馬券候補: ${input.bettingOptions.length}件`);
+  }
+
   // レート制限の実装
   const rateLimitKey = 'gemini_analysis_last_request';
   const minRequestInterval = 1000; // 1秒
