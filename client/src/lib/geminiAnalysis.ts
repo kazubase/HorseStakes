@@ -157,7 +157,7 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
           if (typeof bet.probability !== 'number' || bet.probability < 0 || bet.probability > 1) {
             throw new Error('確率が無効です');
           }
-          if (typeof bet.stake !== 'number' || bet.stake < 100) {
+          if (typeof bet.stake !== 'number' || bet.stake <= 0) {
             throw new Error('投資額が無効です');
           }
 
