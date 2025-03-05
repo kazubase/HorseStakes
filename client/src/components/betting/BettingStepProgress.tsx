@@ -79,18 +79,24 @@ export function BettingStepProgress() {
 
       {/* ナビゲーションボタン */}
       <div className="flex justify-between mt-8">
-        <Button
-          variant="outline"
-          onClick={handlePrevious}
-          disabled={currentIndex === 0}
-          className={`
-            gap-2 transition-all duration-300
-            ${currentIndex === 0 ? 'opacity-50' : 'hover:bg-primary/5'}
-          `}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          戻る
-        </Button>
+        {/* 分析画面では戻るボタンを表示しない */}
+        {currentStep !== 'ANALYSIS' && (
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            disabled={currentIndex === 0}
+            className={`
+              gap-2 transition-all duration-300
+              ${currentIndex === 0 ? 'opacity-50' : 'hover:bg-primary/5'}
+            `}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            戻る
+          </Button>
+        )}
+        
+        {/* 戻るボタンがない場合のスペーサー */}
+        {currentStep === 'ANALYSIS' && <div></div>}
 
         {/* 選択画面とポートフォリオ画面では次へボタンを非表示にする */}
         {currentStep !== 'SELECTION' && currentStep !== 'PORTFOLIO' && (
