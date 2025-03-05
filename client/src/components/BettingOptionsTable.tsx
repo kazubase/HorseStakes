@@ -4,11 +4,14 @@ import { BetProposal } from "@/lib/betEvaluation";
 import { useMemo } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { BetCorrelation } from "@/lib/betConditionalProbability";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, XCircle } from "lucide-react";
 
 interface BettingOptionsTableProps {
   bettingOptions: BetProposal[];
   selectedBets?: BetProposal[];
   onBetSelect?: (bet: BetProposal) => void;
+  onSelectAllByType?: (betType: string, select: boolean) => void;
   correlations?: BetCorrelation[];
   geminiRecommendations?: Array<{
     type: string;
@@ -23,6 +26,7 @@ export function BettingOptionsTable({
   bettingOptions,
   selectedBets = [],
   onBetSelect,
+  onSelectAllByType,
   correlations = [],
   geminiRecommendations = [],
   className,
@@ -242,34 +246,65 @@ export function BettingOptionsTable({
           const options = groupedOptions[betType];
           if (!options?.length) return null;
 
+          // 券種ごとの選択状態を計算
+          const typeStats = calculateTypeStats(optionsWithStats.options, selectedBets, betType);
+          const selectedCount = selectedBets.filter(bet => bet.type === betType).length;
+          const totalCount = options.length;
+          const isAllSelected = selectedCount === totalCount && totalCount > 0;
+          const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
+
           return (
             <Card key={betType} className="bg-background/50 backdrop-blur-sm">
               <CardHeader className="py-2 px-3 border-b">
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-base font-medium">{betType}</CardTitle>
-                  {/* 券種ごとの統計情報を表示 */}
-                  {calculateTypeStats(optionsWithStats.options, selectedBets, betType) && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className={`
-                        font-medium
-                        ${getColorClass(
-                          calculateTypeStats(optionsWithStats.options, selectedBets, betType)!.totalProbability,
-                          optionsWithStats.stats.probability
+                  
+                  <div className="flex items-center gap-2">
+                    {/* 券種ごとの統計情報を表示 */}
+                    {typeStats && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className={`
+                          font-medium
+                          ${getColorClass(
+                            typeStats.totalProbability,
+                            optionsWithStats.stats.probability
+                          )}
+                        `}>
+                          {(typeStats.totalProbability * 100).toFixed(1)}%
+                        </span>
+                        <span className={`
+                          font-medium
+                          ${getColorClass(
+                            typeStats.averageEv,
+                            optionsWithStats.stats.ev
+                          )}
+                        `}>
+                          {typeStats.averageEv.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* 全選択・全解除を切り替えるボタン */}
+                    {onSelectAllByType && (
+                      <button
+                        onClick={() => onSelectAllByType(betType, !isAllSelected)}
+                        className={`
+                          p-1 rounded-full text-xs
+                          ${isAllSelected 
+                            ? 'text-primary hover:text-destructive' 
+                            : 'text-muted-foreground hover:text-primary'}
+                          transition-colors duration-200
+                        `}
+                        title={isAllSelected ? "全解除" : "全選択"}
+                      >
+                        {isAllSelected ? (
+                          <XCircle className="h-3.5 w-3.5" />
+                        ) : (
+                          <CheckCircle className="h-3.5 w-3.5" />
                         )}
-                      `}>
-                        {(calculateTypeStats(optionsWithStats.options, selectedBets, betType)!.totalProbability * 100).toFixed(1)}%
-                      </span>
-                      <span className={`
-                        font-medium
-                        ${getColorClass(
-                          calculateTypeStats(optionsWithStats.options, selectedBets, betType)!.averageEv,
-                          optionsWithStats.stats.ev
-                        )}
-                      `}>
-                        {calculateTypeStats(optionsWithStats.options, selectedBets, betType)!.averageEv.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-2">

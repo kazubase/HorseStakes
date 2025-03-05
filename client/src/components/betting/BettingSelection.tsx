@@ -342,6 +342,39 @@ export function BettingSelection() {
     }
   };
 
+  // 券種ごとの全選択・全解除機能を追加
+  const handleSelectAllByType = (betType: string, select: boolean) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`${betType}の馬券を${select ? '全選択' : '全解除'}します`);
+    }
+    
+    setSelectionState(prev => {
+      // 現在の選択状態をコピー
+      const currentSelected = [...prev.selectedBets];
+      
+      if (select) {
+        // 選択する場合：まだ選択されていない同じ券種の馬券を追加
+        const betsToAdd = bettingOptions
+          .filter(bet => bet.type === betType)
+          .filter(bet => !currentSelected.some(selected => 
+            selected.type === bet.type && 
+            selected.horseName === bet.horseName
+          ));
+        
+        return {
+          ...prev,
+          selectedBets: [...currentSelected, ...betsToAdd]
+        };
+      } else {
+        // 解除する場合：同じ券種の馬券をすべて削除
+        return {
+          ...prev,
+          selectedBets: currentSelected.filter(bet => bet.type !== betType)
+        };
+      }
+    });
+  };
+
   if (!bettingOptions.length) {
     return (
       <div className="text-center text-muted-foreground p-4">
@@ -384,6 +417,7 @@ export function BettingSelection() {
           bettingOptions={bettingOptions}
           selectedBets={selectionState.selectedBets}
           onBetSelect={handleBetSelection}
+          onSelectAllByType={handleSelectAllByType}
         />
       </div>
 
