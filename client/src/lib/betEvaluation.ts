@@ -483,7 +483,7 @@ export const evaluateBettingOptions = (
           
           // 最小確率を調整（対数スケールの導入）
           // 高リスク馬券でも現実的な確率閾値になるよう調整
-          const minProbability = Math.max(0.001, 0.2 / (riskRatio * Math.log10(riskFactor + 2)));
+          const minProbability = Math.max(0.001, 0.1 / (riskRatio * Math.log10(riskFactor + 2)));
           
           // 最低期待値（対数スケールの導入）
           // 期待値1.0を基準に、リスクに応じて緩やかに上昇
