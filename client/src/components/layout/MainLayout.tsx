@@ -78,8 +78,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </header>
       </div>
       
-      {/* ナビゲーション */}
-      <div className={`fixed top-12 left-0 right-0 z-10 transition-all duration-300 ${
+      {/* ナビゲーション - 固定位置で常に存在するが、透明度で表示/非表示を切り替え */}
+      <div className={`fixed top-12 left-0 right-0 z-10 transition-opacity duration-300 ${
         isNavVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}>
         <nav className="border-b bg-card/80 backdrop-blur-sm">
@@ -102,9 +102,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </nav>
       </div>
 
-      {/* メインコンテンツ - ヘッダーとナビゲーションの高さ分のスペースを確保 */}
-      <div className={`h-12 ${isNavVisible ? 'mb-10' : ''}`}></div>
-      <main className="flex-1 container mx-auto px-4 py-6">
+      {/* メインコンテンツ - 常に固定の高さを確保 */}
+      <div className="h-12"></div>
+      <main className="flex-1 container mx-auto px-4 py-6 mt-10">
         {children}
       </main>
     </div>
