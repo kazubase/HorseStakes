@@ -243,20 +243,32 @@ export default function Home() {
       <ResponsiveContainer width="100%" height="100%">
         <LineChart 
           data={formattedOddsData}
-          margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+          margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
         >
           <defs>
             {/* グラデーションの定義 */}
             <linearGradient id="chartBackground" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="hsl(var(--primary)/0.1)" stopOpacity={0.4}/>
-              <stop offset="100%" stopColor="hsl(var(--primary)/0.1)" stopOpacity={0}/>
+              <stop offset="0%" stopColor="hsl(var(--primary)/0.15)" stopOpacity={0.5}/>
+              <stop offset="100%" stopColor="hsl(var(--primary)/0.05)" stopOpacity={0}/>
             </linearGradient>
+            
+            {/* 各馬のラインのグラデーション定義 */}
+            {visibleHorses.map((horse) => (
+              <linearGradient 
+                key={`gradient-${horse.number}`} 
+                id={`lineGradient-${horse.number}`} 
+                x1="0" y1="0" x2="1" y2="0"
+              >
+                <stop offset="0%" stopColor={getLineColor(horse.frame)} stopOpacity={0.7} />
+                <stop offset="100%" stopColor={getLineColor(horse.frame)} stopOpacity={1} />
+              </linearGradient>
+            ))}
           </defs>
           
           {/* グリッド */}
           <CartesianGrid 
             strokeDasharray="3 3" 
-            stroke="hsl(var(--muted-foreground)/0.2)"
+            stroke="hsl(var(--muted-foreground)/0.15)"
             vertical={false}
           />
           
@@ -274,7 +286,7 @@ export default function Home() {
             allowDataOverflow={true}
             type="category"
             scale="point"
-            padding={{ left: 0, right: 0 }}
+            padding={{ left: 10, right: 10 }}
             width={2000}
             xAxisId={0}
           />
@@ -293,39 +305,43 @@ export default function Home() {
             tick={{ fill: 'hsl(var(--muted-foreground))' }}
             axisLine={{ stroke: 'hsl(var(--border))' }}
             tickLine={{ stroke: 'hsl(var(--border))' }}
+            width={35}
           />
           
-          {/* ツールチップ */}
+          {/* ツールチップをコンパクトに更新 */}
           <Tooltip<any, any> 
             formatter={(value: any, name: any) => {
-              const horse = sortedHorses.find(h => `horse${h.number}` === name);
+              const horseId = name.replace('horse', '');
               return [
                 value.toFixed(1),
-                horse ? `${horse.number}番: ${horse.name}` : name
+                `${horseId}番`
               ];
             }}
             contentStyle={{
-              backgroundColor: 'hsl(var(--background))',
+              backgroundColor: 'hsl(var(--card))',
               borderColor: 'hsl(var(--border))',
-              borderRadius: '8px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              padding: '8px 12px',
-              maxWidth: '80vw',
-              fontSize: '0.875rem',
-              whiteSpace: 'normal',
+              borderRadius: '6px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              padding: '6px 10px',
+              fontSize: '0.75rem',
             }}
             itemStyle={{
               padding: '2px 0',
-              fontSize: '0.875rem',
+              fontSize: '0.75rem',
             }}
             labelStyle={{
               color: 'hsl(var(--muted-foreground))',
               marginBottom: '2px',
-              fontSize: '0.75rem',
+              fontSize: '0.7rem',
             }}
             wrapperStyle={{
               visibility: 'visible',
               zIndex: 1000,
+            }}
+            cursor={{
+              stroke: 'hsl(var(--muted-foreground)/0.5)',
+              strokeWidth: 1,
+              strokeDasharray: '4 4'
             }}
           />
 
@@ -333,8 +349,29 @@ export default function Home() {
           <ReferenceLine
             isFront={true}
             x={formattedOddsData[0]?.timestamp}
-            stroke="hsl(var(--muted-foreground))"
+            stroke="hsl(var(--muted-foreground)/0.3)"
             strokeDasharray="3 3"
+            label={{
+              value: "初回",
+              position: "insideTopLeft",
+              fill: "hsl(var(--muted-foreground))",
+              fontSize: 10,
+            }}
+          />
+          
+          {/* 最新データの参照線 */}
+          <ReferenceLine
+            isFront={true}
+            x={formattedOddsData[formattedOddsData.length - 1]?.timestamp}
+            stroke="hsl(var(--primary)/0.5)"
+            strokeDasharray="3 3"
+            label={{
+              value: "最新",
+              position: "insideTopRight",
+              fill: "hsl(var(--primary))",
+              fontSize: 10,
+              fontWeight: "bold"
+            }}
           />
 
           {/* 背景エリア */}
@@ -354,23 +391,48 @@ export default function Home() {
                 key={horse.id}
                 type="monotone"
                 dataKey={`horse${horse.number}`}
-                name={`${horse.number}番: ${horse.name}`}
-                stroke={getLineColor(horse.frame)}
+                name={`horse${horse.number}`}
+                stroke={`url(#lineGradient-${horse.number})`}
                 strokeWidth={isSelected ? 3 : 1.5}
                 dot={false}
                 connectNulls={true}
-                opacity={isSelected ? 1 : 0.5}
+                opacity={isSelected ? 1 : 0.6}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 activeDot={{
                   r: 4,
-                  strokeWidth: 2,
+                  strokeWidth: 1,
                   stroke: 'hsl(var(--background))',
-                  fill: getLineColor(horse.frame)
+                  fill: getLineColor(horse.frame),
                 }}
               />
             );
           })}
+          
+          {/* 凡例 */}
+          <Legend 
+            verticalAlign="top"
+            height={36}
+            iconType="circle"
+            iconSize={8}
+            formatter={(value, entry) => {
+              const horseNumber = value.replace('horse', '');
+              const horse = sortedHorses.find(h => h.number === Number(horseNumber));
+              return (
+                <span style={{ 
+                  color: 'hsl(var(--foreground))',
+                  fontSize: '0.75rem',
+                  fontWeight: selectedHorses.includes(Number(horseNumber)) ? 'bold' : 'normal',
+                  opacity: selectedHorses.includes(Number(horseNumber)) ? 1 : 0.7
+                }}>
+                  {`${horseNumber}番`}
+                </span>
+              );
+            }}
+            wrapperStyle={{
+              paddingTop: '5px',
+            }}
+          />
         </LineChart>
       </ResponsiveContainer>
     );
@@ -386,6 +448,55 @@ export default function Home() {
     }
   }, [formattedOddsData]);
 
+  // オッズの変動率を計算する関数を追加
+  const calculateOddsChange = useCallback((horseId: number) => {
+    if (formattedOddsData.length < 2) return 0;
+    
+    const firstData = formattedOddsData[0];
+    const latestData = formattedOddsData[formattedOddsData.length - 1];
+    
+    const firstOdds = Number(firstData[`horse${horseId}` as keyof typeof firstData]);
+    const latestOdds = Number(latestData[`horse${horseId}` as keyof typeof latestData]);
+    
+    if (isNaN(firstOdds) || isNaN(latestOdds)) return 0;
+    
+    // 変動率を計算（マイナスなら下降、プラスなら上昇）
+    return ((latestOdds - firstOdds) / firstOdds) * 100;
+  }, [formattedOddsData]);
+  
+  // オッズ変動に基づく色を取得する関数
+  const getOddsChangeColor = useCallback((changePercent: number) => {
+    if (Math.abs(changePercent) < 2) return 'text-muted-foreground'; // ほぼ変化なし
+    if (changePercent <= -5) return 'text-green-500 font-bold'; // 大幅下降（人気上昇）
+    if (changePercent < 0) return 'text-green-400'; // 下降（人気上昇）
+    if (changePercent >= 5) return 'text-red-500 font-bold'; // 大幅上昇（人気下降）
+    return 'text-red-400'; // 上昇（人気下降）
+  }, []);
+
+  // オッズ変動の矢印を取得する関数
+  const getOddsChangeArrow = useCallback((changePercent: number) => {
+    if (Math.abs(changePercent) < 2) return '→';
+    if (changePercent < 0) return '↓';
+    return '↑';
+  }, []);
+
+  // 直近の変動率を計算する関数を追加
+  const calculateRecentOddsChange = useCallback((horseId: number) => {
+    if (formattedOddsData.length < 3) return 0; // 少なくとも3つのデータポイントが必要
+    
+    // 最新のデータと、その1つ前のデータを取得
+    const latestData = formattedOddsData[formattedOddsData.length - 1];
+    const previousData = formattedOddsData[formattedOddsData.length - 2];
+    
+    const previousOdds = Number(previousData[`horse${horseId}` as keyof typeof previousData]);
+    const latestOdds = Number(latestData[`horse${horseId}` as keyof typeof latestData]);
+    
+    if (isNaN(previousOdds) || isNaN(latestOdds)) return 0;
+    
+    // 直近の変動率を計算
+    return ((latestOdds - previousOdds) / previousOdds) * 100;
+  }, [formattedOddsData]);
+  
   if (!race && !raceLoading) return null;
 
   return (
@@ -447,6 +558,9 @@ export default function Home() {
                           Number(odd.horseId) === horse.number
                         );
                         const isSelected = selectedHorses.includes(horse.number);
+                        const oddsChange = calculateOddsChange(horse.number);
+                        const changeColor = getOddsChangeColor(oddsChange);
+                        const changeArrow = getOddsChangeArrow(oddsChange);
                         
                         return (
                           <TableRow 
@@ -496,6 +610,11 @@ export default function Home() {
                                 `}>
                                   {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
                                 </span>
+                                {formattedOddsData.length >= 3 && (
+                                  <span className={`text-xs ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
+                                    {getOddsChangeArrow(calculateRecentOddsChange(horse.number))}
+                                  </span>
+                                )}
                                 <ChevronRight className={`
                                   w-4 h-4 transition-all duration-300
                                   ${isSelected ? 'opacity-100 text-primary' : 'opacity-0 group-hover:opacity-100'}
@@ -523,11 +642,17 @@ export default function Home() {
                   }
                 </div>
               </div>
-              <div className="h-[300px] sm:h-[400px] relative overflow-x-auto" ref={chartContainerRef}>
+              <div className="h-[300px] sm:h-[400px] relative overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent" ref={chartContainerRef}>
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-30" />
                 <div className="relative h-full min-w-[800px]">
                   <OddsChart />
                 </div>
+              </div>
+              
+              {/* グラフ操作ガイド */}
+              <div className="mt-3 text-xs text-muted-foreground text-center">
+                <p>左右にスクロールして時間推移を確認できます</p>
+                <p className="mt-1">馬名をタップすると表示/非表示を切り替えられます</p>
               </div>
             </CardContent>
           </Card>
