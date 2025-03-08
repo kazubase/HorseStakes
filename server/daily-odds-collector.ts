@@ -332,12 +332,48 @@ class DailyOddsCollector {
       console.log(`Current time: ${now.toISOString()}`);
       console.log(`Race start time: ${race.startTime.toISOString()}`);
 
+      // レース開始時刻を過ぎている場合、最終オッズを取得してからステータスを更新
       if (race.startTime < now && race.status === 'upcoming') {
+        console.log(`Race ${raceId} has started. Collecting final odds before marking as done.`);
+        
+        // 最終オッズを取得
+        const betTypes = ['tanpuku', 'wakuren', 'umaren', 'wide', 'umatan', 'fuku3', 'tan3'] as const;
+        
+        for (const betType of betTypes) {
+          let retryCount = 0;
+          while (retryCount < this.MAX_RETRIES) {
+            try {
+              console.log(`Collecting final ${betType} odds for race ID: ${raceId} (attempt ${retryCount + 1})`);
+              const odds = await this.collector.collectOddsForBetType(raceId, betType);
+              
+              if (odds.length > 0) {
+                if (betType === 'tanpuku') {
+                  await this.handleTanpukuOdds(raceId, odds);
+                } else {
+                  await this.handleOtherOdds(betType, odds);
+                }
+                console.log(`Final ${betType} odds data saved successfully`);
+                break;
+              }
+            } catch (error) {
+              console.error(`Error collecting final ${betType} odds for race ${raceId} (attempt ${retryCount + 1}):`, error);
+              if (retryCount === this.MAX_RETRIES - 1) {
+                console.error(`Max retries exceeded for final ${betType} odds collection`);
+                break;
+              }
+              retryCount++;
+              await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
+            }
+          }
+        }
+        
+        // 最終オッズ取得後にステータスを更新
         await this.withDbRetry(() =>
           db.update(races)
             .set({ status: 'done' })
             .where(eq(races.id, raceId))
         );
+        console.log(`Race ${raceId} marked as done after collecting final odds`);
         return;
       }
 
