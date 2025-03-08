@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from 'jotai';
-import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom, raceNotesAtom, currentStepAtom, conditionalProbabilitiesAtom, geminiProgressAtom } from '@/stores/bettingStrategy';
+import { selectionStateAtom, bettingOptionsAtom, horsesAtom, latestOddsAtom, winProbsAtom, placeProbsAtom, currentStepAtom, conditionalProbabilitiesAtom, geminiProgressAtom } from '@/stores/bettingStrategy';
 import { BettingOptionsTable } from '@/components/BettingOptionsTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BetProposal } from '@/lib/betEvaluation';
@@ -8,44 +8,7 @@ import { calculateBetProposalsWithGemini, optimizeBetAllocation } from "@/lib/be
 import { useLocation } from "wouter";
 import { Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { ChevronUp } from 'lucide-react';
 import { getDefaultStore } from 'jotai';
-
-// メモ入力用のスティッキーフッターコンポーネント
-const RaceNotesFooter = () => {
-  const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
-  const [isExpanded, setIsExpanded] = useState(false);
-  
-  return (
-    <div className={`
-      fixed bottom-12 left-0 right-0 
-      bg-background/80 backdrop-blur-sm
-      border-t border-primary/10
-      transition-all duration-200
-      ${isExpanded ? 'h-48' : 'h-12'}
-      z-40
-    `}>
-      <div 
-        className="flex items-center justify-between px-4 h-12 cursor-pointer hover:bg-primary/5"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <span className="text-sm font-medium">メモ</span>
-        <ChevronUp className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-      </div>
-      {isExpanded && (
-        <div className="p-4 pt-0">
-          <textarea
-            value={raceNotes}
-            onChange={(e) => setRaceNotes(e.target.value)}
-            className="w-full h-32 bg-transparent border-0 resize-none focus:outline-none
-              placeholder:text-muted-foreground text-foreground"
-            placeholder="レース分析のメモを入力してください..."
-          />
-        </div>
-      )}
-    </div>
-  );
-};
 
 export function BettingSelection() {
   const [, setLocation] = useLocation();
@@ -55,17 +18,11 @@ export function BettingSelection() {
   const [latestOdds] = useAtom(latestOddsAtom);
   const [winProbs] = useAtom(winProbsAtom);
   const [placeProbs] = useAtom(placeProbsAtom);
-  const [raceNotes, setRaceNotes] = useAtom(raceNotesAtom);
   const conditionalProbabilities = useAtomValue(conditionalProbabilitiesAtom);
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1;
-  const [isExpanded, setIsExpanded] = useState(false);
   const [currentStep, setCurrentStep] = useAtom(currentStepAtom);
   
-  useEffect(() => {
-    document.documentElement.style.setProperty('--footer-height', isExpanded ? '12rem' : '3rem');
-  }, [isExpanded]);
-
   // 次へボタンが押されたときに呼び出される関数を追加
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
@@ -384,7 +341,7 @@ export function BettingSelection() {
   }
 
   return (
-    <div className="relative min-h-screen pb-[calc(3rem+var(--footer-height))]">
+    <div className="relative min-h-screen">
       {/* ボタンを2列で表示 */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         {/* AI最適化ボタン */}
@@ -420,8 +377,6 @@ export function BettingSelection() {
           onSelectAllByType={handleSelectAllByType}
         />
       </div>
-
-      <RaceNotesFooter />
     </div>
   );
 }
