@@ -390,9 +390,11 @@ export default function Home() {
 
   return (
     <MainLayout>
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background/5 to-transparent opacity-30 h-full w-full" style={{ minHeight: '100vh' }} />
+        
         {/* レース情報カード */}
-        <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
+        <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5 relative z-10">
           <CardContent className="p-4 sm:p-6">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
             <div className="flex justify-between items-start relative">
@@ -425,7 +427,7 @@ export default function Home() {
         </Card>
 
         {/* 2カラムレイアウト */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 relative z-10">
           {/* 左カラム: 出馬表 */}
           <Card className="bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
             <CardContent className="p-0 sm:p-6 relative">
@@ -532,7 +534,7 @@ export default function Home() {
         </div>
 
         {/* 予想確率入力ボタン */}
-        <div className="flex justify-center">
+        <div className="flex justify-center relative z-10">
           <Button 
             size="lg" 
             className="w-full max-w-md h-16 relative overflow-hidden group"
