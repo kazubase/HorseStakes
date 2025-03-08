@@ -257,14 +257,16 @@ export function BettingOptionsTable({
             <Card key={betType} className="bg-background/50 backdrop-blur-sm">
               <CardHeader className="py-2 px-3 border-b">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-base font-medium">{betType}</CardTitle>
+                  <CardTitle className="text-base font-medium min-w-[4rem]">
+                    {betType}
+                  </CardTitle>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink">
                     {/* 券種ごとの統計情報を表示 */}
                     {typeStats && (
-                      <div className="flex items-center gap-2 text-xs">
+                      <div className="flex items-center flex-wrap justify-end gap-1.5 text-xs">
                         <span className={`
-                          font-medium
+                          font-medium whitespace-nowrap
                           ${getColorClass(
                             typeStats.totalProbability,
                             optionsWithStats.stats.probability
@@ -273,7 +275,7 @@ export function BettingOptionsTable({
                           {(typeStats.totalProbability * 100).toFixed(1)}%
                         </span>
                         <span className={`
-                          font-medium
+                          font-medium whitespace-nowrap
                           ${getColorClass(
                             typeStats.averageEv,
                             optionsWithStats.stats.ev
