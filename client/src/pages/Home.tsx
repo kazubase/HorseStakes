@@ -484,8 +484,8 @@ export default function Home() {
 
   return (
     <MainLayout>
-      <div className="space-y-4 sm:space-y-6 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background/5 to-transparent opacity-30 h-full w-full" style={{ minHeight: '100vh' }} />
+      <div className="space-y-4 sm:space-y-6 relative min-h-screen pb-8">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background/5 to-transparent opacity-30 h-full w-full" />
         
         {/* レース情報カード */}
         <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5 relative z-10">
@@ -521,9 +521,9 @@ export default function Home() {
         </Card>
 
         {/* 2カラムレイアウト */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 sm:gap-6 relative z-10">
           {/* 左カラム: 出馬表 */}
-          <Card className="bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
+          <Card className="lg:col-span-4 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
             <CardContent className="p-0 sm:p-6 relative">
               {/* グラデーションオーバーレイ */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
@@ -615,7 +615,7 @@ export default function Home() {
           </Card>
 
           {/* 右カラム: オッズ推移グラフ */}
-          <Card className="bg-background/50 backdrop-blur-sm overflow-hidden">
+          <Card className="lg:col-span-6 bg-background/50 backdrop-blur-sm overflow-hidden">
             <CardContent className="p-2 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg sm:text-xl font-semibold">オッズ推移</h2>
