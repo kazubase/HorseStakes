@@ -48,6 +48,8 @@ export default function RaceList() {
   const [_, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAllVenues, setShowAllVenues] = useState(false);
+  // 選択された会場を追跡するための状態を追加
+  const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
   // 初期値を最新のレース日に設定
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
 
@@ -94,12 +96,24 @@ export default function RaceList() {
     .filter((venue, index, self) => self.indexOf(venue) === index)
     .map(venue => ({ id: venue, name: venue }));
 
+  // 会場をソートする関数
+  const sortVenuesByOrder = (venues: RaceVenue[]) => {
+    // allVenuesの順番に基づいてソート
+    return [...venues].sort((a, b) => {
+      const indexA = allVenues.findIndex(v => v.id === a.id);
+      const indexB = allVenues.findIndex(v => v.id === b.id);
+      return indexA - indexB;
+    });
+  };
+
   // デバッグ用のログ出力
   console.log('Races:', races);
   console.log('Today Venues:', todayVenues);
 
-  // 表示する会場のリスト
-  const venues = showAllVenues ? allVenues : (todayVenues.length > 0 ? todayVenues : allVenues);
+  // 表示する会場のリスト（ソート済み）
+  const venues = showAllVenues 
+    ? allVenues 
+    : (todayVenues.length > 0 ? sortVenuesByOrder(todayVenues) : allVenues);
   console.log('Showing Venues:', venues);
 
   // 検索とフィルタリングのロジック
@@ -130,6 +144,35 @@ export default function RaceList() {
       })
       .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
   };
+
+  // 検索クエリに一致するレースがある最初の会場を見つける
+  const findFirstMatchingVenue = () => {
+    for (const venue of venues) {
+      if (filterRaces(races, venue.id).length > 0) {
+        return venue.id;
+      }
+    }
+    return venues[0]?.id;
+  };
+
+  // 検索クエリが変更されたときに会場を更新
+  useEffect(() => {
+    if (searchQuery) {
+      setSelectedVenue(findFirstMatchingVenue());
+    } else if (venues.length > 0 && !selectedVenue) {
+      setSelectedVenue(venues[0]?.id);
+    }
+  }, [searchQuery, venues]);
+
+  // 会場リストが変更されたときに選択会場を更新
+  useEffect(() => {
+    if (venues.length > 0 && (!selectedVenue || !venues.some(v => v.id === selectedVenue))) {
+      setSelectedVenue(venues[0]?.id);
+    }
+  }, [venues]);
+
+  // 検索クエリに基づいてデフォルトの会場を設定
+  const defaultVenue = searchQuery ? findFirstMatchingVenue() : venues[0]?.id;
 
   // ローディング中の表示
   if (isLoading) {
@@ -223,7 +266,11 @@ export default function RaceList() {
       </div>
 
       {venues.length > 0 ? (
-        <Tabs defaultValue={venues[0]?.id} className="w-full">
+        <Tabs 
+          value={selectedVenue || venues[0]?.id} 
+          onValueChange={setSelectedVenue}
+          className="w-full"
+        >
           <div className="relative mb-6 -mx-4 sm:mx-0">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="px-4 sm:px-0 min-w-full">
