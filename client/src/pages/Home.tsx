@@ -450,10 +450,10 @@ export default function Home() {
   // オッズ変動に基づく色を取得する関数
   const getOddsChangeColor = useCallback((changePercent: number) => {
     if (Math.abs(changePercent) < 2) return 'text-muted-foreground'; // ほぼ変化なし
-    if (changePercent <= -5) return 'text-green-500 font-bold'; // 大幅下降（人気上昇）
-    if (changePercent < 0) return 'text-green-400'; // 下降（人気上昇）
-    if (changePercent >= 5) return 'text-red-500 font-bold'; // 大幅上昇（人気下降）
-    return 'text-red-400'; // 上昇（人気下降）
+    if (changePercent <= -5) return 'text-red-500 font-bold'; // 大幅下降（人気上昇）
+    if (changePercent < 0) return 'text-red-400'; // 下降（人気上昇）
+    if (changePercent >= 5) return 'text-green-500 font-bold'; // 大幅上昇（人気下降）
+    return 'text-green-400'; // 上昇（人気下降）
   }, []);
 
   // オッズ変動の矢印を取得する関数
