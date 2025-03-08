@@ -312,11 +312,14 @@ export default function Home() {
           <Tooltip 
             content={({ active, payload, label }) => {
               if (active && payload && payload.length) {
+                // オッズの降順でソート
+                const sortedPayload = [...payload].sort((a, b) => (Number(b.value) - Number(a.value)));
+                
                 return (
                   <div className="bg-card/95 backdrop-blur-sm border border-border rounded-md shadow-md p-2 text-xs">
                     <p className="text-muted-foreground mb-2">{label}</p>
                     <div className="space-y-2">
-                      {payload.map((entry: any, index: number) => {
+                      {sortedPayload.map((entry: any, index: number) => {
                         const horseId = entry.dataKey.replace('horse', '');
                         const horse = sortedHorses.find(h => h.number === Number(horseId));
                         const frameColor = getFrameColor(horse?.frame || 0);
