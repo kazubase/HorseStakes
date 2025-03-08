@@ -308,35 +308,38 @@ export default function Home() {
             width={35}
           />
           
-          {/* ツールチップをコンパクトに更新 */}
-          <Tooltip<any, any> 
-            formatter={(value: any, name: any) => {
-              const horseId = name.replace('horse', '');
-              return [
-                value.toFixed(1),
-                `${horseId}番`
-              ];
-            }}
-            contentStyle={{
-              backgroundColor: 'hsl(var(--card))',
-              borderColor: 'hsl(var(--border))',
-              borderRadius: '6px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              padding: '6px 10px',
-              fontSize: '0.75rem',
-            }}
-            itemStyle={{
-              padding: '2px 0',
-              fontSize: '0.75rem',
-            }}
-            labelStyle={{
-              color: 'hsl(var(--muted-foreground))',
-              marginBottom: '2px',
-              fontSize: '0.7rem',
-            }}
-            wrapperStyle={{
-              visibility: 'visible',
-              zIndex: 1000,
+          {/* ツールチップをカスタマイズ - 馬番のみを枠番の色で表示 */}
+          <Tooltip 
+            content={({ active, payload, label }) => {
+              if (active && payload && payload.length) {
+                return (
+                  <div className="bg-card/95 backdrop-blur-sm border border-border rounded-md shadow-md p-2 text-xs">
+                    <p className="text-muted-foreground mb-2">{label}</p>
+                    <div className="space-y-2">
+                      {payload.map((entry: any, index: number) => {
+                        const horseId = entry.dataKey.replace('horse', '');
+                        const horse = sortedHorses.find(h => h.number === Number(horseId));
+                        const frameColor = getFrameColor(horse?.frame || 0);
+                        
+                        return (
+                          <div key={`item-${index}`} className="flex justify-between items-center gap-3">
+                            <span className={`
+                              inline-flex items-center justify-center
+                              w-6 h-6
+                              rounded-md text-xs font-bold
+                              ${frameColor}
+                            `}>
+                              {horseId}
+                            </span>
+                            <span className="font-mono font-semibold">{entry.value.toFixed(1)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
             }}
             cursor={{
               stroke: 'hsl(var(--muted-foreground)/0.5)',
@@ -409,30 +412,7 @@ export default function Home() {
             );
           })}
           
-          {/* 凡例 */}
-          <Legend 
-            verticalAlign="top"
-            height={36}
-            iconType="circle"
-            iconSize={8}
-            formatter={(value, entry) => {
-              const horseNumber = value.replace('horse', '');
-              const horse = sortedHorses.find(h => h.number === Number(horseNumber));
-              return (
-                <span style={{ 
-                  color: 'hsl(var(--foreground))',
-                  fontSize: '0.75rem',
-                  fontWeight: selectedHorses.includes(Number(horseNumber)) ? 'bold' : 'normal',
-                  opacity: selectedHorses.includes(Number(horseNumber)) ? 1 : 0.7
-                }}>
-                  {`${horseNumber}番`}
-                </span>
-              );
-            }}
-            wrapperStyle={{
-              paddingTop: '5px',
-            }}
-          />
+          {/* 凡例を削除 */}
         </LineChart>
       </ResponsiveContainer>
     );
