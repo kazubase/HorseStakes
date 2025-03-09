@@ -216,11 +216,20 @@ export function BettingOptionsTable({
     if (!selectedOfType.length) return null;
 
     const totalProbability = selectedOfType.reduce((sum, bet) => sum + bet.probability, 0);
-    const averageEv = selectedOfType.reduce((sum, bet) => sum + (bet.expectedReturn / bet.stake) * bet.probability, 0) / selectedOfType.length;
+    
+    // 的中確率で加重平均した期待値を計算
+    const weightedAverageEv = selectedOfType.reduce(
+      (sum, bet) => {
+        const odds = bet.expectedReturn / bet.stake;
+        const ev = odds * bet.probability;
+        return sum + (ev * bet.probability / totalProbability);
+      }, 
+      0
+    );
 
     return {
       totalProbability,
-      averageEv
+      averageEv: weightedAverageEv
     };
   };
 
