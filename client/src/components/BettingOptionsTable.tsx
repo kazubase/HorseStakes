@@ -110,36 +110,37 @@ export function BettingOptionsTable({
       const normalizedType = (type: string) => type.replace('３', '3');
       const isSameType = normalizedType(selected.type) === normalizedType(option.type);
       
-      // 馬番を数値配列に変換して比較
-      const normalizeHorses = (horses: string[]) => {
-        // 各馬番を文字列として扱い、分割処理を行う
-        const allNumbers = horses.flatMap(h => {
-          const horseStr = String(h); // 数値を確実に文字列に変換
-          if (horseStr.includes('-')) {
-            return horseStr.split('-').map(num => parseInt(num.trim()));
-          }
-          if (horseStr.includes('→')) {
-            return horseStr.split('→').map(num => parseInt(num.trim()));
-          }
-          // 空白で分割して最初の数値を取得
-          return parseInt(horseStr.split(' ')[0]);
-        });
+      // 馬番を正しく比較するための処理
+      const isSameHorses = () => {
+        // 馬番の文字列表現を比較（horseName があれば使用）
+        if (selected.horseName && option.horseName) {
+          return selected.horseName === option.horseName;
+        }
         
-        // 馬単系は順序を維持、それ以外はソート
-        return option.type.includes('単') ? allNumbers : allNumbers.sort((a, b) => a - b);
+        // 馬番の配列を比較
+        if (selected.horses.length !== option.horses.length) {
+          return false;
+        }
+        
+        // 単勝・複勝の場合は単純比較
+        if (option.type === '単勝' || option.type === '複勝') {
+          const selectedHorse = selected.horses[0].split(' ')[0];
+          const optionHorse = option.horses[0].split(' ')[0];
+          return selectedHorse === optionHorse;
+        }
+        
+        // 馬単と3連単は順序を考慮
+        if (option.type.includes('単')) {
+          return selected.horses.join(',') === option.horses.join(',');
+        }
+        
+        // その他の馬券は順序を考慮しない（ソートして比較）
+        const selectedHorsesSorted = [...selected.horses].sort();
+        const optionHorsesSorted = [...option.horses].sort();
+        return selectedHorsesSorted.join(',') === optionHorsesSorted.join(',');
       };
       
-      const selectedHorses = normalizeHorses(selected.horses);
-      const optionHorses = normalizeHorses(option.horses);
-      
-      // 馬単と3連単は順序を考慮
-      const isSameHorses = option.type.includes('単')
-        ? selectedHorses.join(',') === optionHorses.join(',')
-        // その他の馬券は順序を考慮しない
-        : selectedHorses.length === optionHorses.length &&
-          selectedHorses.every(h => optionHorses.includes(h));
-      
-      return isSameType && isSameHorses;
+      return isSameType && isSameHorses();
     });
 
     return result;
