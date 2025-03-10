@@ -10,6 +10,8 @@ import html2canvas from 'html2canvas';
 import { Camera, Sparkles } from 'lucide-react';
 import type { BetProposal } from "@/lib/betEvaluation";
 import { InfoIcon } from "lucide-react";
+import { useAtom } from 'jotai';
+import { bettingOptionsStatsAtom } from '@/stores/bettingStrategy';
 
 interface BettingStrategyTableProps {
   strategy: GeminiStrategy;
@@ -77,22 +79,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       return (typeOrder[typeA] || 0) - (typeOrder[typeB] || 0);
     });
   }, [optimizationResult]);
-
-  // デバッグ用：sortedBetsのreasonプロパティを確認
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('sortedBets reasons:', sortedBets.map(bet => bet.reason));
-    }
-  }, [sortedBets]);
-
-  // デバッグ用：各馬券のreasonプロパティを確認
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      sortedBets.forEach((bet, index) => {
-        console.log(`馬券 ${index + 1} (${bet.type} ${bet.horses.join('-')}) の理由:`, bet.reason);
-      });
-    }
-  }, [sortedBets]);
 
   // 馬券間の排反関係を計算する関数
   const calculateMutualExclusivity = (bet1: BetProposal, bet2: BetProposal): number => {
@@ -183,6 +169,93 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       : horses.length === 1
       ? horses[0]
       : horses.join('-');
+  };
+
+  // 馬券候補の統計情報を取得
+  const [optionsStats] = useAtom(bettingOptionsStatsAtom);
+  
+  useEffect(() => {
+    console.log('BettingStrategyTable - 統計情報:', {
+      hasStats: !!optionsStats,
+      stats: optionsStats,
+      optionsCount: optionsStats?.options?.length
+    });
+  }, [optionsStats]);
+
+  // オッズの色分けロジック - 統計情報があれば使用
+  const getOddsColorClass = (odds: number) => {
+    if (optionsStats) {
+      // オッズ値に対するパーセンタイルを計算
+      const percentile = optionsStats.options
+        .map(o => o.odds)
+        .filter(v => v <= odds)
+        .length / optionsStats.options.length;
+      
+      if (percentile > 0.8) return 'text-green-500';
+      if (percentile > 0.6) return 'text-green-600';
+      if (percentile > 0.4) return 'text-yellow-500';
+      if (percentile > 0.2) return 'text-yellow-600';
+      return 'text-yellow-600';
+    } else {
+      // 統計情報がない場合は固定値で判断
+      if (odds > 100) return 'text-green-400';
+      if (odds > 50) return 'text-green-500';
+      if (odds > 20) return 'text-green-600';
+      if (odds > 10) return 'text-yellow-500';
+      if (odds > 5) return 'text-yellow-600';
+      return 'text-muted-foreground';
+    }
+  };
+
+  // 確率の色分けロジック - 統計情報があれば使用
+  const getProbabilityColorClass = (probability: number) => {
+    if (optionsStats) {
+      // 確率に対するパーセンタイルを計算
+      const percentile = optionsStats.options
+        .map(o => o.probability)
+        .filter(v => v <= probability)
+        .length / optionsStats.options.length;
+      
+      if (percentile > 0.8) return 'text-green-500';
+      if (percentile > 0.6) return 'text-green-600';
+      if (percentile > 0.4) return 'text-yellow-500';
+      if (percentile > 0.2) return 'text-yellow-600';
+      return 'text-muted-foreground';
+    } else {
+      // 統計情報がない場合は固定値で判断
+      if (probability > 0.4) return 'text-green-400';
+      if (probability > 0.2) return 'text-green-500';
+      if (probability > 0.1) return 'text-green-600';
+      if (probability > 0.05) return 'text-yellow-500';
+      if (probability > 0.01) return 'text-yellow-600';
+      return 'text-muted-foreground';
+    }
+  };
+
+  // EVに基づく背景色を決定する関数 - 統計情報があれば使用
+  const getEvBackgroundClass = (odds: number, probability: number) => {
+    const ev = odds * probability;
+    
+    if (optionsStats) {
+      // EVに対するパーセンタイルを計算
+      const percentile = optionsStats.options
+        .map(o => o.ev)
+        .filter(v => v <= ev)
+        .length / optionsStats.options.length;
+      
+      // BettingOptionsTableと完全に同じ背景色を使用
+      if (percentile > 0.75) return 'bg-green-500/15 hover:bg-green-500/25';
+      if (percentile > 0.5) return 'bg-lime-600/15 hover:bg-lime-600/25';
+      if (percentile > 0.25) return 'bg-yellow-500/10 hover:bg-yellow-500/20';
+      return 'bg-yellow-500/5 hover:bg-yellow-500/15';
+    } else {
+      // 統計情報がない場合も同様の色を使用
+      if (ev > 1.5) return 'bg-green-500/15 hover:bg-green-500/25';
+      if (ev > 1.2) return 'bg-lime-600/15 hover:bg-lime-600/25';
+      if (ev > 1.0) return 'bg-yellow-500/10 hover:bg-yellow-500/20';
+      if (ev > 0.8) return 'bg-yellow-500/5 hover:bg-yellow-500/15';
+      return 'bg-yellow-500/5 hover:bg-yellow-500/15';
+    }
   };
 
   // テーブルデータの生成をメモ化
@@ -325,100 +398,75 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                 <CardContent className="p-2">
                   <div className="space-y-1.5">
                     {bets.map((bet, index) => (
-                      <div key={index} className="relative overflow-hidden">
-                        {bet.reason && bet.reason !== '手動選択された馬券' && bet.reason !== '理由なし' ? (
-                          <Popover>
-                            <PopoverTrigger asChild>
+                      <div key={index}>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <div className={`
+                              relative overflow-hidden
+                              p-2 rounded-md 
+                              transition-all duration-300 ease-out
+                              cursor-pointer
+                              border border-transparent
+                              hover:border-primary/20 hover:shadow-sm
+                              hover:scale-[1.01] hover:-translate-y-0.5
+                            `}>
+                              {/* EVに基づく背景色 */}
                               <div className={`
-                                relative overflow-hidden
-                                p-2 rounded-md border
-                                ${index % 2 === 0 ? 'bg-background/50' : 'bg-background/30'}
-                                hover:bg-primary/5 transition-colors duration-200
-                                cursor-pointer
-                              `}>
-                                {/* グラデーション背景レイヤー */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-50" />
-                                
-                                {/* コンテンツレイヤー */}
-                                <div className="relative">
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <span className="font-medium">
-                                      {formatHorseNumbers(bet.type, bet.horses)}
-                                    </span>
-                                    <div className="flex items-center justify-end gap-1">
-                                      <span className="font-bold text-primary">
-                                        ×{bet.odds ? bet.odds.toFixed(1) : Number(bet.expectedReturn / bet.stake).toFixed(1)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2 text-xs mt-1">
-                                    <span className="text-muted-foreground">
-                                      {(bet.probability * 100).toFixed(1)}%
-                                    </span>
-                                    <div className="text-right space-y-0.5">
-                                      <span className="font-medium">
-                                        {bet.stake.toLocaleString()}円
-                                      </span>
-                                      <span className="block text-primary text-[10px]">
-                                        {Math.round(bet.stake * (bet.odds || Number(bet.expectedReturn / bet.stake))).toLocaleString()}円
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </PopoverTrigger>
-                            <PopoverContent 
-                              className="w-[280px] sm:w-80 rounded-lg border border-primary/20 bg-black/70 backdrop-blur-sm p-4 shadow-lg" 
-                              sideOffset={5}
-                            >
-                              <div className="space-y-2">
-                                <h4 className="text-sm font-medium text-primary/90">選択理由</h4>
-                                <div className="relative overflow-hidden">
-                                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-30 pointer-events-none" />
-                                  <p className="text-sm text-white/90 leading-relaxed relative">
-                                    {bet.reason}
-                                  </p>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        ) : (
-                          <div className={`
-                            relative overflow-hidden
-                            p-2 rounded-md border
-                            ${index % 2 === 0 ? 'bg-background/50' : 'bg-background/30'}
-                          `}>
-                            {/* グラデーション背景レイヤー */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-50" />
-                            
-                            {/* コンテンツレイヤー */}
-                            <div className="relative">
-                              <div className="grid grid-cols-2 gap-2">
-                                <span className="font-medium">
-                                  {formatHorseNumbers(bet.type, bet.horses)}
-                                </span>
-                                <div className="flex items-center justify-end gap-1">
-                                  <span className="font-bold text-primary">
-                                    ×{bet.odds ? bet.odds.toFixed(1) : Number(bet.expectedReturn / bet.stake).toFixed(1)}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 text-xs mt-1">
-                                <span className="text-muted-foreground">
-                                  {(bet.probability * 100).toFixed(1)}%
-                                </span>
-                                <div className="text-right space-y-0.5">
+                                absolute inset-0 
+                                ${getEvBackgroundClass(bet.odds || Number(bet.expectedReturn / bet.stake), bet.probability)}
+                              `} />
+
+                              {/* グラデーション背景レイヤー */}
+                              <div className="
+                                absolute inset-0 
+                                bg-gradient-to-r from-primary/10 via-background/5 to-transparent 
+                                transition-opacity duration-300
+                                ${isSelected(option) ? 'opacity-0' : 'opacity-100'}
+                              " />
+                              
+                              {/* コンテンツレイヤー */}
+                              <div className="relative">
+                                <div className="grid grid-cols-2 gap-2">
                                   <span className="font-medium">
-                                    {bet.stake.toLocaleString()}円
+                                    {formatHorseNumbers(bet.type, bet.horses)}
                                   </span>
-                                  <span className="block text-primary text-[10px]">
-                                    {Math.round(bet.stake * (bet.odds || Number(bet.expectedReturn / bet.stake))).toLocaleString()}円
+                                  <div className="flex items-center justify-end gap-1">
+                                    <span className={`font-bold ${getOddsColorClass(bet.odds || Number(bet.expectedReturn / bet.stake))}`}>
+                                      ×{bet.odds ? bet.odds.toFixed(1) : Number(bet.expectedReturn / bet.stake).toFixed(1)}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                                  <span className={getProbabilityColorClass(bet.probability)}>
+                                    {(bet.probability * 100).toFixed(1)}%
                                   </span>
+                                  <div className="text-right space-y-0.5">
+                                    <span className="font-medium">
+                                      {bet.stake.toLocaleString()}円
+                                    </span>
+                                    <span className="block text-primary text-[10px]">
+                                      {(Math.round(bet.expectedReturn / 10) * 10).toLocaleString()}円
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          </PopoverTrigger>
+                          <PopoverContent 
+                            className="w-[280px] sm:w-80 rounded-lg border border-primary/20 bg-black/70 backdrop-blur-sm p-4 shadow-lg" 
+                            sideOffset={5}
+                          >
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-medium text-primary/90">選択理由</h4>
+                              <div className="relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-30 pointer-events-none" />
+                                <p className="text-sm text-white/90 leading-relaxed relative">
+                                  {bet.reason || '理由なし'}
+                                </p>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     ))}
                   </div>

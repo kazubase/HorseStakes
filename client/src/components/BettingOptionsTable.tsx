@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
 import { calculateTotalProbability } from "@/lib/betInclusionExclusion";
 import { useAtom } from 'jotai';
-import { selectionStateAtom, horsesAtom, winProbsAtom, placeProbsAtom } from '@/stores/bettingStrategy';
+import { selectionStateAtom, horsesAtom, winProbsAtom, placeProbsAtom, bettingOptionsStatsAtom } from '@/stores/bettingStrategy';
 
 interface BettingOptionsTableProps {
   bettingOptions: BetProposal[];
@@ -116,7 +116,8 @@ export function BettingOptionsTable({
       return {
         ...option,
         odds,
-        ev
+        ev,
+        id: `${option.type}-${option.horses.join('-')}`
       };
     });
 
@@ -132,6 +133,34 @@ export function BettingOptionsTable({
       stats
     };
   }, [bettingOptions]);
+
+  // 統計情報をatomに保存
+  const [currentStats, setBettingOptionsStats] = useAtom(bettingOptionsStatsAtom);
+  
+  useEffect(() => {
+    console.log('BettingOptionsTable - 統計情報を計算:', {
+      optionsCount: optionsWithStats.options.length,
+      stats: optionsWithStats.stats,
+      firstOption: optionsWithStats.options[0]
+    });
+
+    setBettingOptionsStats({
+      evStats: optionsWithStats.stats.ev,
+      oddsStats: optionsWithStats.stats.odds,
+      probabilityStats: optionsWithStats.stats.probability,
+      options: optionsWithStats.options.map(o => ({
+        id: o.id || `${o.type}-${o.horses.join('-')}`,
+        ev: o.ev,
+        odds: o.odds,
+        probability: o.probability
+      }))
+    });
+
+    console.log('BettingOptionsTable - 保存後の統計情報:', {
+      currentStats,
+      savedStats: optionsWithStats.stats
+    });
+  }, [optionsWithStats, setBettingOptionsStats]);
 
   // 統計情報に基づいて色を決定する関数
   const getColorClass = (value: number, stats: { mean: number; std: number }) => {

@@ -66,6 +66,21 @@ export const latestOddsAtom = atom<{ horseId: string; odds: number }[] | null>(n
 // メモ用のatomを追加
 export const raceNotesAtom = atom<string>('');
 
+// 馬券候補の統計情報を保存するatom
+export interface BettingOptionsStats {
+  evStats: { mean: number; std: number };
+  oddsStats: { mean: number; std: number };
+  probabilityStats: { mean: number; std: number };
+  options: Array<{
+    id: string;
+    ev: number;
+    odds: number;
+    probability: number;
+  }>;
+}
+
+export const bettingOptionsStatsAtom = atom<BettingOptionsStats | null>(null);
+
 // ステップ遷移の制御
 export const canProceedAtom = atom((get) => {
   const currentStep = get(currentStepAtom);
