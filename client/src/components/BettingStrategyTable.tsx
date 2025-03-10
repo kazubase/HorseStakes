@@ -259,13 +259,12 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 
   return (
     <Card className="overflow-hidden bg-gradient-to-br from-background to-primary/5">
-      <CardHeader className="relative pb-4 border-b border-border/50">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-50" />
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <CardHeader className="relative pb-2 border-b border-border/50">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-lg sm:text-xl">{strategy.description}</CardTitle>
+            <CardTitle className="text-base font-medium">{strategy.description}</CardTitle>
             {strategy.summary.riskLevel === 'AI_OPTIMIZED' && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200">
                 <Sparkles className="h-3 w-3 mr-1" />
                 AI最適化
               </span>
@@ -275,99 +274,178 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             variant="outline"
             size="sm"
             onClick={captureTable}
-            className="gap-2 w-full sm:w-auto"
+            className="h-8 w-8 p-0"
           >
             <Camera className="h-4 w-4" />
-            保存
           </Button>
         </div>
-        {strategy.summary.description && (
-          <CardDescription className="relative mt-2">
-            {strategy.summary.description}
-          </CardDescription>
-        )}
       </CardHeader>
 
-      <CardContent className="p-0">
-        <div className="divide-y divide-border/30">
-          {sortedBets.map((bet, index) => (
-            <div key={index} className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4">
-                {/* 券種と買い目 */}
-                <div className="flex items-center gap-3 w-full sm:w-auto sm:flex-1">
-                  <div className="w-16 text-xs font-medium text-muted-foreground">
-                    {normalizeTicketType(bet.type)}
-                  </div>
-                  <span className="text-sm font-medium">
-                    {formatHorseNumbers(bet.type, bet.horses)}
-                  </span>
-                </div>
-
-                {/* オッズ、的中率、投資額のグループ */}
-                <div className="flex justify-between sm:justify-end items-center w-full sm:w-auto gap-4 sm:gap-6">
-                  <div className="text-right min-w-[80px]">
-                    <p className="text-sm font-bold">×{bet.odds ? bet.odds.toFixed(1) : Number(bet.expectedReturn / bet.stake).toFixed(1)}</p>
-                    <p className="text-xs text-muted-foreground">{(bet.probability * 100).toFixed(1)}%</p>
-                  </div>
-
-                  <div className="text-right min-w-[100px]">
-                    <p className="text-sm font-bold">{bet.stake.toLocaleString()}円</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(Math.round(bet.stake * (bet.expectedReturn / bet.stake) / 10) * 10 ).toLocaleString()}円
-                    </p>
-                  </div>
-
-                  {/* 理由を直接表示 */}
-                  <div className="relative group">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <InfoIcon className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent 
-                        className="w-[280px] sm:w-80 rounded-lg border border-primary/20 bg-black/70 backdrop-blur-sm p-4 shadow-lg" 
-                        sideOffset={5}
-                      >
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-primary/90">選択理由</h4>
-                          <div className="relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-30 pointer-events-none" />
-                            <p className="text-sm text-white/90 leading-relaxed relative">
-                              {bet.reason || '理由なし'}
-                            </p>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-              </div>
+      <CardContent className="p-2">
+        <div className="space-y-3">
+          {/* 凡例を追加 */}
+          <div className="bg-secondary/30 p-2 rounded-lg text-xs text-muted-foreground">
+            <div className="grid grid-cols-2 gap-2 mb-1">
+              <div>買い目</div>
+              <div className="text-right">オッズ</div>
             </div>
-          ))}
+            <div className="grid grid-cols-2 gap-2">
+              <div>的中率</div>
+              <div className="text-right">投資額</div>
+            </div>
+          </div>
+
+          {/* 馬券種別ごとにグループ化 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {Object.entries(sortedBets.reduce((acc, bet) => {
+              const type = normalizeTicketType(bet.type);
+              if (!acc[type]) acc[type] = [];
+              acc[type].push(bet);
+              return acc;
+            }, {} as Record<string, typeof sortedBets>)).map(([betType, bets]) => (
+              <Card key={betType} className="bg-background/50 backdrop-blur-sm">
+                <CardHeader className="py-2 px-3 border-b">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-base font-medium min-w-[4rem]">
+                      {betType}
+                    </CardTitle>
+                    
+                    <div className="flex items-center gap-2 flex-shrink">
+                      <div className="flex items-center flex-wrap justify-end gap-1.5 text-xs">
+                        <span className="font-medium whitespace-nowrap">
+                          {bets.length}点
+                        </span>
+                        <span className="font-medium whitespace-nowrap text-primary">
+                          {bets.reduce((sum, bet) => sum + bet.stake, 0).toLocaleString()}円
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-2">
+                  <div className="space-y-1.5">
+                    {bets.map((bet, index) => (
+                      <div key={index} className="relative overflow-hidden">
+                        {bet.reason && bet.reason !== '手動選択された馬券' && bet.reason !== '理由なし' ? (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <div className={`
+                                relative overflow-hidden
+                                p-2 rounded-md border
+                                ${index % 2 === 0 ? 'bg-background/50' : 'bg-background/30'}
+                                hover:bg-primary/5 transition-colors duration-200
+                                cursor-pointer
+                              `}>
+                                {/* グラデーション背景レイヤー */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-50" />
+                                
+                                {/* コンテンツレイヤー */}
+                                <div className="relative">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <span className="font-medium">
+                                      {formatHorseNumbers(bet.type, bet.horses)}
+                                    </span>
+                                    <div className="flex items-center justify-end gap-1">
+                                      <span className="font-bold text-primary">
+                                        ×{bet.odds ? bet.odds.toFixed(1) : Number(bet.expectedReturn / bet.stake).toFixed(1)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                                    <span className="text-muted-foreground">
+                                      {(bet.probability * 100).toFixed(1)}%
+                                    </span>
+                                    <div className="text-right space-y-0.5">
+                                      <span className="font-medium">
+                                        {bet.stake.toLocaleString()}円
+                                      </span>
+                                      <span className="block text-primary text-[10px]">
+                                        {Math.round(bet.stake * (bet.odds || Number(bet.expectedReturn / bet.stake))).toLocaleString()}円
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </PopoverTrigger>
+                            <PopoverContent 
+                              className="w-[280px] sm:w-80 rounded-lg border border-primary/20 bg-black/70 backdrop-blur-sm p-4 shadow-lg" 
+                              sideOffset={5}
+                            >
+                              <div className="space-y-2">
+                                <h4 className="text-sm font-medium text-primary/90">選択理由</h4>
+                                <div className="relative overflow-hidden">
+                                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-30 pointer-events-none" />
+                                  <p className="text-sm text-white/90 leading-relaxed relative">
+                                    {bet.reason}
+                                  </p>
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        ) : (
+                          <div className={`
+                            relative overflow-hidden
+                            p-2 rounded-md border
+                            ${index % 2 === 0 ? 'bg-background/50' : 'bg-background/30'}
+                          `}>
+                            {/* グラデーション背景レイヤー */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-50" />
+                            
+                            {/* コンテンツレイヤー */}
+                            <div className="relative">
+                              <div className="grid grid-cols-2 gap-2">
+                                <span className="font-medium">
+                                  {formatHorseNumbers(bet.type, bet.horses)}
+                                </span>
+                                <div className="flex items-center justify-end gap-1">
+                                  <span className="font-bold text-primary">
+                                    ×{bet.odds ? bet.odds.toFixed(1) : Number(bet.expectedReturn / bet.stake).toFixed(1)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                                <span className="text-muted-foreground">
+                                  {(bet.probability * 100).toFixed(1)}%
+                                </span>
+                                <div className="text-right space-y-0.5">
+                                  <span className="font-medium">
+                                    {bet.stake.toLocaleString()}円
+                                  </span>
+                                  <span className="block text-primary text-[10px]">
+                                    {Math.round(bet.stake * (bet.odds || Number(bet.expectedReturn / bet.stake))).toLocaleString()}円
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
           {/* 集計情報 */}
-          <div className="p-4 bg-gradient-to-b from-primary/5">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
-                <p className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  {totals.totalInvestment.toLocaleString()}円
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 font-medium">総投資額</p>
+          <div className="grid grid-cols-3 gap-2 mt-3 bg-background/50 rounded-lg p-2">
+            <div className="text-center">
+              <div className="text-lg font-bold">
+                {totals.totalInvestment.toLocaleString()}円
               </div>
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
-                <p className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  {Math.round(totals.totalExpectedReturn).toLocaleString()}円
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 font-medium">推定期待収益</p>
+              <div className="text-xs text-muted-foreground">総投資額</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary">
+                {Math.round(totals.totalExpectedReturn).toLocaleString()}円
               </div>
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
-                <p className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  +{totals.expectedReturnRate}%
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 font-medium">期待収益率</p>
+              <div className="text-xs text-muted-foreground">推定期待収益</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary">
+                +{totals.expectedReturnRate}%
               </div>
+              <div className="text-xs text-muted-foreground">期待収益率</div>
             </div>
           </div>
         </div>

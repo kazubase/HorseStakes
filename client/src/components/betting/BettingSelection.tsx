@@ -202,40 +202,36 @@ export function BettingSelection() {
       }
 
       // 馬データを構築
-      const horseData = useMemo(() => {
-        if (!horses) return [];
+      const horseData = horses.map(horse => {
+        // 馬IDをキーとして確率を取得（URLパラメータの形式に合わせる）
+        const horseIdStr = String(horse.id);
+        const winProbability = (winProbs[horseIdStr] || 0) / 100;
+        const placeProbability = (placeProbs[horseIdStr] || 0) / 100;
         
-        return horses.map(horse => {
-          // 馬IDをキーとして確率を取得（URLパラメータの形式に合わせる）
-          const horseIdStr = String(horse.id);
-          const winProbability = (winProbs[horseIdStr] || 0) / 100;
-          const placeProbability = (placeProbs[horseIdStr] || 0) / 100;
-          
-          // 馬券データからも確率を取得（バックアップ）
-          const winBet = bettingOptions.find(
-            bet => bet.type === '単勝' && bet.horse1 === horse.number
-          );
-          const placeBet = bettingOptions.find(
-            bet => bet.type === '複勝' && bet.horse1 === horse.number
-          );
-          
-          // atomの値がない場合は馬券データから取得
-          const finalWinProb = winProbability || (winBet?.probability || 0);
-          const finalPlaceProb = placeProbability || (placeBet?.probability || 0);
-          
-          // 複勝確率は常に単勝確率以上になるようにする
-          const adjustedPlaceProb = Math.max(finalPlaceProb, finalWinProb);
-          
-          return {
-            number: horse.number,
-            name: horse.name,
-            winProb: finalWinProb,
-            placeProb: adjustedPlaceProb,
-            odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
-            frame: horse.frame
-          };
-        });
-      }, [horses, winProbs, placeProbs, latestOdds]);
+        // 馬券データからも確率を取得（バックアップ）
+        const winBet = bettingOptions.find(
+          bet => bet.type === '単勝' && bet.horse1 === horse.number
+        );
+        const placeBet = bettingOptions.find(
+          bet => bet.type === '複勝' && bet.horse1 === horse.number
+        );
+        
+        // atomの値がない場合は馬券データから取得
+        const finalWinProb = winProbability || (winBet?.probability || 0);
+        const finalPlaceProb = placeProbability || (placeBet?.probability || 0);
+        
+        // 複勝確率は常に単勝確率以上になるようにする
+        const adjustedPlaceProb = Math.max(finalPlaceProb, finalWinProb);
+        
+        return {
+          number: horse.number,
+          name: horse.name,
+          winProb: finalWinProb,
+          placeProb: adjustedPlaceProb,
+          odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
+          frame: horse.frame
+        };
+      });
 
       // Geminiを使用して最適化された馬券提案を取得
       const optimizedProposals = await calculateBetProposalsWithGemini(
