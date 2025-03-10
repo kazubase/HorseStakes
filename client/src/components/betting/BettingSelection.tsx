@@ -59,8 +59,16 @@ export function BettingSelection() {
             horse3: bet.horse3
           }));
 
+          // デバッグ用ログを追加
+          if (process.env.NODE_ENV === 'development') {
+            console.log('条件付き確率データ:', {
+              count: conditionalProbabilities.length,
+              samples: conditionalProbabilities.slice(0, 3)
+            });
+          }
+          
           // 資金配分を最適化
-          const optimizedBets = optimizeBetAllocation(recommendations, budget);
+          const optimizedBets = optimizeBetAllocation(recommendations, budget, conditionalProbabilities);
           
           if (process.env.NODE_ENV === 'development') {
             console.log('最適化結果:', optimizedBets);
@@ -86,7 +94,7 @@ export function BettingSelection() {
 
       optimizeBets();
     }
-  }, [currentStep, selectionState.selectedBets.length, selectionState.isAiOptimized, budget, setSelectionState]);
+  }, [currentStep, selectionState.selectedBets.length, selectionState.isAiOptimized, budget, setSelectionState, conditionalProbabilities]);
 
   // AI最適化フラグをリセットする処理を追加
   useEffect(() => {
@@ -303,6 +311,14 @@ export function BettingSelection() {
           });
         }
         
+        // デバッグ用ログを追加
+        if (process.env.NODE_ENV === 'development') {
+          console.log('条件付き確率データ:', {
+            count: conditionalProbabilities.length,
+            samples: conditionalProbabilities.slice(0, 3)
+          });
+        }
+        
         // 選択された馬券を最適化用の形式に変換
         const recommendations = selectionState.selectedBets.map(bet => ({
           type: bet.type,
@@ -319,7 +335,7 @@ export function BettingSelection() {
         }));
 
         // 資金配分を最適化
-        const optimizedBets = optimizeBetAllocation(recommendations, budget);
+        const optimizedBets = optimizeBetAllocation(recommendations, budget, conditionalProbabilities);
         
         if (process.env.NODE_ENV === 'development') {
           console.log('最適化結果:', optimizedBets);
