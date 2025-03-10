@@ -11,7 +11,9 @@ import {
   bettingOptionsAtom,
   raceNotesAtom,
   canProceedAtom,
-  conditionalProbabilitiesAtom
+  conditionalProbabilitiesAtom,
+  winProbsAtom,
+  placeProbsAtom
 } from '@/stores/bettingStrategy';
 import type { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
 import { BettingOptionsTable } from "@/components/BettingOptionsTable";
@@ -274,6 +276,8 @@ export function BettingAnalysis() {
   const [, setConditionalProbabilities] = useAtom(conditionalProbabilitiesAtom);
   const conditionalProbabilities = useAtomValue(conditionalProbabilitiesAtom);
   const [isCalculated, setIsCalculated] = useState(false);
+  const [, setWinProbs] = useAtom(winProbsAtom);
+  const [, setPlaceProbs] = useAtom(placeProbsAtom);
 
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1.0;
@@ -479,6 +483,31 @@ export function BettingAnalysis() {
       setAnalysisResult(geminiAnalysis.data);
     }
   }, [geminiAnalysis.data, setAnalysisResult]);
+
+  // 確率計算が完了したら、atomに保存する
+  useEffect(() => {
+    if (calculatedBettingOptions && calculatedBettingOptions.length > 0) {
+      // 単勝・複勝の確率をatomに保存
+      const newWinProbs: Record<string, number> = {};
+      const newPlaceProbs: Record<string, number> = {};
+      
+      // 馬券データから確率を抽出
+      calculatedBettingOptions.forEach(bet => {
+        if (bet.type === '単勝' && bet.horse1) {
+          // 馬番号をキーとして使用
+          newWinProbs[bet.horse1] = bet.probability * 100;
+        }
+        if (bet.type === '複勝' && bet.horse1) {
+          // 馬番号をキーとして使用
+          newPlaceProbs[bet.horse1] = bet.probability * 100;
+        }
+      });
+      
+      // atomに保存
+      setWinProbs(newWinProbs);
+      setPlaceProbs(newPlaceProbs);
+    }
+  }, [calculatedBettingOptions, setWinProbs, setPlaceProbs]);
 
   if (isHorsesError) {
     return (

@@ -16,8 +16,8 @@ export function BettingSelection() {
   const [bettingOptions] = useAtom(bettingOptionsAtom);
   const [horses] = useAtom(horsesAtom);
   const [latestOdds] = useAtom(latestOddsAtom);
-  const [winProbs] = useAtom(winProbsAtom);
-  const [placeProbs] = useAtom(placeProbsAtom);
+  const [winProbs, setWinProbs] = useAtom(winProbsAtom);
+  const [placeProbs, setPlaceProbs] = useAtom(placeProbsAtom);
   const conditionalProbabilities = useAtomValue(conditionalProbabilitiesAtom);
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1;
@@ -103,6 +103,30 @@ export function BettingSelection() {
     }
   }, [currentStep, selectionState.isAiOptimized, setSelectionState]);
 
+  // URLから確率データを取得
+  useEffect(() => {
+    // URLからクエリパラメータを解析
+    const searchParams = new URLSearchParams(window.location.search);
+    const winProbsParam = searchParams.get('winProbs');
+    const placeProbsParam = searchParams.get('placeProbs');
+    
+    try {
+      // winProbsパラメータが存在する場合、JSONとして解析
+      if (winProbsParam) {
+        const parsedWinProbs = JSON.parse(winProbsParam);
+        setWinProbs(parsedWinProbs);
+      }
+      
+      // placeProbsパラメータが存在する場合、JSONとして解析
+      if (placeProbsParam) {
+        const parsedPlaceProbs = JSON.parse(placeProbsParam);
+        setPlaceProbs(parsedPlaceProbs);
+      }
+    } catch (error) {
+      console.error('URLパラメータの解析に失敗:', error);
+    }
+  }, [setWinProbs, setPlaceProbs]);
+
   const handleBetSelection = (bet: BetProposal) => {
     // デバッグ情報を追加
     if (process.env.NODE_ENV === 'development') {
@@ -182,16 +206,32 @@ export function BettingSelection() {
         if (!horses) return [];
         
         return horses.map(horse => {
-          const winProbability = winProbs[horse.id] / 100 || 0;
-          const placeProbability = placeProbs[horse.id] / 100 || 0;
-          const currentOdds = Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0);
+          // 馬IDをキーとして確率を取得（URLパラメータの形式に合わせる）
+          const horseIdStr = String(horse.id);
+          const winProbability = (winProbs[horseIdStr] || 0) / 100;
+          const placeProbability = (placeProbs[horseIdStr] || 0) / 100;
+          
+          // 馬券データからも確率を取得（バックアップ）
+          const winBet = bettingOptions.find(
+            bet => bet.type === '単勝' && bet.horse1 === horse.number
+          );
+          const placeBet = bettingOptions.find(
+            bet => bet.type === '複勝' && bet.horse1 === horse.number
+          );
+          
+          // atomの値がない場合は馬券データから取得
+          const finalWinProb = winProbability || (winBet?.probability || 0);
+          const finalPlaceProb = placeProbability || (placeBet?.probability || 0);
+          
+          // 複勝確率は常に単勝確率以上になるようにする
+          const adjustedPlaceProb = Math.max(finalPlaceProb, finalWinProb);
           
           return {
             number: horse.number,
             name: horse.name,
-            winProb: winProbability,
-            placeProb: placeProbability,
-            odds: currentOdds,
+            winProb: finalWinProb,
+            placeProb: adjustedPlaceProb,
+            odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
             frame: horse.frame
           };
         });
@@ -261,7 +301,9 @@ export function BettingSelection() {
         if (process.env.NODE_ENV === 'development') {
           console.log('資金配分最適化開始:', {
             selectedBets: selectionState.selectedBets,
-            budget
+            budget,
+            winProbs,
+            placeProbs
           });
         }
         
@@ -385,20 +427,36 @@ export function BettingSelection() {
           selectedBets={selectionState.selectedBets}
           onBetSelect={handleBetSelection}
           onSelectAllByType={handleSelectAllByType}
-          horses={(horses || []).map(horse => ({
-            number: horse.number,
-            name: horse.name,
-            winProb: Number(bettingOptions.find(
+          horses={(horses || []).map(horse => {
+            // 馬IDをキーとして確率を取得（URLパラメータの形式に合わせる）
+            const horseIdStr = String(horse.id);
+            const winProbability = (winProbs[horseIdStr] || 0) / 100;
+            const placeProbability = (placeProbs[horseIdStr] || 0) / 100;
+            
+            // 馬券データからも確率を取得（バックアップ）
+            const winBet = bettingOptions.find(
               bet => bet.type === '単勝' && bet.horse1 === horse.number
-            )?.probability || 0),
-            placeProb: Number(bettingOptions.find(
+            );
+            const placeBet = bettingOptions.find(
               bet => bet.type === '複勝' && bet.horse1 === horse.number
-            )?.probability || 0),
-            odds: Number(bettingOptions.find(
-              bet => bet.type === '単勝' && bet.horse1 === horse.number
-            )?.odds || 0),
-            frame: horse.frame
-          }))}
+            );
+            
+            // atomの値がない場合は馬券データから取得
+            const finalWinProb = winProbability || (winBet?.probability || 0);
+            const finalPlaceProb = placeProbability || (placeBet?.probability || 0);
+            
+            // 複勝確率は常に単勝確率以上になるようにする
+            const adjustedPlaceProb = Math.max(finalPlaceProb, finalWinProb);
+            
+            return {
+              number: horse.number,
+              name: horse.name,
+              winProb: finalWinProb,
+              placeProb: adjustedPlaceProb,
+              odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
+              frame: horse.frame
+            };
+          })}
           correlations={conditionalProbabilities}
         />
       </div>

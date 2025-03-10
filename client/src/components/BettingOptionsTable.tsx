@@ -107,11 +107,6 @@ export function BettingOptionsTable({
     
     return baseHorseData;
   }, [horses, selectionState.availableHorses, allHorses, winProbs, placeProbs, selectedBets]);
-  
-  // デバッグ用のログ
-  useEffect(() => {
-    console.log('利用可能な馬データ:', horseData);
-  }, [horseData]);
 
   // 期待値を計算して統計情報を取得
   const optionsWithStats = useMemo(() => {
@@ -347,14 +342,34 @@ export function BettingOptionsTable({
     let totalProbability;
     
     if (useInclusionExclusion) {
-      // デバッグ用のログ
+      // デバッグ用のログを強化
       console.log(`計算開始: ${type}の包除原理計算`, selectedOfType);
       console.log('利用可能な馬データ:', horseData);
       
       // 包除原理を使用して計算
-      totalProbability = calculateTotalProbability(selectedOfType, horseData);
+      try {
+        // 馬データが必要な形式になっているか確認
+        const validHorseData = horseData && horseData.length > 0 && 
+          horseData.every(h => 
+            typeof h.number === 'number' && 
+            typeof h.winProb === 'number' && 
+            typeof h.placeProb === 'number'
+          );
+        
+        if (!validHorseData) {
+          console.error('馬データの形式が不正:', horseData);
+          throw new Error('馬データの形式が不正です');
+        }
+        
+        totalProbability = calculateTotalProbability(selectedOfType, horseData);
+        console.log(`計算結果: ${type}の合計確率 = ${totalProbability}`);
+      } catch (error) {
+        console.error(`${type}の包除原理計算でエラー:`, error);
+        // エラー時は単純合計を使用
+        totalProbability = selectedOfType.reduce((sum, bet) => sum + bet.probability, 0);
+        console.log(`エラーのため単純合計を使用: ${totalProbability}`);
+      }
       
-      console.log(`計算結果: ${type}の合計確率 = ${totalProbability}`);
       console.log(`単純合計: ${selectedOfType.reduce((sum, bet) => sum + bet.probability, 0)}`);
     } else {
       // 単純な合計
