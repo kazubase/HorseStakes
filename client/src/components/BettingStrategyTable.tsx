@@ -161,9 +161,16 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     }
   }, [strategy.recommendations.length, totalBudget]);
 
-  // 馬券の買い目表記を統一する関数を追加
+  // 馬券の買い目表記を統一する関数を修正
   const formatHorseNumbers = (type: string, horses: string[]): string => {
     const normalizedType = normalizeTicketType(type);
+    
+    // 単勝・複勝の場合は馬番のみ表示（スペース以降を削除）
+    if (normalizedType === '単勝' || normalizedType === '複勝') {
+      return horses[0].split(' ')[0];
+    }
+    
+    // その他の馬券種別は従来通りの表示
     return ["馬単", "3連単"].includes(normalizedType)
       ? horses.join('→')
       : horses.length === 1
