@@ -175,11 +175,13 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   const [optionsStats] = useAtom(bettingOptionsStatsAtom);
   
   useEffect(() => {
-    console.log('BettingStrategyTable - 統計情報:', {
-      hasStats: !!optionsStats,
-      stats: optionsStats,
-      optionsCount: optionsStats?.options?.length
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('BettingStrategyTable - 統計情報:', {
+        hasStats: !!optionsStats,
+        stats: optionsStats,
+        optionsCount: optionsStats?.options?.length
+      });
+    }
   }, [optionsStats]);
 
   // オッズの色分けロジック - 統計情報があれば使用
@@ -369,7 +371,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           </div>
 
           {/* 馬券種別ごとにグループ化 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {Object.entries(sortedBets.reduce((acc, bet) => {
               const type = normalizeTicketType(bet.type);
               if (!acc[type]) acc[type] = [];
@@ -388,7 +390,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                         <span className="font-medium whitespace-nowrap">
                           {bets.length}点
                         </span>
-                        <span className="font-medium whitespace-nowrap text-primary">
+                        <span className="font-medium whitespace-nowrap">
                           {bets.reduce((sum, bet) => sum + bet.stake, 0).toLocaleString()}円
                         </span>
                       </div>
@@ -444,7 +446,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                                     <span className="font-medium">
                                       {bet.stake.toLocaleString()}円
                                     </span>
-                                    <span className="block text-primary text-[10px]">
+                                    <span className="block text-muted-foreground text-[10px]">
                                       {(Math.round(bet.expectedReturn / 10) * 10).toLocaleString()}円
                                     </span>
                                   </div>
@@ -484,13 +486,13 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               <div className="text-xs text-muted-foreground">総投資額</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-primary">
+              <div className="text-lg font-bold">
                 {Math.round(totals.totalExpectedReturn).toLocaleString()}円
               </div>
               <div className="text-xs text-muted-foreground">推定期待収益</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-primary">
+              <div className="text-lg font-bold">
                 +{totals.expectedReturnRate}%
               </div>
               <div className="text-xs text-muted-foreground">期待収益率</div>
