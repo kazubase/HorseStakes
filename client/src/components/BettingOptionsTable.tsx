@@ -343,8 +343,10 @@ export function BettingOptionsTable({
     
     if (useInclusionExclusion) {
       // デバッグ用のログを強化
-      console.log(`計算開始: ${type}の包除原理計算`, selectedOfType);
-      console.log('利用可能な馬データ:', horseData);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`計算開始: ${type}の包除原理計算`, selectedOfType);
+        console.log('利用可能な馬データ:', horseData);
+      }
       
       // 包除原理を使用して計算
       try {
@@ -362,15 +364,23 @@ export function BettingOptionsTable({
         }
         
         totalProbability = calculateTotalProbability(selectedOfType, horseData);
-        console.log(`計算結果: ${type}の合計確率 = ${totalProbability}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`計算結果: ${type}の合計確率 = ${totalProbability}`);
+        }
       } catch (error) {
-        console.error(`${type}の包除原理計算でエラー:`, error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error(`${type}の包除原理計算でエラー:`, error);
+        }
         // エラー時は単純合計を使用
         totalProbability = selectedOfType.reduce((sum, bet) => sum + bet.probability, 0);
-        console.log(`エラーのため単純合計を使用: ${totalProbability}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`エラーのため単純合計を使用: ${totalProbability}`);
+        }
       }
       
-      console.log(`単純合計: ${selectedOfType.reduce((sum, bet) => sum + bet.probability, 0)}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`単純合計: ${selectedOfType.reduce((sum, bet) => sum + bet.probability, 0)}`);
+      }
     } else {
       // 単純な合計
       totalProbability = selectedOfType.reduce((sum, bet) => sum + bet.probability, 0);
