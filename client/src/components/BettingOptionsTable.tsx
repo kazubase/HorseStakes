@@ -80,8 +80,8 @@ export function BettingOptionsTable({
       .filter(v => v <= odds)
       .length / optionsWithStats.options.length;
     
-    if (percentile > 0.8) return 'text-green-600';
-    if (percentile > 0.6) return 'text-green-700';
+    if (percentile > 0.8) return 'text-green-500';
+    if (percentile > 0.6) return 'text-green-600';
     if (percentile > 0.4) return 'text-yellow-500';
     if (percentile > 0.2) return 'text-yellow-600';
     return 'text-yellow-600';
