@@ -328,10 +328,7 @@ export function BettingOptionsTable({
                         </span>
                         <span className={`
                           font-medium whitespace-nowrap
-                          ${getColorClass(
-                            typeStats.averageEv,
-                            optionsWithStats.stats.ev
-                          )}
+                          ${getEvColorClass(typeStats.averageEv)}
                         `}>
                           {typeStats.averageEv.toFixed(2)}
                         </span>
