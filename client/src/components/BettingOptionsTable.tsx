@@ -228,19 +228,21 @@ export function BettingOptionsTable({
 
   // 馬券種別に応じたタイトル表示を生成する関数
   const getCorrelationTitle = (bet: BetProposal) => {
-    const horseDisplay = bet.horses.join('-');
     switch (bet.type) {
       case '単勝':
       case '複勝':
-        return `${bet.type}${horseDisplay}が的中した場合`;
+        // 馬番のみを表示（全角スペースの前の部分を抽出）
+        const horseNumber = bet.horses[0].split(' ')[0];
+        return `${bet.type}${horseNumber}が的中した場合`;
       case '枠連':
       case 'ワイド':
       case '馬連':
+        const horseDisplay = bet.horses.join('-');
         return `${bet.type}${horseDisplay}が的中した場合`;
       case '馬単':
         return `${bet.type}${bet.horses.join('→')}が的中した場合`;
       case '３連複':
-        return `${bet.type}${horseDisplay}が的中した場合`;
+        return `${bet.type}${bet.horses.join('-')}が的中した場合`;
       case '３連単':
         return `${bet.type}${bet.horses.join('→')}が的中した場合`;
       default:
@@ -439,13 +441,13 @@ export function BettingOptionsTable({
                         <PopoverTrigger asChild>
                           {BetContent}
                         </PopoverTrigger>
-                        <PopoverContent className="w-80 bg-slate-900/95 backdrop-blur-sm border border-slate-800">
+                        <PopoverContent className="w-96 bg-slate-900/95 backdrop-blur-sm border border-slate-800">
                           <div className="space-y-4">
                             <div>
                               <h4 className="font-medium text-slate-300 mb-2 px-1">
                                 {getCorrelationTitle(option)}
                               </h4>
-                              <div className="space-y-0.5 rounded-lg bg-slate-950/50 p-1.5">
+                              <div className="grid grid-cols-2 gap-1.5 rounded-lg bg-slate-950/50 p-1.5">
                                 {formatCorrelations(option, relatedCorrelations).map((corr, i) => (
                                   <div key={i} 
                                     className={`
@@ -458,11 +460,13 @@ export function BettingOptionsTable({
                                       backdrop-blur-sm hover:bg-opacity-60 transition-all duration-200
                                     `}
                                   >
-                                    <span className="text-sm font-medium tracking-tight">
-                                      {corr.target.type} {corr.target.horses}
+                                    <span className="text-xs font-medium tracking-tight">
+                                      {corr.target.type === '単勝' || corr.target.type === '複勝' 
+                                        ? `${corr.target.type} ${corr.target.horses.split(' ')[0]}` 
+                                        : `${corr.target.type} ${corr.target.horses}`}
                                     </span>
                                     <span className={`
-                                      text-sm tabular-nums font-semibold
+                                      text-xs tabular-nums font-semibold
                                       ${corr.probability >= 0.75 ? 'text-emerald-200' : 
                                         corr.probability >= 0.5 ? 'text-emerald-400' : 
                                         corr.probability >= 0.25 ? 'text-amber-400' : 
