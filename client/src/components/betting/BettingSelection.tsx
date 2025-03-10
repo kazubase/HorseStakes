@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { calculateBetProposalsWithGemini, optimizeBetAllocation } from "@/lib/betOptimizer";
 import { useLocation } from "wouter";
 import { Sparkles } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getDefaultStore } from 'jotai';
 
 export function BettingSelection() {
@@ -177,15 +177,25 @@ export function BettingSelection() {
         throw new Error('データが読み込まれていません');
       }
 
-      // 馬データを準備
-      const horseData = horses.map(horse => ({
-        name: horse.name,
-        odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
-        winProb: winProbs[horse.id] / 100,
-        placeProb: placeProbs[horse.id] / 100,
-        frame: horse.frame,
-        number: horse.number
-      }));
+      // 馬データを構築
+      const horseData = useMemo(() => {
+        if (!horses) return [];
+        
+        return horses.map(horse => {
+          const winProbability = winProbs[horse.id] / 100 || 0;
+          const placeProbability = placeProbs[horse.id] / 100 || 0;
+          const currentOdds = Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0);
+          
+          return {
+            number: horse.number,
+            name: horse.name,
+            winProb: winProbability,
+            placeProb: placeProbability,
+            odds: currentOdds,
+            frame: horse.frame
+          };
+        });
+      }, [horses, winProbs, placeProbs, latestOdds]);
 
       // Geminiを使用して最適化された馬券提案を取得
       const optimizedProposals = await calculateBetProposalsWithGemini(
@@ -375,6 +385,21 @@ export function BettingSelection() {
           selectedBets={selectionState.selectedBets}
           onBetSelect={handleBetSelection}
           onSelectAllByType={handleSelectAllByType}
+          horses={(horses || []).map(horse => ({
+            number: horse.number,
+            name: horse.name,
+            winProb: Number(bettingOptions.find(
+              bet => bet.type === '単勝' && bet.horse1 === horse.number
+            )?.probability || 0),
+            placeProb: Number(bettingOptions.find(
+              bet => bet.type === '複勝' && bet.horse1 === horse.number
+            )?.probability || 0),
+            odds: Number(bettingOptions.find(
+              bet => bet.type === '単勝' && bet.horse1 === horse.number
+            )?.odds || 0),
+            frame: horse.frame
+          }))}
+          correlations={conditionalProbabilities}
         />
       </div>
     </div>

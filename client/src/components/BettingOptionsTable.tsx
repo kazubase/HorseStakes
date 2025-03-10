@@ -1,11 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BetProposal } from "@/lib/betEvaluation";
-import { useMemo } from "react";
+import { BetProposal, HorseData } from "@/lib/betEvaluation";
+import { useMemo, useEffect } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { BetCorrelation } from "@/lib/betConditionalProbability";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
+import { calculateTotalProbability } from "@/lib/betInclusionExclusion";
+import { useAtom } from 'jotai';
+import { selectionStateAtom, horsesAtom, winProbsAtom, placeProbsAtom } from '@/stores/bettingStrategy';
 
 interface BettingOptionsTableProps {
   bettingOptions: BetProposal[];
@@ -20,6 +23,7 @@ interface BettingOptionsTableProps {
   }>;
   className?: string;
   showAnalysis?: boolean;
+  horses?: HorseData[];
 }
 
 export function BettingOptionsTable({ 
@@ -30,8 +34,85 @@ export function BettingOptionsTable({
   correlations = [],
   geminiRecommendations = [],
   className,
-  showAnalysis = false
+  showAnalysis = false,
+  horses = []
 }: BettingOptionsTableProps) {
+  // selectionStateAtomから利用可能な馬データを取得
+  const [selectionState] = useAtom(selectionStateAtom);
+  const [allHorses] = useAtom(horsesAtom);
+  const [winProbs] = useAtom(winProbsAtom);
+  const [placeProbs] = useAtom(placeProbsAtom);
+  
+  // 馬データを構築
+  const horseData = useMemo(() => {
+    let baseHorseData: HorseData[] = [];
+    
+    // 基本データの取得
+    if (horses.length > 0) {
+      baseHorseData = horses;
+    } else if (selectionState.availableHorses.length > 0) {
+      baseHorseData = selectionState.availableHorses;
+    } else if (allHorses && allHorses.length > 0) {
+      baseHorseData = allHorses.map(horse => ({
+        number: horse.number,
+        name: horse.name,
+        winProb: winProbs[horse.number.toString()] || 0,
+        placeProb: placeProbs[horse.number.toString()] || 0,
+        odds: 1 / (winProbs[horse.number.toString()] || 0.01),
+        frame: horse.frame || 0
+      }));
+    } else {
+      // 馬データがない場合は空配列
+      return [];
+    }
+    
+    // 選択された馬券から確率情報を更新
+    if (selectedBets.length > 0) {
+      // 馬番から馬データへのマッピングを作成
+      const horseMap = new Map<number, HorseData>();
+      baseHorseData.forEach(horse => {
+        horseMap.set(horse.number, { ...horse });
+      });
+      
+      // 選択された馬券から確率情報を抽出
+      selectedBets.forEach(bet => {
+        // 単勝の場合
+        if (bet.type === '単勝' && bet.horse1) {
+          const horse = horseMap.get(bet.horse1);
+          if (horse) {
+            horse.winProb = bet.probability;
+            // 複勝確率が設定されていなければ、単勝の3倍程度と仮定
+            if (!horse.placeProb) {
+              horse.placeProb = Math.min(0.95, bet.probability * 3);
+            }
+          }
+        }
+        
+        // 複勝の場合
+        if (bet.type === '複勝' && bet.horse1) {
+          const horse = horseMap.get(bet.horse1);
+          if (horse) {
+            horse.placeProb = bet.probability;
+            // 単勝確率が設定されていなければ、複勝の1/3程度と仮定
+            if (!horse.winProb) {
+              horse.winProb = bet.probability / 3;
+            }
+          }
+        }
+      });
+      
+      // 更新された馬データを返す
+      return Array.from(horseMap.values());
+    }
+    
+    return baseHorseData;
+  }, [horses, selectionState.availableHorses, allHorses, winProbs, placeProbs, selectedBets]);
+  
+  // デバッグ用のログ
+  useEffect(() => {
+    console.log('利用可能な馬データ:', horseData);
+  }, [horseData]);
+
   // 期待値を計算して統計情報を取得
   const optionsWithStats = useMemo(() => {
     const options = bettingOptions.map(option => {
@@ -250,7 +331,7 @@ export function BettingOptionsTable({
     }
   };
 
-  // 券種ごとの統計を計算する関数を追加
+  // 券種ごとの統計を計算する関数を修正
   const calculateTypeStats = (
     options: typeof optionsWithStats.options,
     selectedBets: BetProposal[],
@@ -259,14 +340,37 @@ export function BettingOptionsTable({
     const selectedOfType = selectedBets.filter(bet => bet.type === type);
     if (!selectedOfType.length) return null;
 
-    const totalProbability = selectedOfType.reduce((sum, bet) => sum + bet.probability, 0);
+    // 包除原理を考慮する券種
+    const useInclusionExclusion = ['複勝', 'ワイド'].includes(type);
+    
+    // 包除原理を考慮した合計確率を計算
+    let totalProbability;
+    
+    if (useInclusionExclusion) {
+      // デバッグ用のログ
+      console.log(`計算開始: ${type}の包除原理計算`, selectedOfType);
+      console.log('利用可能な馬データ:', horseData);
+      
+      // 包除原理を使用して計算
+      totalProbability = calculateTotalProbability(selectedOfType, horseData);
+      
+      console.log(`計算結果: ${type}の合計確率 = ${totalProbability}`);
+      console.log(`単純合計: ${selectedOfType.reduce((sum, bet) => sum + bet.probability, 0)}`);
+    } else {
+      // 単純な合計
+      totalProbability = selectedOfType.reduce((sum, bet) => sum + bet.probability, 0);
+    }
     
     // 的中確率で加重平均した期待値を計算
     const weightedAverageEv = selectedOfType.reduce(
       (sum, bet) => {
         const odds = bet.expectedReturn / bet.stake;
         const ev = odds * bet.probability;
-        return sum + (ev * bet.probability / totalProbability);
+        // 包除原理を考慮する場合は、各馬券の確率の比率で重み付け
+        const weight = useInclusionExclusion 
+          ? bet.probability / selectedOfType.reduce((s, b) => s + b.probability, 0)
+          : bet.probability / totalProbability;
+        return sum + (ev * weight);
       }, 
       0
     );
