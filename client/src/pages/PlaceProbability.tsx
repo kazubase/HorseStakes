@@ -156,8 +156,8 @@ export default function PlaceProbability() {
                   </div>
                   <span className={`
                     text-sm font-bold tabular-nums transition-colors
-                    ${probabilities[horse.id] > 70 ? 'text-primary' : 
-                      probabilities[horse.id] > 45 ? 'text-primary/80' : 
+                    ${probabilities[horse.id] >= 75 ? 'text-primary' : 
+                      probabilities[horse.id] >= 50 ? 'text-primary/80' : 
                       'text-muted-foreground'}
                     ${probabilities[horse.id] < (winProbabilities[horse.id] || 0) ? 'text-red-500' : ''}
                   `}>

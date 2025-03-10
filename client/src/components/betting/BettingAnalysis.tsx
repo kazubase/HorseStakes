@@ -187,8 +187,8 @@ const PredictionSettingsSection = memo(({
                     <div className="flex gap-6">
                       <div className="text-right">
                         <p className={`text-sm font-bold ${
-                          horse.winProb > 0.3 ? 'text-primary' : 
-                          horse.winProb > 0.15 ? 'text-primary/80' : 'text-muted-foreground'
+                          horse.winProb >= 0.3 ? 'text-primary' : 
+                          horse.winProb >= 0.2 ? 'text-primary/80' : 'text-muted-foreground'
                         }`}>
                           {(horse.winProb * 100).toFixed(0)}%
                         </p>
@@ -196,8 +196,8 @@ const PredictionSettingsSection = memo(({
                       </div>
                       <div className="text-right">
                         <p className={`text-sm font-bold ${
-                          horse.placeProb > 0.7 ? 'text-primary' : 
-                          horse.placeProb > 0.45 ? 'text-primary/80' : 'text-muted-foreground'
+                          horse.placeProb >= 0.75 ? 'text-primary' : 
+                          horse.placeProb >= 0.5 ? 'text-primary/80' : 'text-muted-foreground'
                         }`}>
                           {(horse.placeProb * 100).toFixed(0)}%
                         </p>

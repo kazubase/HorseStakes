@@ -133,8 +133,8 @@ export default function WinProbability() {
                   </div>
                   <span className={`
                     text-sm font-bold tabular-nums transition-colors
-                    ${probabilities[horse.id] > 30 ? 'text-primary' : 
-                      probabilities[horse.id] > 15 ? 'text-primary/80' : 
+                    ${probabilities[horse.id] >= 30 ? 'text-primary' : 
+                      probabilities[horse.id] >= 20 ? 'text-primary/80' : 
                       'text-muted-foreground'}
                   `}>
                     {probabilities[horse.id]?.toFixed(1)}%

@@ -450,9 +450,9 @@ export function BettingOptionsTable({
                                   <div key={i} 
                                     className={`
                                       flex justify-between items-center px-2.5 py-1.5 rounded-md
-                                      ${corr.probability > 0.8 ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-800/20' : 
-                                        corr.probability > 0.5 ? 'bg-emerald-950/30 text-emerald-400' : 
-                                        corr.probability > 0.3 ? 'bg-amber-950/30 text-amber-400' : 
+                                      ${corr.probability >= 0.75 ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-800/20' : 
+                                        corr.probability >= 0.5 ? 'bg-emerald-950/30 text-emerald-400' : 
+                                        corr.probability >= 0.25 ? 'bg-amber-950/30 text-amber-400' : 
                                         'bg-slate-800/30 text-slate-400'
                                       }
                                       backdrop-blur-sm hover:bg-opacity-60 transition-all duration-200
@@ -463,9 +463,9 @@ export function BettingOptionsTable({
                                     </span>
                                     <span className={`
                                       text-sm tabular-nums font-semibold
-                                      ${corr.probability > 0.8 ? 'text-emerald-200' : 
-                                        corr.probability > 0.5 ? 'text-emerald-400' : 
-                                        corr.probability > 0.3 ? 'text-amber-400' : 
+                                      ${corr.probability >= 0.75 ? 'text-emerald-200' : 
+                                        corr.probability >= 0.5 ? 'text-emerald-400' : 
+                                        corr.probability >= 0.25 ? 'text-amber-400' : 
                                         'text-slate-400'
                                       }
                                     `}>
