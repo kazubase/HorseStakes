@@ -59,19 +59,61 @@ export function BettingOptionsTable({
 
   // 統計情報に基づいて色を決定する関数
   const getColorClass = (value: number, stats: { mean: number; std: number }) => {
-    const zScore = (value - stats.mean) / stats.std;
-    if (zScore > 1) return 'text-green-600';
-    if (zScore > 0) return 'text-green-500';
-    if (zScore > -1) return 'text-yellow-600';
+    // 値の相対的な位置を計算（パーセンタイルのような考え方）
+    const percentile = optionsWithStats.options
+      .map(o => o.probability)
+      .filter(v => v <= value)
+      .length / optionsWithStats.options.length;
+    
+    if (percentile > 0.8) return 'text-green-500';
+    if (percentile > 0.6) return 'text-green-600';
+    if (percentile > 0.4) return 'text-yellow-500';
+    if (percentile > 0.2) return 'text-yellow-600';
+    return 'text-muted-foreground';
+  };
+
+  // オッズの色分けロジック
+  const getOddsColorClass = (odds: number) => {
+    // オッズ値に対するパーセンタイルを計算
+    const percentile = optionsWithStats.options
+      .map(o => o.odds)
+      .filter(v => v <= odds)
+      .length / optionsWithStats.options.length;
+    
+    if (percentile > 0.8) return 'text-green-600';
+    if (percentile > 0.6) return 'text-green-700';
+    if (percentile > 0.4) return 'text-yellow-500';
+    if (percentile > 0.2) return 'text-yellow-600';
+    return 'text-yellow-600';
+  };
+
+  // 期待値の色分けロジック
+  const getEvColorClass = (ev: number) => {
+    // 期待値に対するパーセンタイルを計算
+    const percentile = optionsWithStats.options
+      .map(o => o.ev)
+      .filter(v => v <= ev)
+      .length / optionsWithStats.options.length;
+    
+    if (percentile > 0.8) return 'text-green-500';
+    if (percentile > 0.6) return 'text-green-600';
+    if (percentile > 0.4) return 'text-yellow-500';
+    if (percentile > 0.2) return 'text-yellow-600';
     return 'text-muted-foreground';
   };
 
   // EVに基づく背景色を決定する関数
   const getEvBackgroundClass = (ev: number, stats: { mean: number; std: number }) => {
-    const zScore = (ev - stats.mean) / stats.std;
-    if (zScore > 1) return 'bg-green-500/15 hover:bg-green-500/25';
-    if (zScore > 0) return 'bg-green-500/10 hover:bg-green-500/20';
-    if (zScore > -1) return 'bg-yellow-500/10 hover:bg-yellow-500/20';
+    // 値の相対的な位置を計算（パーセンタイルのような考え方）
+    const percentile = optionsWithStats.options
+      .map(o => o.ev)
+      .filter(v => v <= ev)
+      .length / optionsWithStats.options.length;
+    
+    if (percentile > 0.8) return 'bg-green-500/15 hover:bg-green-500/25';
+    if (percentile > 0.6) return 'bg-green-500/10 hover:bg-green-500/20';
+    if (percentile > 0.4) return 'bg-lime-600/10 hover:bg-lime-600/20';
+    if (percentile > 0.2) return 'bg-yellow-500/10 hover:bg-yellow-500/20';
     return 'bg-yellow-500/5 hover:bg-yellow-500/15';
   };
 
@@ -369,7 +411,7 @@ export function BettingOptionsTable({
                             <span className={`
                               text-right font-bold
                               transition-all duration-300
-                              ${getColorClass(option.odds, optionsWithStats.stats.odds)}
+                              ${getOddsColorClass(option.odds)}
                               ${isSelected(option) ? 'scale-105' : ''}
                             `}>
                               ×{option.odds.toFixed(1)}
@@ -385,7 +427,7 @@ export function BettingOptionsTable({
                             <span className={`
                               text-right font-medium
                               transition-all duration-300
-                              ${getColorClass(option.ev, optionsWithStats.stats.ev)}
+                              ${getEvColorClass(option.ev)}
                               ${isSelected(option) ? 'scale-105' : ''}
                             `}>
                               {(option.ev).toFixed(2)}
