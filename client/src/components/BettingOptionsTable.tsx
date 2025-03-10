@@ -110,10 +110,9 @@ export function BettingOptionsTable({
       .filter(v => v <= ev)
       .length / optionsWithStats.options.length;
     
-    if (percentile > 0.8) return 'bg-green-500/15 hover:bg-green-500/25';
-    if (percentile > 0.6) return 'bg-lime-600/15 hover:bg-lime-600/25';
-    if (percentile > 0.4) return 'bg-lime-600/10 hover:bg-lime-600/20';
-    if (percentile > 0.2) return 'bg-yellow-500/10 hover:bg-yellow-500/20';
+    if (percentile > 0.75) return 'bg-green-500/15 hover:bg-green-500/25';
+    if (percentile > 0.5) return 'bg-lime-600/15 hover:bg-lime-600/25';
+    if (percentile > 0.25) return 'bg-yellow-500/10 hover:bg-yellow-500/20';
     return 'bg-yellow-500/5 hover:bg-yellow-500/15';
   };
 
