@@ -2,7 +2,7 @@ import { BetProposal, HorseData } from './betEvaluation';
 import { calculateJointProbability } from './betJointProbability';
 
 /**
- * 包除原理を使用して複数の馬券の的中確率の合計を計算する
+ * 包除原理を使用して複数の馬券の的中確率の合計を計算する（一般化版）
  * 
  * @param proposals 馬券提案の配列
  * @param horses 出走馬データの配列
@@ -12,68 +12,111 @@ export const calculateTotalProbability = (
   proposals: BetProposal[],
   horses: HorseData[]
 ): number => {
-  // デバッグ用のログ
-  console.log('calculateTotalProbability 入力:', { proposals, horses });
-  
   if (proposals.length === 0) return 0;
   if (proposals.length === 1) return proposals[0].probability;
 
-  // 包除原理の計算
+  // 包除原理の一般化された計算
   let totalProb = 0;
+  const n = proposals.length;
 
-  // 1. 各馬券の確率を加算
-  for (const proposal of proposals) {
-    totalProb += proposal.probability;
-    console.log(`加算: ${proposal.type} ${proposal.horses.join('-')} = ${proposal.probability}`);
-  }
-  console.log(`ステップ1後の合計: ${totalProb}`);
-
-  // 2. 2つの馬券の同時的中確率を減算
-  for (let i = 0; i < proposals.length - 1; i++) {
-    for (let j = i + 1; j < proposals.length; j++) {
-      try {
-        const jointProb = calculateJointProbability(proposals[i], proposals[j], horses);
-        totalProb -= jointProb;
-        console.log(`減算: ${proposals[i].type} ${proposals[i].horses.join('-')} と ${proposals[j].type} ${proposals[j].horses.join('-')} の同時確率 = ${jointProb}`);
-      } catch (error) {
-        console.error('同時確率計算エラー:', error);
-        // エラーが発生した場合は、同時確率を0とみなす
-        console.log('同時確率を0として処理を続行');
-      }
+  // すべての部分集合の組み合わせを生成し、包除原理を適用
+  for (let k = 1; k <= n; k++) {
+    // k個の要素を選ぶすべての組み合わせを生成
+    const combinations = generateCombinations(proposals, k);
+    
+    // 符号を決定（奇数個なら加算、偶数個なら減算）
+    const sign = k % 2 === 1 ? 1 : -1;
+    
+    // 各組み合わせについて同時確率を計算
+    for (const combination of combinations) {
+      const jointProb = calculateJointProbabilityOfMultiple(combination, horses);
+      totalProb += sign * jointProb;
     }
   }
-  console.log(`ステップ2後の合計: ${totalProb}`);
-
-  // 3. 3つの馬券の同時的中確率を加算（3つ以上の馬券がある場合）
-  if (proposals.length >= 3) {
-    for (let i = 0; i < proposals.length - 2; i++) {
-      for (let j = i + 1; j < proposals.length - 1; j++) {
-        for (let k = j + 1; k < proposals.length; k++) {
-          const jointProb12 = calculateJointProbability(proposals[i], proposals[j], horses);
-          const jointProb13 = calculateJointProbability(proposals[i], proposals[k], horses);
-          const jointProb23 = calculateJointProbability(proposals[j], proposals[k], horses);
-          
-          // 3つの馬券が同時に的中する確率を近似計算
-          // 正確な計算には3つの馬券の同時確率計算関数が必要だが、
-          // ここでは簡易的に2つずつの同時確率から推定
-          const tripleJointProb = Math.min(
-            jointProb12 * jointProb13 / proposals[i].probability,
-            jointProb12 * jointProb23 / proposals[j].probability,
-            jointProb13 * jointProb23 / proposals[k].probability
-          );
-          
-          totalProb += tripleJointProb;
-        }
-      }
-    }
-    console.log(`ステップ3後の合計: ${totalProb}`);
-  }
-
-  // 4. 4つ以上の馬券の同時的中確率については省略（必要に応じて拡張可能）
   
   // 確率は0〜1の範囲に収める
-  const result = Math.max(0, Math.min(1, totalProb));
-  console.log(`最終結果: ${result}`);
+  return Math.max(0, Math.min(1, totalProb));
+};
+
+/**
+ * 複数の馬券の同時的中確率を計算する
+ * 
+ * @param bets 馬券の配列
+ * @param horses 出走馬データの配列
+ * @returns 同時的中確率
+ */
+const calculateJointProbabilityOfMultiple = (
+  bets: BetProposal[],
+  horses: HorseData[]
+): number => {
+  if (bets.length === 0) return 0;
+  if (bets.length === 1) return bets[0].probability;
+  
+  // 2つの馬券の同時確率は既存の関数を使用
+  if (bets.length === 2) {
+    try {
+      return calculateJointProbability(bets[0], bets[1], horses);
+    } catch (error) {
+      return 0;
+    }
+  }
+  
+  // 3つ以上の馬券の同時確率は再帰的に計算
+  // A∩B∩C∩... = A ∩ (B∩C∩...)
+  try {
+    // 最初の馬券を取り出す
+    const firstBet = bets[0];
+    // 残りの馬券の同時確率を再帰的に計算
+    const restBets = bets.slice(1);
+    const restJointProb = calculateJointProbabilityOfMultiple(restBets, horses);
+    
+    // 最初の馬券と残りの馬券の同時確率を計算
+    // これは近似計算になるが、より一般的な方法
+    if (restJointProb === 0) return 0;
+    
+    // 条件付き確率の積を使って計算
+    // P(A∩B∩C∩...) = P(A) * P(B∩C∩...|A)
+    
+    // 各馬券と最初の馬券の同時確率を計算
+    const conditionalProbs = restBets.map(bet => {
+      const jointProb = calculateJointProbability(firstBet, bet, horses);
+      // P(Bet|A) = P(A∩Bet) / P(A)
+      return jointProb / firstBet.probability;
+    });
+    
+    // 条件付き確率の積を計算（独立と仮定）
+    // これは近似だが、一般的なケースでは十分な精度
+    const conditionalJointProb = conditionalProbs.reduce((prod, p) => prod * p, 1);
+    
+    // 最終的な同時確率
+    // P(A∩B∩C∩...) = P(A) * P(B∩C∩...|A)
+    return firstBet.probability * conditionalJointProb;
+  } catch (error) {
+    return 0;
+  }
+};
+
+/**
+ * 配列からk個の要素を選ぶすべての組み合わせを生成
+ */
+const generateCombinations = <T>(array: T[], k: number): T[][] => {
+  const result: T[][] = [];
+
+  // 再帰的に組み合わせを生成
+  const combine = (start: number, current: T[]) => {
+    if (current.length === k) {
+      result.push([...current]);
+      return;
+    }
+
+    for (let i = start; i < array.length; i++) {
+      current.push(array[i]);
+      combine(i + 1, current);
+      current.pop();
+    }
+  };
+
+  combine(0, []);
   return result;
 };
 
@@ -118,30 +161,6 @@ export const findOptimalCombination = (
 };
 
 /**
- * 配列からk個の要素を選ぶすべての組み合わせを生成
- */
-const generateCombinations = <T>(array: T[], k: number): T[][] => {
-  const result: T[][] = [];
-
-  // 再帰的に組み合わせを生成
-  const combine = (start: number, current: T[]) => {
-    if (current.length === k) {
-      result.push([...current]);
-      return;
-    }
-
-    for (let i = start; i < array.length; i++) {
-      current.push(array[i]);
-      combine(i + 1, current);
-      current.pop();
-    }
-  };
-
-  combine(0, []);
-  return result;
-};
-
-/**
  * 馬券の組み合わせの期待値を計算
  * 
  * @param proposals 馬券提案の配列
@@ -158,20 +177,23 @@ export const calculateExpectedValue = (
   const totalInvestment = proposals.reduce((sum, bet) => sum + bet.stake, 0);
   
   // 各馬券の期待払戻金を計算
-  const expectedReturns = proposals.map(bet => bet.probability * bet.expectedReturn);
+  let totalExpectedReturn = 0;
   
-  // 同時的中による重複計算を調整
-  for (let i = 0; i < proposals.length - 1; i++) {
-    for (let j = i + 1; j < proposals.length; j++) {
-      const jointProb = calculateJointProbability(proposals[i], proposals[j], horses);
-      // 同時的中の場合の期待払戻金を減算（重複計算分）
-      const duplicateReturn = jointProb * (proposals[i].expectedReturn + proposals[j].expectedReturn);
-      expectedReturns.push(-duplicateReturn);
+  // 包除原理を使用して期待払戻金を計算
+  for (let k = 1; k <= proposals.length; k++) {
+    // k個の要素を選ぶすべての組み合わせを生成
+    const combinations = generateCombinations(proposals, k);
+    
+    // 符号を決定（奇数個なら加算、偶数個なら減算）
+    const sign = k % 2 === 1 ? 1 : -1;
+    
+    // 各組み合わせについて同時確率と期待払戻金を計算
+    for (const combination of combinations) {
+      const jointProb = calculateJointProbabilityOfMultiple(combination, horses);
+      const combinationReturn = combination.reduce((sum, bet) => sum + bet.expectedReturn, 0);
+      totalExpectedReturn += sign * jointProb * combinationReturn;
     }
   }
-  
-  // 総期待払戻金
-  const totalExpectedReturn = expectedReturns.reduce((sum, value) => sum + value, 0);
   
   // 期待値（収益率）を計算
   return totalInvestment > 0 ? (totalExpectedReturn / totalInvestment) - 1 : 0;
