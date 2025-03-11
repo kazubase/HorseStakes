@@ -431,33 +431,15 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       const placeProbs = JSON.parse(decodeURIComponent(placeProbsParam || '{}'));
       const horseNumbers = Object.keys(winProbs).map(Number);
       
-      if (shouldLog) {
-        console.log('シミュレーション用データ:', {
-          winProbs,
-          placeProbs,
-          horseNumbers
-        });
-      }
-      
       // 勝率に基づいて1着をシミュレート
       const firstPlaceRand = Math.random() * 100;
       let accumWinProb = 0;
       let first = horseNumbers[0];
       
-      if (shouldLog) {
-        console.log('1着シミュレーション:', { firstPlaceRand });
-      }
-      
       for (const horseNumber of horseNumbers) {
         accumWinProb += winProbs[horseNumber] || 0;
-        if (shouldLog) {
-          console.log(`馬番${horseNumber}: 累積勝率 ${accumWinProb.toFixed(1)}%`);
-        }
         if (firstPlaceRand <= accumWinProb) {
           first = horseNumber;
-          if (shouldLog) {
-            console.log(`1着決定: 馬番${horseNumber}`);
-          }
           break;
         }
       }
@@ -476,13 +458,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         adjustedPlaceProbs[horse] = ((placeProbs[horse] || 0) / totalPlaceProb) * 100;
       });
       
-      if (shouldLog) {
-        console.log('2着シミュレーション:', { 
-          remainingHorses,
-          adjustedPlaceProbs
-        });
-      }
-      
       // 2着のシミュレート
       const secondPlaceRand = Math.random() * 100;
       let accumPlaceProb = 0;
@@ -492,9 +467,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         accumPlaceProb += adjustedPlaceProbs[horseNumber];
         if (secondPlaceRand <= accumPlaceProb) {
           second = horseNumber;
-          if (shouldLog) {
-            console.log(`2着決定: 馬番${horseNumber}`);
-          }
           break;
         }
       }
@@ -512,13 +484,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         finalPlaceProbs[horse] = ((placeProbs[horse] || 0) / finalTotalProb) * 100;
       });
       
-      if (shouldLog) {
-        console.log('3着シミュレーション:', { 
-          finalHorses,
-          finalPlaceProbs
-        });
-      }
-      
       const thirdPlaceRand = Math.random() * 100;
       let accumFinalProb = 0;
       let third = finalHorses[0];
@@ -527,9 +492,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         accumFinalProb += finalPlaceProbs[horseNumber];
         if (thirdPlaceRand <= accumFinalProb) {
           third = horseNumber;
-          if (shouldLog) {
-            console.log(`3着決定: 馬番${horseNumber}`);
-          }
           break;
         }
       }
@@ -540,11 +502,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         third,
         fullResult: [first, second, third, ...finalHorses.filter(h => h !== third)]
       };
-      
-      // 最終結果のログ出力も制限
-      if (shouldLog) {
-        console.log('シミュレーション結果:', result);
-      }
       
       return result;
       
@@ -580,14 +537,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     // 馬番を平坦化して配列にする
     const flattenedHorseNumbers = actualHorseNumbers.flat();
     
-    if (shouldLog) {
-      console.log('抽出された馬番:', {
-        original: horses,
-        extracted: actualHorseNumbers,
-        flattened: flattenedHorseNumbers
-      });
-    }
-    
     // URLのデータの順番で馬番を割り当てる
     const urlParams = new URLSearchParams(window.location.search);
     const winProbsParam = urlParams.get('winProbs');
@@ -604,9 +553,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           dbIdToActualNumber[dbId] = index + 1;
         });
         
-        if (shouldLog) {
-          console.log('馬番マッピング:', dbIdToActualNumber);
-        }
       } catch (e) {
         console.error('winProbsパラメータの解析に失敗:', e);
       }
@@ -616,18 +562,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     const actualFirst = dbIdToActualNumber[raceResult.first] || 0;
     const actualSecond = dbIdToActualNumber[raceResult.second] || 0;
     const actualThird = dbIdToActualNumber[raceResult.third] || 0;
-    
-    if (shouldLog) {
-      console.log('馬券判定:', {
-        type,
-        horses,
-        actualHorseNumbers: flattenedHorseNumbers,
-        raceResult: {
-          dbIds: { first: raceResult.first, second: raceResult.second, third: raceResult.third },
-          actual: { first: actualFirst, second: actualSecond, third: actualThird }
-        }
-      });
-    }
     
     switch (type) {
       case '単勝':
@@ -957,7 +891,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           <div className="mt-6 pt-4 border-t border-border/30">
             <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              収益分布シミュレーション (10,000回)
+              収益分布シミュレーション
             </h3>
             <MonteCarloResults bets={sortedBets} />
           </div>
