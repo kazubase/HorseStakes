@@ -876,24 +876,24 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           </Masonry>
 
           {/* 集計情報 */}
-          <div className="grid grid-cols-3 gap-2 mt-3 bg-background/50 rounded-lg p-2">
-            <div className="text-center">
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="bg-background/50 p-2 rounded-lg text-center">
+              <div className="text-xs text-muted-foreground">総投資額</div>
               <div className="text-lg font-bold">
                 {totals.totalInvestment.toLocaleString()}円
               </div>
-              <div className="text-xs text-muted-foreground">総投資額</div>
             </div>
-            <div className="text-center">
+            <div className="bg-background/50 p-2 rounded-lg text-center">
+              <div className="text-xs text-muted-foreground">推定期待収益</div>
               <div className="text-lg font-bold">
                 {Math.round(totals.totalExpectedReturn).toLocaleString()}円
               </div>
-              <div className="text-xs text-muted-foreground">推定期待収益</div>
             </div>
-            <div className="text-center">
+            <div className="bg-background/50 p-2 rounded-lg text-center">
+              <div className="text-xs text-muted-foreground">期待収益率</div>
               <div className="text-lg font-bold">
                 +{totals.expectedReturnRate}%
               </div>
-              <div className="text-xs text-muted-foreground">期待収益率</div>
             </div>
           </div>
 
