@@ -9,9 +9,9 @@ export function BettingStepProgress() {
   const [canProceed] = useAtom(canProceedAtom);
 
   const steps = [
-    { id: 'ANALYSIS', label: '分析', description: '候補馬券と期待値分析' },
-    { id: 'SELECTION', label: '選択', description: '馬券の選択' },
-    { id: 'PORTFOLIO', label: 'ポートフォリオ', description: '資金配分最適化' }
+    { id: 'ANALYSIS', label: '分析', description: '期待値・リスク分析' },
+    { id: 'SELECTION', label: '選択', description: '購入馬券の選択' },
+    { id: 'PORTFOLIO', label: '買い目', description: '資金配分最適化' }
   ] as const;
 
   const currentIndex = steps.findIndex(step => step.id === currentStep);
@@ -52,7 +52,8 @@ export function BettingStepProgress() {
                 >
                   <span className="font-medium">{index + 1}</span>
                   {isActive && (
-                    <div className="absolute inset-0 rounded-full animate-ping bg-primary/20" />
+                    <div className="absolute inset-0 rounded-full animate-ping bg-primary/20" 
+                      style={{ animationDuration: '2s' }} />
                   )}
                 </div>
                 
