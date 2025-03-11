@@ -759,13 +759,45 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             </div>
           </div>
 
-          {/* Masonryレイアウトを適用 */}
+          {/* Masonryレイアウトを適用 - 券種数に応じて列数を調整 */}
           <Masonry
             breakpointCols={{
-              default: 3,    // デフォルト3列
-              1100: 3,       // 1100px以下でも3列
-              768: 2,        // タブレット以下で2列
-              400: 2         // モバイルでも2列を維持
+              default: Math.min(
+                Object.keys(sortedBets.reduce((acc, bet) => {
+                  const type = normalizeTicketType(bet.type);
+                  if (!acc[type]) acc[type] = [];
+                  acc[type].push(bet);
+                  return acc;
+                }, {} as Record<string, typeof sortedBets>)).length, 
+                4
+              ),    // 券種数と3の小さい方（最大3列）
+              1100: Math.min(
+                Object.keys(sortedBets.reduce((acc, bet) => {
+                  const type = normalizeTicketType(bet.type);
+                  if (!acc[type]) acc[type] = [];
+                  acc[type].push(bet);
+                  return acc;
+                }, {} as Record<string, typeof sortedBets>)).length, 
+                3
+              ),    // 1100px以下でも同様
+              768: Math.min(
+                Object.keys(sortedBets.reduce((acc, bet) => {
+                  const type = normalizeTicketType(bet.type);
+                  if (!acc[type]) acc[type] = [];
+                  acc[type].push(bet);
+                  return acc;
+                }, {} as Record<string, typeof sortedBets>)).length, 
+                2
+              ),    // タブレット以下では最大2列
+              400: Math.min(
+                Object.keys(sortedBets.reduce((acc, bet) => {
+                  const type = normalizeTicketType(bet.type);
+                  if (!acc[type]) acc[type] = [];
+                  acc[type].push(bet);
+                  return acc;
+                }, {} as Record<string, typeof sortedBets>)).length, 
+                2
+              )     // モバイルでも最大2列
             }}
             className="flex -ml-3 w-auto"
             columnClassName="pl-3 bg-clip-padding"
