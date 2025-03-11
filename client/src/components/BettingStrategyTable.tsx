@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import html2canvas from 'html2canvas';
-import { Camera, Sparkles } from 'lucide-react';
+import { Camera, Sparkles, LineChart, MousePointer } from 'lucide-react';
 import type { BetProposal } from "@/lib/betEvaluation";
 import { InfoIcon } from "lucide-react";
 import { useAtom } from 'jotai';
@@ -733,15 +733,13 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                 AI最適化
               </span>
             )}
+            {strategy.summary.riskLevel === 'USER_SELECTED' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                <MousePointer className="h-3 w-3 mr-1" />
+                手動選択
+              </span>
+            )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={captureTable}
-            className="h-8 w-8 p-0"
-          >
-            <Camera className="h-4 w-4" />
-          </Button>
         </div>
       </CardHeader>
 
@@ -932,7 +930,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           {/* モンテカルロシミュレーション結果を表示 */}
           <div className="mt-6 pt-4 border-t border-border/30">
             <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
+              <LineChart className="h-4 w-4 text-primary" />
               収益分布シミュレーション
             </h3>
             <MonteCarloResults bets={sortedBets} />

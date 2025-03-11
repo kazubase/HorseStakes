@@ -62,7 +62,7 @@ export function BettingPortfolio() {
     }
 
     return {
-      description: selectionState.isAiOptimized ? 'AI最適化戦略' : 'ユーザー選択戦略',
+      description: selectionState.isAiOptimized ? '購入予定' : '購入予定',
       recommendations,
       summary: {
         riskLevel: selectionState.isAiOptimized ? 'AI_OPTIMIZED' : 'USER_SELECTED',
