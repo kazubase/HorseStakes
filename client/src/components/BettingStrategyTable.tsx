@@ -621,7 +621,12 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={distributionData}
-              margin={{ top: 10, right: 10, left: 30, bottom: 0 }}
+              margin={{ 
+                top: 10, 
+                right: 10, 
+                left: window.innerWidth < 640 ? 0 : 10, 
+                bottom: 0 
+              }}
             >
               <defs>
                 <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
