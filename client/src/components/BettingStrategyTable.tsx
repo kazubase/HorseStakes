@@ -762,9 +762,10 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           {/* Masonryレイアウトを適用 */}
           <Masonry
             breakpointCols={{
-              default: 3,
-              1100: 2,
-              700: 1
+              default: 3,    // デフォルト3列
+              1100: 3,       // 1100px以下でも3列
+              768: 2,        // タブレット以下で2列
+              400: 2         // モバイルでも2列を維持
             }}
             className="flex -ml-3 w-auto"
             columnClassName="pl-3 bg-clip-padding"
