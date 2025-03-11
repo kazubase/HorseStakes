@@ -13,6 +13,7 @@ import { InfoIcon } from "lucide-react";
 import { useAtom } from 'jotai';
 import { bettingOptionsStatsAtom } from '@/stores/bettingStrategy';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import Masonry from 'react-masonry-css';
 
 interface BettingStrategyTableProps {
   strategy: GeminiStrategy;
@@ -758,15 +759,23 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             </div>
           </div>
 
-          {/* 馬券種別ごとにグループ化 */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Masonryレイアウトを適用 */}
+          <Masonry
+            breakpointCols={{
+              default: 3,
+              1100: 2,
+              700: 1
+            }}
+            className="flex -ml-3 w-auto"
+            columnClassName="pl-3 bg-clip-padding"
+          >
             {Object.entries(sortedBets.reduce((acc, bet) => {
               const type = normalizeTicketType(bet.type);
               if (!acc[type]) acc[type] = [];
               acc[type].push(bet);
               return acc;
             }, {} as Record<string, typeof sortedBets>)).map(([betType, bets]) => (
-              <Card key={betType} className="bg-background/50 backdrop-blur-sm">
+              <Card key={betType} className="bg-background/50 backdrop-blur-sm mb-3">
                 <CardHeader className="py-2 px-3 border-b">
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-base font-medium min-w-[4rem]">
@@ -863,7 +872,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </Masonry>
 
           {/* 集計情報 */}
           <div className="grid grid-cols-3 gap-2 mt-3 bg-background/50 rounded-lg p-2">
