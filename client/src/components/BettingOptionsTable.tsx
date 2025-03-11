@@ -135,17 +135,9 @@ export function BettingOptionsTable({
   }, [bettingOptions]);
 
   // 統計情報をatomに保存
-  const [currentStats, setBettingOptionsStats] = useAtom(bettingOptionsStatsAtom);
+  const [, setBettingOptionsStats] = useAtom(bettingOptionsStatsAtom);
   
   useEffect(() => {
-    if(process.env.NODE_ENV === 'development'){
-      console.log('BettingOptionsTable - 統計情報を計算:', {
-        optionsCount: optionsWithStats.options.length,
-        stats: optionsWithStats.stats,
-        firstOption: optionsWithStats.options[0]
-      });
-    }
-
     setBettingOptionsStats({
       evStats: optionsWithStats.stats.ev,
       oddsStats: optionsWithStats.stats.odds,
@@ -157,13 +149,6 @@ export function BettingOptionsTable({
         probability: o.probability
       }))
     });
-
-    if(process.env.NODE_ENV === 'development'){
-      console.log('BettingOptionsTable - 保存後の統計情報:', {
-        currentStats,
-        savedStats: optionsWithStats.stats
-      });
-    }
   }, [optionsWithStats, setBettingOptionsStats]);
 
   // 統計情報に基づいて色を決定する関数
@@ -375,11 +360,6 @@ export function BettingOptionsTable({
     let totalProbability;
     
     if (useInclusionExclusion) {
-      // デバッグ用のログを強化
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`計算開始: ${type}の包除原理計算`, selectedOfType);
-        console.log('利用可能な馬データ:', horseData);
-      }
       
       // 包除原理を使用して計算
       try {
@@ -397,22 +377,9 @@ export function BettingOptionsTable({
         }
         
         totalProbability = calculateTotalProbability(selectedOfType, horseData);
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`計算結果: ${type}の合計確率 = ${totalProbability}`);
-        }
       } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error(`${type}の包除原理計算でエラー:`, error);
-        }
         // エラー時は単純合計を使用
         totalProbability = selectedOfType.reduce((sum, bet) => sum + bet.probability, 0);
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`エラーのため単純合計を使用: ${totalProbability}`);
-        }
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`単純合計: ${selectedOfType.reduce((sum, bet) => sum + bet.probability, 0)}`);
       }
     } else {
       // 単純な合計

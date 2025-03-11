@@ -5,22 +5,10 @@ import { normalizeStringProbability } from './utils/probability';
 import { BetCorrelation } from './betConditionalProbability';
 
 export const optimizeBetAllocation = (
-    recommendations: GeminiRecommendation[],
-    totalBudget: number,
-    conditionalProbabilities: BetCorrelation[] = []
+  recommendations: GeminiRecommendation[],
+  totalBudget: number,
+  conditionalProbabilities: BetCorrelation[] = []
   ): BetProposal[] => {
-    if (process.env.NODE_ENV === 'development') {
-      console.group('Sharpe比最大化による資金配分の最適化');
-      console.log('条件付き確率データ:', {
-        count: conditionalProbabilities.length,
-        samples: conditionalProbabilities.slice(0, 3).map(cp => ({
-          condition: `${cp.condition.type}:${cp.condition.horses}`,
-          target: `${cp.target.type}:${cp.target.horses}`,
-          probability: cp.probability
-        }))
-      });
-    }
-    
     const processedRecs = recommendations.map(rec => ({
       ...rec,
       probability: normalizeStringProbability(rec.probability)
@@ -32,13 +20,6 @@ export const optimizeBetAllocation = (
       const key = `${corr.condition.type}:${corr.condition.horses}|${corr.target.type}:${corr.target.horses}`;
       condProbMap.set(key, corr.probability);
     });
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('条件付き確率マップ:', {
-        size: condProbMap.size,
-        keys: Array.from(condProbMap.keys()).slice(0, 3)
-      });
-    }
 
     // 馬券間の排反関係を計算する関数
     const calculateMutualExclusivity = (bet1: GeminiRecommendation, bet2: GeminiRecommendation): number => {
@@ -112,9 +93,6 @@ export const optimizeBetAllocation = (
             
             if (condProb !== undefined) {
               condProbUsed = true;
-              if (process.env.NODE_ENV === 'development' && Math.random() < 0.01) {
-                console.log(`条件付き確率使用: ${key1} => ${condProb}`);
-              }
               // 条件付き確率に基づいて調整（他の馬券が的中した場合の影響）
               adjustmentFactor *= (1 - otherBet.probability * (1 - condProb));
             } else {

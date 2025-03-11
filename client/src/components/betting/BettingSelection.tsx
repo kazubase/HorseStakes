@@ -25,13 +25,6 @@ export function BettingSelection() {
   
   // 次へボタンが押されたときに呼び出される関数を追加
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('ステップ変更検知:', {
-        currentStep,
-        selectedBetsCount: selectionState.selectedBets.length,
-        isAiOptimized: selectionState.isAiOptimized
-      });
-    }
     
     if (currentStep === "PORTFOLIO" && selectionState.selectedBets.length > 0 && !selectionState.isAiOptimized) {
       // 選択された馬券の資金配分を最適化
@@ -58,21 +51,9 @@ export function BettingSelection() {
             horse2: bet.horse2,
             horse3: bet.horse3
           }));
-
-          // デバッグ用ログを追加
-          if (process.env.NODE_ENV === 'development') {
-            console.log('条件付き確率データ:', {
-              count: conditionalProbabilities.length,
-              samples: conditionalProbabilities.slice(0, 3)
-            });
-          }
           
           // 資金配分を最適化
           const optimizedBets = optimizeBetAllocation(recommendations, budget, conditionalProbabilities);
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.log('最適化結果:', optimizedBets);
-          }
 
           // 最適化された馬券を選択状態に設定
           setSelectionState(prev => ({
@@ -136,22 +117,6 @@ export function BettingSelection() {
   }, [setWinProbs, setPlaceProbs]);
 
   const handleBetSelection = (bet: BetProposal) => {
-    // デバッグ情報を追加
-    if (process.env.NODE_ENV === 'development') {
-      console.log('馬券選択処理開始:', {
-        type: bet.type,
-        horses: bet.horses,
-        horseName: bet.horseName
-      });
-    }
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('現在の選択状態:', selectionState.selectedBets.map(b => ({
-        type: b.type,
-        horses: b.horses,
-        horseName: b.horseName
-      })));
-    }
     
     // 馬券の比較方法を修正
     // horseName を正規化して比較する
@@ -168,30 +133,16 @@ export function BettingSelection() {
       normalizeHorseName(b.horseName || '') === normalizeHorseName(bet.horseName || '')
     );
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('比較結果:', {
-        clickedBet: `${bet.type}:${bet.horseName}`,
-        normalizedClickedBet: `${bet.type}:${normalizeHorseName(bet.horseName || '')}`,
-        exists
-      });
-    }
-    
     setSelectionState(prev => {
       if (exists) {
         const newSelectedBets = prev.selectedBets.filter(b => 
           !(b.type === bet.type && 
             normalizeHorseName(b.horseName || '') === normalizeHorseName(bet.horseName || ''))
         );
-        if (process.env.NODE_ENV === 'development') {
-          console.log('馬券を解除:', newSelectedBets.length);
-        }
         return {
           ...prev,
           selectedBets: newSelectedBets
         };
-      }
-      if (process.env.NODE_ENV === 'development') {
-        console.log('馬券を追加');
       }
       return {
         ...prev,
@@ -311,14 +262,6 @@ export function BettingSelection() {
           });
         }
         
-        // デバッグ用ログを追加
-        if (process.env.NODE_ENV === 'development') {
-          console.log('条件付き確率データ:', {
-            count: conditionalProbabilities.length,
-            samples: conditionalProbabilities.slice(0, 3)
-          });
-        }
-        
         // 選択された馬券を最適化用の形式に変換
         const recommendations = selectionState.selectedBets.map(bet => ({
           type: bet.type,
@@ -336,10 +279,6 @@ export function BettingSelection() {
 
         // 資金配分を最適化
         const optimizedBets = optimizeBetAllocation(recommendations, budget, conditionalProbabilities);
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('最適化結果:', optimizedBets);
-        }
 
         // 最適化された馬券を選択状態に設定
         setSelectionState(prev => ({

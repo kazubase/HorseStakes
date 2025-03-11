@@ -29,14 +29,6 @@ export function BettingPortfolio() {
       };
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('選択された馬券:', selectionState.selectedBets.map(bet => ({
-        type: bet.type,
-        horses: bet.horses.join('-'),
-        reason: bet.reason
-      })));
-    }
-
     const recommendations = selectionState.selectedBets.map(bet => ({
       type: bet.type,
       horses: bet.horses,
@@ -52,14 +44,6 @@ export function BettingPortfolio() {
       stake: bet.stake,
       expectedReturn: bet.expectedReturn
     }));
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('変換後のrecommendations:', recommendations.map(rec => ({
-        type: rec.type,
-        horses: rec.horses.join('-'),
-        reason: rec.reason
-      })));
-    }
 
     return {
       description: selectionState.isAiOptimized ? '購入予定' : '購入予定',

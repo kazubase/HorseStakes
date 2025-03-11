@@ -36,16 +36,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   
   // 最適化計算の結果をメモ化
   const optimizationResult = useMemo(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Using provided strategy recommendations...', {
-        recommendationsCount: strategy.recommendations.length,
-        budget: totalBudget,
-        renderCount: renderCount.current,
-        // デバッグ用：reasonプロパティを確認
-        reasons: strategy.recommendations.map(rec => rec.reason)
-      });
-    }
-    
     // 既に最適化された推奨を使用（stakeとexpectedReturnを保持）
     return strategy.recommendations.map(rec => ({
       type: rec.type,
