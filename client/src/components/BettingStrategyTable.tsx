@@ -364,37 +364,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     // 結果を昇順にソート
     results.sort((a, b) => a - b);
     
-    // 分布データの生成を改善
-    const distributionData: DistributionDataPoint[] = [];
-    
-    // 最小値と最大値から適切なバケット幅を計算
-    const range = results[results.length - 1] - results[0];
-    const bucketCount = 20; // バケット数を固定
-    const bucketWidth = Math.ceil(range / bucketCount / 1000) * 1000; // 1000円単位に丸める
-    
-    // バケットの範囲を設定
-    const bucketRanges: number[] = [];
-    let currentValue = Math.floor(results[0] / 1000) * 1000; // 1000円単位で切り捨て
-    
-    while (currentValue <= results[results.length - 1]) {
-      bucketRanges.push(currentValue);
-      currentValue += bucketWidth;
-    }
-    
-    // 各バケットのカウントを計算
-    bucketRanges.forEach((bucketStart, i) => {
-      const bucketEnd = bucketRanges[i + 1] || results[results.length - 1];
-      const count = results.filter(r => r >= bucketStart && r < bucketEnd).length;
-      
-      if (count > 0) { // カウントが0のバケットは除外
-        distributionData.push({
-          value: bucketStart,
-          count,
-          percentage: (count / iterations) * 100
-        });
-      }
-    });
-
     // 統計情報を計算
     const mean = results.reduce((sum, val) => sum + val, 0) / results.length;
     const median = results[Math.floor(results.length / 2)];
@@ -408,16 +377,54 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     const lowerBound = results[Math.floor(results.length * 0.025)];
     const upperBound = results[Math.floor(results.length * 0.975)];
     
+    const stats = {
+      mean,
+      median,
+      min,
+      max,
+      winRate,
+      confidenceInterval: [lowerBound, upperBound]
+    };
+
+    // 95%信頼区間内のデータのみをフィルタリング
+    const filteredResults = results.filter(
+      r => r >= stats.confidenceInterval[0] && r <= stats.confidenceInterval[1]
+    );
+
+    // 分布データの生成を改善
+    const distributionData: DistributionDataPoint[] = [];
+    
+    // 最小値と最大値から適切なバケット幅を計算
+    const range = stats.confidenceInterval[1] - stats.confidenceInterval[0];
+    const bucketCount = 20; // バケット数を固定
+    const bucketWidth = Math.ceil(range / bucketCount / 1000) * 1000; // 1000円単位に丸める
+    
+    // バケットの範囲を設定
+    const bucketRanges: number[] = [];
+    let currentValue = Math.floor(stats.confidenceInterval[0] / 1000) * 1000; // 1000円単位で切り捨て
+    
+    while (currentValue <= stats.confidenceInterval[1]) {
+      bucketRanges.push(currentValue);
+      currentValue += bucketWidth;
+    }
+    
+    // 各バケットのカウントを計算
+    bucketRanges.forEach((bucketStart, i) => {
+      const bucketEnd = bucketRanges[i + 1] || stats.confidenceInterval[1];
+      const count = filteredResults.filter(r => r >= bucketStart && r < bucketEnd).length;
+      
+      if (count > 0) { // カウントが0のバケットは除外
+        distributionData.push({
+          value: bucketStart,
+          count,
+          percentage: (count / filteredResults.length) * 100
+        });
+      }
+    });
+
     return {
       distributionData,
-      stats: {
-        mean,
-        median,
-        min,
-        max,
-        winRate,
-        confidenceInterval: [lowerBound, upperBound]
-      }
+      stats
     };
   };
 
