@@ -138,11 +138,13 @@ export function BettingOptionsTable({
   const [currentStats, setBettingOptionsStats] = useAtom(bettingOptionsStatsAtom);
   
   useEffect(() => {
-    console.log('BettingOptionsTable - 統計情報を計算:', {
-      optionsCount: optionsWithStats.options.length,
-      stats: optionsWithStats.stats,
-      firstOption: optionsWithStats.options[0]
-    });
+    if(process.env.NODE_ENV === 'development'){
+      console.log('BettingOptionsTable - 統計情報を計算:', {
+        optionsCount: optionsWithStats.options.length,
+        stats: optionsWithStats.stats,
+        firstOption: optionsWithStats.options[0]
+      });
+    }
 
     setBettingOptionsStats({
       evStats: optionsWithStats.stats.ev,
@@ -156,10 +158,12 @@ export function BettingOptionsTable({
       }))
     });
 
-    console.log('BettingOptionsTable - 保存後の統計情報:', {
-      currentStats,
-      savedStats: optionsWithStats.stats
-    });
+    if(process.env.NODE_ENV === 'development'){
+      console.log('BettingOptionsTable - 保存後の統計情報:', {
+        currentStats,
+        savedStats: optionsWithStats.stats
+      });
+    }
   }, [optionsWithStats, setBettingOptionsStats]);
 
   // 統計情報に基づいて色を決定する関数

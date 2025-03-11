@@ -645,15 +645,33 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                 domain={[0, 'auto']}
               />
               <Tooltip 
-                formatter={(value: any, name: string) => [
-                  name === 'percentage' 
-                    ? `${Number(value).toFixed(1)}%` 
-                    : `${value >= 0 ? '+' : ''}${value.toLocaleString()}円`,
-                  name === 'percentage' ? '確率' : '収益'
-                ]}
-                labelFormatter={(value) => `収益: ${value >= 0 ? '+' : ''}${value.toLocaleString()}円`}
+                formatter={(value: any, name: string) => {
+                  if (name === 'percentage') {
+                    return [`${Number(value).toFixed(1)}%`, '確率'];
+                  } else {
+                    // 収益値に基づいて色を設定（数字部分のみ）
+                    const color = value >= 0 
+                      ? value > 10000 ? '#10b981' : value > 5000 ? '#34d399' : '#6ee7b7' // 緑のグラデーション
+                      : value < -10000 ? '#ef4444' : value < -5000 ? '#f87171' : '#fca5a5'; // 赤のグラデーション
+                    return [
+                      <span style={{ color }}>
+                        {`${value >= 0 ? '+' : ''}${value.toLocaleString()}円`}
+                      </span>, 
+                      '収益'
+                    ];
+                  }
+                }}
+                labelFormatter={(value) => {
+                  // 収益値に基づいて色を設定（数字部分のみ）
+                  const color = value >= 0 
+                    ? value > 10000 ? '#10b981' : value > 5000 ? '#34d399' : '#6ee7b7' // 緑のグラデーション
+                    : value < -10000 ? '#ef4444' : value < -5000 ? '#f87171' : '#fca5a5'; // 赤のグラデーション
+                  return <span>
+                    収益: <span style={{ color }}>{`${value >= 0 ? '+' : ''}${value.toLocaleString()}円`}</span>
+                  </span>;
+                }}
                 contentStyle={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
                   backdropFilter: 'blur(8px)',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   borderRadius: '0.5rem',
@@ -661,14 +679,14 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
                 }}
                 itemStyle={{
-                  color: 'rgba(255, 255, 255, 0.9)',
                   fontSize: '0.875rem',
-                  padding: '0.25rem 0'
+                  padding: '0.25rem 0',
+                  color: 'rgba(255, 255, 255, 0.9)' // 基本テキスト色を追加
                 }}
                 labelStyle={{
-                  color: 'rgba(255, 255, 255, 0.7)',
                   fontSize: '0.75rem',
-                  marginBottom: '0.5rem'
+                  marginBottom: '0.5rem',
+                  color: 'rgba(255, 255, 255, 0.7)' // 基本テキスト色を追加
                 }}
               />
               <Area 
@@ -694,9 +712,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             </div>
           </div>
           <div className="bg-background/50 p-2 rounded-lg">
-            <div className="text-xs text-muted-foreground">最大収益</div>
+            <div className="text-xs text-muted-foreground">中央値</div>
             <div className="text-lg font-bold">
-              {stats.max >= 0 ? '+' : ''}{Math.round(stats.max).toLocaleString()}円
+              {stats.median >= 0 ? '+' : ''}{Math.round(stats.median).toLocaleString()}円
             </div>
           </div>
         </div>
