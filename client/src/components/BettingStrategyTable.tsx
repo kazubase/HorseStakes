@@ -12,10 +12,18 @@ import type { BetProposal } from "@/lib/betEvaluation";
 import { InfoIcon } from "lucide-react";
 import { useAtom } from 'jotai';
 import { bettingOptionsStatsAtom } from '@/stores/bettingStrategy';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface BettingStrategyTableProps {
   strategy: GeminiStrategy;
   totalBudget: number;
+}
+
+// 分布データの型を定義
+interface DistributionDataPoint {
+  value: number;
+  count: number;
+  percentage: number;
 }
 
 export const BettingStrategyTable = memo(function BettingStrategyTable({ 
@@ -148,19 +156,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     };
   }, [sortedBets]);
 
-  // デバッグ用のレンダリングカウント
-  useEffect(() => {
-    renderCount.current += 1;
-    if (process.env.NODE_ENV === 'development') {
-      console.log('BettingStrategyTable render:', {
-        count: renderCount.current,
-        recommendationsCount: strategy.recommendations.length,
-        totalBudget,
-        timestamp: new Date().toISOString()
-      });
-    }
-  }, [strategy.recommendations.length, totalBudget]);
-
   // 馬券の買い目表記を統一する関数を修正
   const formatHorseNumbers = (type: string, horses: string[]): string => {
     const normalizedType = normalizeTicketType(type);
@@ -180,16 +175,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 
   // 馬券候補の統計情報を取得
   const [optionsStats] = useAtom(bettingOptionsStatsAtom);
-  
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('BettingStrategyTable - 統計情報:', {
-        hasStats: !!optionsStats,
-        stats: optionsStats,
-        optionsCount: optionsStats?.options?.length
-      });
-    }
-  }, [optionsStats]);
 
   // オッズの色分けロジック - 統計情報があれば使用
   const getOddsColorClass = (odds: number) => {
@@ -339,8 +324,470 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     }
   };
 
+  // モンテカルロシミュレーション関数を修正
+  const runMonteCarloSimulation = (bets: BetProposal[], iterations: number = 10000) => {
+    // 最初の1回だけログを出力するフラグ
+    let loggedFirstSimulation = false;
+    const results: number[] = [];
+    
+    for (let i = 0; i < iterations; i++) {
+      // 最初の1回目だけログを出力
+      const shouldLog = process.env.NODE_ENV === 'development' && i === 0 && !loggedFirstSimulation;
+      
+      let totalReturn = 0;
+      
+      // 各シミュレーションでレース結果を生成
+      const raceResult = simulateRaceResult(shouldLog);
+      
+      // 各馬券について当たりハズレを判定
+      bets.forEach(bet => {
+        // レース結果に基づいて馬券の的中を判定
+        if (isBetWinning(bet, raceResult, shouldLog)) {
+          // 当たりの場合は払戻金を加算
+          totalReturn += (bet.odds || 0) * bet.stake;
+        }
+      });
+      
+      // 投資額を引いて純利益を計算
+      const totalInvestment = bets.reduce((sum, bet) => sum + bet.stake, 0);
+      const netProfit = totalReturn - totalInvestment;
+      
+      results.push(netProfit);
+      
+      // 最初の1回をログ出力したらフラグを立てる
+      if (shouldLog) {
+        loggedFirstSimulation = true;
+      }
+    }
+    
+    // 結果を昇順にソート
+    results.sort((a, b) => a - b);
+    
+    // 分布データの生成を改善
+    const distributionData: DistributionDataPoint[] = [];
+    
+    // 最小値と最大値から適切なバケット幅を計算
+    const range = results[results.length - 1] - results[0];
+    const bucketCount = 20; // バケット数を固定
+    const bucketWidth = Math.ceil(range / bucketCount / 1000) * 1000; // 1000円単位に丸める
+    
+    // バケットの範囲を設定
+    const bucketRanges: number[] = [];
+    let currentValue = Math.floor(results[0] / 1000) * 1000; // 1000円単位で切り捨て
+    
+    while (currentValue <= results[results.length - 1]) {
+      bucketRanges.push(currentValue);
+      currentValue += bucketWidth;
+    }
+    
+    // 各バケットのカウントを計算
+    bucketRanges.forEach((bucketStart, i) => {
+      const bucketEnd = bucketRanges[i + 1] || results[results.length - 1];
+      const count = results.filter(r => r >= bucketStart && r < bucketEnd).length;
+      
+      if (count > 0) { // カウントが0のバケットは除外
+        distributionData.push({
+          value: bucketStart,
+          count,
+          percentage: (count / iterations) * 100
+        });
+      }
+    });
+
+    // 統計情報を計算
+    const mean = results.reduce((sum, val) => sum + val, 0) / results.length;
+    const median = results[Math.floor(results.length / 2)];
+    const min = results[0];
+    const max = results[results.length - 1];
+    
+    // 勝率を計算（利益が0以上の割合）
+    const winRate = results.filter(r => r >= 0).length / results.length;
+    
+    // 95%信頼区間
+    const lowerBound = results[Math.floor(results.length * 0.025)];
+    const upperBound = results[Math.floor(results.length * 0.975)];
+    
+    return {
+      distributionData,
+      stats: {
+        mean,
+        median,
+        min,
+        max,
+        winRate,
+        confidenceInterval: [lowerBound, upperBound]
+      }
+    };
+  };
+
+  // レース結果をシミュレートする関数
+  const simulateRaceResult = (shouldLog = false) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const winProbsParam = urlParams.get('winProbs');
+    const placeProbsParam = urlParams.get('placeProbs');
+    
+    try {
+      const winProbs = JSON.parse(decodeURIComponent(winProbsParam || '{}'));
+      const placeProbs = JSON.parse(decodeURIComponent(placeProbsParam || '{}'));
+      const horseNumbers = Object.keys(winProbs).map(Number);
+      
+      if (shouldLog) {
+        console.log('シミュレーション用データ:', {
+          winProbs,
+          placeProbs,
+          horseNumbers
+        });
+      }
+      
+      // 勝率に基づいて1着をシミュレート
+      const firstPlaceRand = Math.random() * 100;
+      let accumWinProb = 0;
+      let first = horseNumbers[0];
+      
+      if (shouldLog) {
+        console.log('1着シミュレーション:', { firstPlaceRand });
+      }
+      
+      for (const horseNumber of horseNumbers) {
+        accumWinProb += winProbs[horseNumber] || 0;
+        if (shouldLog) {
+          console.log(`馬番${horseNumber}: 累積勝率 ${accumWinProb.toFixed(1)}%`);
+        }
+        if (firstPlaceRand <= accumWinProb) {
+          first = horseNumber;
+          if (shouldLog) {
+            console.log(`1着決定: 馬番${horseNumber}`);
+          }
+          break;
+        }
+      }
+      
+      // 1着を除外して、複勝率に基づいて2,3着をシミュレート
+      const remainingHorses = horseNumbers.filter(h => h !== first);
+      const adjustedPlaceProbs: Record<number, number> = {};
+      
+      // 複勝率を正規化（1着を除いた馬で100%になるように）
+      let totalPlaceProb = 0;
+      remainingHorses.forEach(horse => {
+        totalPlaceProb += placeProbs[horse] || 0;
+      });
+      
+      remainingHorses.forEach(horse => {
+        adjustedPlaceProbs[horse] = ((placeProbs[horse] || 0) / totalPlaceProb) * 100;
+      });
+      
+      if (shouldLog) {
+        console.log('2着シミュレーション:', { 
+          remainingHorses,
+          adjustedPlaceProbs
+        });
+      }
+      
+      // 2着のシミュレート
+      const secondPlaceRand = Math.random() * 100;
+      let accumPlaceProb = 0;
+      let second = remainingHorses[0];
+      
+      for (const horseNumber of remainingHorses) {
+        accumPlaceProb += adjustedPlaceProbs[horseNumber];
+        if (secondPlaceRand <= accumPlaceProb) {
+          second = horseNumber;
+          if (shouldLog) {
+            console.log(`2着決定: 馬番${horseNumber}`);
+          }
+          break;
+        }
+      }
+      
+      // 3着のシミュレート（1,2着を除外して同様の処理）
+      const finalHorses = remainingHorses.filter(h => h !== second);
+      const finalPlaceProbs: Record<number, number> = {};
+      
+      let finalTotalProb = 0;
+      finalHorses.forEach(horse => {
+        finalTotalProb += placeProbs[horse] || 0;
+      });
+      
+      finalHorses.forEach(horse => {
+        finalPlaceProbs[horse] = ((placeProbs[horse] || 0) / finalTotalProb) * 100;
+      });
+      
+      if (shouldLog) {
+        console.log('3着シミュレーション:', { 
+          finalHorses,
+          finalPlaceProbs
+        });
+      }
+      
+      const thirdPlaceRand = Math.random() * 100;
+      let accumFinalProb = 0;
+      let third = finalHorses[0];
+      
+      for (const horseNumber of finalHorses) {
+        accumFinalProb += finalPlaceProbs[horseNumber];
+        if (thirdPlaceRand <= accumFinalProb) {
+          third = horseNumber;
+          if (shouldLog) {
+            console.log(`3着決定: 馬番${horseNumber}`);
+          }
+          break;
+        }
+      }
+      
+      const result = {
+        first,
+        second,
+        third,
+        fullResult: [first, second, third, ...finalHorses.filter(h => h !== third)]
+      };
+      
+      // 最終結果のログ出力も制限
+      if (shouldLog) {
+        console.log('シミュレーション結果:', result);
+      }
+      
+      return result;
+      
+    } catch (e) {
+      console.error('確率パラメータの解析に失敗:', e);
+      return null;
+    }
+  };
+
+  // 馬券が的中するかを判定する関数
+  const isBetWinning = (bet: BetProposal, raceResult: any, shouldLog = false) => {
+    if (!raceResult) return false;
+    
+    const { type, horses } = bet;
+    
+    // 馬番文字列から実際の馬番を抽出
+    const actualHorseNumbers = horses.map(h => {
+      // 馬番の抽出方法を改善
+      // 例: "1 ディープインパクト" → 1, "1-2" → [1, 2], "1→2→3" → [1, 2, 3]
+      if (h.includes('-')) {
+        // 馬連・ワイド・3連複などのケース
+        return h.split('-').map(num => parseInt(num.trim(), 10));
+      } else if (h.includes('→')) {
+        // 馬単・3連単などのケース
+        return h.split('→').map(num => parseInt(num.trim(), 10));
+      } else {
+        // 単勝・複勝などのケース
+        const match = h.match(/^(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+      }
+    });
+    
+    // 馬番を平坦化して配列にする
+    const flattenedHorseNumbers = actualHorseNumbers.flat();
+    
+    if (shouldLog) {
+      console.log('抽出された馬番:', {
+        original: horses,
+        extracted: actualHorseNumbers,
+        flattened: flattenedHorseNumbers
+      });
+    }
+    
+    // URLのデータの順番で馬番を割り当てる
+    const urlParams = new URLSearchParams(window.location.search);
+    const winProbsParam = urlParams.get('winProbs');
+    let dbIdToActualNumber: Record<number, number> = {};
+    
+    if (winProbsParam) {
+      try {
+        const winProbs = JSON.parse(decodeURIComponent(winProbsParam));
+        const dbIds = Object.keys(winProbs).map(Number);
+        
+        // URLのデータの順番で馬番を割り当て（1から始まる）
+        dbIds.forEach((dbId, index) => {
+          // 例: 349→1, 350→2, ...
+          dbIdToActualNumber[dbId] = index + 1;
+        });
+        
+        if (shouldLog) {
+          console.log('馬番マッピング:', dbIdToActualNumber);
+        }
+      } catch (e) {
+        console.error('winProbsパラメータの解析に失敗:', e);
+      }
+    }
+    
+    // レース結果のデータベースIDを実際の馬番に変換
+    const actualFirst = dbIdToActualNumber[raceResult.first] || 0;
+    const actualSecond = dbIdToActualNumber[raceResult.second] || 0;
+    const actualThird = dbIdToActualNumber[raceResult.third] || 0;
+    
+    if (shouldLog) {
+      console.log('馬券判定:', {
+        type,
+        horses,
+        actualHorseNumbers: flattenedHorseNumbers,
+        raceResult: {
+          dbIds: { first: raceResult.first, second: raceResult.second, third: raceResult.third },
+          actual: { first: actualFirst, second: actualSecond, third: actualThird }
+        }
+      });
+    }
+    
+    switch (type) {
+      case '単勝':
+        return flattenedHorseNumbers[0] === actualFirst;
+      
+      case '複勝':
+        return [actualFirst, actualSecond, actualThird].includes(flattenedHorseNumbers[0]);
+      
+      case '馬連':
+        return (
+          (flattenedHorseNumbers[0] === actualFirst && flattenedHorseNumbers[1] === actualSecond) ||
+          (flattenedHorseNumbers[0] === actualSecond && flattenedHorseNumbers[1] === actualFirst)
+        );
+      
+      case '馬単':
+        return flattenedHorseNumbers[0] === actualFirst && flattenedHorseNumbers[1] === actualSecond;
+      
+      case 'ワイド':
+        const positions = [actualFirst, actualSecond, actualThird];
+        // ワイドは2頭選んで、その2頭が3着以内に入れば的中
+        return (
+          positions.includes(flattenedHorseNumbers[0]) && 
+          positions.includes(flattenedHorseNumbers[1])
+        );
+      
+      case '3連複':
+        return (
+          [actualFirst, actualSecond, actualThird].every(pos => 
+            flattenedHorseNumbers.includes(pos)
+          ) && 
+          flattenedHorseNumbers.length === 3
+        );
+      
+      case '3連単':
+        return (
+          flattenedHorseNumbers[0] === actualFirst &&
+          flattenedHorseNumbers[1] === actualSecond &&
+          flattenedHorseNumbers[2] === actualThird
+        );
+      
+      default:
+        // 未対応の馬券種は確率に基づいて判定
+        return Math.random() < bet.probability;
+    }
+  };
+
+  // コンポーネント内に追加
+  const MonteCarloResults = ({ bets }: { bets: BetProposal[] }) => {
+    const { distributionData, stats } = useMemo(() => {
+      return runMonteCarloSimulation(bets);
+    }, [bets]);
+    
+    return (
+      <div className="space-y-4">
+        <div className="h-48 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={distributionData}
+              margin={{ top: 10, right: 10, left: 30, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorLoss" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis 
+                dataKey="value" 
+                tickFormatter={(value) => `${value >= 0 ? '+' : ''}${value.toLocaleString()}円`}
+                tick={{ fontSize: 10 }}
+                interval="preserveStartEnd" // 最初と最後のティックを必ず表示
+              />
+              <YAxis
+                tickFormatter={(value) => `${value.toFixed(1)}%`}
+                tick={{ fontSize: 10 }}
+                domain={[0, 'auto']}
+              />
+              <Tooltip 
+                formatter={(value: any, name: string) => [
+                  name === 'percentage' 
+                    ? `${Number(value).toFixed(1)}%` 
+                    : `${value >= 0 ? '+' : ''}${value.toLocaleString()}円`,
+                  name === 'percentage' ? '確率' : '収益'
+                ]}
+                labelFormatter={(value) => `収益: ${value >= 0 ? '+' : ''}${value.toLocaleString()}円`}
+                contentStyle={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                  backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '0.5rem',
+                  padding: '1rem',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                }}
+                itemStyle={{
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '0.875rem',
+                  padding: '0.25rem 0'
+                }}
+                labelStyle={{
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontSize: '0.75rem',
+                  marginBottom: '0.5rem'
+                }}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="percentage"
+                stroke={stats.mean >= 0 ? "#10b981" : "#ef4444"}
+                fillOpacity={1} 
+                fill={`url(#${stats.mean >= 0 ? 'colorProfit' : 'colorLoss'})`} 
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-background/50 p-2 rounded-lg">
+            <div className="text-xs text-muted-foreground">勝率</div>
+            <div className="text-lg font-bold">{(stats.winRate * 100).toFixed(1)}%</div>
+          </div>
+          <div className="bg-background/50 p-2 rounded-lg">
+            <div className="text-xs text-muted-foreground">平均収益</div>
+            <div className="text-lg font-bold">
+              {stats.mean >= 0 ? '+' : ''}{Math.round(stats.mean).toLocaleString()}円
+            </div>
+          </div>
+          <div className="bg-background/50 p-2 rounded-lg">
+            <div className="text-xs text-muted-foreground">最大収益</div>
+            <div className="text-lg font-bold">
+              {stats.max >= 0 ? '+' : ''}{Math.round(stats.max).toLocaleString()}円
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-background/50 p-3 rounded-lg">
+          <div className="text-xs text-muted-foreground mb-2">95%信頼区間</div>
+          <div className="relative h-6 bg-background rounded-full overflow-hidden">
+            <div 
+              className="absolute h-full bg-gradient-to-r from-yellow-500/50 to-green-500/50"
+              style={{ 
+                left: '0%', 
+                width: '100%' 
+              }}
+            />
+            <div className="absolute inset-0 flex items-center justify-between px-2 text-xs">
+              <span>{Math.round(stats.confidenceInterval[0]).toLocaleString()}円</span>
+              <span>{Math.round(stats.confidenceInterval[1]).toLocaleString()}円</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <Card className="overflow-hidden bg-gradient-to-br from-background to-primary/5">
+    <Card className="overflow-hidden bg-gradient-to-br from-background to-primary/5" data-card-container>
       <CardHeader className="relative pb-2 border-b border-border/50">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -364,7 +811,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       </CardHeader>
 
       <CardContent className="p-2">
-        <div className="space-y-3">
+        <div className="space-y-3" ref={tableRef}>
           {/* 凡例を追加 */}
           <div className="bg-secondary/30 p-2 rounded-lg text-xs text-muted-foreground">
             <div className="grid grid-cols-2 gap-2 mb-1">
@@ -504,6 +951,15 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               </div>
               <div className="text-xs text-muted-foreground">期待収益率</div>
             </div>
+          </div>
+
+          {/* モンテカルロシミュレーション結果を表示 */}
+          <div className="mt-6 pt-4 border-t border-border/30">
+            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              収益分布シミュレーション (10,000回)
+            </h3>
+            <MonteCarloResults bets={sortedBets} />
           </div>
         </div>
       </CardContent>
