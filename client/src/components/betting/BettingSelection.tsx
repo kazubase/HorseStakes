@@ -304,9 +304,6 @@ export function BettingSelection() {
 
   // 券種ごとの全選択・全解除機能を追加
   const handleSelectAllByType = (betType: string, select: boolean) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`${betType}の馬券を${select ? '全選択' : '全解除'}します`);
-    }
     
     setSelectionState(prev => {
       // 現在の選択状態をコピー
