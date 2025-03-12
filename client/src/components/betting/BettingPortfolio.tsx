@@ -135,11 +135,11 @@ function getStepDescription(step: number): string {
     case 0:
       return "準備中";
     case 1:
-      return "馬券間の相関関係とリスク評価";
+      return "馬券間の相関関係とリスク分析";
     case 2:
-      return "予算制約下での購入戦略策定";
+      return "投資設定に基づく購入戦略策定";
     case 3:
-      return "資金配分";
+      return "最適な資金配分";
     default:
       return "処理中";
   }
