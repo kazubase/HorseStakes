@@ -934,9 +934,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               </div>
             </div>
             <div className="bg-background/50 p-2 rounded-lg text-center">
-              <div className="text-xs text-muted-foreground">推定期待収益</div>
+              <div className="text-xs text-muted-foreground">期待収益</div>
               <div className="text-lg font-bold">
-                {(Math.round(totals.totalExpectedReturn / 10) * 10).toLocaleString()}円
+                +{(Math.round(totals.totalExpectedReturn / 10) * 10 - totals.totalInvestment).toLocaleString()}円
               </div>
             </div>
             <div className="bg-background/50 p-2 rounded-lg text-center">

@@ -53,7 +53,7 @@ export function BettingSelection() {
           }));
           
           // 資金配分を最適化
-          const optimizedBets = optimizeBetAllocation(recommendations, budget, conditionalProbabilities);
+          const optimizedBets = await optimizeBetAllocation(recommendations, budget, conditionalProbabilities);
 
           // 最適化された馬券を選択状態に設定
           setSelectionState(prev => ({
@@ -242,7 +242,7 @@ export function BettingSelection() {
   };
 
   // 馬券選択後に手動で最適化を行うボタンを追加
-  const handleOptimizeBets = () => {
+  const handleOptimizeBets = async () => {
     if (selectionState.selectedBets.length > 0 && !selectionState.isAiOptimized) {
       try {
         // 進捗状態を更新
@@ -278,7 +278,7 @@ export function BettingSelection() {
         }));
 
         // 資金配分を最適化
-        const optimizedBets = optimizeBetAllocation(recommendations, budget, conditionalProbabilities);
+        const optimizedBets = await optimizeBetAllocation(recommendations, budget, conditionalProbabilities);
 
         // 最適化された馬券を選択状態に設定
         setSelectionState(prev => ({
