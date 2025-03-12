@@ -488,17 +488,6 @@ export const evaluateBettingOptions = (
           // 最低期待値（対数スケールの導入）
           // 期待値1.0を基準に、リスクに応じて緩やかに上昇
           const minEV = Math.max(1.0, 1.0 + Math.log10(riskFactor) / Math.pow(riskRatio, 0.5));
-          
-          if (process.env.NODE_ENV === 'development') {
-            // フィルタリング条件のデバッグ出力
-            if (opt.odds >= minOdds && opt.prob >= minProbability && opt.ev >= minEV) {
-              console.log(`フィルタリング通過: ${opt.type} ${opt.horseName}`, {
-                オッズ: `${opt.odds.toFixed(1)} >= ${minOdds.toFixed(2)}`,
-                確率: `${(opt.prob * 100).toFixed(2)}% >= ${(minProbability * 100).toFixed(2)}%`,
-                期待値: `${opt.ev.toFixed(2)} >= ${minEV.toFixed(2)}`
-              });
-            }
-          }
   
           return opt.odds >= minOdds && 
                  opt.prob >= minProbability && 
@@ -543,13 +532,6 @@ export const evaluateBettingOptions = (
           "３連複": getBetTypeRange("３連複"),
           "３連単": getBetTypeRange("３連単")
         };
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('馬券種別ごとの選択数範囲:', Object.entries(betTypeRanges).reduce((acc, [type, range]) => {
-            acc[type] = `${range.min}～${range.max}点`;
-            return acc;
-          }, {} as Record<string, string>));
-        }
         
         // 馬券種別にグループ化
         const betsByType = options.reduce((acc, bet) => {

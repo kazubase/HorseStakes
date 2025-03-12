@@ -241,8 +241,7 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
     }, [])
     .join('\n') || '条件付き確率データなし';
 
-  // プロンプトの作成とサニタイズ
-  const prompt = sanitizeText(`
+  const prompt = `
 あなたは馬券専門のアナリストです。以下の分析の観点に従って、分析を行ってください。
 
 
@@ -275,12 +274,11 @@ ${bettingCandidatesList}
 【条件付き確率】
 ${formattedCorrelations}
 
-`);
+`;
 
   if (process.env.NODE_ENV === 'development') {
     // 改行を保持したまま出力する
-    console.log('Gemini分析プロンプト:');
-    console.log(prompt);
+    console.log('Gemini分析プロンプト:\n', prompt);
     
     // または長すぎる場合は要約情報のみ表示する
     console.log(`プロンプト長: ${prompt.length}文字, 出馬表: ${input.horses.length}頭, 馬券候補: ${input.bettingOptions.length}件`);
