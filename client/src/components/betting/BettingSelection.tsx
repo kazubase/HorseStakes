@@ -254,7 +254,7 @@ export function BettingSelection() {
         // 進捗状態を更新
         const store = getDefaultStore();
         store.set(geminiProgressAtom, {
-          step: 4, // 手動最適化は即時完了とする
+          step: 3, // 手動最適化は即時完了とする
           message: '資金配分最適化中...',
           error: null
         });

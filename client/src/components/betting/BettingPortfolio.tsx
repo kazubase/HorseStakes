@@ -74,7 +74,7 @@ export function BettingPortfolio() {
   useEffect(() => {
     if (selectionState.selectedBets.length > 0) {
       // Gemini APIを使用しない場合（手動最適化）は即時表示
-      if (!selectionState.isAiOptimized || geminiProgress.step === 4) {
+      if (!selectionState.isAiOptimized || geminiProgress.step === 3) {
         // 少し遅延を入れてアニメーションを見せる
         const timer = setTimeout(() => {
           setIsLoading(false);
@@ -86,7 +86,7 @@ export function BettingPortfolio() {
   }, [selectionState.selectedBets, selectionState.isAiOptimized, geminiProgress.step]);
 
   if (isLoading) {
-    const progressValue = geminiProgress.step * 25; // 0, 25, 50, 75, 100
+    const progressValue = geminiProgress.step * 100 / 3; // 0, 25, 50, 75, 100
     
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
@@ -98,7 +98,7 @@ export function BettingPortfolio() {
           <Progress value={progressValue} className="h-2" />
         </div>
         <p className="text-xs text-muted-foreground">
-          ステップ {geminiProgress.step}/4: {getStepDescription(geminiProgress.step)}
+          ステップ {geminiProgress.step}/3: {getStepDescription(geminiProgress.step)}
         </p>
         
         {/* エラーメッセージ */}
@@ -139,8 +139,6 @@ function getStepDescription(step: number): string {
     case 2:
       return "予算制約下での購入戦略策定";
     case 3:
-      return "最終的な戦略の生成";
-    case 4:
       return "資金配分";
     default:
       return "処理中";

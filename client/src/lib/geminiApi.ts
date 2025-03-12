@@ -516,157 +516,6 @@ ${bettingCandidatesList}
 5. リスク選好度に適した相関関係の活用方法を説明
 
 【出力形式】
-\`\`\`json
-{
-  "purchaseStrategy": {
-    "budget": ${totalBudget},
-    "riskProfile": {
-      "riskRatio": ${riskRatio},
-      "interpretation": "現在のリスク選好度の解釈",
-      "strategyAlignment": "リスク選好度に基づく戦略の方向性"
-    },
-    "overview": {
-      "mainStrategy": "全体的な戦略の要約（1-2文）",
-      "keyPoints": [
-        "重要なポイント1",
-        "重要なポイント2"
-      ]
-    },
-    "correlationStrategy": {
-      "highCorrelation": [
-        {
-          "pattern": "単勝[1]→複勝[1]のような高相関パターン",
-          "application": "この相関をどう活用/回避するか",
-          "riskConsideration": "リスク選好度との整合性"
-        }
-      ],
-      "synergies": [
-        {
-          "combination": ["券種1", "券種2"],
-          "merit": "組み合わせの利点",
-          "riskAlignment": "リスク選好度との適合性"
-        }
-      ]
-    },
-    "recommendations": [
-      {
-        "type": "券種",
-        "horses": ["馬番"],
-        "stake": 1000,
-        "odds": 10.0,
-        "probability": 0.15,
-        "expectedValue": 0.50,
-        "riskLevel": "低/中/高",
-        "reasoning": {
-          "selection": "選択理由",
-          "stakeSize": "投資額の根拠",
-          "correlationContext": "他の馬券との関連性",
-          "riskJustification": "リスク選好度との整合性の説明"
-        }
-      }
-    ],
-    "riskManagement": {
-      "distribution": [
-        {
-          "riskLevel": "低/中/高",
-          "percentage": 30,
-          "betTypes": ["券種1", "券種2"],
-          "rationale": "リスク選好度を考慮した配分理由"
-        }
-      ],
-      "hedgingStrategy": "リスク選好度に応じたヘッジ方針"
-    },
-    "expectedOutcomes": {
-      "bestCase": "最良のシナリオ",
-      "worstCase": "最悪のシナリオ",
-      "mostLikely": "最も可能性の高いシナリオ",
-      "riskReturnProfile": "リスクリターン特性の説明"
-    }
-  }
-}
-\`\`\``;
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('ステップ2プロンプト:\n', step2Prompt);
-    }
-
-    const step2Response = await fetchWithRetry('/api/gemini', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': getCsrfToken(),
-      },
-      credentials: 'same-origin',
-      body: JSON.stringify({
-        prompt: step2Prompt,
-        model: 'gemini-2.0-flash-001',
-        thought: false,
-        apiVersion: 'v1alpha'
-      })
-    }) ?? throwError('ステップ2の解析結果の取得に失敗しました');
-      const step2Data = await step2Response.json();
-
-    /*
-     * -------------------------
-     * Step 3: 最終的な戦略の出力（JSON形式）
-     * -------------------------
-     */
-    // ステップ3の進捗状態を更新
-    store.set(geminiProgressAtom, {
-      step: 3,
-      message: '最終的な戦略を生成中...',
-      error: null
-    });
-
-    let feedbackPrompt = '';
-    if (feedback && feedback.length) {
-      feedbackPrompt = `
-【ユーザーからのフィードバック】
-${feedback.map(f => {
-        switch (f.type) {
-          case 'MORE_RISK':
-            return '- より積極的な投資戦略を希望';
-          case 'LESS_RISK':
-            return '- より保守的な投資戦略を希望';
-          case 'FOCUS_HORSE':
-            return `- ${f.details.horseNumbers?.map(n => `${n}番`).join(',')}に注目して投資`;
-          case 'AVOID_HORSE':
-            return `- ${f.details.horseNumbers?.map(n => `${n}番`).join(',')}への投資を避ける`;
-          case 'PREFER_BET_TYPE':
-            return `- ${f.details.betType}を重視した戦略を希望`;
-          case 'AVOID_BET_TYPE':
-            return `- ${f.details.betType}への投資を避ける`;
-          default:
-            return '';
-        }
-      }).join('\n')}
-上記フィードバックを踏まえて、最終的な戦略を調整してください。
-`;
-    }
-
-    const step3Prompt = `【ステップ3：最終戦略のJSON形式出力】
-以下はこれまでの分析結果です。
-
-■ ステップ1：相関関係とリスク分散効果の分析
-${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}
-
-■ ステップ2：予算制約下での購入戦略策定
-${typeof step2Data === 'object' ? JSON.stringify(step2Data, null, 2) : step2Data}
-
-${feedbackPrompt}
-
-予算は${totalBudget.toLocaleString()}円、リスク選好度（riskRatio）は${riskRatio}です。
-（2-20の範囲で、20が最もリスク許容度が高い）
-
-【出馬表】
-${raceCardInfo}
-
-【馬券候補一覧】
-${bettingCandidatesList}
-
-【指示】
-上記情報を統合し、予算とリスク選好度を考慮した最終的な競馬投資戦略を以下のJSON形式で回答してください。
-
 json
 {
   "strategy": {
@@ -699,11 +548,12 @@ json
     }
   }
 }`;
+
     if (process.env.NODE_ENV === 'development') {
-      console.log('ステップ3プロンプト:\n', step3Prompt);
+      console.log('ステップ2プロンプト:\n', step2Prompt);
     }
 
-    const step3Response = await fetchWithRetry('/api/gemini', {
+    const step2Response = await fetchWithRetry('/api/gemini', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -711,22 +561,22 @@ json
       },
       credentials: 'same-origin',
       body: JSON.stringify({
-        prompt: step3Prompt,
+        prompt: step2Prompt,
         model: 'gemini-2.0-flash-001',
         thought: false,
         apiVersion: 'v1alpha'
       })
-    }) ?? throwError('ステップ3の最終出力の取得に失敗しました');
-    const step3Data = await step3Response.json();
+    }) ?? throwError('ステップ2の解析結果の取得に失敗しました');
+      const step2Data = await step2Response.json();
 
     // JSONコードブロック内のJSON部分を抽出してパースする
-    if (!step3Data || !step3Data.strategy || !step3Data.strategy.description) {
+    if (!step2Data || !step2Data.strategy || !step2Data.strategy.description) {
       throw new Error('最終戦略のレスポンス形式が不正です');
     }
     let parsedStrategy: any;
     try {
       const jsonRegex = /```json\s*\n([\s\S]*?)\n```/;
-      const match = jsonRegex.exec(step3Data.strategy.description);
+      const match = jsonRegex.exec(step2Data.strategy.description);
       if (match && match[1]) {
         parsedStrategy = JSON.parse(match[1]);
       } else {
@@ -746,8 +596,8 @@ json
 
     // 完了状態に更新
     store.set(geminiProgressAtom, {
-      step: 4,
-      message: '最適化が完了しました',
+      step: 3,
+      message: '資金配分最適化中...',
       error: null
     });
 
