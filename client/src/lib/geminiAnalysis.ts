@@ -50,7 +50,13 @@ interface GeminiAnalysisInput {
 // 簡素化したレスポンス型
 export interface GeminiAnalysisResult {
   summary: {
-    keyInsights: string[];
+    marketAnalysis?: string;
+    keyInsights: Array<{
+      strategy: string;
+      details: string;
+      expectedValue: string;
+      riskLevel: string;
+    } | string>;
   }
 }
 
@@ -242,29 +248,45 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
     .join('\n') || '条件付き確率データなし';
 
   const prompt = `
-あなたは馬券専門のアナリストです。以下の分析の観点に従って、分析を行ってください。
+# 競馬分析プロンプト
 
+あなたは競馬分析の専門家で、プロの馬券アナリストとして行動してください。あなたの目標は、ユーザーにとって最も価値のある馬券購入戦略を導き出すことです。
 
-1. 分析の観点
-- 出馬表に記載されている、各馬に対するユーザーの予想確率から、ユーザーがどの馬に期待しているのかを理解する
-- 馬券候補から期待値の高い馬券をいくつか探し出す。ここで、的中確率も考慮する
-- 馬券候補から見つけ出した有望な馬券候補の条件付き確率から、適度に相関がある馬券候補を見つけ出す
-- 上記の分析フローを3回繰り返し、ユーザーにとって最も価値のある馬券候補に対して興味深い考察を行う
+## 1. 分析プロセス
+- まず出馬表からユーザー予想確率を分析し、市場の認識と比較して割高/割安な馬を特定する
+- 次に馬券候補リストから期待値の高い馬券を抽出し、その理由を明確に説明する
+- 条件付き確率データを用いて、組み合わせ馬券の相関性を分析し、効率的な馬券組み合わせを発見する
+- 最終的に3つの具体的な馬券戦略を提案し、それぞれの論理的根拠を示す
 
-2. 出力フォーマット
+## 2. 出力フォーマット
 以下の構造に厳密に従ったJSONを返してください：
-
 {
   "summary": {
+    "marketAnalysis": "全体的な市場分析の要約（100字以内）",
     "keyInsights": [
-      "馬券１に対する考察",
-      "馬券２に対する考察",
-      "馬券３に対する考察"
+      {
+        "strategy": "馬券戦略1の名称",
+        "details": "馬券戦略1の詳細説明と根拠",
+        "expectedValue": "期待値の数値と簡潔な説明",
+        "riskLevel": "低/中/高のリスク評価"
+      },
+      {
+        "strategy": "馬券戦略2の名称",
+        "details": "馬券戦略2の詳細説明と根拠",
+        "expectedValue": "期待値の数値と簡潔な説明",
+        "riskLevel": "低/中/高のリスク評価"
+      },
+      {
+        "strategy": "馬券戦略3の名称",
+        "details": "馬券戦略3の詳細説明と根拠",
+        "expectedValue": "期待値の数値と簡潔な説明",
+        "riskLevel": "低/中/高のリスク評価"
+      }
     ]
   }
 }
 
-3. 分析対象データ
+## 3. 分析対象データ
 【出馬表】
 ${raceCardInfo}
 
@@ -273,6 +295,20 @@ ${bettingCandidatesList}
 
 【条件付き確率】
 ${formattedCorrelations}
+
+## 4. 分析の制約条件
+- リスク分散のため、異なるタイプの馬券（単勝/複勝/馬連など）を含めることが望ましい
+- 提案する戦略は具体的な馬番を含むこと
+- 分析結果は客観的なデータに基づくものであり、「絶対に当たる」などの断定的表現は避ける
+
+## 5. 思考プロセス
+以下のステップで思考を進めてください：
+a) 予想確率とオッズの乖離から割安な馬を特定
+b) 的中確率と期待値のバランスを考慮した馬券候補のランク付け
+c) 条件付き確率から相関性の高い/低い組み合わせを発見
+d) 上記分析を総合した最適な馬券戦略の構築
+
+それぞれのステップでの考察を明示した上で最終的な戦略を提案してください。
 
 `;
 
@@ -349,7 +385,18 @@ ${formattedCorrelations}
     // 機密情報を除去したレスポンスを返す
     return {
       summary: {
-        keyInsights: parsedData.summary.keyInsights.map(insight => sanitizeText(insight))
+        marketAnalysis: parsedData.summary.marketAnalysis,
+        keyInsights: Array.isArray(parsedData.summary.keyInsights) 
+          ? parsedData.summary.keyInsights.map(insight => {
+              // オブジェクトの場合はそのまま返し、文字列の場合はそのまま返す
+              return typeof insight === 'string' ? insight : {
+                strategy: insight.strategy || '',
+                details: insight.details || '',
+                expectedValue: insight.expectedValue || '',
+                riskLevel: insight.riskLevel || ''
+              };
+            })
+          : ['分析結果の取得に失敗しました。']
       }
     };
 

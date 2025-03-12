@@ -242,7 +242,7 @@ const GeminiAnalysisSection = memo(({
         </div>
       ) : data ? (
         <div className="space-y-4">
-          {data.summary.keyInsights.map((insight: string, i: number) => (
+          {data.summary.keyInsights.map((insight: any, i: number) => (
             <div key={i} 
                  className="relative overflow-hidden group bg-black/40 backdrop-blur-sm rounded-lg border border-primary/10">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -253,9 +253,20 @@ const GeminiAnalysisSection = memo(({
                       {i + 1}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed">
-                    {insight}
-                  </p>
+                  {typeof insight === 'string' ? (
+                    <p className="text-sm leading-relaxed">{insight}</p>
+                  ) : (
+                    <div className="space-y-2 flex-1">
+                      <h4 className="text-sm font-medium text-primary">{insight.strategy}</h4>
+                      <p className="text-sm leading-relaxed">{insight.details}</p>
+                      <div className="flex justify-between text-xs mt-2">
+                        <span className="text-muted-foreground">リスク: <span className={`font-medium ${
+                          insight.riskLevel === '低' ? 'text-green-400' : 
+                          insight.riskLevel === '中' ? 'text-yellow-400' : 'text-red-400'
+                        }`}>{insight.riskLevel}</span></span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
