@@ -266,85 +266,55 @@ export const getGeminiStrategy = async (
 
     const bettingCandidatesList = generateBettingCandidatesList();
     
-    // 条件付き確率一覧を生成
-    const typeOrder: Record<string, number> = {
-      "単勝": 1,
-      "複勝": 2,
-      "枠連": 3,
-      "ワイド": 4,
-      "馬連": 5,
-      "馬単": 6,
-      "３連複": 7,
-      "３連単": 8
+    // 簡易的な相関情報を生成（ハイブリッドアプローチ用）
+    const generateSimpleCorrelationInfo = (): string => {
+      // 相関の強さによるグループ分け
+      const strongCorrelations = correlations.filter(c => c.probability >= 0.7);
+      const mediumCorrelations = correlations.filter(c => c.probability >= 0.4 && c.probability < 0.7);
+      
+      // 上位の相関情報のみを提供
+      const topStrongCorrelations = strongCorrelations.slice(0, 5);
+      const topMediumCorrelations = mediumCorrelations.slice(0, 5);
+      
+      let result = "【簡易相関情報】\n";
+      
+      if (topStrongCorrelations.length > 0) {
+        result += "■ 強い相関関係（70%以上）:\n";
+        topStrongCorrelations.forEach(c => {
+          result += `・${c.condition.type}[${c.condition.horses}]が的中すると${c.target.type}[${c.target.horses}]の的中確率は${(c.probability * 100).toFixed(1)}%\n`;
+        });
+      }
+      
+      if (topMediumCorrelations.length > 0) {
+        result += "\n■ 中程度の相関関係（40-70%）:\n";
+        topMediumCorrelations.forEach(c => {
+          result += `・${c.condition.type}[${c.condition.horses}]が的中すると${c.target.type}[${c.target.horses}]の的中確率は${(c.probability * 100).toFixed(1)}%\n`;
+        });
+      }
+      
+      return result;
     };
-
-    const correlationsText = correlations && correlations.length > 0 
-      ? `条件付き確率データ:${correlations
-          .sort((a, b) => {
-            // まずtypeOrderに従ってtypeを比較
-            const typeA = typeOrder[a.condition.type] || 999;
-            const typeB = typeOrder[b.condition.type] || 999;
-            if (typeA !== typeB) {
-              return typeA - typeB;
-            }
-
-            // typeが同じ場合、対応する馬券候補から期待値を取得してソート
-            const getBetExpectedValue = (condition: { type: string, horses: string }) => {
-              const bet = allBettingOptions.bettingOptions.find(b => 
-                b.type === condition.type && 
-                b.horseName === condition.horses
-              );
-              if (!bet) return -1;
-              return (bet.prob * bet.ev) / bet.odds;
-            };
-
-            const expectedValueA = getBetExpectedValue(a.condition);
-            const expectedValueB = getBetExpectedValue(b.condition);
-
-            // 期待値の降順でソート（大きい順）
-            if (expectedValueA !== expectedValueB) {
-              return expectedValueB - expectedValueA;
-            }
-
-            // 期待値が同じ場合はhorsesで比較
-            return a.condition.horses.localeCompare(b.condition.horses);
-          })
-          .reduce((acc: string[], c, index, array) => {
-            if (index === 0 || 
-                array[index - 1].condition.type !== c.condition.type || 
-                array[index - 1].condition.horses !== c.condition.horses) {
-              acc.push(`\n■ ${c.condition.type}[${c.condition.horses}]が的中した場合：`);
-            }
-            
-            acc.push(`・${c.target.type}[${c.target.horses}]の的中確率は${(c.probability * 100).toFixed(1)}%`);
-            
-            return acc;
-          }, [])
-          .join('\n')}`
-      : '条件付き確率データなし';
+    
+    const simpleCorrelationInfo = generateSimpleCorrelationInfo();
 
     /*
      * -------------------------
-     * Step 1: 馬券間の相関関係とリスク評価
+     * Step 1: 基本分析と有望馬券の選定（ハイブリッドアプローチ）
      * -------------------------
      */
     // ステップ1の進捗状態を更新
     store.set(geminiProgressAtom, {
       step: 1,
-      message: '馬券間の相関関係とリスク評価を分析中...',
+      message: '基本分析と有望馬券の選定中...',
       error: null
     });
 
-    const step1Prompt = `【ステップ1：馬券間の相関関係とリスク評価】
+    const step1Prompt = `【競馬AI分析：ステップ1 - 基本分析と有望馬券の選定】
 
-以下の出馬表、馬券候補一覧、および条件付き確率一覧に基づき、包括的な分析を行います。
-リスク選好度（riskRatio）は${riskRatio}です。（2-20の範囲で、20が最もリスク許容度が高い）
+あなたは競馬分析の専門家です。出馬表と馬券候補、および簡易的な相関情報を基に、有望な馬券を選定してください。
 
-【評価項目】
-1. 各馬券の基本評価（期待値、リスク）
-2. 馬券間の相関関係
-3. リスク分散効果
-4. リスク選好度に応じた推奨組み合わせ
+【リスク選好度】
+${riskRatio}/20（数値が大きいほどリスク許容度が高い）
 
 【出馬表】
 ${raceCardInfo}
@@ -352,84 +322,62 @@ ${raceCardInfo}
 【馬券候補一覧】
 ${bettingCandidatesList}
 
-【条件付き確率一覧】
-${correlationsText}
+${simpleCorrelationInfo}
+
+【分析のポイント】
+1. 各馬券の期待値とリスクのバランス
+2. リスク選好度（${riskRatio}/20）に適した馬券の選定
+3. 簡易相関情報を考慮した初期評価
+4. 各券種の特性（単勝・複勝は的中率高め、3連単は配当高めなど）
+
+【お願い】
+1. まず各券種の特徴と、現在のレース状況における有望度を簡潔に分析してください
+2. 次に、リスク選好度（${riskRatio}/20）を考慮して、有望な馬券を10～15個程度選定してください
+3. 選定理由と期待される結果を簡潔に説明してください
+4. 最後に、選定した馬券をリスクレベル（低・中・高）で分類してください
 
 【出力形式】
+分析結果はJSON形式で出力してください。
+
 \`\`\`json
 {
-  "analysis": {
-    "riskProfile": {
-      "riskRatio": ${riskRatio},
-      "interpretation": "リスク選好度の解釈",
-      "recommendedRiskDistribution": {
-        "lowRisk": "配分割合（%）",
-        "mediumRisk": "配分割合（%）",
-        "highRisk": "配分割合（%）"
-      }
-    },
-    "correlationPatterns": [
+  "raceAnalysis": {
+    "overview": "レース全体の特徴と傾向の簡潔な分析",
+    "betTypeEvaluation": [
       {
-        "strength": "強い相関（0.8以上）" | "中程度の相関（0.5-0.8）" | "弱い相関（0.5未満）",
-        "riskLevel": "低/中/高",
-        "patterns": [
-          {
-            "description": "相関パターンの説明",
-            "examples": [
-              {
-                "bet1": "馬券1の説明",
-                "bet2": "馬券2の説明",
-                "probability": "条件付き確率",
-                "interpretation": "この相関の意味",
-                "riskConsideration": "リスク選好度との適合性"
-              }
-            ]
-          }
-        ]
+        "type": "券種名（例：単勝）",
+        "evaluation": "この券種の現在のレースにおける評価",
+        "suitability": "リスク選好度との適合性（1-10）"
       }
-    ],
-    "betTypeAnalysis": [
-      {
-        "type": "券種（例：単勝）",
-        "characteristics": "特徴の説明",
-        "correlations": "他券種との相関性",
-        "riskProfile": "リスク特性",
-        "suitability": "現在のリスク選好度との適合性（0-100%）"
-      }
-    ],
-    "riskDiversification": {
-      "recommendations": [
-        {
-          "combination": ["馬券1", "馬券2"],
-          "reasoning": "推奨理由",
-          "expectedEffect": "期待される効果",
-          "riskAlignment": "リスク選好度との整合性の説明"
-        }
-      ]
-    }
+    ]
   },
-  "summary": {
-    "keyInsights": [
-      "重要な洞察1",
-      "重要な洞察2"
-    ],
-    "riskBasedStrategy": "リスク選好度を考慮した戦略の説明",
-    "recommendedApproach": {
-      "conservative": "ローリスクアプローチの説明（リスク回避的な場合）",
-      "balanced": "バランス型アプローチの説明（中程度のリスク選好の場合）",
-      "aggressive": "ハイリスクアプローチの説明（リスク選好的な場合）",
-      "recommended": "現在のリスク選好度に最適なアプローチ"
+  "selectedBets": [
+    {
+      "type": "券種名",
+      "horses": ["馬番"],
+      "odds": 数値,
+      "probability": 数値（0-1の範囲）,
+      "expectedValue": 数値,
+      "riskLevel": "低" | "中" | "高",
+      "reasoning": "選定理由の簡潔な説明"
     }
-  }
+  ],
+  "riskDistribution": {
+    "lowRisk": ["選定した低リスク馬券のインデックス（0から始まる）"],
+    "mediumRisk": ["選定した中リスク馬券のインデックス"],
+    "highRisk": ["選定した高リスク馬券のインデックス"]
+  },
+  "insights": [
+    "分析から得られた重要な洞察"
+  ]
 }
 \`\`\`
 
-【指示】
-1. リスク選好度（${riskRatio}）を考慮した相関関係の分析を行ってください
-2. 相関パターンをリスクレベルで分類し、現在のリスク選好度との適合性を評価してください
-3. リスク分散とリターンのバランスを考慮した馬券の組み合わせを提案してください
-4. リスク選好度に応じた具体的な投資戦略を提示してください
-5. 各券種について、現在のリスク選好度との適合性を評価してください`;
+【重要】
+・期待値（オッズ×的中確率）が1.0を超える馬券は特に注目してください
+・リスク選好度（${riskRatio}/20）に合わせた選定を心がけてください
+・単純に期待値だけでなく、リスクとリターンのバランスを考慮してください
+・簡易相関情報を活用して、相互に関連する馬券の評価も行ってください`;
 
     if (process.env.NODE_ENV === 'development') {
       console.log('ステップ1プロンプト:\n', step1Prompt);
@@ -476,78 +424,191 @@ ${correlationsText}
       throw new Error('無効なレスポンス形式です');
     }
 
+    // JSONデータの抽出
+    let step1Data;
+    try {
+      if (typeof data === 'string') {
+        // JSONコードブロックを抽出
+        const jsonMatch = data.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+          step1Data = JSON.parse(jsonMatch[1]);
+        } else {
+          throw new Error('JSONデータが見つかりません');
+        }
+      } else {
+        step1Data = data;
+      }
+      
+      // デバッグ用にレスポンスを出力
+      if (process.env.NODE_ENV === 'development') {
+        console.log('ステップ1のレスポンス:', step1Data);
+      }
+      
+      // step1Dataの構造を検証し、必要に応じて修正
+      if (!step1Data || typeof step1Data !== 'object') {
+        throw new Error('無効なレスポンス形式です');
+      }
+      
+      // selectedBetsが存在しない場合の対応
+      if (!step1Data.selectedBets || !Array.isArray(step1Data.selectedBets)) {
+        // 代替方法：raceAnalysisとbetTypeEvaluationから有望な馬券を抽出
+        if (step1Data.raceAnalysis && step1Data.raceAnalysis.betTypeEvaluation) {
+          console.warn('selectedBetsが見つからないため、代替データを生成します');
+          
+          // 最も適合性の高い券種を抽出
+          const promisingBetTypes = step1Data.raceAnalysis.betTypeEvaluation
+            .filter((bet: any) => bet.suitability >= 7) // 適合性7以上を抽出
+            .map((bet: any) => bet.type);
+          
+          // 代替のselectedBets配列を生成
+          step1Data.selectedBets = allBettingOptions.bettingOptions
+            .filter(opt => promisingBetTypes.includes(opt.type))
+            .slice(0, 10) // 上位10件に制限
+            .map(opt => ({
+              type: opt.type,
+              horses: opt.horseName?.split('-') || [],
+              odds: opt.odds,
+              probability: opt.prob,
+              expectedValue: opt.odds * opt.prob,
+              riskLevel: opt.odds > 10 ? "高" : (opt.odds > 5 ? "中" : "低"),
+              reasoning: `期待値: ${(opt.odds * opt.prob).toFixed(2)}`
+            }));
+        } else {
+          // 最低限のデータがない場合は、期待値の高い馬券を自動選択
+          console.warn('分析データが不十分なため、期待値の高い馬券を自動選択します');
+          
+          step1Data.selectedBets = allBettingOptions.bettingOptions
+            .sort((a, b) => (b.odds * b.prob) - (a.odds * a.prob)) // 期待値で降順ソート
+            .slice(0, 10) // 上位10件を選択
+            .map(opt => ({
+              type: opt.type,
+              horses: opt.horseName?.split('-') || [],
+              odds: opt.odds,
+              probability: opt.prob,
+              expectedValue: opt.odds * opt.prob,
+              riskLevel: opt.odds > 10 ? "高" : (opt.odds > 5 ? "中" : "低"),
+              reasoning: `期待値: ${(opt.odds * opt.prob).toFixed(2)}`
+            }));
+        }
+        
+        if (!step1Data.selectedBets || step1Data.selectedBets.length === 0) {
+          throw new Error('有効な馬券選択を生成できませんでした');
+        }
+      }
+    } catch (error: any) {
+      throw new Error(`ステップ1のデータ解析に失敗: ${error.message}`);
+    }
+
+    // 条件付き確率一覧を生成（詳細版）
+    const generateDetailedCorrelationText = (selectedBets: any[]): string => {
+      // selectedBetsが存在しない場合の対応を追加
+      if (!selectedBets || !Array.isArray(selectedBets) || selectedBets.length === 0) {
+        return '選択された馬券データがありません';
+      }
+      
+      if (!correlations || correlations.length === 0) {
+        return '条件付き確率データなし';
+      }
+      
+      // 選択された馬券に関連する条件付き確率のみをフィルタリング
+      const relevantCorrelations = correlations.filter(corr => {
+        // 条件または対象が選択された馬券に含まれているかチェック
+        return selectedBets.some(bet => 
+          (bet.type === corr.condition.type && bet.horses.join('-') === corr.condition.horses) ||
+          (bet.type === corr.target.type && bet.horses.join('-') === corr.target.horses)
+        );
+      });
+      
+      if (relevantCorrelations.length === 0) {
+        return '選択された馬券に関連する条件付き確率データはありません';
+      }
+      
+      // 条件付き確率を整形
+      return relevantCorrelations.reduce((acc: string[], corr, index, array) => {
+        if (index === 0 || 
+            array[index - 1].condition.type !== corr.condition.type || 
+            array[index - 1].condition.horses !== corr.condition.horses) {
+          acc.push(`\n■ ${corr.condition.type}[${corr.condition.horses}]が的中した場合：`);
+        }
+        
+        acc.push(`・${corr.target.type}[${corr.target.horses}]の的中確率は${(corr.probability * 100).toFixed(1)}%`);
+        
+        return acc;
+      }, []).join('\n');
+    };
+
+    const detailedCorrelationText = generateDetailedCorrelationText(step1Data.selectedBets);
+
     /*
      * -------------------------
-     * Step 2: 予算制約下での馬券選択と購入戦略の策定
+     * Step 2: 詳細分析と最終戦略策定
      * -------------------------
      */
     // ステップ2の進捗状態を更新
     store.set(geminiProgressAtom, {
       step: 2,
-      message: '予算制約下での購入戦略を策定中...',
+      message: '詳細分析と最終戦略を策定中...',
       error: null
     });
 
-    const step2Prompt = `【ステップ2：予算制約下での購入戦略策定】
+    const step2Prompt = `【競馬AI分析：ステップ2 - 詳細分析と最終戦略策定】
 
-■ ステップ1の分析結果
-${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}
+あなたは競馬分析と投資戦略の専門家です。ステップ1で選定した有望馬券と詳細な条件付き確率データを基に、最終的な馬券購入戦略を策定してください。
 
-上記の分析結果を踏まえ、予算${totalBudget.toLocaleString()}円の制約下で、最適な馬券購入戦略を策定します。
-リスク選好度（riskRatio）は${riskRatio}です。（2-20の範囲で、20が最もリスク許容度が高い）
+【予算】
+${totalBudget.toLocaleString()}円
 
-【戦略策定の基準】
-1. 期待値の高い馬券を重視
-2. ステップ1で分析した相関関係に基づくリスク分散
-3. リスク選好度に応じた予算配分の最適化
-4. 的中確率とリターンのバランス
+【リスク選好度】
+${riskRatio}/20（数値が大きいほどリスク許容度が高い）
 
-【出馬表】
-${raceCardInfo}
+【ステップ1の分析結果】
+${JSON.stringify(step1Data, null, 2)}
 
-【馬券候補一覧】
-${bettingCandidatesList}
+【詳細な条件付き確率データ】
+${detailedCorrelationText}
 
-【指示】
-1. リスク選好度（${riskRatio}）に基づいた投資戦略を立案
-2. ステップ1で特定された相関パターンを考慮した馬券選択
-3. 予算${totalBudget.toLocaleString()}円をリスク選好度に応じて効果的に配分
-4. リスク分散とリターンのバランスを考慮した投資配分を提示
-5. リスク選好度に適した相関関係の活用方法を説明
+【戦略策定のポイント】
+1. 予算${totalBudget.toLocaleString()}円を最適に配分する
+2. リスク選好度（${riskRatio}/20）に応じたリスク分散を行う
+3. 条件付き確率データを活用して相関関係を考慮する
+4. 期待値とリスクのバランスを最適化する
+
+【お願い】
+1. まず、条件付き確率データを踏まえて、ステップ1で選定した馬券の再評価を行ってください
+2. 次に、予算配分を含めた具体的な購入戦略を策定してください
+3. 戦略の根拠と期待される結果を説明してください
+4. 最後に、戦略全体のリスクレベルと期待リターンを評価してください
 
 【出力形式】
-json
+\`\`\`json
 {
   "strategy": {
-    "budget": ${totalBudget},
-    "riskProfile": {
-      "riskRatio": ${riskRatio},
-      "interpretation": "現在のリスク選好度の解釈"
-    },
-    "description": "戦略の優位性を3文以内で",
+    "description": "戦略の概要（3文以内）",
     "recommendations": [
       {
-        "type": "馬券種類",
+        "type": "券種名",
         "horses": ["馬番"],
-        "stake": 投資額,
+        "stake": 投資額（円）,
         "odds": オッズ,
-        "probability": 的中確率(例: 0.5),
-        "expectedValue": 期待値,
-        "riskLevel": "リスクレベル（低/中/高）",
-        "reason": "選択理由と予算配分の根拠を簡潔に説明"
+        "probability": 的中確率（0-1の範囲）,
+        "expectedReturn": 期待リターン（円）,
+        "reason": "選択理由と投資額の根拠"
       }
     ],
     "summary": {
-      "riskLevel": "全体的なリスクレベル（低/中/高）",
-      "riskDistribution": {
-        "lowRisk": "低リスク馬券への配分割合（%）",
-        "mediumRisk": "中リスク馬券への配分割合（%）",
-        "highRisk": "高リスク馬券への配分割合（%）"
-      },
-      "expectedReturn": "期待される総合的なリターン"
+      "riskLevel": "低" | "中" | "高" | "AI_OPTIMIZED",
+      "description": "戦略全体の特徴と期待される結果"
     }
   }
-}`;
+}
+\`\`\`
+
+【重要】
+・条件付き確率データを活用して、馬券間の相関関係を考慮した戦略を立ててください
+・リスク選好度（${riskRatio}/20）に応じた予算配分を行ってください
+・期待値の高い馬券に重点的に投資しつつも、適切なリスク分散を心がけてください
+・投資額の合計が予算（${totalBudget.toLocaleString()}円）を超えないようにしてください
+・各馬券の投資額は100円単位としてください`;
 
     if (process.env.NODE_ENV === 'development') {
       console.log('ステップ2プロンプト:\n', step2Prompt);
@@ -567,31 +628,92 @@ json
         apiVersion: 'v1alpha'
       })
     }) ?? throwError('ステップ2の解析結果の取得に失敗しました');
-      const step2Data = await step2Response.json();
+    
+    const step2Data = await step2Response.json();
 
-    // JSONコードブロック内のJSON部分を抽出してパースする
-    if (!step2Data || !step2Data.strategy || !step2Data.strategy.description) {
-      throw new Error('最終戦略のレスポンス形式が不正です');
-    }
-    let parsedStrategy: any;
+    // JSONデータの抽出
+    let finalStrategy;
     try {
-      const jsonRegex = /```json\s*\n([\s\S]*?)\n```/;
-      const match = jsonRegex.exec(step2Data.strategy.description);
-      if (match && match[1]) {
-        parsedStrategy = JSON.parse(match[1]);
+      if (typeof step2Data === 'string') {
+        // JSONコードブロックを抽出
+        const jsonMatch = step2Data.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+          finalStrategy = JSON.parse(jsonMatch[1]);
+        } else {
+          throw new Error('JSONデータが見つかりません');
+        }
       } else {
-        throw new Error('JSONコードブロックが見つかりません');
+        finalStrategy = step2Data;
       }
+      
+      // デバッグ用にレスポンスを出力
+      if (process.env.NODE_ENV === 'development') {
+        console.log('最終戦略（生データ）：', finalStrategy);
+      }
+      
+      // 入れ子になったJSONの処理
+      if (finalStrategy.strategy && typeof finalStrategy.strategy.description === 'string') {
+        // descriptionがJSON文字列になっている場合の処理
+        const nestedJsonMatch = finalStrategy.strategy.description.match(/```json\s*([\s\S]*?)\s*```/);
+        if (nestedJsonMatch && nestedJsonMatch[1]) {
+          try {
+            const nestedData = JSON.parse(nestedJsonMatch[1]);
+            if (nestedData.strategy) {
+              console.log('入れ子になったJSONを検出しました。展開します。');
+              finalStrategy = nestedData;
+            }
+          } catch (e) {
+            console.warn('入れ子JSONのパースに失敗しましたが、処理を続行します:', e);
+          }
+        }
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('最終戦略（処理後）：', finalStrategy);
+      }
+      
+      // 必要なプロパティの存在確認と修正
+      if (!finalStrategy || !finalStrategy.strategy) {
+        throw new Error('最終戦略データが不正です');
+      }
+      
+      // 必要なプロパティが存在しない場合のデフォルト値設定
+      if (!finalStrategy.strategy.description) {
+        finalStrategy.strategy.description = "AI最適化による馬券戦略";
+      }
+      
+      if (!finalStrategy.strategy.recommendations || !Array.isArray(finalStrategy.strategy.recommendations) || finalStrategy.strategy.recommendations.length === 0) {
+        // step1Dataから推奨を生成
+        console.warn('最終戦略に推奨馬券がないため、ステップ1のデータから生成します');
+        
+        // 予算を均等配分（最低100円）
+        const totalBets = Math.min(step1Data.selectedBets.length, 10);
+        const baseStake = Math.floor(totalBudget / totalBets / 100) * 100;
+        
+        finalStrategy.strategy.recommendations = step1Data.selectedBets
+          .slice(0, 10)
+          .map((bet: any, index: number) => ({
+            type: bet.type,
+            horses: Array.isArray(bet.horses) ? bet.horses : [bet.horses],
+            odds: bet.odds,
+            probability: bet.probability,
+            stake: baseStake,
+            expectedReturn: Math.round(baseStake * bet.odds * bet.probability),
+            reason: bet.reasoning || `期待値: ${(bet.odds * bet.probability).toFixed(2)}`
+          }));
+      }
+      
+      if (!finalStrategy.strategy.summary) {
+        finalStrategy.strategy.summary = {
+          riskLevel: "AI_OPTIMIZED",
+          description: "AIによる最適化戦略。期待値の高い馬券を中心に予算を配分しています。"
+        };
+      } else if (!finalStrategy.strategy.summary.description) {
+        finalStrategy.strategy.summary.description = "AIによる最適化戦略。期待値の高い馬券を中心に予算を配分しています。";
+      }
+      
     } catch (error: any) {
-      throw new Error('最終戦略のJSONパースに失敗しました: ' + error.message);
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Parsed Gemini戦略：', JSON.stringify(parsedStrategy, null, 2));
-    }
-
-    if (!parsedStrategy || !parsedStrategy.strategy) {
-      throw new Error('パースされた戦略データが不正です');
+      throw new Error(`最終戦略のデータ解析に失敗: ${error.message}`);
     }
 
     // 完了状態に更新
@@ -603,29 +725,32 @@ json
 
     return {
       strategy: {
-        description: parsedStrategy.strategy.description,
-        recommendations: parsedStrategy.strategy.recommendations.map((rec: GeminiRecommendation) => ({
+        description: finalStrategy.strategy.description,
+        recommendations: finalStrategy.strategy.recommendations.map((rec: any) => ({
           type: rec.type,
-          horses: rec.horses,
+          horses: Array.isArray(rec.horses) ? rec.horses : [rec.horses],
           odds: rec.odds,
           probability: rec.probability,
-          reason: rec.reason
+          reason: rec.reason,
+          stake: rec.stake,
+          expectedReturn: rec.expectedReturn || Math.round(rec.stake * rec.odds * rec.probability)
         })),
         bettingTable: {
           headers: ['券種', '買い目', 'オッズ', '的中率', '投資額', '期待収益'],
-          rows: parsedStrategy.strategy.recommendations.map((rec: GeminiRecommendation) => [
+          rows: finalStrategy.strategy.recommendations.map((rec: any) => [
             rec.type,
-            rec.horses.join('-'),
+            Array.isArray(rec.horses) ? rec.horses.join('-') : rec.horses,
             String(rec.odds),
             typeof rec.probability === 'number'
               ? (rec.probability * 100).toFixed(1) + '%'
               : rec.probability,
-            '0円', // 後で最適化
-            '0円'  // 後で計算
+            `${rec.stake.toLocaleString()}円`,
+            `${(rec.expectedReturn || Math.round(rec.stake * rec.odds * rec.probability)).toLocaleString()}円`
           ])
         },
         summary: {
-          riskLevel: parsedStrategy.strategy.summary.riskLevel
+          riskLevel: 'AI_OPTIMIZED',
+          description: finalStrategy.strategy.summary.description
         }
       }
     };
