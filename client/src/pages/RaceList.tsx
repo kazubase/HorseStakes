@@ -258,7 +258,7 @@ export default function RaceList() {
                   setSearchQuery(e.target.value);
                   setShowAllVenues(e.target.value !== "");
                 }}
-                className="pl-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-2 focus:ring-primary/20"
+                className="pl-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-2 focus:ring-primary/20 text-base"
               />
             </div>
           </div>
