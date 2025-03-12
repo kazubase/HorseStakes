@@ -141,7 +141,7 @@ function getStepDescription(step: number): string {
     case 3:
       return "最終的な戦略の生成";
     case 4:
-      return "完了";
+      return "資金配分";
     default:
       return "処理中";
   }

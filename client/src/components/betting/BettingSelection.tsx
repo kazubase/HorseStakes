@@ -245,11 +245,17 @@ export function BettingSelection() {
   const handleOptimizeBets = async () => {
     if (selectionState.selectedBets.length > 0 && !selectionState.isAiOptimized) {
       try {
+        // まず最初にポートフォリオ画面に遷移
+        setCurrentStep('PORTFOLIO');
+        
+        // 少し遅延を入れてUIの更新を確実にする
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // 進捗状態を更新
         const store = getDefaultStore();
         store.set(geminiProgressAtom, {
           step: 4, // 手動最適化は即時完了とする
-          message: '最適化が完了しました',
+          message: '資金配分最適化中...',
           error: null
         });
         
@@ -285,9 +291,6 @@ export function BettingSelection() {
           ...prev,
           selectedBets: optimizedBets
         }));
-        
-        // ポートフォリオステップに遷移
-        setCurrentStep('PORTFOLIO');
       } catch (error: any) {
         console.error('資金配分最適化エラー:', error);
         
