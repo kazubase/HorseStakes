@@ -124,7 +124,7 @@ export async function analyzeWithGemini(input: GeminiAnalysisInput): Promise<Gem
   }
 
   if (typeof input.riskRatio !== 'number' || input.riskRatio < 2 || input.riskRatio > 20) {
-    throw new Error('リスク選好度が無効です');
+    throw new Error('リスクリワード比が無効です');
   }
 
   // データのサニタイズ
