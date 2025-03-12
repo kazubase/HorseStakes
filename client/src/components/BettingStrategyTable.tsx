@@ -710,13 +710,13 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           <div className="bg-background/50 p-2 rounded-lg">
             <div className="text-xs text-muted-foreground">平均収益</div>
             <div className="text-lg font-bold">
-              {stats.mean >= 0 ? '+' : ''}{Math.round(stats.mean).toLocaleString()}円
+              {stats.mean >= 0 ? '+' : ''}{(Math.round(stats.mean / 10) * 10).toLocaleString()}円
             </div>
           </div>
           <div className="bg-background/50 p-2 rounded-lg">
             <div className="text-xs text-muted-foreground">中央値</div>
             <div className="text-lg font-bold">
-              {stats.median >= 0 ? '+' : ''}{Math.round(stats.median).toLocaleString()}円
+              {stats.median >= 0 ? '+' : ''}{(Math.round(stats.median / 10) * 10).toLocaleString()}円
             </div>
           </div>
         </div>
@@ -936,7 +936,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             <div className="bg-background/50 p-2 rounded-lg text-center">
               <div className="text-xs text-muted-foreground">推定期待収益</div>
               <div className="text-lg font-bold">
-                {Math.round(totals.totalExpectedReturn).toLocaleString()}円
+                {(Math.round(totals.totalExpectedReturn / 10) * 10).toLocaleString()}円
               </div>
             </div>
             <div className="bg-background/50 p-2 rounded-lg text-center">
