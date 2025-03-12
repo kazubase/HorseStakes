@@ -444,6 +444,15 @@ export function BettingOptionsTable({
                   </CardTitle>
                   
                   <div className="flex items-center gap-2 flex-shrink">
+                    {/* 分析画面の時のみ馬券候補の点数を表示 */}
+                    {showAnalysis && (
+                      <div className="flex items-center flex-wrap justify-end gap-1.5 text-xs">
+                        <span className="font-medium whitespace-nowrap">
+                          {options.length}点
+                        </span>
+                      </div>
+                    )}
+                    
                     {/* 券種ごとの統計情報を表示 */}
                     {typeStats && (
                       <div className="flex items-center flex-wrap justify-end gap-1.5 text-xs">
