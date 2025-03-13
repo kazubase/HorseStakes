@@ -6,4 +6,5 @@ User-agent: Googlebot
 Crawl-delay: 1
 
 # サイトマップのURLを正しく設定
-Sitemap: https://horse-stakes.com/sitemap.xml 
+Sitemap: https://horse-stakes.com/sitemap.xml
+Allow: /sitemap.xml 
