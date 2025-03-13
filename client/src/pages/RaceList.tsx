@@ -107,15 +107,10 @@ export default function RaceList() {
     });
   };
 
-  // デバッグ用のログ出力
-  console.log('Races:', races);
-  console.log('Today Venues:', todayVenues);
-
   // 表示する会場のリスト（ソート済み）
   const venues = showAllVenues 
     ? allVenues 
     : (todayVenues.length > 0 ? sortVenuesByOrder(todayVenues) : allVenues);
-  console.log('Showing Venues:', venues);
 
   // 検索とフィルタリングのロジック
   const filterRaces = (races: Race[], venueId: string) => {

@@ -67,10 +67,6 @@ export default function Home() {
         const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
         const url = `${baseUrl}/api/tan-odds-history/${id}`;
         
-        if (import.meta.env.DEV) {
-          console.log('Fetching odds history from:', url);
-        }
-        
         const response = await fetch(url);
         
         if (!response.ok) {
@@ -80,31 +76,12 @@ export default function Home() {
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error('Error fetching odds history:', error);
-        }
         throw error;
       }
     },
     enabled: !!id,
     retry: 1,
   });
-
-  // エラー状態のログ
-  useEffect(() => {
-    if (import.meta.env.DEV && oddsError) {
-      console.error('Query error:', oddsError);
-    }
-  }, [oddsError]);
-
-  useEffect(() => {
-    if (import.meta.env.DEV && oddsHistory.length > 0) {
-      console.log('=== Odds History Data ===');
-      console.log('Data received:', oddsHistory.length, 'records');
-      console.log('Sample:', oddsHistory.slice(0, 2));
-      console.log('======================');
-    }
-  }, [oddsHistory]);
 
   // 時刻フォーマットを日付も含めるように修正
   const formatTime = (timestamp: string) => {
@@ -115,7 +92,6 @@ export default function Home() {
 
   // オッズデータを整形
   const formattedOddsData = useMemo(() => {
-    console.log('Formatting odds data from:', oddsHistory.length, 'records');
     const groupedByTimestamp = groupBy(oddsHistory, 'timestamp');
     
     return Object.entries(groupedByTimestamp)
@@ -138,19 +114,6 @@ export default function Home() {
       setSelectedHorses(topFiveHorses);
     }
   }, [latestOddsLoading, topFiveHorses]);
-
-  // デバッグ用のuseEffect
-  if (import.meta.env.DEV) {
-    useEffect(() => {
-      console.log('=== Debug Info ===');
-      console.log('Environment:', import.meta.env.MODE);
-      console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
-      console.log('Latest odds length:', latestOdds?.length);
-      console.log('Top five horses:', topFiveHorses);
-      console.log('Selected horses:', selectedHorses);
-      console.log('================');
-    }, [latestOdds, topFiveHorses, selectedHorses]);
-  }
 
   // タッチ開始位置を保存するための状態を追加
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
