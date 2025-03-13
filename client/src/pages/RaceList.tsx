@@ -337,9 +337,10 @@ export default function RaceList() {
         >
           <div className="relative mb-6 -mx-4 sm:mx-0">
             <div className="overflow-x-auto scrollbar-hide">
-              <div className="px-4 sm:px-0 min-w-full">
+              <div className="px-4 sm:px-0">
                 <TabsList 
-                  className="bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/70 rounded-xl p-1.5 flex w-[max-content] mx-auto border border-primary/20 shadow-sm"
+                  className="bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/70 rounded-xl p-1.5 flex mx-auto border border-primary/20 shadow-sm"
+                  style={{ minWidth: 'min-content' }}
                 >
                   {venues.map(venue => (
                     <TabsTrigger 
@@ -353,11 +354,13 @@ export default function RaceList() {
                 </TabsList>
               </div>
             </div>
+            <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-background via-background/95 to-transparent pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background via-background/90 to-transparent pointer-events-none" />
           </div>
 
           {venues.map(venue => (
             <TabsContent key={venue.id} value={venue.id}>
-              <div className="grid gap-4">
+              <div className="grid gap-4 pb-20 md:pb-0">
                 {filterRaces(races, venue.id).length === 0 ? (
                   <div className="text-center text-muted-foreground py-12 bg-background/70 backdrop-blur-sm rounded-xl border border-primary/20 shadow-sm">
                     <div className="flex flex-col items-center gap-3">
