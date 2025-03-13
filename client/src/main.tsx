@@ -2,22 +2,28 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from './lib/queryClient'
 import { HelmetProvider } from 'react-helmet-async'
 import { Toaster } from "@/components/ui/toaster";
 
 // CSRFトークンを設定
-function setCsrfToken() {
-  const token = document.getElementById('csrf-token')?.getAttribute('content');
+const setCsrfToken = () => {
+  const token = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('XSRF-TOKEN='))
+    ?.split('=')[1];
+
   if (token) {
-    document.cookie = `XSRF-TOKEN=${token}; path=/`;
+    const metaTag = document.querySelector('meta[name="csrf-token"]');
+    if (metaTag) {
+      metaTag.setAttribute('content', token);
+    }
   }
-}
+};
 
 // アプリケーション初期化時にCSRFトークンを設定
 setCsrfToken();
-
-const queryClient = new QueryClient()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
