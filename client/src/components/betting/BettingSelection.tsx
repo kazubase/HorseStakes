@@ -6,7 +6,7 @@ import type { BetProposal } from '@/lib/betEvaluation';
 import { Button } from "@/components/ui/button";
 import { calculateBetProposalsWithGemini, optimizeBetAllocation } from "@/lib/betOptimizer";
 import { useLocation } from "wouter";
-import { Sparkles } from 'lucide-react';
+import { Sparkles, MousePointer } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getDefaultStore } from 'jotai';
 
@@ -367,6 +367,7 @@ export function BettingSelection() {
             ${selectionState.selectedBets.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
           `}
         >
+          <MousePointer className="h-4 w-4" />
           選択した馬券で最適化
         </Button>
       </div>
