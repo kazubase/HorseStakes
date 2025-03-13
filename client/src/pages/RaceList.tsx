@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { addDays, subDays, startOfWeek, isSameDay } from "date-fns";
 import { ja } from "date-fns/locale";
+import { Helmet } from "react-helmet";
 
 interface RaceVenue {
   id: string;
@@ -209,6 +210,50 @@ export default function RaceList() {
 
   return (
     <MainLayout>
+      <Helmet>
+        <title>競馬予想・馬券作成アシスタント | 最新レース一覧と回収率アップの馬券戦略</title>
+        <meta name="description" content="競馬予想と馬券作成をサポートするAIアシスタント。最新レース情報から的中率と期待値を計算し、回収率アップのための最適な馬券戦略を提案します。初心者から上級者まで簡単に利用できる競馬予想ツール。" />
+        <link rel="canonical" href="https://horse-stakes.com" />
+        <meta name="keywords" content="競馬予想,馬券作成,回収率アップ,期待値,競馬AI,馬券予想,競馬攻略,馬券戦略,競馬必勝法,馬券購入,競馬初心者,競馬予想サイト" />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "競馬予想・馬券作成アシスタント",
+            "description": "競馬予想と馬券作成をサポートするAIアシスタント。的中率と期待値を計算し、回収率アップのための最適な馬券戦略を提案します。",
+            "applicationCategory": "SportsApplication",
+            "operatingSystem": "Web",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "JPY"
+            },
+            "url": "https://horse-stakes.com"
+          })}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "itemListElement": races.slice(0, 10).map((race, index) => ({
+              "@type": "ListItem",
+              "position": index + 1,
+              "item": {
+                "@type": "SportsEvent",
+                "name": race.name,
+                "startDate": new Date(race.startTime).toISOString(),
+                "location": {
+                  "@type": "Place",
+                  "name": race.venue
+                },
+                "sport": "競馬",
+                "url": `https://horse-stakes.com/race/${race.id}`
+              }
+            }))
+          })}
+        </script>
+      </Helmet>
+
       {/* ヘッダーセクション */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-primary/10 p-6 mb-8 shadow-sm">
         <div className="absolute inset-0 bg-grid-primary/5 [mask-image:linear-gradient(to_bottom,transparent_20%,black_70%)]" />
@@ -217,6 +262,9 @@ export default function RaceList() {
             <h1 className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
               レース一覧
             </h1>
+            <p className="text-muted-foreground max-w-md">
+              AIを活用した競馬予想で回収率アップを目指しましょう。最新レース情報から最適な馬券戦略を提案します。
+            </p>
             <div className="flex items-center gap-2 flex-wrap">
               <Popover>
                 <PopoverTrigger asChild>

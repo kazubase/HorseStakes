@@ -1,13 +1,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MainLayout from "@/components/layout/MainLayout";
 import { Ticket, Calendar, Coins, Trophy } from "lucide-react";
+import { Helmet } from "react-helmet";
 
 export default function Guide() {
   return (
     <MainLayout>
+      <Helmet>
+        <title>競馬予想・馬券作成の使い方ガイド | 回収率アップの馬券戦略</title>
+        <meta name="description" content="競馬予想と馬券作成をサポートするAIアシスタントの使い方ガイド。的中率と期待値を計算し、回収率アップのための最適な馬券戦略を提案します。初心者から上級者まで簡単に利用できる競馬予想ツールです。" />
+        <link rel="canonical" href="https://horse-stakes.com/guide" />
+      </Helmet>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="relative">
-          <h1 className="text-2xl font-bold mb-6">使い方ガイド</h1>
+          <h1 className="text-3xl font-bold mb-6">競馬予想・馬券作成アシスタントの使い方ガイド</h1>
+          <p className="text-lg text-muted-foreground mb-6">
+            回収率アップを目指す競馬ファンのための、AI駆動の馬券戦略ツールの使い方をご紹介します。
+            的中率と期待値を計算し、最適な馬券の組み合わせを提案します。
+          </p>
           <div className="space-y-4">
             <Card className="overflow-hidden bg-background/50 backdrop-blur-sm hover:bg-background/60 transition-all duration-300">
               <CardHeader className="relative pb-4">
@@ -114,13 +125,13 @@ export default function Guide() {
             </div>
             <div>
               <p className="font-semibold">馬券戦略</p>
-              <p className="text-sm">AI駆動の投資最適化</p>
+              <p className="text-sm">AI駆動の投資最適化で回収率アップ</p>
             </div>
           </div>
         </div>
 
         <div>
-          <h1 className="text-2xl font-bold mb-6">馬券生成の仕組み</h1>
+          <h2 className="text-2xl font-bold mb-6">馬券生成の仕組みと回収率向上のポイント</h2>
           <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
             <CardContent className="space-y-8 pt-6">
               <div className="space-y-12">
@@ -166,6 +177,51 @@ export default function Guide() {
             </CardContent>
           </Card>
         </div>
+      </div>
+      
+      <div className="mt-16">
+        <h2 className="text-2xl font-bold mb-6">よくある質問</h2>
+        <div className="space-y-6">
+          <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>競馬初心者でも使えますか？</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>はい、競馬初心者の方でも簡単に使えるよう設計されています。単勝確率と複勝確率を入力するだけで、AIが最適な馬券戦略を提案します。馬券の種類や組み合わせに悩む必要はありません。</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>回収率を上げるコツはありますか？</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>回収率向上のポイントは、正確な確率予想と適切な資金配分です。オッズと自分の予想確率のギャップを見つけ、期待値の高い馬券を選ぶことが重要です。当サービスはそのプロセスを自動化し、最適な馬券戦略を提案します。</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>どのような馬券種類に対応していますか？</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>単勝、複勝、馬連、馬単、ワイド、三連複、三連単など、JRAの主要な馬券種類すべてに対応しています。AIがレース状況に応じて最適な馬券種類を選択し、組み合わせを提案します。</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+      
+      <div className="mt-16 text-center">
+        <h2 className="text-2xl font-bold mb-4">今すぐ競馬予想を始めましょう</h2>
+        <p className="text-lg text-muted-foreground mb-6">
+          AIを活用した馬券戦略で回収率アップを目指しませんか？
+        </p>
+        <a 
+          href="/" 
+          className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+        >
+          レース一覧を見る
+        </a>
       </div>
     </MainLayout>
   );

@@ -2,9 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://horse-stakes.com</loc>
-    <lastmod>2024-03-21</lastmod>
-    <changefreq>weekly</changefreq>
+    <lastmod>2025-03-12</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://horse-stakes.com/guide</loc>
+    <lastmod>2025-03-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <!-- 他のページがある場合は追加 -->
 </urlset>

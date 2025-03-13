@@ -2,15 +2,22 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no"/>
     <link rel="icon" type="image/png" href="/horseshoe-icon.PNG" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="AIを活用した競馬予想・馬券戦略ジェネレーター。的中率と期待値を計算し、あなたにとって最適な馬券の組み合わせを提案します。" />
-    <meta name="keywords" content="競馬,馬券,予想,AI,戦略,生成,資金配分,的中率,期待値,馬券作成アシスタント" />
-    <meta property="og:title" content="馬券戦略・馬券作成アシスタント" />
-    <meta property="og:description" content="AIを活用した競馬予想・馬券戦略ジェネレーター。的中率と期待値を計算し、あなたにとって最適な馬券の組み合わせを提案します。" />
+    <meta name="description" content="競馬予想と馬券作成をサポートするAIアシスタント。回収率アップのための馬券戦略を立て、的中率と期待値を計算。初心者から上級者まで使える競馬予想ツール。" />
+    <meta name="keywords" content="競馬予想,馬券作成,回収率アップ,期待値,競馬AI,馬券予想,競馬攻略,馬券戦略,競馬必勝法,馬券購入,競馬初心者,競馬予想サイト" />
+    <meta property="og:title" content="競馬予想・馬券作成アシスタント | 回収率アップの馬券戦略" />
+    <meta property="og:description" content="競馬予想と馬券作成をサポートするAIアシスタント。回収率アップのための馬券戦略を立て、的中率と期待値を計算。初心者から上級者まで使える競馬予想ツール。" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://horse-stakes.com" />
     <meta property="og:image" content="https://horse-stakes.com/ogp.png" />
+    <meta property="og:site_name" content="競馬予想・馬券作成アシスタント"/>
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="競馬予想・馬券作成アシスタント | 回収率アップの馬券戦略">
+    <meta name="twitter:description" content="競馬予想と馬券作成をサポートするAIアシスタント。回収率アップのための馬券戦略を立て、的中率と期待値を計算。">
+    <meta name="twitter:image" content="https://horse-stakes.com/ogp.png">
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
       script-src 'self' 'unsafe-inline' 'unsafe-eval';
@@ -20,7 +27,10 @@
       connect-src 'self' https://horse-stakes.com;
     ">
     <meta name="csrf-token" content="" id="csrf-token" />
-    <title>馬券戦略 - 馬券作成アシスタント</title>
+    <meta name="geo.region" content="JP" />
+    <meta name="geo.placename" content="Japan" />
+    <link rel="alternate" hreflang="ja" href="https://horse-stakes.com" />
+    <title>競馬予想・馬券作成アシスタント | 回収率アップの馬券戦略</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap" rel="stylesheet">
@@ -28,5 +38,21 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "競馬予想・馬券作成アシスタント",
+      "description": "競馬予想と馬券作成をサポートするAIアシスタント。回収率アップのための馬券戦略を立て、的中率と期待値を計算。",
+      "applicationCategory": "UtilityApplication",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "JPY"
+      },
+      "operatingSystem": "Web",
+      "url": "https://horse-stakes.com"
+    }
+    </script>
   </body>
 </html>
