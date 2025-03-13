@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MainLayout from "@/components/layout/MainLayout";
-import { Ticket, Calendar, Coins, Trophy } from "lucide-react";
-import { Helmet } from "react-helmet";
+import { Ticket, Calendar, Coins, Trophy, ChevronRight, Info, Award, BarChart3 } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 
 export default function Guide() {
   return (
@@ -12,13 +12,46 @@ export default function Guide() {
         <link rel="canonical" href="https://horse-stakes.com/guide" />
       </Helmet>
 
+      {/* ヘッダーセクション */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-primary/10 p-6 mb-8 shadow-sm">
+        <div className="absolute inset-0 bg-grid-primary/5 [mask-image:linear-gradient(to_bottom,transparent_20%,black_70%)]" />
+        <div className="relative flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">競馬予想ツール</span>
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            <span className="text-sm font-medium">使い方ガイド</span>
+          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            競馬予想・馬券作成アシスタントの使い方
+          </h1>
+          <div className="flex flex-wrap gap-2 mt-1">
+            <span className="inline-flex items-center text-xs bg-primary/10 px-3 py-1 rounded-full text-primary">
+              <Info className="h-3 w-3 mr-1" />
+              競馬初心者向け
+            </span>
+            <span className="inline-flex items-center text-xs bg-primary/10 px-3 py-1 rounded-full text-primary">
+              <Award className="h-3 w-3 mr-1" />
+              回収率アップ
+            </span>
+            <span className="inline-flex items-center text-xs bg-primary/10 px-3 py-1 rounded-full text-primary">
+              <BarChart3 className="h-3 w-3 mr-1" />
+              期待値計算
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <p className="text-lg text-muted-foreground">
+          回収率アップを目指す競馬ファンのための、AI駆動の馬券戦略ツールの使い方をご紹介します。
+          的中率と期待値を計算し、最適な馬券の組み合わせを提案します。初心者から上級者まで、
+          競馬予想の精度を高め、効率的な馬券購入をサポートします。
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="relative">
-          <h1 className="text-3xl font-bold mb-6">競馬予想・馬券作成アシスタントの使い方ガイド</h1>
-          <p className="text-lg text-muted-foreground mb-6">
-            回収率アップを目指す競馬ファンのための、AI駆動の馬券戦略ツールの使い方をご紹介します。
-            的中率と期待値を計算し、最適な馬券の組み合わせを提案します。
-          </p>
+          <h2 className="text-2xl font-bold mb-6">ステップバイステップガイド</h2>
           <div className="space-y-4">
             <Card className="overflow-hidden bg-background/50 backdrop-blur-sm hover:bg-background/60 transition-all duration-300">
               <CardHeader className="relative pb-4">

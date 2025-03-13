@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { addDays, subDays, startOfWeek, isSameDay } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 
 interface RaceVenue {
   id: string;
@@ -56,9 +56,16 @@ export default function RaceList() {
 
   const { data: races = [], isLoading, error } = useQuery<Race[]>({
     queryKey: ["/api/races"],
+    queryFn: async () => {
+      const response = await fetch("/api/races");
+      if (!response.ok) {
+        throw new Error("APIからデータを取得できませんでした");
+      }
+      return response.json();
+    },
     gcTime: 0,
     staleTime: 0,
-    retry: false,
+    retry: 3,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
@@ -185,8 +192,17 @@ export default function RaceList() {
   if (error) {
     return (
       <MainLayout>
-        <div className="flex justify-center items-center h-[50vh]">
-          <div>データの読み込みに失敗しました</div>
+        <div className="flex flex-col justify-center items-center h-[50vh] gap-4">
+          <div className="text-xl font-bold text-red-500">データの読み込みに失敗しました</div>
+          <div className="text-muted-foreground text-sm max-w-md text-center">
+            {error instanceof Error ? error.message : "サーバーとの通信中にエラーが発生しました。しばらく経ってから再度お試しください。"}
+          </div>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+          >
+            再読み込み
+          </Button>
         </div>
       </MainLayout>
     );
@@ -252,13 +268,18 @@ export default function RaceList() {
       {/* ヘッダーセクション */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-primary/10 p-6 mb-8 shadow-sm">
         <div className="absolute inset-0 bg-grid-primary/5 [mask-image:linear-gradient(to_bottom,transparent_20%,black_70%)]" />
-        <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <h1 className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-              レース一覧
-            </h1>
-            <p className="text-muted-foreground max-w-md">
-              AIを活用した競馬予想で回収率アップを目指しましょう。最新レース情報から最適な馬券戦略を提案します。
+        <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                レース一覧
+              </h1>
+              <span className="hidden sm:inline-block text-xs text-muted-foreground bg-primary/5 px-3 py-1 rounded-full">
+                競馬予想・回収率アップ支援ツール
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-md mb-3 lg:mb-0">
+              AIを活用した馬券戦略で的中率と期待値を最適化します
             </p>
             <div className="flex items-center gap-2 flex-wrap">
               <Popover>
@@ -290,7 +311,7 @@ export default function RaceList() {
             </div>
           </div>
           
-          <div className="w-full sm:w-auto">
+          <div className="w-full lg:w-auto mt-4 lg:mt-0">
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary h-4 w-4 z-10" />
               <Input
