@@ -311,7 +311,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (error) {
-      console.error('スクリーンショットの作成に失敗:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('スクリーンショットの作成に失敗:', error);
+      }
     }
   };
 
@@ -322,7 +324,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     const results: number[] = [];
     
     for (let i = 0; i < iterations; i++) {
-      // 最初の1回目だけログを出力
+      // 最初の1回目だけログを出力（開発環境でのみ）
       const shouldLog = process.env.NODE_ENV === 'development' && i === 0 && !loggedFirstSimulation;
       
       let totalReturn = 0;
@@ -330,7 +332,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       // 各シミュレーションでレース結果を生成
       const raceResult = simulateRaceResult(shouldLog);
       
-      if (shouldLog) {
+      if (shouldLog && process.env.NODE_ENV === 'development') {
         console.group('モンテカルロシミュレーション - 1回目の実行');
         console.log('レース結果:', raceResult);
       }
@@ -343,7 +345,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         // オッズを小数点1桁に丸める
         const roundedOdds = Math.round((bet.odds || 0) * 10) / 10;
         
-        if (shouldLog) {
+        if (shouldLog && process.env.NODE_ENV === 'development') {
           console.log(`馬券: ${bet.type} ${formatHorseNumbers(bet.type, bet.horses)}, オッズ: ${roundedOdds.toFixed(1)}, 的中: ${isWin ? '○' : '×'}`);
         }
         
@@ -352,7 +354,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           const returnAmount = roundedOdds * bet.stake;
           totalReturn += returnAmount;
           
-          if (shouldLog) {
+          if (shouldLog && process.env.NODE_ENV === 'development') {
             console.log(`  払戻金: ${returnAmount.toLocaleString()}円 (${roundedOdds.toFixed(1)} × ${bet.stake.toLocaleString()}円)`);
           }
         }
@@ -362,7 +364,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       const totalInvestment = bets.reduce((sum, bet) => sum + bet.stake, 0);
       const netProfit = totalReturn - totalInvestment;
       
-      if (shouldLog) {
+      if (shouldLog && process.env.NODE_ENV === 'development') {
         console.log(`総投資額: ${totalInvestment.toLocaleString()}円`);
         console.log(`総払戻金: ${totalReturn.toLocaleString()}円`);
         console.log(`純利益: ${netProfit >= 0 ? '+' : ''}${netProfit.toLocaleString()}円`);
@@ -456,7 +458,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           percentage: (count / filteredResults.length) * 100
         });
         
-        console.log(`バケット[${bucketStart.toLocaleString()}円～${bucketEnd.toLocaleString()}円]: ${count}件 (${((count / filteredResults.length) * 100).toFixed(2)}%)`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`バケット[${bucketStart.toLocaleString()}円～${bucketEnd.toLocaleString()}円]: ${count}件 (${((count / filteredResults.length) * 100).toFixed(2)}%)`);
+        }
       }
     });
 
@@ -481,6 +485,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 
   // レース結果をシミュレートする関数
   const simulateRaceResult = (shouldLog = false) => {
+    // 開発環境チェックを追加
+    const devShouldLog = process.env.NODE_ENV === 'development' && shouldLog;
+    
     const urlParams = new URLSearchParams(window.location.search);
     const winProbsParam = urlParams.get('winProbs');
     const placeProbsParam = urlParams.get('placeProbs');
@@ -490,7 +497,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       const placeProbs = JSON.parse(decodeURIComponent(placeProbsParam || '{}'));
       const horseNumbers = Object.keys(winProbs).map(Number);
       
-      if (shouldLog) {
+      if (devShouldLog) {
         console.group('レース結果シミュレーション');
         console.log('勝率データ:', winProbs);
         console.log('複勝率データ:', placeProbs);
@@ -502,7 +509,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       let accumWinProb = 0;
       let first = horseNumbers[0];
       
-      if (shouldLog) {
+      if (devShouldLog) {
         console.log('1着決定の乱数値:', firstPlaceRand);
       }
       
@@ -510,13 +517,13 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         const horseWinProb = winProbs[horseNumber] || 0;
         accumWinProb += horseWinProb;
         
-        if (shouldLog) {
+        if (devShouldLog) {
           console.log(`馬番${horseNumber}: 勝率=${horseWinProb.toFixed(2)}%, 累積=${accumWinProb.toFixed(2)}%`);
         }
         
         if (firstPlaceRand <= accumWinProb) {
           first = horseNumber;
-          if (shouldLog) {
+          if (devShouldLog) {
             console.log(`→ 1着決定: 馬番${horseNumber}`);
           }
           break;
@@ -582,7 +589,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         fullResult: [first, second, third, ...finalHorses.filter(h => h !== third)]
       };
       
-      if (shouldLog) {
+      if (devShouldLog) {
         console.log('最終レース結果:', result);
         console.groupEnd(); // レース結果シミュレーションのグループを閉じる
       }
@@ -590,8 +597,10 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       return result;
       
     } catch (e) {
-      console.error('確率パラメータの解析に失敗:', e);
-      if (shouldLog) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('確率パラメータの解析に失敗:', e);
+      }
+      if (devShouldLog) {
         console.groupEnd(); // エラー時にもグループを閉じる
       }
       return null;
@@ -638,11 +647,14 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   const isBetWinning = (bet: BetProposal, raceResult: any, shouldLog = false) => {
     if (!raceResult) return false;
     
+    // 開発環境チェックを追加
+    const devShouldLog = process.env.NODE_ENV === 'development' && shouldLog;
+    
     // 券種を正規化
     const normalizedType = normalizeTicketType(bet.type);
     const { horses } = bet;
     
-    if (shouldLog) {
+    if (devShouldLog) {
       console.group(`馬券判定: ${bet.type} (正規化: ${normalizedType})`);
       console.log('買い目:', horses);
     }
@@ -664,7 +676,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         result = match ? parseInt(match[1], 10) : 0;
       }
       
-      if (shouldLog) {
+      if (devShouldLog) {
         console.log(`馬番抽出: "${h}" → ${Array.isArray(result) ? JSON.stringify(result) : result}`);
       }
       
@@ -674,7 +686,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     // 馬番を平坦化して配列にする
     const flattenedHorseNumbers = actualHorseNumbers.flat();
     
-    if (shouldLog) {
+    if (devShouldLog) {
       console.log('抽出された馬番:', flattenedHorseNumbers);
     }
     
@@ -694,12 +706,14 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           dbIdToActualNumber[dbId] = index + 1;
         });
         
-        if (shouldLog) {
+        if (devShouldLog) {
           console.log('データベースID→馬番変換マップ:', dbIdToActualNumber);
         }
         
       } catch (e) {
-        console.error('winProbsパラメータの解析に失敗:', e);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('winProbsパラメータの解析に失敗:', e);
+        }
       }
     }
     
@@ -708,7 +722,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     const actualSecond = dbIdToActualNumber[raceResult.second] || 0;
     const actualThird = dbIdToActualNumber[raceResult.third] || 0;
     
-    if (shouldLog) {
+    if (devShouldLog) {
       console.log(`レース結果の馬番変換: 1着=${raceResult.first}→${actualFirst}, 2着=${raceResult.second}→${actualSecond}, 3着=${raceResult.third}→${actualThird}`);
     }
     
@@ -717,14 +731,14 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     switch (normalizedType) {
       case '単勝':
         result = flattenedHorseNumbers[0] === actualFirst;
-        if (shouldLog) {
+        if (devShouldLog) {
           console.log(`単勝判定: ${flattenedHorseNumbers[0]} === ${actualFirst} → ${result}`);
         }
         break;
       
       case '複勝':
         result = [actualFirst, actualSecond, actualThird].includes(flattenedHorseNumbers[0]);
-        if (shouldLog) {
+        if (devShouldLog) {
           console.log(`複勝判定: ${flattenedHorseNumbers[0]} が [${actualFirst}, ${actualSecond}, ${actualThird}] に含まれる → ${result}`);
         }
         break;
@@ -734,14 +748,14 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           (flattenedHorseNumbers[0] === actualFirst && flattenedHorseNumbers[1] === actualSecond) ||
           (flattenedHorseNumbers[0] === actualSecond && flattenedHorseNumbers[1] === actualFirst)
         );
-        if (shouldLog) {
+        if (devShouldLog) {
           console.log(`馬連判定: (${flattenedHorseNumbers[0]}, ${flattenedHorseNumbers[1]}) と (${actualFirst}, ${actualSecond}) の組み合わせ → ${result}`);
         }
         break;
       
       case '馬単':
         result = flattenedHorseNumbers[0] === actualFirst && flattenedHorseNumbers[1] === actualSecond;
-        if (shouldLog) {
+        if (devShouldLog) {
           console.log(`馬単判定: ${flattenedHorseNumbers[0]}→${flattenedHorseNumbers[1]} === ${actualFirst}→${actualSecond} → ${result}`);
         }
         break;
@@ -753,7 +767,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           positions.includes(flattenedHorseNumbers[0]) && 
           positions.includes(flattenedHorseNumbers[1])
         );
-        if (shouldLog) {
+        if (devShouldLog) {
           console.log(`ワイド判定: ${flattenedHorseNumbers[0]}, ${flattenedHorseNumbers[1]} が [${positions.join(', ')}] に含まれる → ${result}`);
         }
         break;
@@ -765,7 +779,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           ) && 
           flattenedHorseNumbers.length === 3
         );
-        if (shouldLog) {
+        if (devShouldLog) {
           console.log(`3連複判定: [${flattenedHorseNumbers.join(', ')}] と [${actualFirst}, ${actualSecond}, ${actualThird}] の一致 → ${result}`);
         }
         break;
@@ -776,14 +790,14 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           flattenedHorseNumbers[1] === actualSecond &&
           flattenedHorseNumbers[2] === actualThird
         );
-        if (shouldLog) {
+        if (devShouldLog) {
           console.log(`3連単判定: ${flattenedHorseNumbers[0]}→${flattenedHorseNumbers[1]}→${flattenedHorseNumbers[2]} === ${actualFirst}→${actualSecond}→${actualThird} → ${result}`);
         }
         break;
       
       case '枠連':
-        if (shouldLog) console.log(`馬券判定: ${bet.type} (正規化: ${normalizedType})`);
-        if (shouldLog) console.log(`買い目: ${JSON.stringify(bet.horses)}`);
+        if (devShouldLog) console.log(`馬券判定: ${bet.type} (正規化: ${normalizedType})`);
+        if (devShouldLog) console.log(`買い目: ${JSON.stringify(bet.horses)}`);
         
         // 枠番を直接抽出（"1-7" → [1,7] のような変換）
         const frameNumbers = bet.horses.flatMap(h => {
@@ -794,8 +808,8 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           return h.split('-').map(num => parseInt(num.trim()));
         });
         
-        if (shouldLog) console.log(`枠番抽出: "${bet.horses.join('-')}" → ${JSON.stringify(frameNumbers)}`);
-        if (shouldLog) console.log(`抽出された枠番: ${frameNumbers}`);
+        if (devShouldLog) console.log(`枠番抽出: "${bet.horses.join('-')}" → ${JSON.stringify(frameNumbers)}`);
+        if (devShouldLog) console.log(`抽出された枠番: ${frameNumbers}`);
         
         // レース結果から1着と2着の馬番を取得（変換済みの馬番を使用）
         const firstHorse = actualFirst;
@@ -805,7 +819,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         const firstFrame = getFrameNumber(firstHorse);
         const secondFrame = getFrameNumber(secondHorse);
         
-        if (shouldLog) console.log(`レース結果の枠番: 1着=${firstHorse}→${firstFrame}, 2着=${secondHorse}→${secondFrame}`);
+        if (devShouldLog) console.log(`レース結果の枠番: 1着=${firstHorse}→${firstFrame}, 2着=${secondHorse}→${secondFrame}`);
         
         // 枠連の的中判定（順序は関係ない）
         const isWinning = (
@@ -815,9 +829,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           (frameNumbers.includes(firstFrame) && frameNumbers.includes(secondFrame))
         );
         
-        if (shouldLog) console.log(`枠連判定: 買い目枠番=(${frameNumbers.join(', ')}), 結果枠番=(${firstFrame}, ${secondFrame}) → ${isWinning}`);
+        if (devShouldLog) console.log(`枠連判定: 買い目枠番=(${frameNumbers.join(', ')}), 結果枠番=(${firstFrame}, ${secondFrame}) → ${isWinning}`);
         
-        if (shouldLog) console.groupEnd(); // 枠連判定のグループを閉じる
+        if (devShouldLog) console.groupEnd(); // 枠連判定のグループを閉じる
         
         return isWinning;
       
@@ -825,13 +839,13 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         // 未対応の馬券種は確率に基づいて判定
         const randomValue = Math.random();
         result = randomValue < bet.probability;
-        if (shouldLog) {
+        if (devShouldLog) {
           console.log(`未対応券種判定: 乱数=${randomValue.toFixed(4)} < 確率=${bet.probability.toFixed(4)} → ${result}`);
         }
         break;
     }
     
-    if (shouldLog) {
+    if (devShouldLog) {
       console.log(`最終判定結果: ${result ? '的中' : '不的中'}`);
       console.groupEnd();
     }
