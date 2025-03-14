@@ -276,7 +276,7 @@ export const getGeminiStrategy = async (
       const topStrongCorrelations = strongCorrelations.slice(0, 5);
       const topMediumCorrelations = mediumCorrelations.slice(0, 5);
       
-      let result = "【簡易相関情報】\n";
+      let result = "";
       
       if (topStrongCorrelations.length > 0) {
         result += "■ 強い相関関係（70%以上）:\n";
@@ -574,7 +574,7 @@ ${detailedCorrelationText}
 
 【お願い】
 1. まず、条件付き確率データを踏まえて、ステップ1で選定した馬券の再評価を行ってください
-2. 次に、予算配分を含めた具体的な購入戦略を策定してください
+2. 次に、予算に応じた具体的な購入戦略を策定してください
 3. 戦略の根拠と期待される結果を説明してください
 4. 最後に、戦略全体のリスクレベルと期待リターンを評価してください
 
@@ -591,7 +591,7 @@ ${detailedCorrelationText}
         "odds": オッズ,
         "probability": 的中確率（0-1の範囲）,
         "expectedReturn": 期待リターン（円）,
-        "reason": "選択理由と投資額の根拠"
+        "reason": "選択理由の根拠"
       }
     ],
     "summary": {
@@ -605,8 +605,6 @@ ${detailedCorrelationText}
 【重要】
 ・条件付き確率データを活用して、馬券間の相関関係を考慮した戦略を立ててください
 ・リスクリワード比（${riskRatio}/20）に応じた予算配分を行ってください
-  - 低い値：少額を多数の馬券に分散投資
-  - 高い値：高配当馬券に集中投資
 ・期待値の高い馬券に重点的に投資しつつも、適切なリスク分散を心がけてください
 ・投資額の合計が予算（${totalBudget.toLocaleString()}円）を超えないようにしてください
 ・各馬券の投資額は100円単位としてください`;
