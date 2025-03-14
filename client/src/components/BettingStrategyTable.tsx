@@ -11,7 +11,7 @@ import { Camera, Sparkles, LineChart, MousePointer } from 'lucide-react';
 import type { BetProposal } from "@/lib/betEvaluation";
 import { InfoIcon } from "lucide-react";
 import { useAtom } from 'jotai';
-import { bettingOptionsStatsAtom } from '@/stores/bettingStrategy';
+import { bettingOptionsStatsAtom, horsesAtom } from '@/stores/bettingStrategy';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Masonry from 'react-masonry-css';
 
@@ -330,12 +330,31 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       // 各シミュレーションでレース結果を生成
       const raceResult = simulateRaceResult(shouldLog);
       
+      if (shouldLog) {
+        console.group('モンテカルロシミュレーション - 1回目の実行');
+        console.log('レース結果:', raceResult);
+      }
+      
       // 各馬券について当たりハズレを判定
       bets.forEach(bet => {
         // レース結果に基づいて馬券の的中を判定
-        if (isBetWinning(bet, raceResult, shouldLog)) {
-          // 当たりの場合は払戻金を加算
-          totalReturn += (bet.odds || 0) * bet.stake;
+        const isWin = isBetWinning(bet, raceResult, shouldLog);
+        
+        // オッズを小数点1桁に丸める
+        const roundedOdds = Math.round((bet.odds || 0) * 10) / 10;
+        
+        if (shouldLog) {
+          console.log(`馬券: ${bet.type} ${formatHorseNumbers(bet.type, bet.horses)}, オッズ: ${roundedOdds.toFixed(1)}, 的中: ${isWin ? '○' : '×'}`);
+        }
+        
+        if (isWin) {
+          // 当たりの場合は払戻金を加算（小数点1桁に丸めたオッズで計算）
+          const returnAmount = roundedOdds * bet.stake;
+          totalReturn += returnAmount;
+          
+          if (shouldLog) {
+            console.log(`  払戻金: ${returnAmount.toLocaleString()}円 (${roundedOdds.toFixed(1)} × ${bet.stake.toLocaleString()}円)`);
+          }
         }
       });
       
@@ -343,12 +362,15 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       const totalInvestment = bets.reduce((sum, bet) => sum + bet.stake, 0);
       const netProfit = totalReturn - totalInvestment;
       
-      results.push(netProfit);
-      
-      // 最初の1回をログ出力したらフラグを立てる
       if (shouldLog) {
+        console.log(`総投資額: ${totalInvestment.toLocaleString()}円`);
+        console.log(`総払戻金: ${totalReturn.toLocaleString()}円`);
+        console.log(`純利益: ${netProfit >= 0 ? '+' : ''}${netProfit.toLocaleString()}円`);
+        console.groupEnd(); // モンテカルロシミュレーションのグループを閉じる
         loggedFirstSimulation = true;
       }
+      
+      results.push(netProfit);
     }
     
     // 結果を昇順にソート
@@ -360,8 +382,8 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     const min = results[0];
     const max = results[results.length - 1];
     
-    // 勝率を計算（利益が0以上の割合）
-    const winRate = results.filter(r => r >= 0).length / results.length;
+    // 勝率を計算（利益が0より大きい割合に修正）
+    const winRate = results.filter(r => r > 0).length / results.length;
     
     // 95%信頼区間
     const lowerBound = results[Math.floor(results.length * 0.025)];
@@ -389,18 +411,42 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     const bucketCount = 20; // バケット数を固定
     const bucketWidth = Math.ceil(range / bucketCount / 1000) * 1000; // 1000円単位に丸める
     
-    // バケットの範囲を設定
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`分布データ生成: 範囲=${range.toLocaleString()}円, バケット数=${bucketCount}, バケット幅=${bucketWidth.toLocaleString()}円`);
+    }
+    
+    // バケットの範囲を設定（より自然な区切りに修正）
     const bucketRanges: number[] = [];
-    let currentValue = Math.floor(stats.confidenceInterval[0] / 1000) * 1000; // 1000円単位で切り捨て
+    
+    // 投資額を考慮して下限を設定（最小値は投資額のマイナス値を下回らないようにする）
+    const totalInvestment = bets.reduce((sum, bet) => sum + bet.stake, 0);
+    let minBucketValue = Math.max(stats.confidenceInterval[0], -totalInvestment);
+    // 1000円単位に切り捨て
+    minBucketValue = Math.floor(minBucketValue / 1000) * 1000;
+    
+    let currentValue = minBucketValue; // 投資額を考慮した下限から開始
     
     while (currentValue <= stats.confidenceInterval[1]) {
       bucketRanges.push(currentValue);
       currentValue += bucketWidth;
     }
     
+    // 最後のバケットが信頼区間の上限を超えていない場合は追加
+    if (bucketRanges[bucketRanges.length - 1] < stats.confidenceInterval[1]) {
+      bucketRanges.push(stats.confidenceInterval[1]);
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('投資額:', totalInvestment.toLocaleString());
+      console.log('理論上の最小値:', (-totalInvestment).toLocaleString());
+      console.log('バケット範囲:', bucketRanges.map(v => v.toLocaleString()).join(', '));
+    }
+    
     // 各バケットのカウントを計算
     bucketRanges.forEach((bucketStart, i) => {
-      const bucketEnd = bucketRanges[i + 1] || stats.confidenceInterval[1];
+      if (i === bucketRanges.length - 1) return; // 最後の要素はスキップ（終点としてのみ使用）
+      
+      const bucketEnd = bucketRanges[i + 1];
       const count = filteredResults.filter(r => r >= bucketStart && r < bucketEnd).length;
       
       if (count > 0) { // カウントが0のバケットは除外
@@ -409,8 +455,23 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           count,
           percentage: (count / filteredResults.length) * 100
         });
+        
+        console.log(`バケット[${bucketStart.toLocaleString()}円～${bucketEnd.toLocaleString()}円]: ${count}件 (${((count / filteredResults.length) * 100).toFixed(2)}%)`);
       }
     });
+
+    // 開発環境でのみ統計情報をログ出力
+    if (process.env.NODE_ENV === 'development') {
+      console.group('モンテカルロシミュレーション - 統計情報');
+      console.log(`シミュレーション回数: ${iterations}回`);
+      console.log(`平均収益: ${mean.toLocaleString()}円`);
+      console.log(`中央値: ${median.toLocaleString()}円`);
+      console.log(`最小値: ${min.toLocaleString()}円`);
+      console.log(`最大値: ${max.toLocaleString()}円`);
+      console.log(`勝率: ${(winRate * 100).toFixed(2)}%`);
+      console.log(`95%信頼区間: [${lowerBound.toLocaleString()}円, ${upperBound.toLocaleString()}円]`);
+      console.groupEnd();
+    }
 
     return {
       distributionData,
@@ -429,15 +490,35 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       const placeProbs = JSON.parse(decodeURIComponent(placeProbsParam || '{}'));
       const horseNumbers = Object.keys(winProbs).map(Number);
       
+      if (shouldLog) {
+        console.group('レース結果シミュレーション');
+        console.log('勝率データ:', winProbs);
+        console.log('複勝率データ:', placeProbs);
+        console.log('出走馬番号:', horseNumbers);
+      }
+      
       // 勝率に基づいて1着をシミュレート
       const firstPlaceRand = Math.random() * 100;
       let accumWinProb = 0;
       let first = horseNumbers[0];
       
+      if (shouldLog) {
+        console.log('1着決定の乱数値:', firstPlaceRand);
+      }
+      
       for (const horseNumber of horseNumbers) {
-        accumWinProb += winProbs[horseNumber] || 0;
+        const horseWinProb = winProbs[horseNumber] || 0;
+        accumWinProb += horseWinProb;
+        
+        if (shouldLog) {
+          console.log(`馬番${horseNumber}: 勝率=${horseWinProb.toFixed(2)}%, 累積=${accumWinProb.toFixed(2)}%`);
+        }
+        
         if (firstPlaceRand <= accumWinProb) {
           first = horseNumber;
+          if (shouldLog) {
+            console.log(`→ 1着決定: 馬番${horseNumber}`);
+          }
           break;
         }
       }
@@ -501,39 +582,101 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         fullResult: [first, second, third, ...finalHorses.filter(h => h !== third)]
       };
       
+      if (shouldLog) {
+        console.log('最終レース結果:', result);
+        console.groupEnd(); // レース結果シミュレーションのグループを閉じる
+      }
+      
       return result;
       
     } catch (e) {
       console.error('確率パラメータの解析に失敗:', e);
+      if (shouldLog) {
+        console.groupEnd(); // エラー時にもグループを閉じる
+      }
       return null;
     }
+  };
+
+  // horsesAtomから馬データを取得
+  const [horses] = useAtom(horsesAtom);
+  
+  // 馬番から枠番へのマッピングを作成
+  const horseToFrameMap = useMemo(() => {
+    if (!horses || horses.length === 0) return {};
+    
+    const mapping: Record<number, number> = {};
+    horses.forEach(horse => {
+      if (horse.number && horse.frame) {
+        mapping[horse.number] = horse.frame;
+      }
+    });
+    
+    return mapping;
+  }, [horses]);
+
+  // 馬番から枠番への変換関数を追加
+  const getFrameNumber = (horseNumber: number): number => {
+    // horseToFrameMapから枠番を取得
+    if (horseToFrameMap[horseNumber]) {
+      return horseToFrameMap[horseNumber];
+    }
+    
+    // マッピングがない場合は一般的なルールを適用
+    if (horseNumber <= 2) return 1;
+    if (horseNumber <= 4) return 2;
+    if (horseNumber <= 6) return 3;
+    if (horseNumber <= 8) return 4;
+    if (horseNumber <= 10) return 5;
+    if (horseNumber <= 12) return 6;
+    if (horseNumber <= 14) return 7;
+    if (horseNumber <= 16) return 8;
+    return Math.ceil(horseNumber / 2); // 一般的なルール
   };
 
   // 馬券が的中するかを判定する関数
   const isBetWinning = (bet: BetProposal, raceResult: any, shouldLog = false) => {
     if (!raceResult) return false;
     
-    const { type, horses } = bet;
+    // 券種を正規化
+    const normalizedType = normalizeTicketType(bet.type);
+    const { horses } = bet;
+    
+    if (shouldLog) {
+      console.group(`馬券判定: ${bet.type} (正規化: ${normalizedType})`);
+      console.log('買い目:', horses);
+    }
     
     // 馬番文字列から実際の馬番を抽出
     const actualHorseNumbers = horses.map(h => {
       // 馬番の抽出方法を改善
       // 例: "1 ディープインパクト" → 1, "1-2" → [1, 2], "1→2→3" → [1, 2, 3]
+      let result;
       if (h.includes('-')) {
         // 馬連・ワイド・3連複などのケース
-        return h.split('-').map(num => parseInt(num.trim(), 10));
+        result = h.split('-').map(num => parseInt(num.trim(), 10));
       } else if (h.includes('→')) {
         // 馬単・3連単などのケース
-        return h.split('→').map(num => parseInt(num.trim(), 10));
+        result = h.split('→').map(num => parseInt(num.trim(), 10));
       } else {
         // 単勝・複勝などのケース
         const match = h.match(/^(\d+)/);
-        return match ? parseInt(match[1], 10) : 0;
+        result = match ? parseInt(match[1], 10) : 0;
       }
+      
+      if (shouldLog) {
+        console.log(`馬番抽出: "${h}" → ${Array.isArray(result) ? JSON.stringify(result) : result}`);
+      }
+      
+      return result;
     });
     
     // 馬番を平坦化して配列にする
     const flattenedHorseNumbers = actualHorseNumbers.flat();
+    
+    if (shouldLog) {
+      console.log('抽出された馬番:', flattenedHorseNumbers);
+    }
     
     // URLのデータの順番で馬番を割り当てる
     const urlParams = new URLSearchParams(window.location.search);
@@ -551,6 +694,10 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           dbIdToActualNumber[dbId] = index + 1;
         });
         
+        if (shouldLog) {
+          console.log('データベースID→馬番変換マップ:', dbIdToActualNumber);
+        }
+        
       } catch (e) {
         console.error('winProbsパラメータの解析に失敗:', e);
       }
@@ -561,49 +708,135 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     const actualSecond = dbIdToActualNumber[raceResult.second] || 0;
     const actualThird = dbIdToActualNumber[raceResult.third] || 0;
     
-    switch (type) {
+    if (shouldLog) {
+      console.log(`レース結果の馬番変換: 1着=${raceResult.first}→${actualFirst}, 2着=${raceResult.second}→${actualSecond}, 3着=${raceResult.third}→${actualThird}`);
+    }
+    
+    let result = false;
+    
+    switch (normalizedType) {
       case '単勝':
-        return flattenedHorseNumbers[0] === actualFirst;
+        result = flattenedHorseNumbers[0] === actualFirst;
+        if (shouldLog) {
+          console.log(`単勝判定: ${flattenedHorseNumbers[0]} === ${actualFirst} → ${result}`);
+        }
+        break;
       
       case '複勝':
-        return [actualFirst, actualSecond, actualThird].includes(flattenedHorseNumbers[0]);
+        result = [actualFirst, actualSecond, actualThird].includes(flattenedHorseNumbers[0]);
+        if (shouldLog) {
+          console.log(`複勝判定: ${flattenedHorseNumbers[0]} が [${actualFirst}, ${actualSecond}, ${actualThird}] に含まれる → ${result}`);
+        }
+        break;
       
       case '馬連':
-        return (
+        result = (
           (flattenedHorseNumbers[0] === actualFirst && flattenedHorseNumbers[1] === actualSecond) ||
           (flattenedHorseNumbers[0] === actualSecond && flattenedHorseNumbers[1] === actualFirst)
         );
+        if (shouldLog) {
+          console.log(`馬連判定: (${flattenedHorseNumbers[0]}, ${flattenedHorseNumbers[1]}) と (${actualFirst}, ${actualSecond}) の組み合わせ → ${result}`);
+        }
+        break;
       
       case '馬単':
-        return flattenedHorseNumbers[0] === actualFirst && flattenedHorseNumbers[1] === actualSecond;
+        result = flattenedHorseNumbers[0] === actualFirst && flattenedHorseNumbers[1] === actualSecond;
+        if (shouldLog) {
+          console.log(`馬単判定: ${flattenedHorseNumbers[0]}→${flattenedHorseNumbers[1]} === ${actualFirst}→${actualSecond} → ${result}`);
+        }
+        break;
       
       case 'ワイド':
         const positions = [actualFirst, actualSecond, actualThird];
         // ワイドは2頭選んで、その2頭が3着以内に入れば的中
-        return (
+        result = (
           positions.includes(flattenedHorseNumbers[0]) && 
           positions.includes(flattenedHorseNumbers[1])
         );
+        if (shouldLog) {
+          console.log(`ワイド判定: ${flattenedHorseNumbers[0]}, ${flattenedHorseNumbers[1]} が [${positions.join(', ')}] に含まれる → ${result}`);
+        }
+        break;
       
       case '3連複':
-        return (
+        result = (
           [actualFirst, actualSecond, actualThird].every(pos => 
             flattenedHorseNumbers.includes(pos)
           ) && 
           flattenedHorseNumbers.length === 3
         );
+        if (shouldLog) {
+          console.log(`3連複判定: [${flattenedHorseNumbers.join(', ')}] と [${actualFirst}, ${actualSecond}, ${actualThird}] の一致 → ${result}`);
+        }
+        break;
       
       case '3連単':
-        return (
+        result = (
           flattenedHorseNumbers[0] === actualFirst &&
           flattenedHorseNumbers[1] === actualSecond &&
           flattenedHorseNumbers[2] === actualThird
         );
+        if (shouldLog) {
+          console.log(`3連単判定: ${flattenedHorseNumbers[0]}→${flattenedHorseNumbers[1]}→${flattenedHorseNumbers[2]} === ${actualFirst}→${actualSecond}→${actualThird} → ${result}`);
+        }
+        break;
+      
+      case '枠連':
+        if (shouldLog) console.log(`馬券判定: ${bet.type} (正規化: ${normalizedType})`);
+        if (shouldLog) console.log(`買い目: ${JSON.stringify(bet.horses)}`);
+        
+        // 枠番を直接抽出（"1-7" → [1,7] のような変換）
+        const frameNumbers = bet.horses.flatMap(h => {
+          const match = h.match(/(\d+)-(\d+)/);
+          if (match) {
+            return [parseInt(match[1]), parseInt(match[2])];
+          }
+          return h.split('-').map(num => parseInt(num.trim()));
+        });
+        
+        if (shouldLog) console.log(`枠番抽出: "${bet.horses.join('-')}" → ${JSON.stringify(frameNumbers)}`);
+        if (shouldLog) console.log(`抽出された枠番: ${frameNumbers}`);
+        
+        // レース結果から1着と2着の馬番を取得（変換済みの馬番を使用）
+        const firstHorse = actualFirst;
+        const secondHorse = actualSecond;
+        
+        // 馬番から枠番への変換
+        const firstFrame = getFrameNumber(firstHorse);
+        const secondFrame = getFrameNumber(secondHorse);
+        
+        if (shouldLog) console.log(`レース結果の枠番: 1着=${firstHorse}→${firstFrame}, 2着=${secondHorse}→${secondFrame}`);
+        
+        // 枠連の的中判定（順序は関係ない）
+        const isWinning = (
+          // 同枠の場合
+          (frameNumbers[0] === frameNumbers[1] && firstFrame === secondFrame && firstFrame === frameNumbers[0]) ||
+          // 異なる枠の場合（順序不問）
+          (frameNumbers.includes(firstFrame) && frameNumbers.includes(secondFrame))
+        );
+        
+        if (shouldLog) console.log(`枠連判定: 買い目枠番=(${frameNumbers.join(', ')}), 結果枠番=(${firstFrame}, ${secondFrame}) → ${isWinning}`);
+        
+        if (shouldLog) console.groupEnd(); // 枠連判定のグループを閉じる
+        
+        return isWinning;
       
       default:
         // 未対応の馬券種は確率に基づいて判定
-        return Math.random() < bet.probability;
+        const randomValue = Math.random();
+        result = randomValue < bet.probability;
+        if (shouldLog) {
+          console.log(`未対応券種判定: 乱数=${randomValue.toFixed(4)} < 確率=${bet.probability.toFixed(4)} → ${result}`);
+        }
+        break;
     }
+    
+    if (shouldLog) {
+      console.log(`最終判定結果: ${result ? '的中' : '不的中'}`);
+      console.groupEnd();
+    }
+    
+    return result;
   };
 
   // コンポーネント内に追加

@@ -17,18 +17,18 @@ export interface BettingOption {
   export interface BetProposal {
     type: string;
     horses: string[];
-    horseName?: string;
     stake: number;
-    expectedReturn: number;
+    odds?: number;
     probability: number;
+    expectedReturn: number;
     reason?: string;
+    horseName?: string;
     frame1?: number;
     frame2?: number;
     frame3?: number;
     horse1?: number;
     horse2?: number;
     horse3?: number;
-    odds?: number;
   }
   
   export interface HorseData {

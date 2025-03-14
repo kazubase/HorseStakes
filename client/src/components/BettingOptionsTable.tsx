@@ -39,7 +39,7 @@ export function BettingOptionsTable({
 }: BettingOptionsTableProps) {
   // selectionStateAtomから利用可能な馬データを取得
   const [selectionState] = useAtom(selectionStateAtom);
-  const [allHorses] = useAtom(horsesAtom);
+  const [allHorses, setAllHorses] = useAtom(horsesAtom);
   const [winProbs] = useAtom(winProbsAtom);
   const [placeProbs] = useAtom(placeProbsAtom);
   
@@ -107,6 +107,35 @@ export function BettingOptionsTable({
     
     return baseHorseData;
   }, [horses, selectionState.availableHorses, allHorses, winProbs, placeProbs, selectedBets]);
+
+  // 構築した馬データをhorsesAtomに保存
+  useEffect(() => {
+    if (horseData.length > 0 && allHorses) {
+      // 既存の馬データがある場合は、frameプロパティを保持しつつ更新
+      let hasChanges = false;
+      const updatedHorses = [...allHorses];
+      
+      // 馬データの更新（既存のHorse型を維持しながら必要な情報だけ更新）
+      horseData.forEach(horse => {
+        const existingHorseIndex = updatedHorses.findIndex(h => h.number === horse.number);
+        if (existingHorseIndex >= 0) {
+          // 枠番が変更された場合のみ更新
+          if (horse.frame && horse.frame !== updatedHorses[existingHorseIndex].frame) {
+            updatedHorses[existingHorseIndex] = {
+              ...updatedHorses[existingHorseIndex],
+              frame: horse.frame
+            };
+            hasChanges = true;
+          }
+        }
+      });
+      
+      // 変更があった場合のみsetAllHorsesを呼び出す
+      if (hasChanges) {
+        setAllHorses(updatedHorses);
+      }
+    }
+  }, [horseData, setAllHorses]);
 
   // 期待値を計算して統計情報を取得
   const optionsWithStats = useMemo(() => {
