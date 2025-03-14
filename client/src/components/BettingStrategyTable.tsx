@@ -452,14 +452,19 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       const count = filteredResults.filter(r => r >= bucketStart && r < bucketEnd).length;
       
       if (count > 0) { // カウントが0のバケットは除外
+        // 最初のバケットは下限値を使用し、それ以外は平均値を使用
+        const displayValue = i === 0 
+          ? bucketStart 
+          : Math.round((bucketStart + bucketEnd) / 2);
+        
         distributionData.push({
-          value: bucketStart,
+          value: displayValue,
           count,
           percentage: (count / filteredResults.length) * 100
         });
         
         if (process.env.NODE_ENV === 'development') {
-          console.log(`バケット[${bucketStart.toLocaleString()}円～${bucketEnd.toLocaleString()}円]: ${count}件 (${((count / filteredResults.length) * 100).toFixed(2)}%)`);
+          console.log(`バケット[${bucketStart.toLocaleString()}円～${bucketEnd.toLocaleString()}円]: ${count}件 (${((count / filteredResults.length) * 100).toFixed(2)}%), 表示値: ${displayValue.toLocaleString()}円`);
         }
       }
     });
@@ -859,6 +864,12 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       return runMonteCarloSimulation(bets);
     }, [bets]);
     
+    // 総投資額を計算
+    const totalInvestment = bets.reduce((sum, bet) => sum + bet.stake, 0);
+    
+    // 収益率を計算（平均収益÷総投資額×100）
+    const returnRate = (stats.mean / totalInvestment) * 100;
+    
     return (
       <div className="space-y-4">
         <div className="h-48 w-full">
@@ -961,9 +972,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             </div>
           </div>
           <div className="bg-background/50 p-2 rounded-lg">
-            <div className="text-xs text-muted-foreground">中央値</div>
+            <div className="text-xs text-muted-foreground">収益率</div>
             <div className="text-lg font-bold">
-              {stats.median >= 0 ? '+' : ''}{(Math.round(stats.median / 10) * 10).toLocaleString()}円
+              {returnRate >= 0 ? '+' : ''}{returnRate.toFixed(1)}%
             </div>
           </div>
         </div>
@@ -1171,28 +1182,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               </Card>
             ))}
           </Masonry>
-
-          {/* 集計情報 */}
-          <div className="grid grid-cols-3 gap-2 mt-3">
-            <div className="bg-background/50 p-2 rounded-lg text-center">
-              <div className="text-xs text-muted-foreground">総投資額</div>
-              <div className="text-lg font-bold">
-                {totals.totalInvestment.toLocaleString()}円
-              </div>
-            </div>
-            <div className="bg-background/50 p-2 rounded-lg text-center">
-              <div className="text-xs text-muted-foreground">期待収益</div>
-              <div className="text-lg font-bold">
-                +{(Math.round(totals.totalExpectedReturn / 10) * 10 - totals.totalInvestment).toLocaleString()}円
-              </div>
-            </div>
-            <div className="bg-background/50 p-2 rounded-lg text-center">
-              <div className="text-xs text-muted-foreground">期待収益率</div>
-              <div className="text-lg font-bold">
-                +{totals.expectedReturnRate}%
-              </div>
-            </div>
-          </div>
 
           {/* モンテカルロシミュレーション結果を表示 */}
           <div className="mt-6 pt-4 border-t border-border/30">
