@@ -353,7 +353,7 @@ export function BettingAnalysis() {
   });
 
   // bettingOptionsの計算をクエリとしてキャッシュ
-  const { data: calculatedBettingOptions } = useQuery({
+  const { data: calculatedBettingOptions, isLoading: isBettingOptionsLoading } = useQuery({
     queryKey: ['betting-options', {
       horsesLength: horses?.length,
       latestOddsLength: latestOdds?.length,
@@ -528,6 +528,16 @@ export function BettingAnalysis() {
           データの取得に失敗しました。
         </AlertDescription>
       </Alert>
+    );
+  }
+
+  // 馬券候補の計算中表示
+  if (isBettingOptionsLoading || !calculatedBettingOptions) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <Spinner className="w-8 h-8 mb-4" />
+        <p className="text-muted-foreground">馬券候補を計算中...</p>
+      </div>
     );
   }
 

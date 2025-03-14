@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { Sparkles, MousePointer } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getDefaultStore } from 'jotai';
+import { Spinner } from "@/components/ui/spinner";
 
 export function BettingSelection() {
   const [, setLocation] = useLocation();
@@ -335,14 +336,7 @@ export function BettingSelection() {
     });
   };
 
-  if (!bettingOptions.length) {
-    return (
-      <div className="text-center text-muted-foreground p-4">
-        馬券候補を計算できませんでした
-      </div>
-    );
-  }
-
+  // 馬券候補の表示
   return (
     <div className="relative min-h-screen">
       {/* ボタンを2列で表示 */}
@@ -374,43 +368,50 @@ export function BettingSelection() {
 
       {/* 馬券候補 */}
       <div>
-        <BettingOptionsTable 
-          bettingOptions={bettingOptions}
-          selectedBets={selectionState.selectedBets}
-          onBetSelect={handleBetSelection}
-          onSelectAllByType={handleSelectAllByType}
-          horses={(horses || []).map(horse => {
-            // 馬IDをキーとして確率を取得（URLパラメータの形式に合わせる）
-            const horseIdStr = String(horse.id);
-            const winProbability = (winProbs[horseIdStr] || 0) / 100;
-            const placeProbability = (placeProbs[horseIdStr] || 0) / 100;
-            
-            // 馬券データからも確率を取得（バックアップ）
-            const winBet = bettingOptions.find(
-              bet => bet.type === '単勝' && bet.horse1 === horse.number
-            );
-            const placeBet = bettingOptions.find(
-              bet => bet.type === '複勝' && bet.horse1 === horse.number
-            );
-            
-            // atomの値がない場合は馬券データから取得
-            const finalWinProb = winProbability || (winBet?.probability || 0);
-            const finalPlaceProb = placeProbability || (placeBet?.probability || 0);
-            
-            // 複勝確率は常に単勝確率以上になるようにする
-            const adjustedPlaceProb = Math.max(finalPlaceProb, finalWinProb);
-            
-            return {
-              number: horse.number,
-              name: horse.name,
-              winProb: finalWinProb,
-              placeProb: adjustedPlaceProb,
-              odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
-              frame: horse.frame
-            };
-          })}
-          correlations={conditionalProbabilities}
-        />
+        {!bettingOptions || bettingOptions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12">
+            <Spinner className="w-8 h-8 mb-4" />
+            <p className="text-muted-foreground">馬券候補を計算中...</p>
+          </div>
+        ) : (
+          <BettingOptionsTable 
+            bettingOptions={bettingOptions}
+            selectedBets={selectionState.selectedBets}
+            onBetSelect={handleBetSelection}
+            onSelectAllByType={handleSelectAllByType}
+            horses={(horses || []).map(horse => {
+              // 馬IDをキーとして確率を取得（URLパラメータの形式に合わせる）
+              const horseIdStr = String(horse.id);
+              const winProbability = (winProbs[horseIdStr] || 0) / 100;
+              const placeProbability = (placeProbs[horseIdStr] || 0) / 100;
+              
+              // 馬券データからも確率を取得（バックアップ）
+              const winBet = bettingOptions.find(
+                bet => bet.type === '単勝' && bet.horse1 === horse.number
+              );
+              const placeBet = bettingOptions.find(
+                bet => bet.type === '複勝' && bet.horse1 === horse.number
+              );
+              
+              // atomの値がない場合は馬券データから取得
+              const finalWinProb = winProbability || (winBet?.probability || 0);
+              const finalPlaceProb = placeProbability || (placeBet?.probability || 0);
+              
+              // 複勝確率は常に単勝確率以上になるようにする
+              const adjustedPlaceProb = Math.max(finalPlaceProb, finalWinProb);
+              
+              return {
+                number: horse.number,
+                name: horse.name,
+                winProb: finalWinProb,
+                placeProb: adjustedPlaceProb,
+                odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0),
+                frame: horse.frame
+              };
+            })}
+            correlations={conditionalProbabilities}
+          />
+        )}
       </div>
     </div>
   );

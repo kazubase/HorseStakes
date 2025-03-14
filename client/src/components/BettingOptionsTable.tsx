@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BetProposal, HorseData } from "@/lib/betEvaluation";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { BetCorrelation } from "@/lib/betConditionalProbability";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { CheckCircle, XCircle } from "lucide-react";
 import { calculateTotalProbability } from "@/lib/betInclusionExclusion";
 import { useAtom } from 'jotai';
 import { selectionStateAtom, horsesAtom, winProbsAtom, placeProbsAtom, bettingOptionsStatsAtom } from '@/stores/bettingStrategy';
+import { Spinner } from "@/components/ui/spinner";
 
 interface BettingOptionsTableProps {
   bettingOptions: BetProposal[];
@@ -42,6 +43,7 @@ export function BettingOptionsTable({
   const [allHorses, setAllHorses] = useAtom(horsesAtom);
   const [winProbs] = useAtom(winProbsAtom);
   const [placeProbs] = useAtom(placeProbsAtom);
+  const [isCalculating, setIsCalculating] = useState(true);
   
   // 馬データを構築
   const horseData = useMemo(() => {
@@ -139,6 +141,21 @@ export function BettingOptionsTable({
 
   // 期待値を計算して統計情報を取得
   const optionsWithStats = useMemo(() => {
+    // 計算開始時にローディング状態にする
+    setIsCalculating(true);
+    
+    // bettingOptionsが空の場合は計算しない
+    if (!bettingOptions || bettingOptions.length === 0) {
+      return {
+        options: [],
+        stats: {
+          ev: { mean: 0, std: 0 },
+          odds: { mean: 0, std: 0 },
+          probability: { mean: 0, std: 0 }
+        }
+      };
+    }
+    
     const options = bettingOptions.map(option => {
       const odds = option.expectedReturn / option.stake;
       const ev = odds * option.probability;
@@ -156,6 +173,9 @@ export function BettingOptionsTable({
       odds: calculateStats(options.map(o => o.odds)),
       probability: calculateStats(options.map(o => o.probability))
     };
+    
+    // 計算完了時にローディング状態を解除
+    setIsCalculating(false);
 
     return {
       options,
@@ -434,6 +454,16 @@ export function BettingOptionsTable({
       averageEv: weightedAverageEv
     };
   };
+
+  // ローディング表示
+  if (isCalculating || !bettingOptions || bettingOptions.length === 0) {
+    return (
+      <div className={`flex flex-col items-center justify-center p-8 ${className || ''}`}>
+        <Spinner className="w-6 h-6 mb-4" />
+        <p className="text-sm text-muted-foreground">馬券候補を計算中...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-3 ${className || ''}`}>
