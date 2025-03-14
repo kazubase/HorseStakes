@@ -19,32 +19,125 @@ interface RaceInfo {
 class DailyOddsCollector {
   private browser: Browser | null = null;
   private collector: OddsCollector;
-  private activeJobs: Map<number, schedule.Job> = new Map();
+  public activeJobs: Map<number, schedule.Job> = new Map();
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 5000; // 5秒
+  private lastBrowserReset: Date = new Date();
+  private readonly BROWSER_RESET_INTERVAL = 12 * 60 * 60 * 1000; // 12時間ごとにブラウザをリセット
 
   constructor() {
     this.collector = new OddsCollector();
   }
 
   async initialize() {
-    this.browser = await chromium.launch({ 
-      headless: true,
-      executablePath: process.env.CHROME_BIN || undefined,  // nullをundefinedに変更
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-software-rasterizer'
-      ]
-    });
-    await this.collector.initialize();
+    try {
+      this.browser = await chromium.launch({ 
+        headless: true,
+        executablePath: process.env.CHROME_BIN || undefined,  // nullをundefinedに変更
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-software-rasterizer'
+        ]
+      });
+      await this.collector.initialize();
+      this.lastBrowserReset = new Date();
+      console.log('Browser initialized successfully at:', this.lastBrowserReset.toISOString());
+    } catch (error) {
+      console.error('Failed to initialize browser:', error);
+      throw error;
+    }
+  }
+
+  // ブラウザを再初期化する関数
+  async resetBrowser() {
+    console.log('Resetting browser...');
+    try {
+      // 既存のブラウザをクリーンアップ
+      if (this.browser) {
+        try {
+          await this.browser.close();
+        } catch (error) {
+          console.error('Error closing browser during reset:', error);
+        } finally {
+          this.browser = null;
+        }
+      }
+      
+      // コレクターのクリーンアップ
+      await this.collector.cleanup();
+      
+      // 新しいブラウザを初期化
+      this.browser = await chromium.launch({ 
+        headless: true,
+        executablePath: process.env.CHROME_BIN || undefined,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-software-rasterizer'
+        ]
+      });
+      
+      // コレクターを再初期化
+      await this.collector.initialize();
+      this.lastBrowserReset = new Date();
+      console.log('Browser reset successfully at:', this.lastBrowserReset.toISOString());
+      return true;
+    } catch (error) {
+      console.error('Failed to reset browser:', error);
+      this.browser = null;
+      return false;
+    }
+  }
+
+  // 定期的にブラウザをリセットする必要があるかチェック
+  private async checkAndResetBrowserIfNeeded() {
+    // ブラウザが初期化されていない場合は初期化
+    if (!this.browser) {
+      console.log('Browser not initialized in checkAndResetBrowserIfNeeded. Initializing...');
+      try {
+        await this.initialize();
+        return true;
+      } catch (error) {
+        console.error('Failed to initialize browser in checkAndResetBrowserIfNeeded:', error);
+        return false;
+      }
+    }
+
+    try {
+      const now = new Date();
+      const timeSinceLastReset = now.getTime() - this.lastBrowserReset.getTime();
+      
+      if (timeSinceLastReset > this.BROWSER_RESET_INTERVAL) {
+        console.log(`Browser has been running for ${timeSinceLastReset / (60 * 60 * 1000)} hours. Resetting...`);
+        return await this.resetBrowser();
+      }
+      return false;
+    } catch (error) {
+      console.error('Error in checkAndResetBrowserIfNeeded:', error);
+      return false;
+    }
   }
 
   // JRAページから当日のレース情報を取得（重賞とテスト対象レースを含む）
   async getTodayGradeRaces(): Promise<RaceInfo[]> {
-    if (!this.browser) throw new Error('Browser not initialized');
+    // ブラウザが初期化されていない場合は初期化
+    if (!this.browser) {
+      console.log('Browser not initialized. Initializing...');
+      await this.initialize();
+    }
+    
+    // 定期的なブラウザリセットのチェック
+    await this.checkAndResetBrowserIfNeeded();
+    
+    // ブラウザが初期化されていない場合は例外をスロー
+    if (!this.browser) {
+      throw new Error('Browser initialization failed');
+    }
     
     const context = await this.browser.newContext({
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -121,13 +214,10 @@ class DailyOddsCollector {
                 // レース名とグレード情報を取得
                 const raceName = $raceName.find('.stakes').text().trim();
                 const gradeIcon = $raceName.find('.grade_icon img').attr('src');
-                const isGrade = gradeIcon?.includes('icon_grade_s_g');
+                const isGrade = gradeIcon?.includes('icon_grade_s_g') || gradeIcon?.includes('icon_grade_s_jg');
                 
                 // レース番号の画像から取得（"11レース" → 11）
                 const raceNumber = parseInt($raceNum.find('img').attr('alt')?.replace('レース', '') || '0');
-
-                // テスト用の条件：東京5Rの場合も含む
-                //const isTestTarget = venue === '東京' && raceNumber === 9;
                 
                 if (isGrade) {
                   // 時刻を日本語形式から変換（例：「15時45分」→ [15, 45]）
@@ -211,84 +301,173 @@ class DailyOddsCollector {
 
   // オッズ収集のスケジュール設定
   async scheduleOddsCollection(race: RaceInfo) {
-    // 既存のジョブがあれば削除
-    if (this.activeJobs.has(race.id)) {
-      const existingJob = this.activeJobs.get(race.id);
-      existingJob?.cancel();
-      this.activeJobs.delete(race.id);
-    }
-  
-    let collectionStartTimeUTC: Date | null = null;
-    if (race.isGrade) {
-      // race.startTimeはUTCで保存されているので、toLocaleStringでJSTの日付文字列に変換
-      const raceStartTimeInJST = new Date(
-        race.startTime.toLocaleString("en-US", { timeZone: "Asia/Tokyo" })
-      );
-      // raceStartTimeInJSTはJSTのカレンダー日付として解釈できるので、
-      // 収集開始は「前日 10:00 JST（UTC 01:00）」とする：
-      const collectionYear = raceStartTimeInJST.getFullYear();
-      const collectionMonth = raceStartTimeInJST.getMonth();
-      const collectionDay = raceStartTimeInJST.getDate() - 1; // 前日
-      collectionStartTimeUTC = new Date(Date.UTC(collectionYear, collectionMonth, collectionDay, 1, 0, 0));
-  
-      console.log(
-        `Race ${race.id} is grade. Collection will start at ${collectionStartTimeUTC.toISOString()} (race.startTime remains ${race.startTime.toISOString()})`
-      );
-    }
-  
-    console.log(`Setting up schedule for race: ${race.id}`);
-    
-    // 10分間隔でジョブ実行（毎時 0, 10, 20, 30, 40, 50分）
-    const rule = new schedule.RecurrenceRule();
-    rule.minute = [0, 10, 20, 30, 40, 50];
-  
-    const job = schedule.scheduleJob(rule, async () => {
-      const now = new Date();
-  
-      // 重賞の場合、収集開始UTC時刻に達していなければスキップする
-      if (race.isGrade && collectionStartTimeUTC && now < collectionStartTimeUTC) {
-        console.log(
-          `Race ${race.id} is grade. Waiting for collection start time: ${collectionStartTimeUTC.toISOString()}. Current: ${now.toISOString()}`
-        );
-        return;
-      }
-  
-      const timeToRace = race.startTime.getTime() - now.getTime();
-  
-      if (timeToRace > 0) {
-        if (race.isGrade) {
-          // 重賞レースは、収集開始時刻に達している場合、毎回収集を実施
-          await this.collectOdds(race.id);
-        } else {
-          // 通常レースは、レース開始30分前以降は10分間隔で収集
-          if (timeToRace <= 30 * 60 * 1000) {
-            await this.collectOdds(race.id);
-          }
-          // それ以外は30分間隔で収集
-          else if (now.getMinutes() % 30 === 0) {
-            await this.collectOdds(race.id);
-          }
-        }
-      } else {
-        // レース開始後はジョブをキャンセル
-        console.log(`Race ${race.id} has finished. Cancelling job.`);
-        job.cancel();
+    try {
+      // 既存のジョブがあれば削除
+      if (this.activeJobs.has(race.id)) {
+        const existingJob = this.activeJobs.get(race.id);
+        existingJob?.cancel();
         this.activeJobs.delete(race.id);
+        this.logWithTimestamp('info', `Cancelled existing job for race ${race.id}`);
       }
-    });
-  
-    this.activeJobs.set(race.id, job);
-  
-    // 初回実行: 重賞レースの場合、既に収集開始時刻に到達しているなら即時オッズ収集を実施する
-    const now = new Date();
-    if (race.isGrade && collectionStartTimeUTC && now >= collectionStartTimeUTC) {
-      console.log(`Initial collection for grade race ${race.id}`);
-      await this.collectOdds(race.id);
+    
+      // タイムゾーン処理を一貫化
+      // 日本時間（JST）での処理を明示的に行う
+      const JST_OFFSET = 9 * 60; // 日本時間は UTC+9 (分単位)
+      
+      // レース開始時刻をJST（日本時間）として解釈
+      const raceStartTimeJST = new Date(race.startTime);
+      
+      // 収集開始時刻の設定（重賞レースの場合）
+      let collectionStartTime: Date | null = null;
+      if (race.isGrade) {
+        // 重賞レースの場合、前日10:00 JSTから収集開始
+        const collectionStartTimeJST = new Date(raceStartTimeJST);
+        collectionStartTimeJST.setDate(collectionStartTimeJST.getDate() - 1);
+        collectionStartTimeJST.setHours(10, 0, 0, 0);
+        collectionStartTime = collectionStartTimeJST;
+        
+        // UTC時間をJST表示に変換
+        const jstCollectionStartTime = this.formatJSTTime(collectionStartTime);
+        this.logWithTimestamp('info', 
+          `Race ${race.id} is grade. Collection will start at ${jstCollectionStartTime} (JST)`
+        );
+      }
+    
+      // UTC時間をJST表示に変換
+      const jstRaceStartTime = this.formatJSTTime(raceStartTimeJST);
+      this.logWithTimestamp('info', `Setting up schedule for race: ${race.id}, start time: ${jstRaceStartTime} (JST)`);
+      
+      // 動的なスケジュール設定
+      const job = schedule.scheduleJob('*/5 * * * *', async () => {
+        try {
+          const now = new Date();
+          
+          // 重賞の場合、収集開始時刻に達していなければスキップする
+          if (race.isGrade && collectionStartTime && now < collectionStartTime) {
+            const jstNow = this.formatJSTTime(now);
+            const jstCollectionStart = this.formatJSTTime(collectionStartTime);
+            this.logWithTimestamp('info', 
+              `Race ${race.id} is grade. Waiting for collection start time: ${jstCollectionStart} (JST). Current: ${jstNow} (JST)`
+            );
+            return;
+          }
+          
+          // レース開始までの時間（ミリ秒）
+          const timeToRace = raceStartTimeJST.getTime() - now.getTime();
+          
+          // レース開始後5分以内は最終オッズを取得するためにジョブを継続
+          // これにより、レース開始直後の最終オッズを確実に取得できる
+          const FINAL_ODDS_WINDOW = 5 * 60 * 1000; // 5分間
+          
+          if (timeToRace > -FINAL_ODDS_WINDOW) {
+            // 収集頻度を動的に調整
+            let shouldCollect = false;
+            
+            if (race.isGrade) {
+              // 重賞レースの収集頻度
+              if (timeToRace <= 30 * 60 * 1000) {
+                // レース30分前以内: 5分ごと
+                shouldCollect = true;
+              } else if (timeToRace <= 3 * 60 * 60 * 1000) {
+                // レース3時間前以内: 10分ごと
+                shouldCollect = now.getMinutes() % 10 === 0;
+              } else if (timeToRace <= 12 * 60 * 60 * 1000) {
+                // レース12時間前以内: 30分ごと
+                shouldCollect = now.getMinutes() % 30 === 0;
+              } else {
+                // それ以前: 1時間ごと
+                shouldCollect = now.getMinutes() === 0;
+              }
+            } else {
+              // 通常レースの収集頻度
+              if (timeToRace <= 30 * 60 * 1000) {
+                // レース30分前以内: 10分ごと
+                shouldCollect = now.getMinutes() % 10 === 0;
+              } else {
+                // それ以前: 30分ごと
+                shouldCollect = now.getMinutes() % 30 === 0;
+              }
+            }
+            
+            // レース開始後は必ず収集（最終オッズ取得のため）
+            if (timeToRace <= 0) {
+              shouldCollect = true;
+            }
+            
+            if (shouldCollect) {
+              this.logWithTimestamp('info', `Collecting odds for race ${race.id} (${Math.floor(timeToRace / 60000)} minutes to race)`);
+              await this.collectOdds(race.id);
+            }
+          } else {
+            // レース開始から5分以上経過した場合、ジョブをキャンセル
+            this.logWithTimestamp('info', `Race ${race.id} has finished more than 5 minutes ago. Cancelling job.`);
+            job.cancel();
+            this.activeJobs.delete(race.id);
+            
+            // レースのステータスが更新されていない場合は更新
+            const currentRace = await this.withDbRetry(() => 
+              db.query.races.findFirst({
+                where: eq(races.id, race.id)
+              })
+            );
+            
+            if (currentRace && currentRace.status === 'upcoming') {
+              this.logWithTimestamp('info', `Updating status to done for race ${race.id}`);
+              await this.withDbRetry(() =>
+                db.update(races)
+                  .set({ status: 'done' })
+                  .where(eq(races.id, race.id))
+              );
+            }
+          }
+        } catch (error) {
+          this.logWithTimestamp('error', `Error in scheduled odds collection for race ${race.id}:`, error);
+          // エラーからの回復を試みる
+          await this.recoverFromError(`scheduled odds collection for race ${race.id}`);
+        }
+      });
+    
+      this.activeJobs.set(race.id, job);
+      
+      // 初回実行: 即時オッズ収集を実施する
+      const now = new Date();
+      
+      // 重賞レースの場合、収集開始時刻に達していれば即時収集
+      if (!race.isGrade || (collectionStartTime && now >= collectionStartTime)) {
+        this.logWithTimestamp('info', `Initial collection for race ${race.id}`);
+        await this.collectOdds(race.id);
+      }
+      
+      return true;
+    } catch (error) {
+      this.logWithTimestamp('error', `Failed to schedule odds collection for race ${race.id}:`, error);
+      return false;
+    }
+  }
+
+  // ジョブ管理を強化するためのヘルパーメソッド
+  public checkAndRestoreJobs() {
+    try {
+      this.logWithTimestamp('info', `Checking active jobs. Current count: ${this.activeJobs.size}`);
+      
+      // アクティブなジョブの状態を確認
+      // MapIteratorのリンターエラーを修正するため、Array.fromでエントリを配列に変換
+      Array.from(this.activeJobs.entries()).forEach(([raceId, job]) => {
+        if (!job.nextInvocation()) {
+          this.logWithTimestamp('warn', `Job for race ${raceId} has no next invocation. It may be cancelled or invalid.`);
+          this.activeJobs.delete(raceId);
+        }
+      });
+      
+      return true;
+    } catch (error) {
+      this.logWithTimestamp('error', 'Error checking active jobs:', error);
+      return false;
     }
   }
 
   // データベース接続のリトライ処理を追加
-  private async withDbRetry<T>(operation: () => Promise<T>): Promise<T> {
+  public async withDbRetry<T>(operation: () => Promise<T>): Promise<T> {
     for (let i = 0; i < this.MAX_RETRIES; i++) {
       try {
         return await operation();
@@ -302,9 +481,134 @@ class DailyOddsCollector {
     throw new Error('Max retries exceeded');
   }
 
+  // ジョブ管理のためのヘルパーメソッド
+  public getActiveJobsCount(): number {
+    return this.activeJobs.size;
+  }
+
+  // 特定のレースIDに対するジョブが存在するか確認
+  public hasActiveJob(raceId: number): boolean {
+    return this.activeJobs.has(raceId);
+  }
+
+  // upcomingレースに対するジョブの状態を確認し、必要に応じて復元する
+  public async checkAndRestoreRaceJobs(): Promise<number> {
+    try {
+      // アクティブなジョブの状態を確認
+      this.checkAndRestoreJobs();
+      
+      // upcomingレースに対するジョブが存在することを確認
+      const upcomingRaces = await this.withDbRetry(() => 
+        db.query.races.findMany({
+          where: eq(races.status, 'upcoming')
+        })
+      );
+      
+      this.logWithTimestamp('info', `Found ${upcomingRaces.length} upcoming races during job check`);
+      
+      // 各レースに対するジョブが存在するか確認
+      let restoredJobsCount = 0;
+      for (const race of upcomingRaces) {
+        if (!this.activeJobs.has(race.id)) {
+          this.logWithTimestamp('info', `Job missing for race ${race.id}. Restoring...`);
+          await this.scheduleOddsCollection({
+            id: race.id,
+            name: race.name,
+            venue: race.venue,
+            startTime: race.startTime,
+            isGrade: true
+          });
+          restoredJobsCount++;
+        }
+      }
+      
+      if (restoredJobsCount > 0) {
+        this.logWithTimestamp('info', `Restored ${restoredJobsCount} missing jobs`);
+      } else {
+        this.logWithTimestamp('info', 'All jobs are properly scheduled');
+      }
+      
+      return restoredJobsCount;
+    } catch (error) {
+      this.logWithTimestamp('error', 'Error in checkAndRestoreRaceJobs:', error);
+      return 0;
+    }
+  }
+
+  // ヘルスチェック機能を追加
+  public async healthCheck(): Promise<boolean> {
+    if (!this.browser) {
+      console.log('Browser not initialized during health check. Initializing...');
+      try {
+        await this.initialize();
+        return true;
+      } catch (error) {
+        console.error('Failed to initialize browser during health check:', error);
+        return false;
+      }
+    }
+
+    try {
+      // 簡単なテストページにアクセスしてブラウザが正常に動作しているか確認
+      const context = await this.browser.newContext();
+      const page = await context.newPage();
+      await page.goto('https://www.jra.go.jp/');
+      await page.waitForLoadState('networkidle');
+      await context.close();
+      return true;
+    } catch (error) {
+      console.error('Browser health check failed:', error);
+      // ブラウザの再初期化を試みる
+      try {
+        await this.resetBrowser();
+        return true;
+      } catch (resetError) {
+        console.error('Failed to reset browser after health check failure:', resetError);
+        return false;
+      }
+    }
+  }
+
+  // エラー回復機能を追加
+  public async recoverFromError(operation: string): Promise<boolean> {
+    console.error(`Attempting to recover from error in ${operation}`);
+    
+    try {
+      // ブラウザをリセット
+      const resetSuccess = await this.resetBrowser();
+      if (!resetSuccess) {
+        console.error(`Failed to reset browser during recovery from ${operation}`);
+        return false;
+      }
+      
+      // ヘルスチェックを実行
+      const healthCheckSuccess = await this.healthCheck();
+      if (!healthCheckSuccess) {
+        console.error(`Health check failed during recovery from ${operation}`);
+        return false;
+      }
+      
+      console.log(`Successfully recovered from error in ${operation}`);
+      return true;
+    } catch (error) {
+      console.error(`Recovery attempt failed for ${operation}:`, error);
+      return false;
+    }
+  }
+
   // オッズ収集実行の改善
   public async collectOdds(raceId: number) {
     try {
+      // 定期的なブラウザリセットのチェック
+      await this.checkAndResetBrowserIfNeeded();
+      
+      // ヘルスチェックを実行
+      const healthCheckSuccess = await this.healthCheck();
+      if (!healthCheckSuccess) {
+        this.logWithTimestamp('error', `Health check failed in collectOdds for race ${raceId}`);
+        await this.recoverFromError(`collectOdds for race ${raceId}`);
+      }
+      
       const race = await this.withDbRetry(() => 
         db.query.races.findFirst({
           where: eq(races.id, raceId)
@@ -324,17 +628,21 @@ class DailyOddsCollector {
       const raceDay = new Date(raceDate);
       raceDay.setHours(9, 0, 0, 0);
 
-      if (now >= previousDay && now < raceDay) {
-        console.log(`Skipping odds collection for race ${raceId} during overnight period (18:00-09:00)`);
-        return;
-      }
+      // 夜間収集停止の条件をコメントアウト
+      // if (now >= previousDay && now < raceDay) {
+      //   this.logWithTimestamp('info', `Skipping odds collection for race ${raceId} during overnight period (18:00-09:00)`);
+      //   return;
+      // }
 
-      console.log(`Current time: ${now.toISOString()}`);
-      console.log(`Race start time: ${race.startTime.toISOString()}`);
+      // 時間をJST形式で表示
+      const jstNow = this.formatJSTTime(now);
+      const jstRaceStartTime = this.formatJSTTime(race.startTime);
+      this.logWithTimestamp('info', `Current time: ${jstNow} (JST)`);
+      this.logWithTimestamp('info', `Race start time: ${jstRaceStartTime} (JST)`);
 
       // レース開始時刻を過ぎている場合、最終オッズを取得してからステータスを更新
       if (race.startTime < now && race.status === 'upcoming') {
-        console.log(`Race ${raceId} has started. Collecting final odds before marking as done.`);
+        this.logWithTimestamp('info', `Race ${raceId} has started. Collecting final odds before marking as done.`);
         
         // 最終オッズを取得
         const betTypes = ['tanpuku', 'wakuren', 'umaren', 'wide', 'umatan', 'fuku3', 'tan3'] as const;
@@ -343,7 +651,7 @@ class DailyOddsCollector {
           let retryCount = 0;
           while (retryCount < this.MAX_RETRIES) {
             try {
-              console.log(`Collecting final ${betType} odds for race ID: ${raceId} (attempt ${retryCount + 1})`);
+              this.logWithTimestamp('info', `Collecting final ${betType} odds for race ID: ${raceId} (attempt ${retryCount + 1})`);
               const odds = await this.collector.collectOddsForBetType(raceId, betType);
               
               if (odds.length > 0) {
@@ -352,13 +660,19 @@ class DailyOddsCollector {
                 } else {
                   await this.handleOtherOdds(betType, odds);
                 }
-                console.log(`Final ${betType} odds data saved successfully`);
+                this.logWithTimestamp('info', `Final ${betType} odds data saved successfully`);
                 break;
               }
-            } catch (error) {
-              console.error(`Error collecting final ${betType} odds for race ${raceId} (attempt ${retryCount + 1}):`, error);
+            } catch (error: any) {
+              // タイムアウトエラーの場合は、このベットタイプが利用できないと判断してスキップ
+              if (error.name === 'TimeoutError') {
+                this.logWithTimestamp('warn', `Timeout occurred while collecting ${betType} odds for race ${raceId}. This bet type may not be available for this race. Skipping.`);
+                break; // このベットタイプのリトライを中止
+              }
+              
+              this.logWithTimestamp('error', `Error collecting final ${betType} odds for race ${raceId} (attempt ${retryCount + 1}):`, error);
               if (retryCount === this.MAX_RETRIES - 1) {
-                console.error(`Max retries exceeded for final ${betType} odds collection`);
+                this.logWithTimestamp('error', `Max retries exceeded for final ${betType} odds collection`);
                 break;
               }
               retryCount++;
@@ -373,18 +687,19 @@ class DailyOddsCollector {
             .set({ status: 'done' })
             .where(eq(races.id, raceId))
         );
-        console.log(`Race ${raceId} marked as done after collecting final odds`);
+        this.logWithTimestamp('info', `Race ${raceId} marked as done after collecting final odds`);
         return;
       }
 
-      console.log(`Collecting odds for race ${raceId}`);
-      const betTypes = ['tanpuku', 'wakuren', 'umaren', 'wide', 'umatan', 'fuku3', 'tan3'] as const;
+      this.logWithTimestamp('info', `Collecting odds for race ${raceId}`);
+      // betTypesの再宣言を避けるため、新しい名前を使用
+      const oddsTypes = ['tanpuku', 'wakuren', 'umaren', 'wide', 'umatan', 'fuku3', 'tan3'] as const;
       
-      for (const betType of betTypes) {
+      for (const betType of oddsTypes) {
         let retryCount = 0;
         while (retryCount < this.MAX_RETRIES) {
           try {
-            console.log(`Collecting ${betType} odds for race ID: ${raceId} (attempt ${retryCount + 1})`);
+            this.logWithTimestamp('info', `Collecting ${betType} odds for race ID: ${raceId} (attempt ${retryCount + 1})`);
             const odds = await this.collector.collectOddsForBetType(raceId, betType);
             
             if (odds.length > 0) {
@@ -393,13 +708,19 @@ class DailyOddsCollector {
               } else {
                 await this.handleOtherOdds(betType, odds);
               }
-              console.log(`${betType} odds data saved successfully`);
+              this.logWithTimestamp('info', `${betType} odds data saved successfully`);
               break;
             }
-          } catch (error) {
-            console.error(`Error collecting ${betType} odds for race ${raceId} (attempt ${retryCount + 1}):`, error);
+          } catch (error: any) {
+            // タイムアウトエラーの場合は、このベットタイプが利用できないと判断してスキップ
+            if (error.name === 'TimeoutError') {
+              this.logWithTimestamp('warn', `Timeout occurred while collecting ${betType} odds for race ${raceId}. This bet type may not be available for this race. Skipping.`);
+              break; // このベットタイプのリトライを中止
+            }
+            
+            this.logWithTimestamp('error', `Error collecting ${betType} odds for race ${raceId} (attempt ${retryCount + 1}):`, error);
             if (retryCount === this.MAX_RETRIES - 1) {
-              console.error(`Max retries exceeded for ${betType} odds collection`);
+              this.logWithTimestamp('error', `Max retries exceeded for ${betType} odds collection`);
               break;
             }
             retryCount++;
@@ -408,7 +729,7 @@ class DailyOddsCollector {
         }
       }
     } catch (error) {
-      console.error('Error in collectOdds:', error);
+      this.logWithTimestamp('error', `Error in collectOdds for race ${raceId}:`, error);
       throw error;
     }
   }
@@ -473,40 +794,124 @@ class DailyOddsCollector {
   }
 
   async cleanup() {
+    if (this.browser) {
+      try {
+        await this.browser.close();
+      } catch (error) {
+        console.error('Error closing browser:', error);
+      } finally {
+        this.browser = null;
+      }
+    }
     await this.collector.cleanup();
     Array.from(this.activeJobs.values()).forEach(job => job.cancel());
     this.activeJobs.clear();
   }
 
   async checkUpcomingRaces() {
-    // DBからupcomingステータスのレースを取得
-    const upcomingRaces = await db.query.races.findMany({
-      where: eq(races.status, 'upcoming')
-    });
+    try {
+      // 定期的なブラウザリセットのチェック
+      await this.checkAndResetBrowserIfNeeded();
+      
+      // ヘルスチェックを実行
+      const healthCheckSuccess = await this.healthCheck();
+      if (!healthCheckSuccess) {
+        this.logWithTimestamp('error', 'Health check failed in checkUpcomingRaces');
+        await this.recoverFromError('checkUpcomingRaces');
+      }
+      
+      // アクティブなジョブの状態を確認
+      this.checkAndRestoreJobs();
+      
+      // DBからupcomingステータスのレースを取得
+      const upcomingRaces = await this.withDbRetry(() => 
+        db.query.races.findMany({
+          where: eq(races.status, 'upcoming')
+        })
+      );
 
-    console.log('Found upcoming races:', upcomingRaces);
+      this.logWithTimestamp('info', `Found ${upcomingRaces.length} upcoming races`);
 
-    // 各レースのステータスをチェック
-    for (const race of upcomingRaces) {
-      const now = new Date();
-      if (race.startTime < now) {
-        console.log(`Race ${race.id} has finished. Updating status to done`);
-        await db.update(races)
-          .set({ status: 'done' })
-          .where(eq(races.id, race.id));
-        continue;
+      // upcomingレースが見つからない場合、JRAサイトから再取得を試みる
+      if (upcomingRaces.length === 0) {
+        this.logWithTimestamp('info', 'No upcoming races found in DB. Attempting to fetch from JRA site...');
+        try {
+          const freshRaces = await this.getTodayGradeRaces();
+          if (freshRaces.length > 0) {
+            this.logWithTimestamp('info', `Found ${freshRaces.length} races from JRA site`);
+            for (const race of freshRaces) {
+              await this.registerRace(race);
+              await this.scheduleOddsCollection(race);
+              await new Promise(resolve => setTimeout(resolve, 2000)); // 2秒間隔で処理
+            }
+            return; // 新しいレースを登録したので、以降の処理はスキップ
+          } else {
+            this.logWithTimestamp('info', 'No races found from JRA site either.');
+          }
+        } catch (error) {
+          this.logWithTimestamp('error', 'Error fetching races from JRA site:', error);
+          // エラーからの回復を試みる
+          await this.recoverFromError('getTodayGradeRaces');
+        }
       }
 
-      // すでにジョブが存在している場合は再登録しない
-      if (!this.activeJobs.has(race.id)) {
-        await this.scheduleOddsCollection({
-          id: race.id,
-          name: race.name,
-          venue: race.venue,
-          startTime: race.startTime,
-          isGrade: true
-        });
+      // 各レースのステータスをチェック
+      for (const race of upcomingRaces) {
+        const now = new Date();
+        
+        // レース開始から30分以上経過している場合はステータスを更新
+        const RACE_COMPLETION_WINDOW = 30 * 60 * 1000; // 30分
+        if (race.startTime.getTime() + RACE_COMPLETION_WINDOW < now.getTime()) {
+          this.logWithTimestamp('info', `Race ${race.id} has finished more than 30 minutes ago. Updating status to done`);
+          await this.withDbRetry(() =>
+            db.update(races)
+              .set({ status: 'done' })
+              .where(eq(races.id, race.id))
+          );
+          
+          // 関連するジョブがあれば削除
+          if (this.activeJobs.has(race.id)) {
+            const job = this.activeJobs.get(race.id);
+            job?.cancel();
+            this.activeJobs.delete(race.id);
+            this.logWithTimestamp('info', `Cancelled job for completed race ${race.id}`);
+          }
+          
+          continue;
+        }
+
+        // すでにジョブが存在している場合は再登録しない
+        if (!this.activeJobs.has(race.id)) {
+          this.logWithTimestamp('info', `Scheduling odds collection for race ${race.id} that was not scheduled`);
+          await this.scheduleOddsCollection({
+            id: race.id,
+            name: race.name,
+            venue: race.venue,
+            startTime: race.startTime,
+            isGrade: true // 安全のため、DBから取得したレースは全て重賞として扱う
+          });
+        } else {
+          // ジョブが存在する場合、次回実行時刻を確認
+          const job = this.activeJobs.get(race.id);
+          const nextInvocation = job?.nextInvocation();
+          if (!nextInvocation) {
+            this.logWithTimestamp('warn', `Job for race ${race.id} exists but has no next invocation. Rescheduling...`);
+            await this.scheduleOddsCollection({
+              id: race.id,
+              name: race.name,
+              venue: race.venue,
+              startTime: race.startTime,
+              isGrade: true
+            });
+          } else {
+            this.logWithTimestamp('info', `Race ${race.id} already has an active job. Next invocation at ${nextInvocation.toISOString()}`);
+          }
+        }
       }
+    } catch (error) {
+      this.logWithTimestamp('error', 'Error in checkUpcomingRaces:', error);
+      // エラーからの回復を試みる
+      await this.recoverFromError('checkUpcomingRaces');
     }
   }
 
@@ -560,6 +965,84 @@ class DailyOddsCollector {
       await this.cleanupOldRaceData();
     });
   }
+
+  // ログ機能を強化
+  private logWithTimestamp(level: 'info' | 'warn' | 'error', message: string, ...args: any[]): void {
+    // UTCの時間を取得
+    const utcTime = new Date();
+    // 日本時間に変換（+9時間）
+    const jstTime = new Date(utcTime.getTime() + 9 * 60 * 60 * 1000);
+    
+    // 日本時間のフォーマット（YYYY-MM-DDThh:mm:ss.sss+09:00）
+    const jstTimestamp = jstTime.toISOString().replace('Z', '+09:00');
+    const prefix = `[${jstTimestamp}] [${level.toUpperCase()}] [JST]`;
+    
+    if (level === 'info') {
+      console.log(`${prefix} ${message}`, ...args);
+    } else if (level === 'warn') {
+      console.warn(`${prefix} ${message}`, ...args);
+    } else if (level === 'error') {
+      console.error(`${prefix} ${message}`, ...args);
+    }
+  }
+
+  // 定期的なステータスレポートを生成
+  public async generateStatusReport(): Promise<string> {
+    try {
+      // アクティブなジョブ数
+      const activeJobsCount = this.activeJobs.size;
+      
+      // upcomingレース数
+      const upcomingRaces = await this.withDbRetry(() => 
+        db.query.races.findMany({
+          where: eq(races.status, 'upcoming')
+        })
+      );
+      
+      // ブラウザの状態
+      const browserStatus = this.browser ? 'active' : 'inactive';
+      const browserUptime = this.browser ? 
+        `${(new Date().getTime() - this.lastBrowserReset.getTime()) / (60 * 60 * 1000)} hours` : 
+        'N/A';
+      
+      // レポート生成
+      const report = [
+        `Status Report at ${new Date().toISOString()}`,
+        `Browser Status: ${browserStatus}`,
+        `Browser Uptime: ${browserUptime}`,
+        `Active Jobs: ${activeJobsCount}`,
+        `Upcoming Races: ${upcomingRaces.length}`,
+        `Upcoming Race IDs: ${upcomingRaces.map(r => r.id).join(', ')}`
+      ].join('\n');
+      
+      this.logWithTimestamp('info', 'Status Report Generated');
+      return report;
+    } catch (error) {
+      this.logWithTimestamp('error', 'Failed to generate status report:', error);
+      return `Failed to generate status report: ${error}`;
+    }
+  }
+
+  // 定期的なステータスレポートのスケジュール設定
+  public setupStatusReportSchedule(): void {
+    // 1時間ごとにステータスレポートを生成
+    schedule.scheduleJob('0 * * * *', async () => {
+      this.logWithTimestamp('info', 'Generating hourly status report...');
+      const report = await this.generateStatusReport();
+      this.logWithTimestamp('info', report);
+    });
+  }
+
+  // 日本時間（JST）のフォーマット用ヘルパーメソッド
+  private formatJSTTime(date: Date): string {
+    // UTCの時間を取得
+    const utcTime = new Date(date);
+    // 日本時間に変換（+9時間）
+    const jstTime = new Date(utcTime.getTime() + 9 * 60 * 60 * 1000);
+    
+    // 日本時間のフォーマット（YYYY-MM-DDThh:mm:ss.sss+09:00）
+    return jstTime.toISOString().replace('Z', '+09:00');
+  }
 }
 
 // メイン実行関数
@@ -606,13 +1089,34 @@ async function main() {
 }
 
 async function runWithAutoRestart() {
+  let consecutiveFailures = 0;
+  const MAX_CONSECUTIVE_FAILURES = 5;
+  const INITIAL_RESTART_DELAY = 30000; // 30秒
+  
   while (true) {
     try {
+      console.log('Starting odds collector process...');
       const collector = new DailyOddsCollector();
-      await collector.initialize();
+      
+      try {
+        await collector.initialize();
+        // 初期化に成功したらカウンターをリセット
+        consecutiveFailures = 0;
+      } catch (initError) {
+        console.error('Failed to initialize collector:', initError);
+        throw initError; // 再試行のために外側のcatchに投げる
+      }
       
       // クリーンアップスケジュールを設定
       collector.setupCleanupSchedule();
+      
+      // ステータスレポートスケジュールを設定
+      collector.setupStatusReportSchedule();
+      
+      // 初回のステータスレポートを生成
+      console.log('Generating initial status report...');
+      const initialReport = await collector.generateStatusReport();
+      console.log(initialReport);
       
       // プロセス終了時のクリーンアップを設定
       process.on('SIGTERM', async () => {
@@ -621,12 +1125,29 @@ async function runWithAutoRestart() {
         process.exit(0);
       });
 
+      process.on('SIGINT', async () => {
+        console.log('Received SIGINT. Cleaning up...');
+        await collector.cleanup();
+        process.exit(0);
+      });
+
+      // 予期せぬエラーのハンドリング
+      process.on('uncaughtException', async (error) => {
+        console.error('Uncaught exception:', error);
+        try {
+          await collector.cleanup();
+        } catch (cleanupError) {
+          console.error('Error during cleanup after uncaught exception:', cleanupError);
+        }
+        process.exit(1);
+      });
+
       // レース開催日（土日祝）のチェック関数
       const isRaceDay = () => {
         const now = new Date();
         const day = now.getDay();
-        // 土曜日(6)または日曜日(0)または月曜日(1)
-        return day === 6 || day === 0 || day === 1;
+        // 金曜日(5)、土曜日(6)、日曜日(0)、月曜日(1)
+        return day === 5 || day === 6 || day === 0 || day === 1;
       };
 
       // レース開催日の場合のみ実行する処理
@@ -637,28 +1158,34 @@ async function runWithAutoRestart() {
         }
 
         console.log('Race day detected. Starting operations...');
-        const races = await collector.getTodayGradeRaces();
-        
-        if (races.length === 0) {
-          console.log('No races found for today.');
-          return;
-        }
+        try {
+          const races = await collector.getTodayGradeRaces();
+          
+          if (races.length === 0) {
+            console.log('No races found for today.');
+            return;
+          }
 
-        console.log(`Found ${races.length} races for today:`, races);
-        for (const race of races) {
-          await collector.registerRace(race);
-          await collector.scheduleOddsCollection(race);
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          console.log(`Found ${races.length} races for today:`, races);
+          for (const race of races) {
+            await collector.registerRace(race);
+            await collector.scheduleOddsCollection(race);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+        } catch (error) {
+          console.error('Error in runRaceDayOperations:', error);
+          // エラー発生時にブラウザをリセットして回復を試みる
+          await collector.recoverFromError('runRaceDayOperations');
         }
       };
 
       // 毎日8:55にレース情報取得（レース開催日のみ実行）
       console.log('Setting up 8:55 schedule');
-      schedule.scheduleJob('55 8 * * *', runRaceDayOperations);
+      const morningJob = schedule.scheduleJob('55 8 * * *', runRaceDayOperations);
 
       // レース開催日の場合のみ5分間隔でチェック
       console.log('Setting up 5-min check schedule');
-      schedule.scheduleJob('*/5 * * * *', async () => {
+      const checkJob = schedule.scheduleJob('*/5 * * * *', async () => {
         if (!isRaceDay()) return;
         
         const now = new Date();
@@ -667,7 +1194,55 @@ async function runWithAutoRestart() {
         // 9:00から17:00の間のみ実行
         if (hour >= 9 && hour < 17) {
           console.log('Running upcoming races check...');
-          await collector.checkUpcomingRaces();
+          try {
+            await collector.checkUpcomingRaces();
+          } catch (error) {
+            console.error('Error in scheduled checkUpcomingRaces:', error);
+            await collector.recoverFromError('scheduled checkUpcomingRaces');
+          }
+        }
+      });
+
+      // ブラウザを6時間ごとにリセットするスケジュール
+      console.log('Setting up browser reset schedule');
+      const resetJob = schedule.scheduleJob('0 */6 * * *', async () => {
+        console.log('Scheduled browser reset...');
+        try {
+          await collector.resetBrowser();
+        } catch (error) {
+          console.error('Error in scheduled browser reset:', error);
+          await collector.recoverFromError('scheduled browser reset');
+        }
+      });
+
+      // 毎日深夜にヘルスチェックを実行
+      console.log('Setting up daily health check');
+      const healthCheckJob = schedule.scheduleJob('0 3 * * *', async () => {
+        console.log('Running daily health check...');
+        try {
+          const healthStatus = await collector.healthCheck();
+          if (!healthStatus) {
+            console.error('Daily health check failed');
+            await collector.recoverFromError('daily health check');
+          } else {
+            console.log('Daily health check passed');
+          }
+        } catch (error) {
+          console.error('Error in daily health check:', error);
+          await collector.recoverFromError('daily health check');
+        }
+      });
+
+      // ジョブ管理の定期チェックを設定（1時間ごと）
+      console.log('Setting up job management check');
+      const jobCheckJob = schedule.scheduleJob('0 * * * *', async () => {
+        console.log('Running job management check...');
+        try {
+          // アクティブなジョブの状態を確認と復元
+          await collector.checkAndRestoreRaceJobs();
+        } catch (error) {
+          console.error('Error in job management check:', error);
+          await collector.recoverFromError('job management check');
         }
       });
 
@@ -678,9 +1253,24 @@ async function runWithAutoRestart() {
       await new Promise(() => {});
 
     } catch (error) {
-      console.error('Fatal error occurred:', error);
-      console.log('Restarting process in 30 seconds...');
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      consecutiveFailures++;
+      
+      // 連続失敗回数に基づいて再起動の遅延を指数関数的に増加させる
+      const restartDelay = Math.min(
+        INITIAL_RESTART_DELAY * Math.pow(2, consecutiveFailures - 1),
+        30 * 60 * 1000 // 最大30分
+      );
+      
+      console.error(`Fatal error occurred (failure #${consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES}):`, error);
+      console.log(`Restarting process in ${restartDelay / 1000} seconds...`);
+      
+      // 連続失敗が多すぎる場合はプロセスを終了
+      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+        console.error(`Too many consecutive failures (${consecutiveFailures}). Exiting process.`);
+        process.exit(1);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, restartDelay));
     }
   }
 }
