@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Horse, Race, TanOddsHistory } from "@db/schema";
 import { format } from "date-fns";
 import MainLayout from "@/components/layout/MainLayout";
-import { RefreshCw, Trophy, Target, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
+import { RefreshCw, Trophy, ArrowRight, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import RaceList from "@/pages/RaceList";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
@@ -891,6 +891,7 @@ export default function Home() {
             <div className="relative flex items-center justify-center">
               <Trophy className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
               <span className="relative">単勝予想</span>
+              <ArrowRight className="sm:h-4 sm:w-4 h-3 w-3 sm:ml-1" />
             </div>
           </Button>
         </div>

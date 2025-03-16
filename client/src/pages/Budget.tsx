@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { AlertCircle, Info } from "lucide-react";
+import { AlertCircle, Info, ArrowRight, Activity } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -210,7 +210,11 @@ export default function Budget() {
             disabled={budget <= 0 || riskRatio < 1.0 || !!error}
             className="bg-primary hover:bg-primary/90 transition-colors shadow-lg hover:shadow-primary/20"
           >
-            馬券購入戦略へ進む
+            <span className="relative flex items-center gap-1">
+              <Activity className="sm:h-4 sm:w-4 h-3 w-3 sm:mr-1" />
+              馬券分析画面へ
+              <ArrowRight className="sm:h-4 sm:w-4 h-3 w-3 sm:ml-1" />
+            </span>
           </Button>
         </div>
       </div>
