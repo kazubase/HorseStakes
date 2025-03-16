@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Horse, Race, TanOddsHistory } from "@db/schema";
 import { format } from "date-fns";
 import MainLayout from "@/components/layout/MainLayout";
-import { RefreshCw, Trophy, Target, ChevronRight } from "lucide-react";
+import { RefreshCw, Trophy, Target, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import RaceList from "@/pages/RaceList";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
@@ -38,6 +38,9 @@ export default function Home() {
   // 馬番でソートした馬リストを作成
   const sortedHorses = [...horses].sort((a, b) => a.number - b.number);
 
+  // ソート順の状態を追加
+  const [sortOrder, setSortOrder] = useState<'number-asc' | 'number-desc' | 'odds-asc' | 'odds-desc'>('number-asc');
+
   // オッズデータを取得する新しいクエリを追加
   const { 
     data: latestOdds = [], 
@@ -58,6 +61,95 @@ export default function Home() {
       .slice(0, 5)
       .map(odd => Number(odd.horseId));
   }, [latestOdds]);
+
+  // オッズの値が近い馬をグループ化する関数を追加
+  const horseGroups = useMemo(() => {
+    if (!latestOdds || latestOdds.length === 0) return [];
+    
+    // オッズでソートした馬リストを作成
+    const sortedOdds = [...latestOdds].sort((a, b) => parseFloat(a.odds) - parseFloat(b.odds));
+    
+    const groups: number[][] = [];
+    let currentGroup: number[] = [];
+    let prevOdds = 0;
+    
+    // 相対的な差分の閾値を動的に計算
+    // レースのオッズ分布に基づいて閾値を調整
+    const calculateDynamicThreshold = () => {
+      // 最小オッズと最大オッズを取得
+      const minOdds = parseFloat(sortedOdds[0].odds);
+      const maxOdds = parseFloat(sortedOdds[sortedOdds.length - 1].odds);
+      
+      // オッズの範囲が広い場合は閾値を大きく、狭い場合は小さくする
+      const oddsRange = maxOdds - minOdds;
+      
+      // オッズの標準偏差を計算
+      const oddsValues = sortedOdds.map(odd => parseFloat(odd.odds));
+      const avgOdds = oddsValues.reduce((sum, odds) => sum + odds, 0) / oddsValues.length;
+      const variance = oddsValues.reduce((sum, odds) => sum + Math.pow(odds - avgOdds, 2), 0) / oddsValues.length;
+      const stdDev = Math.sqrt(variance);
+      
+      // 標準偏差と範囲に基づいて閾値を計算
+      // 標準偏差が大きい（オッズのばらつきが大きい）場合は閾値を大きくする
+      const baseThreshold = 0.15; // 基本閾値
+      
+      // 調整係数を調整
+      const rangeAdjustment = oddsRange / 400; // 範囲による調整係数をさらに小さくする
+      const stdDevAdjustment = stdDev / 40; // 標準偏差による調整係数をさらに小さくする
+      
+      // 変動係数（標準偏差/平均）を使用して相対的なばらつきを考慮
+      const coefficientOfVariation = stdDev / avgOdds;
+      const cvAdjustment = coefficientOfVariation * 0.15; // 変動係数による調整を小さくする
+      
+      // 馬の数に基づく調整（馬が多いレースでは閾値を小さく）
+      const horseCountAdjustment = Math.max(0, 0.25 - (sortedOdds.length / 40));
+      
+      // 最小オッズに基づく調整（最小オッズが小さいほど閾値を小さく）
+      const minOddsAdjustment = Math.max(0, (minOdds - 2) / 20);
+      
+      // 最終的な閾値（最小0.15、最大0.45）- 上限をさらに下げる
+      const threshold = baseThreshold + rangeAdjustment + stdDevAdjustment + cvAdjustment + horseCountAdjustment + minOddsAdjustment;
+      
+      return Math.min(0.45, Math.max(0.15, threshold));
+    };
+    
+    const THRESHOLD = calculateDynamicThreshold();
+    
+    sortedOdds.forEach((odd, index) => {
+      const currentOdds = parseFloat(odd.odds);
+      
+      // 最初の馬は必ず最初のグループに入れる
+      if (index === 0) {
+        currentGroup.push(Number(odd.horseId));
+        prevOdds = currentOdds;
+        return;
+      }
+      
+      // 前の馬とのオッズの相対的な差を計算
+      const relativeDiff = (currentOdds - prevOdds) / prevOdds;
+      
+      // 差が閾値より大きい場合は新しいグループを作成
+      if (relativeDiff > THRESHOLD) {
+        groups.push([...currentGroup]);
+        currentGroup = [Number(odd.horseId)];
+      } else {
+        // そうでなければ現在のグループに追加
+        currentGroup.push(Number(odd.horseId));
+      }
+      
+      prevOdds = currentOdds;
+    });
+    
+    // 最後のグループを追加
+    if (currentGroup.length > 0) {
+      groups.push(currentGroup);
+    }
+    
+    return groups;
+  }, [latestOdds]);
+
+  // 現在表示中のグループインデックス
+  const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
 
   // オッズ履歴データを取得
   const { data: oddsHistory = [], isLoading: oddsLoading, error: oddsError } = useQuery<TanOddsHistory[]>({
@@ -90,19 +182,45 @@ export default function Home() {
     return format(date, 'M/d HH:mm');
   };
 
+  // 日付のみを取得する関数を追加
+  const getDateOnly = (timestamp: string) => {
+    const date = new Date(timestamp);
+    date.setHours(date.getHours() + 9);
+    return format(date, 'M/d');
+  };
+
+  // 時刻のみを取得する関数を追加
+  const getTimeOnly = (timestamp: string) => {
+    const date = new Date(timestamp);
+    date.setHours(date.getHours() + 9);
+    return format(date, 'HH:mm');
+  };
+
   // オッズデータを整形
   const formattedOddsData = useMemo(() => {
     const groupedByTimestamp = groupBy(oddsHistory, 'timestamp');
     
     return Object.entries(groupedByTimestamp)
       .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-      .map(([timestamp, odds]) => ({
-        timestamp: formatTime(timestamp),
-        ...odds.reduce((acc, odd) => ({
-          ...acc,
-          [`horse${odd.horseId}`]: parseFloat(odd.odds)
-        }), {})
-      }));
+      .map(([timestamp, odds], index, array) => {
+        // 現在の日付を取得
+        const currentDate = getDateOnly(timestamp);
+        // 前のデータの日付を取得（最初のデータの場合は空文字）
+        const prevDate = index > 0 ? getDateOnly(array[index - 1][0]) : '';
+        // 日付が変わったかどうかのフラグ
+        const isDateChanged = currentDate !== prevDate;
+        
+        return {
+          timestamp: formatTime(timestamp),
+          dateOnly: getDateOnly(timestamp),
+          timeOnly: getTimeOnly(timestamp),
+          isDateChanged,
+          ...odds.reduce((acc, odd) => ({
+            ...acc,
+            [`horse${odd.horseId}`]: parseFloat(odd.odds)
+          }), {})
+        };
+      });
   }, [oddsHistory]);
 
   // selectedHorsesの状態管理
@@ -110,10 +228,19 @@ export default function Home() {
 
   // 初期選択を設定するuseEffect
   useEffect(() => {
-    if (!latestOddsLoading && topFiveHorses.length > 0) {
-      setSelectedHorses(topFiveHorses);
+    if (!latestOddsLoading && horseGroups.length > 0) {
+      // 最初のグループ（人気グループ）を選択
+      setSelectedHorses(horseGroups[0]);
     }
-  }, [latestOddsLoading, topFiveHorses]);
+  }, [latestOddsLoading, horseGroups]);
+
+  // グループを切り替える関数
+  const switchGroup = useCallback((index: number) => {
+    if (index >= 0 && index < Math.min(3, horseGroups.length)) {
+      setCurrentGroupIndex(index);
+      setSelectedHorses(horseGroups[index]);
+    }
+  }, [horseGroups]);
 
   // タッチ開始位置を保存するための状態を追加
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
@@ -187,6 +314,35 @@ export default function Home() {
     return colors[frame as keyof typeof colors] || '#9CA3AF';
   };
 
+  // ソート順に基づいて馬リストをソートする関数
+  const getSortedHorseList = useCallback(() => {
+    if (sortOrder === 'number-asc') {
+      return [...horses].sort((a, b) => a.number - b.number);
+    } else if (sortOrder === 'number-desc') {
+      return [...horses].sort((a, b) => b.number - a.number);
+    }
+
+    // オッズでソートする場合
+    return [...horses].sort((a, b) => {
+      const aOdds = latestOdds?.find(odd => Number(odd.horseId) === a.number)?.odds;
+      const bOdds = latestOdds?.find(odd => Number(odd.horseId) === b.number)?.odds;
+      
+      // オッズがない場合は最後に表示
+      if (!aOdds) return 1;
+      if (!bOdds) return -1;
+      
+      const aValue = parseFloat(aOdds);
+      const bValue = parseFloat(bOdds);
+      
+      return sortOrder === 'odds-asc' 
+        ? aValue - bValue 
+        : bValue - aValue;
+    });
+  }, [horses, latestOdds, sortOrder]);
+
+  // ソート済みの馬リストを取得
+  const displayHorses = getSortedHorseList();
+
   // グラフに表示する馬をフィルタリング
   const visibleHorses = selectedHorses.length > 0 
     ? sortedHorses.filter(h => selectedHorses.includes(h.number))
@@ -240,9 +396,31 @@ export default function Home() {
             dataKey="timestamp"
             interval="preserveStartEnd"
             minTickGap={50}
-            tick={{ 
-              fill: 'hsl(var(--muted-foreground))',
-              fontSize: '0.75rem'
+            tick={(props) => {
+              const { x, y, payload } = props;
+              const dataIndex = formattedOddsData.findIndex(item => item.timestamp === payload.value);
+              const data = formattedOddsData[dataIndex];
+              
+              // 日付が変わるポイントか最初と最後のポイントの場合は日付と時刻を表示
+              // それ以外は時刻のみ表示
+              const displayText = data?.isDateChanged || dataIndex === 0 || dataIndex === formattedOddsData.length - 1
+                ? data.dateOnly + ' ' + data.timeOnly
+                : data.timeOnly;
+              
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text 
+                    x={0} 
+                    y={0} 
+                    dy={16} 
+                    textAnchor="middle" 
+                    fill="hsl(var(--muted-foreground))"
+                    fontSize="0.75rem"
+                  >
+                    {displayText}
+                  </text>
+                </g>
+              );
             }}
             axisLine={{ stroke: 'hsl(var(--border))' }}
             tickLine={{ stroke: 'hsl(var(--border))' }}
@@ -268,7 +446,10 @@ export default function Home() {
             tick={{ fill: 'hsl(var(--muted-foreground))' }}
             axisLine={{ stroke: 'hsl(var(--border))' }}
             tickLine={{ stroke: 'hsl(var(--border))' }}
-            width={35}
+            width={45}
+            allowDecimals={true}
+            tickCount={6}
+            padding={{ top: 10, bottom: 10 }}
           />
           
           {/* ツールチップをカスタマイズ - 馬番のみを枠番の色で表示 */}
@@ -443,6 +624,17 @@ export default function Home() {
     return ((latestOdds - previousOdds) / previousOdds) * 100;
   }, [formattedOddsData]);
   
+  // ソートボタンのクリックハンドラを追加
+  const handleSortClick = useCallback((type: 'number' | 'odds') => {
+    setSortOrder(current => {
+      if (type === 'number') {
+        return current === 'number-asc' ? 'number-desc' : 'number-asc';
+      } else {
+        return current === 'odds-asc' ? 'odds-desc' : 'odds-asc';
+      }
+    });
+  }, []);
+
   if (!race && !raceLoading) return null;
 
   return (
@@ -498,8 +690,47 @@ export default function Home() {
 
                 <div className="overflow-x-auto">
                   <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16 px-3 text-center">
+                          <div className="flex items-center justify-end pr-3">
+                            <button 
+                              onClick={() => handleSortClick('number')}
+                              className="flex items-center justify-center p-1 hover:bg-muted/30 rounded transition-colors"
+                              aria-label="馬番でソート"
+                            >
+                              {sortOrder === 'number-asc' ? (
+                                <ChevronUp className="h-4 w-4 text-primary" />
+                              ) : sortOrder === 'number-desc' ? (
+                                <ChevronDown className="h-4 w-4 text-primary" />
+                              ) : (
+                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </button>
+                          </div>
+                        </TableHead>
+                        <TableHead></TableHead>
+                        <TableHead className="text-right pr-4">
+                          <div className="flex items-center justify-start pl-4">
+                            <button 
+                              onClick={() => handleSortClick('odds')}
+                              className="flex items-center justify-center p-1 hover:bg-muted/30 rounded transition-colors"
+                              aria-label="オッズでソート"
+                            >
+                              {sortOrder === 'odds-asc' ? (
+                                <ChevronUp className="h-4 w-4 text-primary" />
+                              ) : sortOrder === 'odds-desc' ? (
+                                <ChevronDown className="h-4 w-4 text-primary" />
+                              ) : (
+                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </button>
+                          </div>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
                     <TableBody>
-                      {sortedHorses.map((horse) => {
+                      {displayHorses.map((horse) => {
                         const latestOdd = latestOdds?.find(odd => 
                           Number(odd.horseId) === horse.number
                         );
@@ -588,11 +819,56 @@ export default function Home() {
                   }
                 </div>
               </div>
-              <div className="h-[300px] sm:h-[400px] relative overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent" ref={chartContainerRef}>
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-30" />
-                <div className="relative h-full min-w-[800px]">
-                  <OddsChart />
+              
+              {/* グループ切り替えボタン */}
+              {horseGroups.length > 1 && (
+                <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent justify-center">
+                  {horseGroups.slice(0, Math.min(3, horseGroups.length)).map((group, index) => {
+                    // グループ内の最小オッズと最大オッズを取得
+                    const groupOdds = group.map(horseId => {
+                      const odd = latestOdds?.find(o => Number(o.horseId) === horseId);
+                      return odd ? parseFloat(odd.odds) : 999;
+                    });
+                    const minOdds = Math.min(...groupOdds);
+                    const maxOdds = Math.max(...groupOdds);
+                    
+                    return (
+                      <Button
+                        key={index}
+                        size="sm"
+                        variant={currentGroupIndex === index ? "default" : "outline"}
+                        onClick={() => switchGroup(index)}
+                        className="whitespace-nowrap text-xs text-center"
+                      >
+                        {index === 0 ? "人気" : index === 1 ? "中人気" : "穴人気"}
+                        <span className="ml-1 opacity-80">
+                          {group.length}頭
+                        </span>
+                      </Button>
+                    );
+                  })}
                 </div>
+              )}
+              
+              {/* グラフコンテナ - 相対位置指定 */}
+              <div className="h-[300px] sm:h-[400px] relative">
+                {/* 背景グラデーション */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-30 pointer-events-none" />
+                
+                {/* スクロール可能なコンテナ */}
+                <div 
+                  className="absolute inset-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent" 
+                  ref={chartContainerRef}
+                >
+                  {/* グラフコンテンツ */}
+                  <div className="h-full min-w-[800px]">
+                    <OddsChart />
+                  </div>
+                </div>
+                
+                {/* 左右のフェードエフェクト - スクロールコンテナの上に固定 */}
+                <div className="absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-r from-background/80 to-transparent" />
+                <div className="absolute right-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-l from-background/80 to-transparent" />
               </div>
               
               {/* グラフ操作ガイド */}
