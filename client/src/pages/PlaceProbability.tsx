@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Horse } from "@db/schema";
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { AlertCircle, ArrowRight, Award, Grid3X3, List, Wallet, BarChart4 } from "lucide-react";
+import { AlertCircle, ArrowRight, Award, Grid3X3, List, Wallet, BarChart4, Plus, Minus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { AnimatePresence, motion } from "framer-motion";
@@ -16,7 +16,11 @@ export default function PlaceProbability() {
   const [probabilities, setProbabilities] = useState<{ [key: number]: number }>({});
   const [totalProbability, setTotalProbability] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">(() => {
+    // URLから表示モードを取得（単勝確率画面の表示モードを引き継ぐ）
+    const viewModeParam = new URLSearchParams(window.location.search).get('viewMode');
+    return viewModeParam === "grid" ? "grid" : "list";
+  });
   const [inputValues, setInputValues] = useState<{ [key: number]: string }>({});
 
   const getRequiredTotalProbability = (horseCount: number) => {
@@ -157,17 +161,60 @@ export default function PlaceProbability() {
     handleProbabilityChange(horseId, numValue);
   };
 
+  // タップで確率を増減する関数
+  const handleProbabilityIncrement = (horseId: number, increment: number) => {
+    const currentValue = probabilities[horseId] || 0;
+    const winProb = winProbabilities[horseId] || 0;
+    // 単勝確率より小さくならないように制限
+    const newValue = Math.min(Math.max(currentValue + increment, winProb), 100);
+    handleProbabilityChange(horseId, newValue);
+  };
+
   const normalizeAllProbabilities = () => {
     const requiredTotal = getRequiredTotalProbability(horses?.length || 0);
     const factor = requiredTotal / totalProbability;
     const normalizedProbabilities = Object.fromEntries(
-      Object.entries(probabilities).map(([id, prob]) => [
+      Object.entries(probabilities).map(([id, prob]) => {
+        // 100%を超えないように制限
+        const normalizedValue = Math.min(Number((prob * factor).toFixed(1)), 100);
+        return [id, normalizedValue];
+      })
+    );
+    
+    // 合計が必要な確率に達していない場合は再調整
+    const newTotal = Object.values(normalizedProbabilities).reduce((sum, value) => sum + value, 0);
+    if (Math.abs(newTotal - requiredTotal) > 0.1) {
+      // 100%未満の馬の確率を調整
+      const adjustableHorses = Object.entries(normalizedProbabilities)
+        .filter(([_, prob]) => prob < 100)
+        .map(([id]) => id);
+      
+      if (adjustableHorses.length > 0) {
+        const deficit = requiredTotal - newTotal;
+        const adjustmentPerHorse = deficit / adjustableHorses.length;
+        
+        adjustableHorses.forEach(id => {
+          normalizedProbabilities[id] = Math.min(
+            normalizedProbabilities[id] + adjustmentPerHorse,
+            100
+          );
+        });
+      }
+    }
+    
+    setProbabilities(normalizedProbabilities);
+    setTotalProbability(
+      Object.values(normalizedProbabilities).reduce((sum, value) => sum + value, 0)
+    );
+    
+    // 入力フィールドの値も更新
+    const updatedInputValues = Object.fromEntries(
+      Object.entries(normalizedProbabilities).map(([id, prob]) => [
         id,
-        Number((prob * factor).toFixed(1))
+        prob.toString()
       ])
     );
-    setProbabilities(normalizedProbabilities);
-    setTotalProbability(requiredTotal);
+    setInputValues(updatedInputValues);
   };
 
   const handleNext = () => {
@@ -185,7 +232,11 @@ export default function PlaceProbability() {
     const winProbs = params.get('winProbs') || '{}';
     const encodedPlaceProbs = encodeURIComponent(JSON.stringify(allProbabilities));
     
-    window.location.href = `/predict/budget/${id}?winProbs=${winProbs}&placeProbs=${encodedPlaceProbs}`;
+    window.location.href = `/predict/budget/${id}?winProbs=${winProbs}&placeProbs=${encodedPlaceProbs}&viewMode=${viewMode}`;
+  };
+
+  const handleViewModeChange = (newMode: "list" | "grid") => {
+    setViewMode(newMode);
   };
 
   if (!horses) return null;
@@ -217,7 +268,7 @@ export default function PlaceProbability() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setViewMode(viewMode === "list" ? "grid" : "list")}
+            onClick={() => handleViewModeChange(viewMode === "list" ? "grid" : "list")}
             className="flex items-center gap-1"
           >
             {viewMode === "list" ? (
@@ -283,24 +334,43 @@ export default function PlaceProbability() {
                         `}>
                           {horse.number}
                         </div>
-                        <label className="text-sm font-medium">
+                        <label id={`horse-place-name-${horse.id}`} htmlFor={`horse-place-prob-${horse.id}`} className="text-sm font-medium">
                           {horse.name}
                         </label>
                       </div>
                       <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 rounded-full"
+                          onClick={() => handleProbabilityIncrement(horse.id, -5)}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
                         <div className="relative">
                           <Input
                             type="number"
                             min={winProbabilities[horse.id] || 0}
                             max="100"
                             step="1"
+                            id={`horse-place-prob-${horse.id}`}
+                            name={`horse-place-prob-${horse.id}`}
                             value={inputValues[horse.id] || ""}
                             onChange={(e) => handleDirectInput(horse.id, e.target.value)}
                             onBlur={(e) => handleInputBlur(horse.id, e.target.value)}
                             className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
+                            aria-labelledby={`horse-place-name-${horse.id}`}
                           />
                           <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 rounded-full"
+                          onClick={() => handleProbabilityIncrement(horse.id, 5)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
                         <span className="text-sm font-medium">%</span>
                       </div>
                     </div>
@@ -357,24 +427,43 @@ export default function PlaceProbability() {
                       `}>
                         {horse.number}
                       </div>
-                      <div className="text-sm font-medium truncate flex-1">
+                      <div id={`horse-place-name-grid-${horse.id}`} className="text-sm font-medium truncate flex-1">
                         {horse.name}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mb-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7 rounded-full"
+                        onClick={() => handleProbabilityIncrement(horse.id, -5)}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
                       <div className="relative">
                         <Input
                           type="number"
                           min={winProbabilities[horse.id] || 0}
                           max="100"
                           step="1"
+                          id={`horse-place-prob-grid-${horse.id}`}
+                          name={`horse-place-prob-grid-${horse.id}`}
                           value={inputValues[horse.id] || ""}
                           onChange={(e) => handleDirectInput(horse.id, e.target.value)}
                           onBlur={(e) => handleInputBlur(horse.id, e.target.value)}
                           className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
+                          aria-labelledby={`horse-place-name-grid-${horse.id}`}
                         />
                         <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7 rounded-full"
+                        onClick={() => handleProbabilityIncrement(horse.id, 5)}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
                       <span className="text-sm font-medium">%</span>
                     </div>
                     <Slider
