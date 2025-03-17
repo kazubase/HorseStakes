@@ -481,7 +481,7 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
 
   // Gemini分析のクエリは条件付き確率の計算が完了してから実行
   const geminiAnalysis = useQuery({
-    queryKey: ['gemini-analysis', calculatedBettingOptions?.length, correlations?.length],
+    queryKey: ['gemini-analysis', id, budget, riskRatio, calculatedBettingOptions?.length, correlations?.length],
     queryFn: () => analyzeWithGemini({
       horses: horses?.map(horse => ({
         name: horse.name,
@@ -494,7 +494,8 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
       bettingOptions: calculatedBettingOptions || [],
       budget,
       riskRatio,
-      correlations: correlations || []
+      correlations: correlations || [],
+      raceId: id || ''
     }),
     enabled: !!horses && !!calculatedBettingOptions?.length && !!correlations?.length
   });

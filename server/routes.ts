@@ -1014,12 +1014,23 @@ app.get("/api/sanrentan-odds/latest/:raceId", async (req, res) => {
     }
 
     try {
-      const { prompt, model = 'gemini-2.0-flash-001' } = req.body;
+      const { prompt, model = 'gemini-2.0-flash-001', raceId, settings } = req.body;
       console.log('📝 Using model:', model);
 
-      // プロンプトに基づいてキャッシュキーを生成
-      const cacheKey = `gemini-${Buffer.from(prompt).toString('base64').substring(0, 100)}`;
-      const cachedResponse = cache.get(cacheKey);
+      // プロンプトに加えて、レースIDと予想設定も含めたキャッシュキーを生成
+      let cacheKeyData = prompt;
+      if (raceId) {
+        cacheKeyData += `-race:${raceId}`;
+      }
+      if (settings) {
+        cacheKeyData += `-settings:${JSON.stringify(settings)}`;
+      }
+      
+      const cacheKey = `gemini-${Buffer.from(cacheKeyData).toString('base64').substring(0, 100)}`;
+      
+      // キャッシュを強制的に無効化するヘッダーがある場合はキャッシュをスキップ
+      const forceRefresh = req.headers['x-force-refresh'] === 'true' || req.headers['cache-control'] === 'no-cache';
+      const cachedResponse = forceRefresh ? null : cache.get(cacheKey);
       
       if (cachedResponse) {
         console.log('✅ Returning cached Gemini response');

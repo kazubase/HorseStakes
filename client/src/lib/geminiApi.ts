@@ -194,6 +194,7 @@ export const getGeminiStrategy = async (
     }[];
     bettingOptions: BettingOption[];
     conditionalProbabilities: BetCorrelation[];
+    raceId: string;
   },
   riskRatio: number,
   feedback?: StrategyFeedback[]
@@ -405,7 +406,13 @@ ${generateSimpleCorrelationInfo()}
         model: 'gemini-2.0-flash-001',
         thought: false,
         apiVersion: 'v1alpha',
-        maxTokens: 2048 // トークン数の制限
+        maxTokens: 2048, // トークン数の制限
+        raceId: allBettingOptions.raceId, // レースIDを追加
+        settings: {
+          horses: allBettingOptions.horses.map(h => h.number), // 馬番のリスト
+          budget: totalBudget,
+          riskRatio: riskRatio
+        }
       })
     });
 
@@ -624,7 +631,14 @@ ${detailedCorrelationText}
         prompt: step2Prompt,
         model: 'gemini-2.0-flash-001',
         thought: false,
-        apiVersion: 'v1alpha'
+        apiVersion: 'v1alpha',
+        raceId: allBettingOptions.raceId, // レースIDを追加
+        settings: {
+          horses: allBettingOptions.horses.map(h => h.number), // 馬番のリスト
+          budget: totalBudget,
+          riskRatio: riskRatio,
+          step: 2 // ステップ2であることを明示
+        }
       })
     }) ?? throwError('ステップ2の解析結果の取得に失敗しました');
     

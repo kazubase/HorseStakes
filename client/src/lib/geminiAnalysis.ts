@@ -45,6 +45,7 @@ interface GeminiAnalysisInput {
   budget: number;
   riskRatio: number;
   correlations?: BetCorrelation[];
+  raceId: string;
 }
 
 // 簡素化したレスポンス型
@@ -338,6 +339,8 @@ d) 上記分析を総合した最適な馬券戦略の構築
     headers: {
       'Content-Type': 'application/json',
       'X-CSRF-Token': getCsrfToken(),
+      'Cache-Control': 'no-cache',
+      'X-Force-Refresh': 'true'
     },
     credentials: 'same-origin',
     body: JSON.stringify({
@@ -345,7 +348,13 @@ d) 上記分析を総合した最適な馬券戦略の構築
       model: 'gemini-2.0-flash-001',
       thought: false,
       apiVersion: 'v1alpha',
-      maxTokens: 2048 // トークン数の制限
+      maxTokens: 2048, // トークン数の制限
+      raceId: input.raceId, // レースIDを追加
+      settings: {
+        horses: input.horses.map(h => h.number), // 馬番のリスト
+        budget: input.budget,
+        riskRatio: input.riskRatio
+      }
     })
   });
 

@@ -6,6 +6,7 @@ interface OptimizationInput {
   bettingOptions: BettingOption[];
   budget: number;
   riskRatio: number;
+  raceId: string;
 }
 
 interface CondProbInput {
@@ -67,7 +68,8 @@ export const getAiOptimizedStrategy = async ({
   horses,
   bettingOptions,
   budget,
-  riskRatio
+  riskRatio,
+  raceId
 }: OptimizationInput): Promise<BetProposal[]> => {
   try {
     // 条件付き確率の計算
@@ -129,7 +131,13 @@ ${conditionalProbabilities.map(corr =>
       body: JSON.stringify({
         prompt,
         model: 'gemini-2.0-flash-001',
-        temperature: 0.7
+        temperature: 0.7,
+        raceId: raceId,
+        settings: {
+          horses: horses.map(h => h.number),
+          budget: budget,
+          riskRatio: riskRatio
+        }
       })
     });
 
