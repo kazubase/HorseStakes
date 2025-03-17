@@ -263,7 +263,12 @@ interface SidebarTab {
   component: React.ReactNode;
 }
 
-export function BettingAnalysis() {
+// BettingAnalysisコンポーネントのpropsインターフェースを追加
+interface BettingAnalysisProps {
+  initialSidebarOpen?: boolean;
+}
+
+export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisProps) {
   const { id } = useParams();
   const [location] = useLocation();
   const [horses, setHorses] = useAtom(horsesAtom);
@@ -276,9 +281,37 @@ export function BettingAnalysis() {
   const [, setWinProbs] = useAtom(winProbsAtom);
   const [, setPlaceProbs] = useAtom(placeProbsAtom);
   
-  // サイドバーの状態管理 - デフォルトで非表示に変更
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // サイドバーの状態管理 - 初期値をpropsから取得
+  const [isSidebarOpen, setIsSidebarOpen] = useState(initialSidebarOpen);
   const [activeTab, setActiveTab] = useState<string>("settings");
+
+  // カスタムイベントリスナーを追加
+  useEffect(() => {
+    // サイドバーを開くイベントリスナー
+    const handleOpenSidebar = () => {
+      setIsSidebarOpen(true);
+    };
+
+    // 分析画面に移動してサイドバーを開くイベントリスナー
+    const handleNavigateWithSidebar = () => {
+      setIsSidebarOpen(true);
+    };
+
+    // イベントリスナーを登録
+    window.addEventListener('openAnalysisSidebar', handleOpenSidebar);
+    window.addEventListener('navigateToAnalysisWithSidebar', handleNavigateWithSidebar);
+
+    // クリーンアップ関数
+    return () => {
+      window.removeEventListener('openAnalysisSidebar', handleOpenSidebar);
+      window.removeEventListener('navigateToAnalysisWithSidebar', handleNavigateWithSidebar);
+    };
+  }, []);
+
+  // initialSidebarOpenプロパティが変更されたときにサイドバーの状態を更新
+  useEffect(() => {
+    setIsSidebarOpen(initialSidebarOpen);
+  }, [initialSidebarOpen]);
 
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1.0;
@@ -551,7 +584,7 @@ export function BettingAnalysis() {
   }
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative">
       <div className="flex">
         {/* メインコンテンツ - 幅を調整 */}
         <div className={cn(
@@ -574,7 +607,7 @@ export function BettingAnalysis() {
                 ) : (
                   <>
                     <ChevronLeft className="h-4 w-4" />
-                    <span className="inline">設定・分析</span>
+                    <span className="inline">予想設定とAI分析</span>
                   </>
                 )}
               </Button>

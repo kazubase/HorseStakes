@@ -47,34 +47,123 @@ export default function PredictionSettings() {
     return horseCount >= 8 ? 300 : 200;
   };
 
+  // URLパラメータから予想設定を読み込む
   useEffect(() => {
     if (horses && !isInitialized) {
-      // 単勝確率の初期化
-      const initialWin = horses.reduce((acc, horse) => {
-        acc[horse.id] = 0;
-        return acc;
-      }, {} as { [key: number]: number });
-      setWinProbabilities(initialWin);
+      // URLパラメータを取得
+      const searchParams = new URLSearchParams(window.location.search);
+      const budgetParam = searchParams.get('budget');
+      const riskParam = searchParams.get('risk');
+      const winProbsParam = searchParams.get('winProbs');
+      const placeProbsParam = searchParams.get('placeProbs');
       
-      const initialWinInputs = horses.reduce((acc, horse) => {
-        acc[horse.id] = "0";
-        return acc;
-      }, {} as { [key: number]: string });
-      setWinInputValues(initialWinInputs);
+      let hasRestoredData = false;
       
-      // 複勝確率の初期化
-      const initialPlace = horses.reduce((acc, horse) => {
-        acc[horse.id] = 0;
-        return acc;
-      }, {} as { [key: number]: number });
-      setPlaceProbabilities(initialPlace);
+      // 予算設定の復元
+      if (budgetParam) {
+        const budgetValue = Number(budgetParam);
+        if (!isNaN(budgetValue) && budgetValue > 0) {
+          setBudget(budgetValue);
+          setBudgetInputValue(budgetValue.toString());
+          hasRestoredData = true;
+        }
+      }
       
-      const initialPlaceInputs = horses.reduce((acc, horse) => {
-        acc[horse.id] = "0";
-        return acc;
-      }, {} as { [key: number]: string });
-      setPlaceInputValues(initialPlaceInputs);
+      // リスク比率の復元
+      if (riskParam) {
+        const riskValue = Number(riskParam);
+        if (!isNaN(riskValue) && riskValue >= 2.0) {
+          setRiskRatio(riskValue);
+          hasRestoredData = true;
+        }
+      }
       
+      // 単勝確率の復元
+      if (winProbsParam) {
+        try {
+          const parsedWinProbs = JSON.parse(decodeURIComponent(winProbsParam)) as Record<string, number>;
+          
+          if (Object.keys(parsedWinProbs).length > 0) {
+            setWinProbabilities(parsedWinProbs as unknown as { [key: number]: number });
+            
+            // 入力値も更新
+            const updatedInputValues = Object.fromEntries(
+              Object.entries(parsedWinProbs).map(([id, prob]) => [
+                id,
+                String(prob)
+              ])
+            );
+            setWinInputValues(updatedInputValues as unknown as { [key: number]: string });
+            
+            // 合計確率を計算
+            const totalWinProb = Object.values(parsedWinProbs).reduce((sum, value) => sum + value, 0);
+            setWinTotalProbability(totalWinProb);
+            
+            hasRestoredData = true;
+          }
+        } catch (e) {
+          // エラー処理（サイレント）
+        }
+      }
+      
+      // 複勝確率の復元
+      if (placeProbsParam) {
+        try {
+          const parsedPlaceProbs = JSON.parse(decodeURIComponent(placeProbsParam)) as Record<string, number>;
+          
+          if (Object.keys(parsedPlaceProbs).length > 0) {
+            setPlaceProbabilities(parsedPlaceProbs as unknown as { [key: number]: number });
+            
+            // 入力値も更新
+            const updatedInputValues = Object.fromEntries(
+              Object.entries(parsedPlaceProbs).map(([id, prob]) => [
+                id,
+                String(prob)
+              ])
+            );
+            setPlaceInputValues(updatedInputValues as unknown as { [key: number]: string });
+            
+            // 合計確率を計算
+            const totalPlaceProb = Object.values(parsedPlaceProbs).reduce((sum, value) => sum + value, 0);
+            setPlaceTotalProbability(totalPlaceProb);
+            
+            hasRestoredData = true;
+          }
+        } catch (e) {
+          // エラー処理（サイレント）
+        }
+      }
+      
+      // URLパラメータから復元できなかった場合は通常の初期化を行う
+      if (!hasRestoredData) {
+        // 単勝確率の初期化
+        const initialWin = horses.reduce((acc, horse) => {
+          acc[horse.id] = 0;
+          return acc;
+        }, {} as { [key: number]: number });
+        setWinProbabilities(initialWin);
+        
+        const initialWinInputs = horses.reduce((acc, horse) => {
+          acc[horse.id] = "0";
+          return acc;
+        }, {} as { [key: number]: string });
+        setWinInputValues(initialWinInputs);
+        
+        // 複勝確率の初期化
+        const initialPlace = horses.reduce((acc, horse) => {
+          acc[horse.id] = 0;
+          return acc;
+        }, {} as { [key: number]: number });
+        setPlaceProbabilities(initialPlace);
+        
+        const initialPlaceInputs = horses.reduce((acc, horse) => {
+          acc[horse.id] = "0";
+          return acc;
+        }, {} as { [key: number]: string });
+        setPlaceInputValues(initialPlaceInputs);
+      }
+      
+      // 初期化完了フラグを設定
       setIsInitialized(true);
     }
   }, [horses, isInitialized]);
@@ -439,6 +528,33 @@ export default function PredictionSettings() {
     
     window.location.href = `/races/${id}/betting-strategy?budget=${budget}&risk=${riskRatio}&winProbs=${encodedWinProbs}&placeProbs=${encodedPlaceProbs}`;
   };
+
+  // 初期化後にUIを更新するためのeffect
+  useEffect(() => {
+    if (isInitialized && horses) {
+      // 単勝確率の合計を再計算
+      const totalWin = Object.values(winProbabilities).reduce((sum, value) => sum + value, 0);
+      setWinTotalProbability(totalWin);
+      
+      // 複勝確率の合計を再計算
+      const totalPlace = Object.values(placeProbabilities).reduce((sum, value) => sum + value, 0);
+      setPlaceTotalProbability(totalPlace);
+      
+      // 単勝確率の入力値を更新
+      const updatedWinInputs = {} as { [key: number]: string };
+      horses.forEach(horse => {
+        updatedWinInputs[horse.id] = (winProbabilities[horse.id] || 0).toString();
+      });
+      setWinInputValues(updatedWinInputs);
+      
+      // 複勝確率の入力値を更新
+      const updatedPlaceInputs = {} as { [key: number]: string };
+      horses.forEach(horse => {
+        updatedPlaceInputs[horse.id] = (placeProbabilities[horse.id] || 0).toString();
+      });
+      setPlaceInputValues(updatedPlaceInputs);
+    }
+  }, [isInitialized, horses, winProbabilities, placeProbabilities]);
 
   if (!horses) return null;
 

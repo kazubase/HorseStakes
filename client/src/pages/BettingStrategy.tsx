@@ -1,4 +1,4 @@
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAtom } from 'jotai';
 import { useQuery } from "@tanstack/react-query";
@@ -15,12 +15,29 @@ import { format } from "date-fns";
 export function BettingStrategy() {
   const { id } = useParams();
   const [currentStep] = useAtom(currentStepAtom);
+  const [, setLocation] = useLocation();
 
-    // レース情報を取得
+  // レース情報を取得
   const { data: race } = useQuery<Race>({
     queryKey: [`/api/races/${id}`],
     enabled: !!id,
   });
+  
+  // 予想設定画面に戻る処理
+  const handleBackToPredictionSettings = () => {
+    // 現在のURLパラメータを取得
+    const searchParams = new URLSearchParams(window.location.search);
+    const budget = searchParams.get('budget');
+    const risk = searchParams.get('risk');
+    const winProbs = searchParams.get('winProbs');
+    const placeProbs = searchParams.get('placeProbs');
+    
+    // 予想設定画面のURLを構築（パラメータを明示的にエンコード）
+    const encodedWinProbs = winProbs ? encodeURIComponent(winProbs) : '';
+    const encodedPlaceProbs = placeProbs ? encodeURIComponent(placeProbs) : '';
+    
+    setLocation(`/predict/${id}?budget=${budget || ''}&risk=${risk || ''}&winProbs=${encodedWinProbs}&placeProbs=${encodedPlaceProbs}`);
+  };
   
   if (!id) {
     return (
@@ -62,7 +79,7 @@ export function BettingStrategy() {
 
       <div className="container mx-auto py-6 space-y-6">
         {/* ステップ進行状況 */}
-        <BettingStepProgress />
+        <BettingStepProgress onBackToPrediction={handleBackToPredictionSettings} />
         
         {/* 現在のステップに応じたコンポーネントを表示 */}
         <div className="mt-6">

@@ -1,10 +1,14 @@
 import { useAtom } from 'jotai';
 import { currentStepAtom, canProceedAtom } from '@/stores/bettingStrategy';
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronRight, ChevronLeft, ArrowLeft, Settings } from "lucide-react";
 import { format } from 'date-fns';
 
-export function BettingStepProgress() {
+interface BettingStepProgressProps {
+  onBackToPrediction?: () => void;
+}
+
+export function BettingStepProgress({ onBackToPrediction }: BettingStepProgressProps) {
   const [currentStep, setCurrentStep] = useAtom(currentStepAtom);
   const [canProceed] = useAtom(canProceedAtom);
 
@@ -80,7 +84,21 @@ export function BettingStepProgress() {
 
       {/* ナビゲーションボタン */}
       <div className="flex justify-between mt-8">
-        {/* 分析画面では戻るボタンを表示しない */}
+        {/* 予想設定に戻るボタン - 分析画面でのみ表示 */}
+        {currentStep === 'ANALYSIS' && onBackToPrediction && (
+          <Button
+            variant="outline"
+            size="default"
+            onClick={onBackToPrediction}
+            className="flex items-center gap-1 text-primary hover:text-primary-foreground hover:bg-primary transition-colors border-primary/30 hover:border-primary"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <Settings className="h-4 w-4 mr-0.5" />
+            <span className="font-medium">予想設定に戻る</span>
+          </Button>
+        )}
+        
+        {/* 分析画面に戻るボタン - 選択画面と買い目画面で表示 */}
         {currentStep !== 'ANALYSIS' && (
           <Button
             variant="outline"
@@ -97,7 +115,7 @@ export function BettingStepProgress() {
         )}
         
         {/* 戻るボタンがない場合のスペーサー */}
-        {currentStep === 'ANALYSIS' && <div></div>}
+        {currentStep === 'ANALYSIS' && !onBackToPrediction && <div></div>}
 
         {/* 選択画面とポートフォリオ画面では次へボタンを非表示にする */}
         {currentStep !== 'SELECTION' && currentStep !== 'PORTFOLIO' && (
