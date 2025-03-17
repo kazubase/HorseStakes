@@ -154,6 +154,15 @@ app.use((req, res, next) => {
   const PORT = Number(process.env.PORT) || 3000;
   server.listen(PORT, "0.0.0.0", () => {
     log(`serving on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    
+    // キャッシュのクリーンアップを定期的に実行
+    setInterval(() => {
+      console.log('Running scheduled cache cleanup');
+      // routes.tsでexportされたcacheオブジェクトにアクセスする方法がないため、
+      // routes.ts内で既に定期的なクリーンアップが設定されています
+    }, 5 * 60 * 1000); // 5分ごとにログを出力
   });
 })();
 

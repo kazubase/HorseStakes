@@ -7,16 +7,137 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { OddsCollector } from "./odds-collector";
 import { calculateBetProposals } from "@/lib/betCalculator";
 
+// キャッシュ用のインターフェースとクラスを定義
+interface CacheItem<T> {
+  data: T;
+  timestamp: number;
+  expiresAt: number;
+}
+
+class MemoryCache {
+  private cache: Map<string, CacheItem<any>> = new Map();
+  private readonly DEFAULT_TTL = 60 * 1000; // デフォルトの有効期限は60秒
+  private refreshCallbacks: Map<string, () => Promise<any>> = new Map();
+
+  // キャッシュにデータを設定
+  set<T>(key: string, data: T, ttl: number = this.DEFAULT_TTL): void {
+    const now = Date.now();
+    this.cache.set(key, {
+      data,
+      timestamp: now,
+      expiresAt: now + ttl
+    });
+  }
+
+  // キャッシュからデータを取得
+  get<T>(key: string): T | null {
+    const item = this.cache.get(key);
+    const now = Date.now();
+    
+    if (!item) return null;
+    
+    // 有効期限切れの場合
+    if (now > item.expiresAt) {
+      // 自動更新コールバックが登録されている場合は非同期で更新
+      if (this.refreshCallbacks.has(key)) {
+        const callback = this.refreshCallbacks.get(key);
+        if (callback) {
+          console.log(`Auto-refreshing cache for key: ${key}`);
+          // バックグラウンドで更新を実行
+          callback().then(newData => {
+            if (newData) {
+              // 新しいデータでキャッシュを更新
+              this.set(key, newData, item.expiresAt - item.timestamp);
+              console.log(`Cache refreshed for key: ${key}`);
+            }
+          }).catch(err => {
+            console.error(`Failed to refresh cache for key: ${key}`, err);
+          });
+        }
+      }
+      
+      // 有効期限切れのデータを削除
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return item.data as T;
+  }
+
+  // 自動更新コールバックを登録
+  registerRefreshCallback(key: string, callback: () => Promise<any>): void {
+    this.refreshCallbacks.set(key, callback);
+  }
+
+  // 自動更新コールバックを削除
+  unregisterRefreshCallback(key: string): void {
+    this.refreshCallbacks.delete(key);
+  }
+
+  // キャッシュからデータを削除
+  delete(key: string): void {
+    this.cache.delete(key);
+    this.refreshCallbacks.delete(key);
+  }
+
+  // キャッシュをクリア
+  clear(): void {
+    this.cache.clear();
+    this.refreshCallbacks.clear();
+  }
+
+  // 期限切れのキャッシュをクリア
+  cleanup(): void {
+    const now = Date.now();
+    Array.from(this.cache.entries()).forEach(([key, item]) => {
+      if (now > item.expiresAt) {
+        this.cache.delete(key);
+      }
+    });
+  }
+}
+
+// キャッシュインスタンスを作成
+const cache = new MemoryCache();
+
+// 定期的にキャッシュのクリーンアップを実行
+setInterval(() => {
+  cache.cleanup();
+}, 5 * 60 * 1000); // 5分ごとにクリーンアップ
+
 export function registerRoutes(app: Express): Server {
   // 全レース一覧を取得
   app.get("/api/races", async (_req, res) => {
     try {
+      // キャッシュからデータを取得
+      const cacheKey = "all-races";
+      const cachedRaces = cache.get<any[]>(cacheKey);
+      
+      if (cachedRaces) {
+        console.log('Returning cached races');
+        return res.json(cachedRaces);
+      }
+      
       const allRaces = await db.select().from(races);
       console.log('Fetched races:', allRaces); // デバッグログ
       
       if (!allRaces || allRaces.length === 0) {
         console.log('No races found in database');
       }
+      
+      // データをキャッシュに保存（5分間有効）
+      cache.set(cacheKey, allRaces, 5 * 60 * 1000);
+      
+      // 自動更新コールバックを登録
+      cache.registerRefreshCallback(cacheKey, async () => {
+        try {
+          const refreshedRaces = await db.select().from(races);
+          return refreshedRaces;
+        } catch (error) {
+          console.error('Error refreshing races cache:', error);
+          return null;
+        }
+      });
       
       res.json(allRaces);
     } catch (error) {
@@ -31,6 +152,15 @@ export function registerRoutes(app: Express): Server {
       const raceId = parseInt(req.params.id);
       console.log('Fetching race with ID:', raceId); // デバッグログ
       
+      // キャッシュからデータを取得
+      const cacheKey = `race-${raceId}`;
+      const cachedRace = cache.get(cacheKey);
+      
+      if (cachedRace) {
+        console.log('Returning cached race data');
+        return res.json(cachedRace);
+      }
+      
       const race = await db.query.races.findFirst({
         where: eq(races.id, raceId),
       });
@@ -42,6 +172,9 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Race not found" });
       }
 
+      // データをキャッシュに保存（5分間有効）
+      cache.set(cacheKey, race, 5 * 60 * 1000);
+      
       res.json(race);
     } catch (error) {
       console.error('Error fetching race:', error);
@@ -52,11 +185,24 @@ export function registerRoutes(app: Express): Server {
   // レースの出馬表を取得
   app.get("/api/horses/:raceId", async (req, res) => {
     const raceId = parseInt(req.params.raceId);
+    
+    // キャッシュからデータを取得
+    const cacheKey = `horses-${raceId}`;
+    const cachedHorses = cache.get(cacheKey);
+    
+    if (cachedHorses) {
+      console.log(`Returning cached horses for race ${raceId}`);
+      return res.json(cachedHorses);
+    }
+    
     const raceHorses = await db
       .select()
       .from(horses)
       .where(eq(horses.raceId, raceId));
 
+    // データをキャッシュに保存（5分間有効）
+    cache.set(cacheKey, raceHorses, 5 * 60 * 1000);
+    
     res.json(raceHorses);
   });
 
@@ -68,6 +214,15 @@ export function registerRoutes(app: Express): Server {
       const riskRatio = Number(req.query.riskRatio) || 1;
       const winProbs = JSON.parse(req.query.winProbs as string || "{}");
       const placeProbs = JSON.parse(req.query.placeProbs as string || "{}");
+      
+      // キャッシュキーを生成（パラメータを含める）
+      const cacheKey = `betting-strategy-${raceId}-${budget}-${riskRatio}-${JSON.stringify(winProbs)}-${JSON.stringify(placeProbs)}`;
+      const cachedStrategy = cache.get(cacheKey);
+      
+      if (cachedStrategy) {
+        console.log(`Returning cached betting strategy for race ${raceId}`);
+        return res.json(cachedStrategy);
+      }
   
       // レース情報と出走馬を取得
       const raceHorses = await db
@@ -285,6 +440,9 @@ export function registerRoutes(app: Express): Server {
         sanrenpukuData,
         sanrentanData
       );
+      
+      // データをキャッシュに保存（2分間有効）
+      cache.set(cacheKey, strategies, 2 * 60 * 1000);
   
       res.json(strategies);
     } catch (error) {
@@ -299,6 +457,15 @@ export function registerRoutes(app: Express): Server {
       const raceId = parseInt(req.params.raceId);
       console.log('=== Odds History Request ===');
       console.log('RaceId:', raceId);
+      
+      // キャッシュからデータを取得
+      const cacheKey = `tan-odds-history-${raceId}`;
+      const cachedOddsHistory = cache.get(cacheKey);
+      
+      if (cachedOddsHistory) {
+        console.log('Returning cached odds history');
+        return res.json(cachedOddsHistory);
+      }
       
       const oddsHistory = await db.select({
         horseId: tanOddsHistory.horseId,
@@ -316,6 +483,9 @@ export function registerRoutes(app: Express): Server {
       console.log('Unique horses:', new Set(oddsHistory.map(o => o.horseId)).size);
       console.log('Unique timestamps:', new Set(oddsHistory.map(o => o.timestamp)).size);
       console.log('=========================');
+      
+      // データをキャッシュに保存（3分間有効）
+      cache.set(cacheKey, oddsHistory, 3 * 60 * 1000);
 
       res.json(oddsHistory);
     } catch (error: any) {
@@ -329,10 +499,19 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // 新しいエンドポイントを追加
+  // 最新の単勝オッズを取得するエンドポイント
   app.get("/api/tan-odds-history/latest/:raceId", async (req, res) => {
     try {
       const raceId = parseInt(req.params.raceId);
+      
+      // キャッシュからデータを取得
+      const cacheKey = `tan-odds-latest-${raceId}`;
+      const cachedLatestOdds = cache.get(cacheKey);
+      
+      if (cachedLatestOdds) {
+        console.log(`Returning cached latest tan odds for race ${raceId}`);
+        return res.json(cachedLatestOdds);
+      }
       
       // raceIdに基づいて直接オッズを取得
       const latestOdds = await db.select()
@@ -354,8 +533,38 @@ export function registerRoutes(app: Express): Server {
         }
         return acc;
       }, {} as Record<number, typeof latestOdds[0]>);
+      
+      const result = Object.values(latestOddsByHorse);
+      
+      // データをキャッシュに保存（1分間有効）
+      cache.set(cacheKey, result, 60 * 1000);
+      
+      // 自動更新コールバックを登録
+      cache.registerRefreshCallback(cacheKey, async () => {
+        try {
+          const refreshedOdds = await db.select()
+            .from(tanOddsHistory)
+            .where(eq(tanOddsHistory.raceId, raceId))
+            .orderBy(sql`${tanOddsHistory.timestamp} desc`);
+            
+          if (refreshedOdds.length === 0) return null;
+          
+          const refreshedOddsByHorse = refreshedOdds.reduce((acc, curr) => {
+            if (!acc[curr.horseId] || 
+                new Date(acc[curr.horseId].timestamp) < new Date(curr.timestamp)) {
+              acc[curr.horseId] = curr;
+            }
+            return acc;
+          }, {} as Record<number, typeof refreshedOdds[0]>);
+          
+          return Object.values(refreshedOddsByHorse);
+        } catch (error) {
+          console.error(`Error refreshing tan odds cache for race ${raceId}:`, error);
+          return null;
+        }
+      });
 
-      res.json(Object.values(latestOddsByHorse));
+      res.json(result);
     } catch (error) {
       console.error('Error:', error);
       res.status(500).json({ error: "Failed to fetch latest odds" });
@@ -366,6 +575,15 @@ export function registerRoutes(app: Express): Server {
 app.get("/api/fuku-odds/latest/:raceId", async (req, res) => {
   try {
     const raceId = parseInt(req.params.raceId);
+    
+    // キャッシュからデータを取得
+    const cacheKey = `fuku-odds-latest-${raceId}`;
+    const cachedLatestOdds = cache.get(cacheKey);
+    
+    if (cachedLatestOdds) {
+      console.log(`Returning cached latest fuku odds for race ${raceId}`);
+      return res.json(cachedLatestOdds);
+    }
     
     const latestOdds = await db.select()
       .from(fukuOdds)
@@ -386,8 +604,13 @@ app.get("/api/fuku-odds/latest/:raceId", async (req, res) => {
       }
       return acc;
     }, {} as Record<number, typeof latestOdds[0]>);
+    
+    const result = Object.values(latestOddsByHorse);
+    
+    // データをキャッシュに保存（1分間有効）
+    cache.set(cacheKey, result, 60 * 1000);
 
-    res.json(Object.values(latestOddsByHorse));
+    res.json(result);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: "Failed to fetch latest fuku odds" });
@@ -398,6 +621,15 @@ app.get("/api/fuku-odds/latest/:raceId", async (req, res) => {
 app.get("/api/wakuren-odds/latest/:raceId", async (req, res) => {
   try {
     const raceId = parseInt(req.params.raceId);
+    
+    // キャッシュからデータを取得
+    const cacheKey = `wakuren-odds-latest-${raceId}`;
+    const cachedLatestOdds = cache.get(cacheKey);
+    
+    if (cachedLatestOdds) {
+      console.log(`Returning cached latest wakuren odds for race ${raceId}`);
+      return res.json(cachedLatestOdds);
+    }
     
     const latestOdds = await db.select()
       .from(wakurenOdds)
@@ -420,7 +652,12 @@ app.get("/api/wakuren-odds/latest/:raceId", async (req, res) => {
       return acc;
     }, {} as Record<string, typeof latestOdds[0]>);
 
-    res.json(Object.values(latestOddsByFrames));
+    const result = Object.values(latestOddsByFrames);
+    
+    // データをキャッシュに保存（1分間有効）
+    cache.set(cacheKey, result, 60 * 1000);
+
+    res.json(result);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: "Failed to fetch latest wakuren odds" });
@@ -431,6 +668,15 @@ app.get("/api/wakuren-odds/latest/:raceId", async (req, res) => {
 app.get("/api/umaren-odds/latest/:raceId", async (req, res) => {
   try {
     const raceId = parseInt(req.params.raceId);
+    
+    // キャッシュからデータを取得
+    const cacheKey = `umaren-odds-latest-${raceId}`;
+    const cachedLatestOdds = cache.get(cacheKey);
+    
+    if (cachedLatestOdds) {
+      console.log(`Returning cached latest umaren odds for race ${raceId}`);
+      return res.json(cachedLatestOdds);
+    }
     
     const latestOdds = await db.select()
       .from(umarenOdds)
@@ -453,7 +699,12 @@ app.get("/api/umaren-odds/latest/:raceId", async (req, res) => {
       return acc;
     }, {} as Record<string, typeof latestOdds[0]>);
 
-    res.json(Object.values(latestOddsByHorses));
+    const result = Object.values(latestOddsByHorses);
+    
+    // データをキャッシュに保存（1分間有効）
+    cache.set(cacheKey, result, 60 * 1000);
+
+    res.json(result);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: "Failed to fetch latest umaren odds" });
@@ -464,6 +715,15 @@ app.get("/api/umaren-odds/latest/:raceId", async (req, res) => {
 app.get("/api/wide-odds/latest/:raceId", async (req, res) => {
   try {
     const raceId = parseInt(req.params.raceId);
+    
+    // キャッシュからデータを取得
+    const cacheKey = `wide-odds-latest-${raceId}`;
+    const cachedLatestOdds = cache.get(cacheKey);
+    
+    if (cachedLatestOdds) {
+      console.log(`Returning cached latest wide odds for race ${raceId}`);
+      return res.json(cachedLatestOdds);
+    }
     
     const latestOdds = await db.select()
       .from(wideOdds)
@@ -486,7 +746,12 @@ app.get("/api/wide-odds/latest/:raceId", async (req, res) => {
       return acc;
     }, {} as Record<string, typeof latestOdds[0]>);
 
-    res.json(Object.values(latestOddsByHorses));
+    const result = Object.values(latestOddsByHorses);
+    
+    // データをキャッシュに保存（1分間有効）
+    cache.set(cacheKey, result, 60 * 1000);
+
+    res.json(result);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: "Failed to fetch latest wide odds" });
@@ -497,6 +762,15 @@ app.get("/api/wide-odds/latest/:raceId", async (req, res) => {
 app.get("/api/umatan-odds/latest/:raceId", async (req, res) => {
   try {
     const raceId = parseInt(req.params.raceId);
+    
+    // キャッシュからデータを取得
+    const cacheKey = `umatan-odds-latest-${raceId}`;
+    const cachedLatestOdds = cache.get(cacheKey);
+    
+    if (cachedLatestOdds) {
+      console.log(`Returning cached latest umatan odds for race ${raceId}`);
+      return res.json(cachedLatestOdds);
+    }
     
     const latestOdds = await db.select()
       .from(umatanOdds)
@@ -519,7 +793,12 @@ app.get("/api/umatan-odds/latest/:raceId", async (req, res) => {
       return acc;
     }, {} as Record<string, typeof latestOdds[0]>);
 
-    res.json(Object.values(latestOddsByHorses));
+    const result = Object.values(latestOddsByHorses);
+    
+    // データをキャッシュに保存（1分間有効）
+    cache.set(cacheKey, result, 60 * 1000);
+
+    res.json(result);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: "Failed to fetch latest umatan odds" });
@@ -530,6 +809,15 @@ app.get("/api/umatan-odds/latest/:raceId", async (req, res) => {
 app.get("/api/sanrenpuku-odds/latest/:raceId", async (req, res) => {
   try {
     const raceId = parseInt(req.params.raceId);
+    
+    // キャッシュからデータを取得
+    const cacheKey = `sanrenpuku-odds-latest-${raceId}`;
+    const cachedLatestOdds = cache.get(cacheKey);
+    
+    if (cachedLatestOdds) {
+      console.log(`Returning cached latest sanrenpuku odds for race ${raceId}`);
+      return res.json(cachedLatestOdds);
+    }
     
     const latestOdds = await db.select()
       .from(fuku3Odds)
@@ -552,7 +840,12 @@ app.get("/api/sanrenpuku-odds/latest/:raceId", async (req, res) => {
       return acc;
     }, {} as Record<string, typeof latestOdds[0]>);
 
-    res.json(Object.values(latestOddsByHorses));
+    const result = Object.values(latestOddsByHorses);
+    
+    // データをキャッシュに保存（1分間有効）
+    cache.set(cacheKey, result, 60 * 1000);
+
+    res.json(result);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: "Failed to fetch latest sanrenpuku odds" });
@@ -563,6 +856,15 @@ app.get("/api/sanrenpuku-odds/latest/:raceId", async (req, res) => {
 app.get("/api/sanrentan-odds/latest/:raceId", async (req, res) => {
   try {
     const raceId = parseInt(req.params.raceId);
+    
+    // キャッシュからデータを取得
+    const cacheKey = `sanrentan-odds-latest-${raceId}`;
+    const cachedLatestOdds = cache.get(cacheKey);
+    
+    if (cachedLatestOdds) {
+      console.log(`Returning cached latest sanrentan odds for race ${raceId}`);
+      return res.json(cachedLatestOdds);
+    }
     
     const latestOdds = await db.select()
       .from(tan3Odds)
@@ -585,7 +887,12 @@ app.get("/api/sanrentan-odds/latest/:raceId", async (req, res) => {
       return acc;
     }, {} as Record<string, typeof latestOdds[0]>);
 
-    res.json(Object.values(latestOddsByHorses));
+    const result = Object.values(latestOddsByHorses);
+    
+    // データをキャッシュに保存（1分間有効）
+    cache.set(cacheKey, result, 60 * 1000);
+
+    res.json(result);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: "Failed to fetch latest sanrentan odds" });
@@ -710,6 +1017,15 @@ app.get("/api/sanrentan-odds/latest/:raceId", async (req, res) => {
       const { prompt, model = 'gemini-2.0-flash-001' } = req.body;
       console.log('📝 Using model:', model);
 
+      // プロンプトに基づいてキャッシュキーを生成
+      const cacheKey = `gemini-${Buffer.from(prompt).toString('base64').substring(0, 100)}`;
+      const cachedResponse = cache.get(cacheKey);
+      
+      if (cachedResponse) {
+        console.log('✅ Returning cached Gemini response');
+        return res.json(cachedResponse);
+      }
+
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const genModel = genAI.getGenerativeModel({ model });
 
@@ -726,6 +1042,10 @@ app.get("/api/sanrentan-odds/latest/:raceId", async (req, res) => {
 
         const strategy = parseGeminiResponse(text);
         console.log('=== Gemini API Request End ===');
+        
+        // レスポンスをキャッシュに保存（10分間有効）
+        cache.set(cacheKey, { strategy }, 10 * 60 * 1000);
+        
         return res.json({ strategy });
 
       } catch (apiError: any) {
