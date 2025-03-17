@@ -356,11 +356,11 @@ export default function PlaceProbability() {
                     min={0}
                     step={1}
                     className="relative
-                      [&_[role=slider]]:h-3.5 
-                      [&_[role=slider]]:w-3.5 
-                      [&_[role=slider]]:hover:h-4 
-                      [&_[role=slider]]:hover:w-4 
-                      [&_.track]:h-1
+                      [&_[role=slider]]:h-4.5 
+                      [&_[role=slider]]:w-4.5 
+                      [&_[role=slider]]:hover:h-5 
+                      [&_[role=slider]]:hover:w-5 
+                      [&_.track]:h-1.5
                       [&_.track]:bg-primary/20
                       [&_.range]:bg-primary/40"
                   />
