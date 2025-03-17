@@ -259,7 +259,7 @@ export default function PlaceProbability() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {sortedHorses.map((horse) => (
                   <div key={horse.id} className="p-3 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors">
                     <div className="flex items-center gap-2 mb-2">
