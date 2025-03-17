@@ -472,18 +472,27 @@ export default function PredictionSettings() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="win" className="flex items-center gap-1">
-              <Trophy className="h-4 w-4" />
-              <span>単勝確率</span>
+          <TabsList className="grid grid-cols-3 w-full bg-background/50 backdrop-blur-sm border border-primary/10 p-0 rounded-xl shadow-sm overflow-hidden">
+            <TabsTrigger 
+              value="win" 
+              className="flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+            >
+              <Trophy className="h-4 w-4 transition-transform data-[state=active]:scale-110" />
+              <span className="font-medium">単勝確率</span>
             </TabsTrigger>
-            <TabsTrigger value="place" className="flex items-center gap-1">
-              <Award className="h-4 w-4" />
-              <span>複勝確率</span>
+            <TabsTrigger 
+              value="place" 
+              className="flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+            >
+              <Award className="h-4 w-4 transition-transform data-[state=active]:scale-110" />
+              <span className="font-medium">複勝確率</span>
             </TabsTrigger>
-            <TabsTrigger value="budget" className="flex items-center gap-1">
-              <Wallet className="h-4 w-4" />
-              <span>予算設定</span>
+            <TabsTrigger 
+              value="budget" 
+              className="flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+            >
+              <Wallet className="h-4 w-4 transition-transform data-[state=active]:scale-110" />
+              <span className="font-medium">予算設定</span>
             </TabsTrigger>
           </TabsList>
           
@@ -801,10 +810,11 @@ export default function PredictionSettings() {
                             e.preventDefault();
                             e.stopPropagation();
                           }} 
-                          onTouchEnd={(e) => {
+                          onPointerDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                           }}
+                          className="cursor-pointer touch-none"
                           asChild
                         >
                           <Button variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-transparent">
@@ -814,7 +824,7 @@ export default function PredictionSettings() {
                         <TooltipContent 
                           side="right" 
                           sideOffset={5}
-                          className="max-w-[calc(100vw-12rem)] sm:max-w-sm break-words"
+                          className="max-w-[calc(100vw-12rem)] sm:max-w-sm break-words touch-none"
                         >
                           <p>リスクに対してどの程度のリターンを求めるかを設定します。</p>
                           <p>例：5.0は「リスクの5倍のリターン」を意味します。</p>
