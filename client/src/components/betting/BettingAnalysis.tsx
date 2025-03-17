@@ -4,7 +4,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, BarChart3, Settings, Lightbulb } from "lucide-react";
 import { 
   horsesAtom, 
   analysisResultAtom,
@@ -23,7 +23,8 @@ import { evaluateBettingOptions } from '@/lib/betEvaluation';
 import { analyzeWithGemini } from '@/lib/geminiAnalysis';
 import { calculateConditionalProbability } from '@/lib/betConditionalProbability';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // Geminiオプションの型定義
 interface GeminiOptions {
@@ -81,30 +82,6 @@ const RaceNotesCard = () => {
   );
 };
 
-// 馬券候補テーブルを分離
-const BettingOptionsSection = memo(({ 
-  bettingOptions, 
-  conditionalProbabilities 
-}: {
-  bettingOptions: any[];
-  conditionalProbabilities: any[];
-}) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>馬券候補</CardTitle>
-    </CardHeader>
-    <CardContent className="p-0">
-      <BettingOptionsTable
-        bettingOptions={bettingOptions}
-        selectedBets={[]}
-        correlations={conditionalProbabilities}
-        className="[&_tr:hover]:bg-transparent"
-        showAnalysis={true}
-      />
-    </CardContent>
-  </Card>
-));
-
 // 予想設定セクションを分離
 const PredictionSettingsSection = memo(({ 
   budget, 
@@ -143,14 +120,14 @@ const PredictionSettingsSection = memo(({
         {/* 投資条件 */}
         <div className="p-4 bg-gradient-to-b from-primary/5">
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent truncate">
+            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/10">
+              <p className="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent truncate">
                 ￥{budget.toLocaleString()}
               </p>
               <p className="text-xs text-muted-foreground mt-1 font-medium">予算</p>
             </div>
-            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-primary/10">
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/10">
+              <p className="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
                 ×{riskRatio.toFixed(1)}
               </p>
               <p className="text-xs text-muted-foreground mt-1 font-medium">リスクリワード</p>
@@ -167,11 +144,12 @@ const PredictionSettingsSection = memo(({
                 winProb: Number(winProbs[horse.id]) / 100 || 0,
                 placeProb: Number(placeProbs[horse.id]) / 100 || 0
               }))
+              // 単勝確率または複勝確率が0より大きい馬だけをフィルタリング
+              .filter(horse => horse.winProb > 0 || horse.placeProb > 0)
               .sort((a, b) => {
                 if (b.winProb !== a.winProb) return b.winProb - a.winProb;
                 return b.placeProb - a.placeProb;
               })
-              .slice(0, 5)
               .map(horse => (
                 <div key={horse.id} 
                      className="relative group">
@@ -277,6 +255,14 @@ const GeminiAnalysisSection = memo(({
   </Card>
 ));
 
+// サイドバーのタブ定義
+interface SidebarTab {
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  component: React.ReactNode;
+}
+
 export function BettingAnalysis() {
   const { id } = useParams();
   const [location] = useLocation();
@@ -289,6 +275,10 @@ export function BettingAnalysis() {
   const [isCalculated, setIsCalculated] = useState(false);
   const [, setWinProbs] = useAtom(winProbsAtom);
   const [, setPlaceProbs] = useAtom(placeProbsAtom);
+  
+  // サイドバーの状態管理 - デフォルトで非表示に変更
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("settings");
 
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1.0;
@@ -520,6 +510,35 @@ export function BettingAnalysis() {
     }
   }, [calculatedBettingOptions, setWinProbs, setPlaceProbs]);
 
+  // サイドバータブの定義 - メモを削除
+  const sidebarTabs = useMemo<SidebarTab[]>(() => [
+    {
+      id: "settings",
+      title: "予想設定",
+      icon: <Settings className="h-5 w-5" />,
+      component: (
+        <PredictionSettingsSection
+          budget={budget}
+          riskRatio={riskRatio}
+          horses={horses || []}
+          winProbs={winProbs}
+          placeProbs={placeProbs}
+        />
+      )
+    },
+    {
+      id: "analysis",
+      title: "分析結果",
+      icon: <Lightbulb className="h-5 w-5" />,
+      component: (
+        <GeminiAnalysisSection
+          isLoading={geminiAnalysis.isLoading}
+          data={geminiAnalysis.data}
+        />
+      )
+    }
+  ], [budget, riskRatio, horses, winProbs, placeProbs, geminiAnalysis.isLoading, geminiAnalysis.data]);
+
   if (isHorsesError) {
     return (
       <Alert variant="destructive">
@@ -533,36 +552,81 @@ export function BettingAnalysis() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-6 lg:h-fit lg:sticky lg:top-4">
-          <BettingOptionsSection
-            bettingOptions={calculatedBettingOptions || []}
-            conditionalProbabilities={conditionalProbabilities}
-          />
-        </div>
-        
-        <div className="space-y-6 lg:h-fit lg:sticky lg:top-4">
-          <div className="hidden lg:block">
-            <PredictionSettingsSection
-              budget={budget}
-              riskRatio={riskRatio}
-              horses={horses || []}
-              winProbs={winProbs}
-              placeProbs={placeProbs}
+      <div className="flex">
+        {/* メインコンテンツ - 幅を調整 */}
+        <div className={cn(
+          "transition-all duration-300 ease-in-out w-full",
+          isSidebarOpen ? "lg:w-2/3 xl:w-3/4" : "w-full"
+        )}>
+          <div className="space-y-2">
+            <div className="flex justify-end p-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="flex items-center gap-1"
+              >
+                {isSidebarOpen ? (
+                  <>
+                    <ChevronRight className="h-4 w-4" />
+                    <span className="hidden sm:inline">閉じる</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="inline">設定・分析</span>
+                  </>
+                )}
+              </Button>
+            </div>
+            {/* カードを削除して直接BettingOptionsTableを表示 */}
+            <BettingOptionsTable
+              bettingOptions={calculatedBettingOptions || []}
+              selectedBets={[]}
+              correlations={conditionalProbabilities}
+              className="[&_tr:hover]:bg-transparent"
+              showAnalysis={true}
+              columnsCount={4} // 4列表示を指定
             />
           </div>
-          <GeminiAnalysisSection
-            isLoading={geminiAnalysis.isLoading}
-            data={geminiAnalysis.data}
-          />
-          <div className="lg:hidden">
-            <PredictionSettingsSection
-              budget={budget}
-              riskRatio={riskRatio}
-              horses={horses || []}
-              winProbs={winProbs}
-              placeProbs={placeProbs}
-            />
+        </div>
+
+        {/* サイドバー - レスポンシブ対応を強化 */}
+        <div className={cn(
+          "fixed lg:relative right-0 top-0 h-full lg:h-auto z-50 bg-background/95 backdrop-blur-sm border-l border-border/50 transition-all duration-300 ease-in-out overflow-hidden",
+          isSidebarOpen 
+            ? "translate-x-0 w-full sm:w-96 lg:w-1/3 xl:w-1/4" 
+            : "translate-x-full w-full sm:w-96 lg:translate-x-full lg:w-0 lg:opacity-0 lg:invisible"
+        )}>
+          {/* サイドバーヘッダー */}
+          <div className="flex items-center justify-between p-4 border-b border-border/50">
+            <div className="flex items-center gap-2">
+              {sidebarTabs.map(tab => (
+                <Button
+                  key={tab.id}
+                  variant={activeTab === tab.id ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveTab(tab.id)}
+                  className="gap-1"
+                >
+                  {tab.icon}
+                  <span className="inline">{tab.title}</span>
+                </Button>
+              ))}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(false)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* サイドバーコンテンツ */}
+          <div className="p-4 overflow-y-auto h-[calc(100%-4rem)]">
+            {sidebarTabs.find(tab => tab.id === activeTab)?.component}
           </div>
         </div>
       </div>

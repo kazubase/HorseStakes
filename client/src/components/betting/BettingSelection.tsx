@@ -362,7 +362,7 @@ export function BettingSelection() {
           `}
         >
           <MousePointer className="h-4 w-4" />
-          選択した馬券で最適化
+          資金配分最適化
         </Button>
       </div>
 
@@ -404,6 +404,7 @@ export function BettingSelection() {
             };
           })}
           correlations={conditionalProbabilities}
+          columnsCount={4}
         />
       </div>
     </div>

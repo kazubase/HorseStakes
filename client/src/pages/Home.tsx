@@ -39,7 +39,7 @@ export default function Home() {
   const sortedHorses = [...horses].sort((a, b) => a.number - b.number);
 
   // ソート順の状態を追加
-  const [sortOrder, setSortOrder] = useState<'number-asc' | 'number-desc' | 'odds-asc' | 'odds-desc'>('number-asc');
+  const [sortOrder, setSortOrder] = useState<'number-asc' | 'number-desc' | 'odds-asc' | 'odds-desc'>('odds-asc');
 
   // オッズデータを取得する新しいクエリを追加
   const { 

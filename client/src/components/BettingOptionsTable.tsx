@@ -25,6 +25,7 @@ interface BettingOptionsTableProps {
   className?: string;
   showAnalysis?: boolean;
   horses?: HorseData[];
+  columnsCount?: number;
 }
 
 export function BettingOptionsTable({ 
@@ -36,7 +37,8 @@ export function BettingOptionsTable({
   geminiRecommendations = [],
   className,
   showAnalysis = false,
-  horses = []
+  horses = [],
+  columnsCount = 4
 }: BettingOptionsTableProps) {
   // selectionStateAtomから利用可能な馬データを取得
   const [selectionState] = useAtom(selectionStateAtom);
@@ -455,6 +457,19 @@ export function BettingOptionsTable({
     };
   };
 
+  // columnsCountに基づいてグリッドクラスを決定
+  const gridColumnsClass = useMemo(() => {
+    switch (columnsCount) {
+      case 2:
+        return 'grid-cols-2 sm:grid-cols-2';
+      case 3:
+        return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-4';
+      case 4:
+      default:
+        return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4';
+    }
+  }, [columnsCount]);
+
   // ローディング表示
   if (isCalculating || !bettingOptions || bettingOptions.length === 0) {
     return (
@@ -466,7 +481,7 @@ export function BettingOptionsTable({
   }
 
   return (
-    <div className={`space-y-3 ${className || ''}`}>
+    <div className={`space-y-2 ${className || ''}`}>
       {/* 凡例を追加 */}
       <div className="bg-secondary/30 p-2 rounded-lg text-xs text-muted-foreground">
         <div className="grid grid-cols-2 gap-2 mb-1">
@@ -479,10 +494,7 @@ export function BettingOptionsTable({
         </div>
       </div>
 
-      <div className={`
-        grid grid-cols-2 gap-3
-        ${showAnalysis ? '' : 'md:grid-cols-4'}
-      `}>
+      <div className={`grid gap-2 ${gridColumnsClass}`}>
         {[...simpleTypes, ...complexTypes].map(betType => {
           const options = groupedOptions[betType];
           if (!options?.length) return null;
