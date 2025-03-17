@@ -211,7 +211,7 @@ export default function PlaceProbability() {
                           step="1"
                           value={probabilities[horse.id]?.toFixed(1) || "0.0"}
                           onChange={(e) => handleDirectInput(horse.id, e.target.value)}
-                          className="w-20 text-right text-sm font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
+                          className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
                         />
                         <span className="text-sm font-medium">%</span>
                       </div>
@@ -281,7 +281,7 @@ export default function PlaceProbability() {
                         step="1"
                         value={probabilities[horse.id]?.toFixed(1) || "0.0"}
                         onChange={(e) => handleDirectInput(horse.id, e.target.value)}
-                        className="w-20 text-right text-sm font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
+                        className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
                       />
                       <span className="text-sm font-medium">%</span>
                     </div>
