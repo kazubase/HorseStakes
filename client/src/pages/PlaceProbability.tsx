@@ -17,6 +17,7 @@ export default function PlaceProbability() {
   const [totalProbability, setTotalProbability] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [inputValues, setInputValues] = useState<{ [key: number]: string }>({});
 
   const getRequiredTotalProbability = (horseCount: number) => {
     return horseCount >= 8 ? 300 : 200;
@@ -44,6 +45,14 @@ export default function PlaceProbability() {
       }, {} as { [key: number]: number });
       setProbabilities(initial);
       setTotalProbability(Object.values(initial).reduce((sum, value) => sum + value, 0));
+      
+      // 入力値の初期化
+      const initialInputs = horses.reduce((acc, horse) => {
+        acc[horse.id] = (winProbabilities[horse.id] || 0).toString();
+        return acc;
+      }, {} as { [key: number]: string });
+      setInputValues(initialInputs);
+      
       setIsInitialized(true);
     }
   }, [horses, isInitialized]);
@@ -60,10 +69,39 @@ export default function PlaceProbability() {
     setTotalProbability(
       Object.values(newProbabilities).reduce((sum, value) => sum + value, 0)
     );
+    
+    // スライダーで値を変更した場合は入力値も更新
+    setInputValues(prev => ({
+      ...prev,
+      [horseId]: newValue.toString()
+    }));
   };
 
   const handleDirectInput = (horseId: number, value: string) => {
-    const numValue = parseFloat(value);
+    // 入力値を保存
+    setInputValues(prev => ({
+      ...prev,
+      [horseId]: value
+    }));
+
+    // 空の場合は確率を単勝確率に設定するが、入力フィールドは空のままにする
+    if (value === "") {
+      const winProb = winProbabilities[horseId] || 0;
+      const newProbabilities = { ...probabilities };
+      newProbabilities[horseId] = winProb;
+      setProbabilities(newProbabilities);
+      setTotalProbability(
+        Object.values(newProbabilities).reduce((sum, value) => sum + value, 0)
+      );
+      return;
+    }
+
+    // 全角数字を半角に変換
+    const normalizedValue = value.replace(/[０-９．]/g, (s) => {
+      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    });
+
+    const numValue = parseFloat(normalizedValue);
     if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
       // 単勝確率より小さい値は設定できないようにする
       if (numValue < (winProbabilities[horseId] || 0)) {
@@ -71,6 +109,52 @@ export default function PlaceProbability() {
       }
       handleProbabilityChange(horseId, numValue);
     }
+  };
+
+  const handleInputBlur = (horseId: number, value: string) => {
+    const winProb = winProbabilities[horseId] || 0;
+    
+    // 空の場合は単勝確率として扱う
+    if (value === "") {
+      handleProbabilityChange(horseId, winProb);
+      setInputValues(prev => ({
+        ...prev,
+        [horseId]: winProb.toString()
+      }));
+      return;
+    }
+
+    // 全角数字を半角に変換
+    const normalizedValue = value.replace(/[０-９．]/g, (s) => {
+      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    });
+
+    const numValue = parseFloat(normalizedValue);
+    if (isNaN(numValue)) {
+      handleProbabilityChange(horseId, winProb);
+      setInputValues(prev => ({
+        ...prev,
+        [horseId]: winProb.toString()
+      }));
+      return;
+    }
+    if (numValue < winProb) {
+      handleProbabilityChange(horseId, winProb);
+      setInputValues(prev => ({
+        ...prev,
+        [horseId]: winProb.toString()
+      }));
+      return;
+    }
+    if (numValue > 100) {
+      handleProbabilityChange(horseId, 100);
+      setInputValues(prev => ({
+        ...prev,
+        [horseId]: "100"
+      }));
+      return;
+    }
+    handleProbabilityChange(horseId, numValue);
   };
 
   const normalizeAllProbabilities = () => {
@@ -204,15 +288,19 @@ export default function PlaceProbability() {
                         </label>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min={winProbabilities[horse.id] || 0}
-                          max="100"
-                          step="1"
-                          value={probabilities[horse.id]?.toFixed(1) || "0.0"}
-                          onChange={(e) => handleDirectInput(horse.id, e.target.value)}
-                          className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
-                        />
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min={winProbabilities[horse.id] || 0}
+                            max="100"
+                            step="1"
+                            value={inputValues[horse.id] || ""}
+                            onChange={(e) => handleDirectInput(horse.id, e.target.value)}
+                            onBlur={(e) => handleInputBlur(horse.id, e.target.value)}
+                            className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
+                          />
+                          <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                         <span className="text-sm font-medium">%</span>
                       </div>
                     </div>
@@ -274,15 +362,19 @@ export default function PlaceProbability() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Input
-                        type="number"
-                        min={winProbabilities[horse.id] || 0}
-                        max="100"
-                        step="1"
-                        value={probabilities[horse.id]?.toFixed(1) || "0.0"}
-                        onChange={(e) => handleDirectInput(horse.id, e.target.value)}
-                        className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
-                      />
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          min={winProbabilities[horse.id] || 0}
+                          max="100"
+                          step="1"
+                          value={inputValues[horse.id] || ""}
+                          onChange={(e) => handleDirectInput(horse.id, e.target.value)}
+                          onBlur={(e) => handleInputBlur(horse.id, e.target.value)}
+                          className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
+                        />
+                        <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
                       <span className="text-sm font-medium">%</span>
                     </div>
                     <Slider

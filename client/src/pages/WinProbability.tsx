@@ -17,6 +17,7 @@ export default function WinProbability() {
   const [probabilities, setProbabilities] = useState<{ [key: number]: number }>({});
   const [totalProbability, setTotalProbability] = useState(0);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [inputValues, setInputValues] = useState<{ [key: number]: string }>({});
 
   const { data: horses } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
@@ -33,6 +34,12 @@ export default function WinProbability() {
         return acc;
       }, {} as { [key: number]: number });
       setProbabilities(initial);
+
+      const initialInputs = horses.reduce((acc, horse) => {
+        acc[horse.id] = "0";
+        return acc;
+      }, {} as { [key: number]: string });
+      setInputValues(initialInputs);
     }
   }, [horses]);
 
@@ -43,13 +50,85 @@ export default function WinProbability() {
     setTotalProbability(
       Object.values(newProbabilities).reduce((sum, value) => sum + value, 0)
     );
+    
+    // スライダーで値を変更した場合は入力値も更新
+    setInputValues(prev => ({
+      ...prev,
+      [horseId]: newValue.toString()
+    }));
   };
 
   const handleDirectInput = (horseId: number, value: string) => {
-    const numValue = parseFloat(value);
+    // 入力値を保存
+    setInputValues(prev => ({
+      ...prev,
+      [horseId]: value
+    }));
+
+    // 空の場合は確率を0に設定するが、入力フィールドは空のままにする
+    if (value === "") {
+      const newProbabilities = { ...probabilities };
+      newProbabilities[horseId] = 0;
+      setProbabilities(newProbabilities);
+      setTotalProbability(
+        Object.values(newProbabilities).reduce((sum, value) => sum + value, 0)
+      );
+      return;
+    }
+
+    // 全角数字を半角に変換
+    const normalizedValue = value.replace(/[０-９．]/g, (s) => {
+      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    });
+
+    const numValue = parseFloat(normalizedValue);
     if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
       handleProbabilityChange(horseId, numValue);
     }
+  };
+
+  const handleInputBlur = (horseId: number, value: string) => {
+    // 空の場合は0として扱う
+    if (value === "") {
+      handleProbabilityChange(horseId, 0);
+      setInputValues(prev => ({
+        ...prev,
+        [horseId]: "0"
+      }));
+      return;
+    }
+
+    // 全角数字を半角に変換
+    const normalizedValue = value.replace(/[０-９．]/g, (s) => {
+      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    });
+
+    const numValue = parseFloat(normalizedValue);
+    if (isNaN(numValue)) {
+      handleProbabilityChange(horseId, 0);
+      setInputValues(prev => ({
+        ...prev,
+        [horseId]: "0"
+      }));
+      return;
+    }
+    if (numValue < 0) {
+      handleProbabilityChange(horseId, 0);
+      setInputValues(prev => ({
+        ...prev,
+        [horseId]: "0"
+      }));
+      return;
+    }
+    if (numValue > 100) {
+      handleProbabilityChange(horseId, 100);
+      setInputValues(prev => ({
+        ...prev,
+        [horseId]: "100"
+      }));
+      return;
+    }
+    handleProbabilityChange(horseId, numValue);
   };
 
   const normalizeAllProbabilities = () => {
@@ -190,15 +269,19 @@ export default function WinProbability() {
                         </label>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="1"
-                          value={probabilities[horse.id]?.toFixed(1) || "0.0"}
-                          onChange={(e) => handleDirectInput(horse.id, e.target.value)}
-                          className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
-                        />
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value={inputValues[horse.id] || ""}
+                            onChange={(e) => handleDirectInput(horse.id, e.target.value)}
+                            onBlur={(e) => handleInputBlur(horse.id, e.target.value)}
+                            className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
+                          />
+                          <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                         <span className="text-sm font-medium">%</span>
                       </div>
                     </div>
@@ -254,15 +337,19 @@ export default function WinProbability() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={probabilities[horse.id]?.toFixed(1) || "0.0"}
-                        onChange={(e) => handleDirectInput(horse.id, e.target.value)}
-                        className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
-                      />
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={inputValues[horse.id] || ""}
+                          onChange={(e) => handleDirectInput(horse.id, e.target.value)}
+                          onBlur={(e) => handleInputBlur(horse.id, e.target.value)}
+                          className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
+                        />
+                        <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
                       <span className="text-sm font-medium">%</span>
                     </div>
                     <Slider
