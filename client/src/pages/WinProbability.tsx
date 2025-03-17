@@ -379,20 +379,20 @@ export default function WinProbability() {
                       `}>
                         {horse.number}
                       </div>
-                      <div id={`horse-name-grid-${horse.id}`} className="text-sm font-medium truncate flex-1">
+                      <div id={`horse-name-grid-${horse.id}`} className="text-sm font-medium break-words flex-1">
                         {horse.name}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-1 mb-2">
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-7 w-7 rounded-full"
+                        className="h-6 w-6 rounded-full flex-shrink-0"
                         onClick={() => handleProbabilityIncrement(horse.id, -5)}
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
-                      <div className="relative">
+                      <div className="relative flex-1 min-w-0">
                         <Input
                           type="number"
                           min="0"
@@ -403,7 +403,7 @@ export default function WinProbability() {
                           value={inputValues[horse.id] || ""}
                           onChange={(e) => handleDirectInput(horse.id, e.target.value)}
                           onBlur={(e) => handleInputBlur(horse.id, e.target.value)}
-                          className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
+                          className="w-full text-right text-sm font-bold px-1 [&::-webkit-inner-spin-button]:ml-1"
                           aria-labelledby={`horse-name-grid-${horse.id}`}
                         />
                         <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -411,12 +411,12 @@ export default function WinProbability() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-7 w-7 rounded-full"
+                        className="h-6 w-6 rounded-full flex-shrink-0"
                         onClick={() => handleProbabilityIncrement(horse.id, 5)}
                       >
                         <Plus className="h-3 w-3" />
                       </Button>
-                      <span className="text-sm font-medium">%</span>
+                      <span className="text-xs font-medium flex-shrink-0">%</span>
                     </div>
                     <Slider
                       value={[probabilities[horse.id] || 0]}
