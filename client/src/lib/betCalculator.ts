@@ -890,7 +890,8 @@ export const calculateBetProposalsWithGemini = async (
         number: h.number
       })),
       bettingOptions: allBettingOptions.bettingOptions,
-      conditionalProbabilities
+      conditionalProbabilities,
+      raceId: "default-race-id"
     };
 
     if (process.env.NODE_ENV === 'development') {

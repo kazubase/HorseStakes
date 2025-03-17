@@ -245,7 +245,8 @@ const GeminiStrategy = memo(function GeminiStrategy({ recommendedBets, budget, r
             horses: corr.target.horses
           },
           probability: corr.probability
-        }))
+        })),
+        raceId: "default-race-id"
       };
 
       if (process.env.NODE_ENV === 'development') {

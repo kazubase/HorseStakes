@@ -446,14 +446,24 @@ export const calculateBetProposalsWithGemini = async (
     }));
 
     // Gemini APIから戦略を取得
+    const geminiOptions = {
+      horses: horses.map(h => ({
+        name: h.name,
+        odds: h.odds,
+        winProb: h.winProb,
+        placeProb: h.placeProb,
+        frame: h.frame,
+        number: h.number
+      })),
+      bettingOptions: input.bettingOptions,
+      conditionalProbabilities: input.conditionalProbabilities || [],
+      raceId: "default-race-id"
+    };
+
     const geminiResponse = await getGeminiStrategy(
       bettingCandidates,
       totalBudget,
-      {
-        horses,
-        bettingOptions: input.bettingOptions,
-        conditionalProbabilities: input.conditionalProbabilities || [] // 条件付き確率を渡す
-      },
+      geminiOptions,
       riskRatio
     );
 
