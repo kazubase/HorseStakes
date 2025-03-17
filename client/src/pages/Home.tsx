@@ -885,12 +885,12 @@ export default function Home() {
           <Button 
             size="lg" 
             className="w-full max-w-md h-16 relative overflow-hidden group"
-            onClick={() => window.location.href = `/predict/win/${id}`}
+            onClick={() => window.location.href = `/predict/${id}`}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative flex items-center justify-center">
               <Trophy className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-              <span className="relative">単勝予想</span>
+              <span className="relative">予想設定</span>
               <ArrowRight className="sm:h-4 sm:w-4 h-3 w-3 sm:ml-1" />
             </div>
           </Button>
