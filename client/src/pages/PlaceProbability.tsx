@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Horse } from "@db/schema";
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { AlertCircle, ArrowRight, Award, Grid3X3, List, Wallet, BarChart4, Plus, Minus } from "lucide-react";
+import { AlertCircle, ArrowRight, BarChart4, Wallet, Plus, Minus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { AnimatePresence, motion } from "framer-motion";
@@ -16,11 +16,6 @@ export default function PlaceProbability() {
   const [probabilities, setProbabilities] = useState<{ [key: number]: number }>({});
   const [totalProbability, setTotalProbability] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "grid">(() => {
-    // URLから表示モードを取得（単勝確率画面の表示モードを引き継ぐ）
-    const viewModeParam = new URLSearchParams(window.location.search).get('viewMode');
-    return viewModeParam === "grid" ? "grid" : "list";
-  });
   const [inputValues, setInputValues] = useState<{ [key: number]: string }>({});
 
   const getRequiredTotalProbability = (horseCount: number) => {
@@ -232,11 +227,7 @@ export default function PlaceProbability() {
     const winProbs = params.get('winProbs') || '{}';
     const encodedPlaceProbs = encodeURIComponent(JSON.stringify(allProbabilities));
     
-    window.location.href = `/predict/budget/${id}?winProbs=${winProbs}&placeProbs=${encodedPlaceProbs}&viewMode=${viewMode}`;
-  };
-
-  const handleViewModeChange = (newMode: "list" | "grid") => {
-    setViewMode(newMode);
+    window.location.href = `/predict/budget/${id}?winProbs=${winProbs}&placeProbs=${encodedPlaceProbs}`;
   };
 
   if (!horses) return null;
@@ -261,27 +252,6 @@ export default function PlaceProbability() {
               <span className="sm:hidden text-sm">予算設定</span>
               <ArrowRight className="sm:h-4 sm:w-4 h-3 w-3 sm:ml-1" />
             </span>
-          </Button>
-        </div>
-
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleViewModeChange(viewMode === "list" ? "grid" : "list")}
-            className="flex items-center gap-1"
-          >
-            {viewMode === "list" ? (
-              <>
-                <Grid3X3 className="h-4 w-4" />
-                <span>グリッド表示</span>
-              </>
-            ) : (
-              <>
-                <List className="h-4 w-4" />
-                <span>リスト表示</span>
-              </>
-            )}
           </Button>
         </div>
 
@@ -321,170 +291,82 @@ export default function PlaceProbability() {
         </div>
 
         <Card className="overflow-hidden bg-gradient-to-br from-background to-primary/5">
-          <CardContent className="p-6">
-            {viewMode === "list" ? (
-              <div className="space-y-6">
-                {sortedHorses.map((horse) => (
-                  <div key={horse.id} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <div className={`
-                          w-8 h-8 flex items-center justify-center rounded-lg font-bold shadow-sm
-                          ${getFrameColor(horse.frame)}
-                        `}>
-                          {horse.number}
-                        </div>
-                        <label id={`horse-place-name-${horse.id}`} htmlFor={`horse-place-prob-${horse.id}`} className="text-sm font-medium">
-                          {horse.name}
-                        </label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8 rounded-full"
-                          onClick={() => handleProbabilityIncrement(horse.id, -5)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            min={winProbabilities[horse.id] || 0}
-                            max="100"
-                            step="1"
-                            id={`horse-place-prob-${horse.id}`}
-                            name={`horse-place-prob-${horse.id}`}
-                            value={inputValues[horse.id] || ""}
-                            onChange={(e) => handleDirectInput(horse.id, e.target.value)}
-                            onBlur={(e) => handleInputBlur(horse.id, e.target.value)}
-                            className="w-20 text-right text-base font-bold px-2 [&::-webkit-inner-spin-button]:ml-2"
-                            aria-labelledby={`horse-place-name-${horse.id}`}
-                          />
-                          <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8 rounded-full"
-                          onClick={() => handleProbabilityIncrement(horse.id, 5)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-medium">%</span>
-                      </div>
+          <CardContent className="p-2 sm:p-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 sm:gap-3">
+              {sortedHorses.map((horse) => (
+                <div key={horse.id} className="p-1.5 sm:p-2 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors">
+                  <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-1.5">
+                    <div className={`
+                      w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg font-bold shadow-sm text-xs
+                      ${getFrameColor(horse.frame)}
+                    `}>
+                      {horse.number}
                     </div>
-                    <div 
-                      className="touch-none relative group" 
-                      onTouchMove={(e) => {
-                        // スライダー操作中のみイベントを防止
-                        if (e.target && (e.target as HTMLElement).getAttribute('role') === 'slider') {
-                          e.preventDefault();
-                        }
-                      }}
-                      onPointerMove={(e) => {
-                        if (e.pointerType === 'mouse' && e.buttons === 0) {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <Slider
-                        value={[probabilities[horse.id] || 0]}
-                        onValueChange={([value]) => handleProbabilityChange(horse.id, value)}
-                        max={100}
-                        min={0}
-                        step={1}
-                        className="my-2 relative
-                          [&_[role=slider]]:h-5 
-                          [&_[role=slider]]:w-5 
-                          [&_[role=slider]]:hover:h-6 
-                          [&_[role=slider]]:hover:w-6 
-                          [&_[role=slider]]:transition-all 
-                          [&_[role=slider]]:relative 
-                          [&_[role=slider]]:after:absolute 
-                          [&_[role=slider]]:after:content-[''] 
-                          [&_[role=slider]]:after:w-10 
-                          [&_[role=slider]]:after:h-full 
-                          [&_[role=slider]]:after:-left-3
-                          [&_.track]:h-2 
-                          [&_.track]:pointer-events-none
-                          [&_.track]:bg-primary/20
-                          [&_.range]:bg-primary/40"
-                      />
+                    <div id={`horse-place-name-${horse.id}`} className="text-xs sm:text-sm font-medium break-words flex-1">
+                      {horse.name}
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {sortedHorses.map((horse) => (
-                  <div key={horse.id} className="p-3 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`
-                        w-7 h-7 flex items-center justify-center rounded-lg font-bold shadow-sm text-xs
-                        ${getFrameColor(horse.frame)}
-                      `}>
-                        {horse.number}
-                      </div>
-                      <div id={`horse-place-name-grid-${horse.id}`} className="text-sm font-medium break-words flex-1">
-                        {horse.name}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 mb-2">
+                  
+                  <div className="flex flex-col gap-1 mb-1">
+                    <div className="flex items-center justify-between gap-0.5">
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-6 w-6 rounded-full flex-shrink-0"
+                        className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0"
                         onClick={() => handleProbabilityIncrement(horse.id, -5)}
                       >
-                        <Minus className="h-3 w-3" />
+                        <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                       </Button>
-                      <div className="relative flex-1 min-w-0">
+                      
+                      <div className="flex items-center flex-1 mx-0.5">
                         <Input
                           type="number"
                           min={winProbabilities[horse.id] || 0}
                           max="100"
                           step="1"
-                          id={`horse-place-prob-grid-${horse.id}`}
-                          name={`horse-place-prob-grid-${horse.id}`}
+                          id={`horse-place-prob-${horse.id}`}
+                          name={`horse-place-prob-${horse.id}`}
                           value={inputValues[horse.id] || ""}
                           onChange={(e) => handleDirectInput(horse.id, e.target.value)}
                           onBlur={(e) => handleInputBlur(horse.id, e.target.value)}
-                          className="w-full text-right text-sm font-bold px-1 [&::-webkit-inner-spin-button]:ml-1"
-                          aria-labelledby={`horse-place-name-grid-${horse.id}`}
+                          className={`w-full text-right text-base sm:text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-8 ${
+                            (probabilities[horse.id] || 0) >= 75 ? 'text-primary' : 
+                            (probabilities[horse.id] || 0) >= 50 ? 'text-primary/80' : ''
+                          }`}
+                          aria-labelledby={`horse-place-name-${horse.id}`}
                         />
-                        <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <span className="text-sm sm:text-base font-medium ml-0.5">%</span>
                       </div>
+                      
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-6 w-6 rounded-full flex-shrink-0"
+                        className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0"
                         onClick={() => handleProbabilityIncrement(horse.id, 5)}
                       >
-                        <Plus className="h-3 w-3" />
+                        <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                       </Button>
-                      <span className="text-xs font-medium flex-shrink-0">%</span>
                     </div>
-                    <Slider
-                      value={[probabilities[horse.id] || 0]}
-                      onValueChange={([value]) => handleProbabilityChange(horse.id, value)}
-                      max={100}
-                      min={0}
-                      step={1}
-                      className="relative
-                        [&_[role=slider]]:h-4 
-                        [&_[role=slider]]:w-4 
-                        [&_[role=slider]]:hover:h-5 
-                        [&_[role=slider]]:hover:w-5 
-                        [&_.track]:h-1.5
-                        [&_.track]:bg-primary/20
-                        [&_.range]:bg-primary/40"
-                    />
                   </div>
-                ))}
-              </div>
-            )}
+                  
+                  <Slider
+                    value={[probabilities[horse.id] || 0]}
+                    onValueChange={([value]) => handleProbabilityChange(horse.id, value)}
+                    max={100}
+                    min={0}
+                    step={1}
+                    className="relative
+                      [&_[role=slider]]:h-3.5 
+                      [&_[role=slider]]:w-3.5 
+                      [&_[role=slider]]:hover:h-4 
+                      [&_[role=slider]]:hover:w-4 
+                      [&_.track]:h-1
+                      [&_.track]:bg-primary/20
+                      [&_.range]:bg-primary/40"
+                  />
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
