@@ -473,9 +473,9 @@ export default function RaceList() {
               key={venue.id} 
               value={venue.id}
               lazyMount={false}
-              className="transition-opacity duration-300 ease-in-out will-change-transform"
+              className="transition-opacity duration-300 ease-in-out"
             >
-              <div className="grid gap-3 sm:gap-3 md:gap-4 pb-16 md:pb-0 will-change-transform">
+              <div className="grid gap-3 sm:gap-3 md:gap-4 pb-16 md:pb-0">
                 {filterRaces(races, venue.id).length === 0 ? (
                   <EmptyState searchQuery={searchQuery} />
                 ) : (

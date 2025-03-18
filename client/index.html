@@ -31,9 +31,22 @@
     <meta name="geo.placename" content="Japan" />
     <link rel="alternate" hreflang="ja" href="https://horse-stakes.com" />
     <title>競馬予想・馬券作成アシスタント | 回収率アップの馬券戦略</title>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="preload" href="/horseshoe-icon.webp" as="image" fetchpriority="high">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap" rel="stylesheet">
+    <script>
+      // フォントのフォールバック処理
+      (function() {
+        if ('fonts' in document) {
+          document.fonts.ready.then(function() {
+            document.documentElement.classList.add('fonts-loaded');
+          });
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

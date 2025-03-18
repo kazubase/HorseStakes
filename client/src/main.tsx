@@ -22,8 +22,34 @@ const setCsrfToken = () => {
   }
 };
 
+// パフォーマンス最適化：ロード後に非クリティカルリソースを読み込む
+const loadNonCriticalResources = () => {
+  // 画面が表示された後に実行
+  if (window.requestIdleCallback) {
+    window.requestIdleCallback(() => {
+      // 必要な追加リソースをここで読み込み
+      const preconnectLink = document.createElement('link');
+      preconnectLink.rel = 'preconnect';
+      preconnectLink.href = 'https://fonts.googleapis.com';
+      document.head.appendChild(preconnectLink);
+    });
+  } else {
+    // requestIdleCallbackが利用できないブラウザ用のフォールバック
+    setTimeout(() => {
+      // 同様の処理
+    }, 1000);
+  }
+};
+
 // アプリケーション初期化時にCSRFトークンを設定
 setCsrfToken();
+
+// DOMContentLoadedイベント後に非クリティカルリソースを読み込む
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadNonCriticalResources);
+} else {
+  loadNonCriticalResources();
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
