@@ -71,7 +71,7 @@ const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) =
               <span className="text-muted-foreground">
                 {formattedDate}
               </span>
-              <span className="bg-primary/15 px-2 sm:px-2.5 md:px-2.5 py-0.5 rounded-full text-primary font-medium">
+              <span className="inline-flex items-center justify-center bg-primary/20 px-2 py-0.5 rounded-full text-primary text-xs font-medium">
                 {formattedTime}
               </span>
             </p>
