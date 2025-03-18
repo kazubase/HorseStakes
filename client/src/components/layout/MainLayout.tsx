@@ -1,8 +1,46 @@
 import { Link } from "wouter";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { FaList } from "react-icons/fa";
 import { HelpCircle } from "lucide-react";
 import { useLocation } from "wouter";
+
+// ロゴコンポーネントをメモ化して不要な再レンダリングを防止
+const Logo = memo(() => (
+  <Link href="/" aria-label="ホームページへ移動">
+    <div className="flex items-center gap-3 cursor-pointer">
+      <img 
+        src="/images/horseshoe-icon.webp" 
+        alt="馬券戦略アプリロゴ" 
+        className="h-9 w-9 rounded-lg shadow-sm"
+        width="36"
+        height="36"
+        decoding="async"
+        loading="eager"
+        // @ts-ignore - fetchpriorityはHTML標準属性だがReact TypesにはまだないのでTSエラーを抑制
+        fetchpriority="high"
+      />
+      <span className="font-bold text-2xl font-yuji yuji-syuku">馬券戦略</span>
+    </div>
+  </Link>
+));
+
+// ナビゲーションをメモ化
+const Navigation = memo(() => (
+  <div className="flex justify-around h-10">
+    <Link href="/" aria-label="レース選択ページへ移動">
+      <div className="flex items-center justify-center px-4 h-full hover:text-primary hover:bg-muted/50 transition-colors">
+        <FaList className="h-4 w-4 mr-1.5" aria-hidden="true" />
+        <span className="text-sm font-medium">レース選択</span>
+      </div>
+    </Link>
+    <Link href="/guide" aria-label="使い方ガイドページへ移動">
+      <div className="flex items-center justify-center px-4 h-full hover:text-primary hover:bg-muted/50 transition-colors">
+        <HelpCircle className="h-4 w-4 mr-1.5" aria-hidden="true" />
+        <span className="text-sm font-medium">使い方</span>
+      </div>
+    </Link>
+  </div>
+));
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
@@ -56,7 +94,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   // デバウンスされたスクロールハンドラー
   const debouncedScrollHandler = useMemo(
-    () => debounce(controlHeader, 10), 
+    () => debounce(controlHeader, 50), // デバウンス時間を増加
     [debounce, controlHeader]
   );
 
@@ -77,50 +115,34 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     };
   }, [controlHeader, debouncedScrollHandler]);
 
-  // ナビゲーションのレンダリング関数
-  const renderNavigation = useMemo(() => (
-    <div className="flex justify-around h-10">
-      <Link href="/" aria-label="レース選択ページへ移動">
-        <div className="flex items-center justify-center px-4 h-full hover:text-primary hover:bg-muted/50 transition-colors">
-          <FaList className="h-4 w-4 mr-1.5" aria-hidden="true" />
-          <span className="text-sm font-medium">レース選択</span>
-        </div>
-      </Link>
-      <Link href="/guide" aria-label="使い方ガイドページへ移動">
-        <div className="flex items-center justify-center px-4 h-full hover:text-primary hover:bg-muted/50 transition-colors">
-          <HelpCircle className="h-4 w-4 mr-1.5" aria-hidden="true" />
-          <span className="text-sm font-medium">使い方</span>
-        </div>
-      </Link>
-    </div>
-  ), []);
+  // ヘッダーがトップにあるときのみCSSトランジションを有効にする（パフォーマンス向上）
+  const headerTransitionClass = useMemo(() => 
+    isHeaderVisible ? 'translate-y-0' : '-translate-y-full',
+    [isHeaderVisible]
+  );
+
+  // ナビゲーションの可視性クラス
+  const navVisibilityClass = useMemo(() => 
+    isNavVisible ? 'opacity-100' : 'opacity-0 pointer-events-none',
+    [isNavVisible]
+  );
+
+  // メインコンテンツのクラス
+  const mainContentClass = useMemo(() => 
+    `flex-1 container mx-auto px-4 py-6 ${isRaceListPage ? '' : 'mt-10'}`,
+    [isRaceListPage]
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* ヘッダー */}
       <div 
-        className={`fixed top-0 left-0 right-0 z-20 transition-transform duration-300 will-change-transform ${
-          isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
-        }`}
+        className={`fixed top-0 left-0 right-0 z-20 transition-transform duration-300 will-change-transform ${headerTransitionClass}`}
         role="banner"
       >
         <header className="border-b bg-card/80 backdrop-blur-sm">
           <div className="container mx-auto px-4 h-12 flex items-center justify-between">
-            <Link href="/" aria-label="ホームページへ移動">
-              <div className="flex items-center gap-3 cursor-pointer">
-                <img 
-                  src="/images/horseshoe-icon.webp" 
-                  alt="馬券戦略アプリロゴ" 
-                  className="h-9 w-9 rounded-lg shadow-sm"
-                  loading="lazy"
-                  width="36"
-                  height="36"
-                  decoding="async"
-                  {...{ fetchpriority: "high" }}
-                />
-                <span className="font-bold text-2xl font-yuji yuji-syuku">馬券戦略</span>
-              </div>
-            </Link>
+            <Logo />
           </div>
         </header>
       </div>
@@ -128,15 +150,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* レース一覧画面以外の場合のみ上部ナビゲーションを表示 */}
       {!isRaceListPage && (
         <div 
-          className={`fixed top-12 left-0 right-0 z-10 transition-opacity duration-300 will-change-opacity ${
-            isNavVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
+          className={`fixed top-12 left-0 right-0 z-10 transition-opacity duration-300 will-change-opacity ${navVisibilityClass}`}
           role="navigation" 
           aria-label="サイトナビゲーション"
         >
           <nav className="border-b bg-card/80 backdrop-blur-sm">
             <div className="container mx-auto">
-              {renderNavigation}
+              <Navigation />
             </div>
           </nav>
         </div>
@@ -144,7 +164,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       {/* メインコンテンツ */}
       <div className="h-12"></div>
-      <main className={`flex-1 container mx-auto px-4 py-6 ${isRaceListPage ? '' : 'mt-10'}`} role="main">
+      <main className={mainContentClass} role="main">
         {children}
       </main>
 
@@ -156,7 +176,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           aria-label="フッターナビゲーション"
         >
           <div className="container mx-auto">
-            {renderNavigation}
+            <Navigation />
           </div>
         </div>
       )}
