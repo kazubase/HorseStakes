@@ -21,9 +21,12 @@ export default function Home() {
     return <RaceList />;
   }
 
-  // 以下、既存のコード（レース詳細の表示）
+  // レースデータの取得を最適化
   const { data: race, isLoading: raceLoading } = useQuery<Race>({
     queryKey: [`/api/races/${id}`],
+    staleTime: 300000, // 5分間キャッシュを有効に
+    gcTime: 600000, // 10分間キャッシュを保持
+    retry: 1,
   });
 
   const { 
@@ -33,6 +36,9 @@ export default function Home() {
   } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
     enabled: !!id,
+    staleTime: 300000, // 5分間キャッシュを有効に
+    gcTime: 600000, // 10分間キャッシュを保持
+    retry: 1,
   });
 
   // 馬番でソートした馬リストを作成
@@ -163,7 +169,7 @@ export default function Home() {
   // 現在表示中のグループインデックス
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
 
-  // オッズ履歴データを取得
+  // オッズ履歴データを取得（遅延読み込み）
   const { data: oddsHistory = [], isLoading: oddsLoading, error: oddsError } = useQuery<TanOddsHistory[]>({
     queryKey: [`/api/tan-odds-history/${id}`],
     queryFn: async () => {
@@ -185,6 +191,8 @@ export default function Home() {
     },
     enabled: !!id,
     retry: 1,
+    staleTime: 300000, // 5分間キャッシュを有効に
+    gcTime: 600000, // 10分間キャッシュを保持
   });
 
   // 時刻フォーマットを日付も含めるように修正
@@ -210,7 +218,10 @@ export default function Home() {
 
   // オッズデータを整形
   const formattedOddsData = useMemo(() => {
-    const groupedByTimestamp = groupBy(oddsHistory, 'timestamp');
+    if (!oddsHistory || oddsHistory.length === 0) return [];
+    
+    // 任意のタイムスタンプ型をサポートするため、配列型を維持しながらgroupByを使用
+    const groupedByTimestamp = groupBy(oddsHistory as any[], 'timestamp');
     
     return Object.entries(groupedByTimestamp)
       .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
@@ -227,7 +238,7 @@ export default function Home() {
           dateOnly: getDateOnly(timestamp),
           timeOnly: getTimeOnly(timestamp),
           isDateChanged,
-          ...odds.reduce((acc, odd) => ({
+          ...odds.reduce((acc, odd: any) => ({
             ...acc,
             [`horse${odd.horseId}`]: parseFloat(odd.odds)
           }), {})
@@ -371,8 +382,8 @@ export default function Home() {
     ? sortedHorses.filter(h => selectedHorses.includes(h.number))
     : sortedHorses;
 
-  // オッズ推移グラフコンポーネントを更新
-  const OddsChart = () => {
+  // オッズ推移グラフコンポーネントを最適化し、メモ化
+  const OddsChart = useMemo(() => {
     if (formattedOddsData.length === 0) {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -586,7 +597,7 @@ export default function Home() {
         </LineChart>
       </ResponsiveContainer>
     );
-  };
+  }, [formattedOddsData, visibleHorses, selectedHorses]);
 
   // グラフコンテナのref追加
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -665,7 +676,7 @@ export default function Home() {
       <div className="space-y-4 sm:space-y-6 relative min-h-screen pb-8">
         <div className="absolute inset-0 from-primary/10 via-background/5 to-transparent opacity-30 h-full w-full" />
         
-        {/* レース情報カード */}
+        {/* レース情報カード - 最初に表示する重要コンテンツ */}
         <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5 relative z-10">
           <CardContent className="p-4 sm:p-6">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
@@ -698,210 +709,252 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* 2カラムレイアウト */}
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 sm:gap-6 relative z-10">
-          {/* 左カラム: 出馬表 */}
-          <Card className="lg:col-span-4 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
-            <CardContent className="p-0 sm:p-6 relative">
-              {/* グラデーションオーバーレイ */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-              
-              <div className="relative">
-                <div className="flex justify-between items-center p-4 sm:p-0 sm:mb-4">
-                  <h2 className="text-lg sm:text-xl font-semibold">出馬表</h2>
+        {/* スケルトンローダーを使用して、ユーザーに読み込み中であることを視覚的に示す */}
+        {(horsesLoading || raceLoading) ? (
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 sm:gap-6 relative z-10">
+            <Card className="lg:col-span-4 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                {Array(8).fill(0).map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-[200px]" />
+                      <Skeleton className="h-4 w-[160px]" />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <Card className="lg:col-span-6 bg-background/50 backdrop-blur-sm">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-4 w-48" />
                 </div>
+                <Skeleton className="h-[300px] w-full rounded-lg" />
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <>
+            {/* 2カラムレイアウト */}
+            <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 sm:gap-6 relative z-10">
+              {/* 左カラム: 出馬表 */}
+              <Card className="lg:col-span-4 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
+                <CardContent className="p-0 sm:p-6 relative">
+                  {/* グラデーションオーバーレイ */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+                  
+                  <div className="relative">
+                    <div className="flex justify-between items-center p-4 sm:p-0 sm:mb-4">
+                      <h2 className="text-lg sm:text-xl font-semibold">出馬表</h2>
+                    </div>
 
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-16 px-3 text-center">
-                          <div className="flex items-center justify-end pr-3">
-                            <button 
-                              onClick={() => handleSortClick('number')}
-                              className="flex items-center justify-center p-1 hover:bg-muted/30 rounded transition-colors"
-                              aria-label="馬番でソート"
-                            >
-                              {sortOrder === 'number-asc' ? (
-                                <ChevronUp className="h-4 w-4 text-primary" />
-                              ) : sortOrder === 'number-desc' ? (
-                                <ChevronDown className="h-4 w-4 text-primary" />
-                              ) : (
-                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </button>
-                          </div>
-                        </TableHead>
-                        <TableHead></TableHead>
-                        <TableHead className="text-right pr-4">
-                          <div className="flex items-center justify-start pl-4">
-                            <button 
-                              onClick={() => handleSortClick('odds')}
-                              className="flex items-center justify-center p-1 hover:bg-muted/30 rounded transition-colors"
-                              aria-label="オッズでソート"
-                            >
-                              {sortOrder === 'odds-asc' ? (
-                                <ChevronUp className="h-4 w-4 text-primary" />
-                              ) : sortOrder === 'odds-desc' ? (
-                                <ChevronDown className="h-4 w-4 text-primary" />
-                              ) : (
-                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </button>
-                          </div>
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {displayHorses.map((horse) => {
-                        const latestOdd = latestOdds?.find(odd => 
-                          Number(odd.horseId) === horse.number
-                        );
-                        const isSelected = selectedHorses.includes(horse.number);
-                        const oddsChange = calculateOddsChange(horse.number);
-                        const changeColor = getOddsChangeColor(oddsChange);
-                        const changeArrow = getOddsChangeArrow(oddsChange);
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-16 px-3 text-center">
+                              <div className="flex items-center justify-end pr-3">
+                                <button 
+                                  onClick={() => handleSortClick('number')}
+                                  className="flex items-center justify-center p-1 hover:bg-muted/30 rounded transition-colors"
+                                  aria-label="馬番でソート"
+                                >
+                                  {sortOrder === 'number-asc' ? (
+                                    <ChevronUp className="h-4 w-4 text-primary" />
+                                  ) : sortOrder === 'number-desc' ? (
+                                    <ChevronDown className="h-4 w-4 text-primary" />
+                                  ) : (
+                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                </button>
+                              </div>
+                            </TableHead>
+                            <TableHead></TableHead>
+                            <TableHead className="text-right pr-4">
+                              <div className="flex items-center justify-start pl-4">
+                                <button 
+                                  onClick={() => handleSortClick('odds')}
+                                  className="flex items-center justify-center p-1 hover:bg-muted/30 rounded transition-colors"
+                                  aria-label="オッズでソート"
+                                >
+                                  {sortOrder === 'odds-asc' ? (
+                                    <ChevronUp className="h-4 w-4 text-primary" />
+                                  ) : sortOrder === 'odds-desc' ? (
+                                    <ChevronDown className="h-4 w-4 text-primary" />
+                                  ) : (
+                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                </button>
+                              </div>
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {displayHorses.map((horse) => {
+                            const latestOdd = latestOdds?.find(odd => 
+                              Number(odd.horseId) === horse.number
+                            );
+                            const isSelected = selectedHorses.includes(horse.number);
+                            const oddsChange = calculateOddsChange(horse.number);
+                            const changeColor = getOddsChangeColor(oddsChange);
+                            const changeArrow = getOddsChangeArrow(oddsChange);
+                            
+                            return (
+                              <TableRow 
+                                key={horse.id}
+                                onClick={(e) => toggleHorseSelection(horse.number, e)}
+                                onTouchStart={handleTouchStart}
+                                onTouchEnd={(e) => handleTouchEnd(e, horse.number)}
+                                className={`
+                                  relative
+                                  cursor-pointer 
+                                  transition-all duration-300
+                                  group
+                                  bg-background/80 dark:bg-background/40
+                                  backdrop-blur-[2px]
+                                  ${isSelected ? 
+                                    'bg-primary/10 shadow-[inset_2px_0_0_var(--primary)]' : 
+                                    'hover:bg-muted/30 hover:shadow-[inset_2px_0_0_var(--primary-foreground)]'
+                                  }
+                                `}
+                              >
+                                <TableCell className="relative border-0 w-16 px-3 py-2.5">
+                                  <span className={`
+                                    relative z-10
+                                    inline-flex items-center justify-center
+                                    w-8 h-8
+                                    rounded-lg text-sm font-bold
+                                    ${getFrameColor(horse.frame)}
+                                    transition-transform duration-300
+                                    group-hover:scale-105
+                                  `}>
+                                    {horse.number}
+                                  </span>
+                                </TableCell>
+                                
+                                <TableCell className="relative border-0 py-2.5">
+                                  <span className="relative z-10 font-medium text-sm sm:text-base">
+                                    {horse.name}
+                                  </span>
+                                </TableCell>
+                                
+                                <TableCell className="relative border-0 text-right w-24 px-4 py-2.5">
+                                  <div className="relative z-10 flex items-center justify-end gap-2">
+                                    <span className={`
+                                      transition-all duration-300
+                                      text-sm sm:text-base tabular-nums
+                                      ${isSelected ? 'text-primary font-semibold' : 'text-foreground'}
+                                    `}>
+                                      {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
+                                    </span>
+                                    {formattedOddsData.length >= 3 && (
+                                      <span className={`text-xs ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
+                                        {getOddsChangeArrow(calculateRecentOddsChange(horse.number))}
+                                      </span>
+                                    )}
+                                    <ChevronRight className={`
+                                      w-4 h-4 transition-all duration-300
+                                      ${isSelected ? 'opacity-100 text-primary' : 'opacity-0 group-hover:opacity-100'}
+                                    `} />
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 右カラム: オッズ推移グラフ */}
+              <Card className="lg:col-span-6 bg-background/50 backdrop-blur-sm overflow-hidden">
+                <CardContent className="p-2 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg sm:text-xl font-semibold">オッズ推移</h2>
+                    <div className="text-xs text-muted-foreground">
+                      {formattedOddsData.length > 0 && 
+                        `${formattedOddsData[0].timestamp} - ${formattedOddsData[formattedOddsData.length - 1].timestamp}`
+                      }
+                    </div>
+                  </div>
+                  
+                  {/* グループ切り替えボタン */}
+                  {horseGroups.length > 1 && (
+                    <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent justify-center">
+                      {horseGroups.slice(0, Math.min(3, horseGroups.length)).map((group, index) => {
+                        // グループ内の最小オッズと最大オッズを取得
+                        const groupOdds = group.map(horseId => {
+                          const odd = latestOdds?.find(o => Number(o.horseId) === horseId);
+                          return odd ? parseFloat(odd.odds) : 999;
+                        });
+                        const minOdds = Math.min(...groupOdds);
+                        const maxOdds = Math.max(...groupOdds);
                         
                         return (
-                          <TableRow 
-                            key={horse.id}
-                            onClick={(e) => toggleHorseSelection(horse.number, e)}
-                            onTouchStart={handleTouchStart}
-                            onTouchEnd={(e) => handleTouchEnd(e, horse.number)}
-                            className={`
-                              relative
-                              cursor-pointer 
-                              transition-all duration-300
-                              group
-                              bg-background/80 dark:bg-background/40
-                              backdrop-blur-[2px]
-                              ${isSelected ? 
-                                'bg-primary/10 shadow-[inset_2px_0_0_var(--primary)]' : 
-                                'hover:bg-muted/30 hover:shadow-[inset_2px_0_0_var(--primary-foreground)]'
-                              }
-                            `}
+                          <Button
+                            key={index}
+                            size="sm"
+                            variant={currentGroupIndex === index ? "default" : "outline"}
+                            onClick={() => switchGroup(index)}
+                            className="whitespace-nowrap text-xs text-center"
                           >
-                            <TableCell className="relative border-0 w-16 px-3 py-2.5">
-                              <span className={`
-                                relative z-10
-                                inline-flex items-center justify-center
-                                w-8 h-8
-                                rounded-lg text-sm font-bold
-                                ${getFrameColor(horse.frame)}
-                                transition-transform duration-300
-                                group-hover:scale-105
-                              `}>
-                                {horse.number}
-                              </span>
-                            </TableCell>
-                            
-                            <TableCell className="relative border-0 py-2.5">
-                              <span className="relative z-10 font-medium text-sm sm:text-base">
-                                {horse.name}
-                              </span>
-                            </TableCell>
-                            
-                            <TableCell className="relative border-0 text-right w-24 px-4 py-2.5">
-                              <div className="relative z-10 flex items-center justify-end gap-2">
-                                <span className={`
-                                  transition-all duration-300
-                                  text-sm sm:text-base tabular-nums
-                                  ${isSelected ? 'text-primary font-semibold' : 'text-foreground'}
-                                `}>
-                                  {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
-                                </span>
-                                {formattedOddsData.length >= 3 && (
-                                  <span className={`text-xs ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
-                                    {getOddsChangeArrow(calculateRecentOddsChange(horse.number))}
-                                  </span>
-                                )}
-                                <ChevronRight className={`
-                                  w-4 h-4 transition-all duration-300
-                                  ${isSelected ? 'opacity-100 text-primary' : 'opacity-0 group-hover:opacity-100'}
-                                `} />
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                            {index === 0 ? "人気" : index === 1 ? "中人気" : "穴人気"}
+                            <span className="ml-1 opacity-80">
+                              {group.length}頭
+                            </span>
+                          </Button>
                         );
                       })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 右カラム: オッズ推移グラフ */}
-          <Card className="lg:col-span-6 bg-background/50 backdrop-blur-sm overflow-hidden">
-            <CardContent className="p-2 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg sm:text-xl font-semibold">オッズ推移</h2>
-                <div className="text-xs text-muted-foreground">
-                  {formattedOddsData.length > 0 && 
-                    `${formattedOddsData[0].timestamp} - ${formattedOddsData[formattedOddsData.length - 1].timestamp}`
-                  }
-                </div>
-              </div>
-              
-              {/* グループ切り替えボタン */}
-              {horseGroups.length > 1 && (
-                <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent justify-center">
-                  {horseGroups.slice(0, Math.min(3, horseGroups.length)).map((group, index) => {
-                    // グループ内の最小オッズと最大オッズを取得
-                    const groupOdds = group.map(horseId => {
-                      const odd = latestOdds?.find(o => Number(o.horseId) === horseId);
-                      return odd ? parseFloat(odd.odds) : 999;
-                    });
-                    const minOdds = Math.min(...groupOdds);
-                    const maxOdds = Math.max(...groupOdds);
-                    
-                    return (
-                      <Button
-                        key={index}
-                        size="sm"
-                        variant={currentGroupIndex === index ? "default" : "outline"}
-                        onClick={() => switchGroup(index)}
-                        className="whitespace-nowrap text-xs text-center"
-                      >
-                        {index === 0 ? "人気" : index === 1 ? "中人気" : "穴人気"}
-                        <span className="ml-1 opacity-80">
-                          {group.length}頭
-                        </span>
-                      </Button>
-                    );
-                  })}
-                </div>
-              )}
-              
-              {/* グラフコンテナ - 相対位置指定 */}
-              <div className="h-[300px] sm:h-[400px] relative">
-                {/* 背景グラデーション */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-30 pointer-events-none" />
-                
-                {/* スクロール可能なコンテナ */}
-                <div 
-                  className="absolute inset-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent" 
-                  ref={chartContainerRef}
-                >
-                  {/* グラフコンテンツ */}
-                  <div className="h-full min-w-[800px]">
-                    <OddsChart />
+                    </div>
+                  )}
+                  
+                  {/* グラフコンテナ - 相対位置指定 */}
+                  <div className="h-[300px] sm:h-[400px] relative">
+                    {/* グラフデータのロード中はスケルトンを表示 */}
+                    {oddsLoading ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Skeleton className="h-full w-full rounded-lg" />
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                          オッズデータを読み込み中...
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* 背景グラデーション */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-30 pointer-events-none" />
+                        
+                        {/* スクロール可能なコンテナ */}
+                        <div 
+                          className="absolute inset-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent" 
+                          ref={chartContainerRef}
+                        >
+                          {/* グラフコンテンツ */}
+                          <div className="h-full min-w-[800px]">
+                            {OddsChart}
+                          </div>
+                        </div>
+                        
+                        {/* 左右のフェードエフェクト - スクロールコンテナの上に固定 */}
+                        <div className="absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-r from-background/80 to-transparent" />
+                        <div className="absolute right-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-l from-background/80 to-transparent" />
+                      </>
+                    )}
                   </div>
-                </div>
-                
-                {/* 左右のフェードエフェクト - スクロールコンテナの上に固定 */}
-                <div className="absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-r from-background/80 to-transparent" />
-                <div className="absolute right-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-l from-background/80 to-transparent" />
-              </div>
-              
-              {/* グラフ操作ガイド */}
-              <div className="mt-3 text-xs text-muted-foreground text-center">
-                <p>左右にスクロールして時間推移を確認できます</p>
-                <p className="mt-1">馬名をタップすると表示/非表示を切り替えられます</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  
+                  {/* グラフ操作ガイド */}
+                  <div className="mt-3 text-xs text-muted-foreground text-center">
+                    <p>左右にスクロールして時間推移を確認できます</p>
+                    <p className="mt-1">馬名をタップすると表示/非表示を切り替えられます</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
 
         {/* 予想確率入力ボタン */}
         <div className="flex justify-center relative z-10">
