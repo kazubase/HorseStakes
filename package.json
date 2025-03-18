@@ -125,7 +125,8 @@
   "devDependencies": {
     "@types/compression": "^1.7.5",
     "@types/lodash": "^4.17.15",
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.24.0",
+    "terser": "^5.39.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
