@@ -57,15 +57,14 @@ const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) =
 
   return (
     <Card 
-      className="cursor-pointer group relative overflow-hidden bg-background/70 backdrop-blur-sm border-primary/20 hover:bg-primary/5 transition-transform duration-300 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-md rounded-lg sm:rounded-lg md:rounded-xl"
+      className="cursor-pointer group relative overflow-hidden bg-background/70 backdrop-blur-sm border-primary/20 hover:bg-primary/5 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-md rounded-lg sm:rounded-lg md:rounded-xl"
       onClick={onClick}
     >
       <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       <CardContent className="relative p-3 sm:p-4 md:p-5">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="font-bold text-base sm:text-lg md:text-lg text-foreground/90 group-hover:text-primary transition-colors duration-300 will-change-transform text-decoration-none [text-rendering:optimizeSpeed]"
-                data-load="eager">
+            <h3 className="font-bold text-base sm:text-lg md:text-lg text-foreground/90 group-hover:text-primary transition-colors duration-300">
               {race.name}
             </h3>
             <p className="text-xs sm:text-sm md:text-sm text-muted-foreground flex items-center gap-2 mt-1">

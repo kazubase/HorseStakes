@@ -109,7 +109,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   src="/images/horseshoe-icon.webp" 
                   alt="馬券戦略" 
                   className="h-9 w-9 rounded-lg shadow-sm"
-                  loading="eager"
+                  loading="lazy"
                   width="36"
                   height="36"
                   {...{ fetchpriority: "high" }}
