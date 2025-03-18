@@ -702,6 +702,10 @@ export default function PredictionSettings() {
                                 (winProbabilities[horse.id] || 0) >= 20 ? 'text-primary/80' : ''
                               }`}
                               aria-labelledby={`horse-win-name-${horse.id}`}
+                              aria-label={`${horse.name}の単勝確率`}
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                              aria-valuenow={winProbabilities[horse.id] || 0}
                             />
                             <span className="text-sm sm:text-base font-medium ml-0.5">%</span>
                           </div>
@@ -830,6 +834,10 @@ export default function PredictionSettings() {
                                 (placeProbabilities[horse.id] || 0) >= 50 ? 'text-primary/80' : ''
                               }`}
                               aria-labelledby={`horse-place-name-${horse.id}`}
+                              aria-label={`${horse.name}の複勝確率`}
+                              aria-valuemin={winProbabilities[horse.id] || 0}
+                              aria-valuemax={100}
+                              aria-valuenow={placeProbabilities[horse.id] || 0}
                             />
                             <span className="text-sm sm:text-base font-medium ml-0.5">%</span>
                           </div>

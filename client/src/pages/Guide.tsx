@@ -152,7 +152,7 @@ export default function Guide() {
             <div className="bg-primary/10 p-3 rounded-full">
               <img 
                 src="/images/horseshoe-icon.webp" 
-                alt="馬蹄アイコン" 
+                alt="競馬予想アプリのロゴ - 馬蹄アイコン" 
                 className="h-6 w-6"
               />
             </div>
@@ -172,7 +172,7 @@ export default function Guide() {
                   <div className="overflow-hidden rounded-lg border border-primary/10 transition-all duration-300 group-hover:border-primary/20">
                     <img 
                       src="/images/betting-generation.webp" 
-                      alt="馬券候補の生成プロセス" 
+                      alt="馬券候補生成プロセスの図解 - 確率計算から候補抽出までのフロー" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
                     />
                   </div>
@@ -185,7 +185,7 @@ export default function Guide() {
                   <div className="overflow-hidden rounded-lg border border-primary/10 transition-all duration-300 group-hover:border-primary/20">
                     <img 
                       src="/images/ai-analysis.webp" 
-                      alt="AI分析プロセス" 
+                      alt="AI分析プロセスの図解 - 期待値と確率に基づく最適な馬券組み合わせの分析" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
                     />
                   </div>
@@ -198,7 +198,7 @@ export default function Guide() {
                   <div className="overflow-hidden rounded-lg border border-primary/10 transition-all duration-300 group-hover:border-primary/20">
                     <img 
                       src="/images/fund-optimization.webp" 
-                      alt="資金配分の最適化プロセス" 
+                      alt="資金配分最適化プロセスの図解 - シャープレシオに基づく投資額決定方法" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
                     />
                   </div>

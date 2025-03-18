@@ -760,13 +760,15 @@ export default function Home() {
                                   onClick={() => handleSortClick('number')}
                                   className="flex items-center justify-center p-1 hover:bg-muted/30 rounded transition-colors"
                                   aria-label="馬番でソート"
+                                  aria-pressed={sortOrder === 'number-asc' || sortOrder === 'number-desc'}
+                                  aria-sort={sortOrder === 'number-asc' ? 'ascending' : sortOrder === 'number-desc' ? 'descending' : 'none'}
                                 >
                                   {sortOrder === 'number-asc' ? (
-                                    <ChevronUp className="h-4 w-4 text-primary" />
+                                    <ChevronUp className="h-4 w-4 text-primary" aria-hidden="true" />
                                   ) : sortOrder === 'number-desc' ? (
-                                    <ChevronDown className="h-4 w-4 text-primary" />
+                                    <ChevronDown className="h-4 w-4 text-primary" aria-hidden="true" />
                                   ) : (
-                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    <ChevronUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                                   )}
                                 </button>
                               </div>
@@ -778,13 +780,15 @@ export default function Home() {
                                   onClick={() => handleSortClick('odds')}
                                   className="flex items-center justify-center p-1 hover:bg-muted/30 rounded transition-colors"
                                   aria-label="オッズでソート"
+                                  aria-pressed={sortOrder === 'odds-asc' || sortOrder === 'odds-desc'}
+                                  aria-sort={sortOrder === 'odds-asc' ? 'ascending' : sortOrder === 'odds-desc' ? 'descending' : 'none'}
                                 >
                                   {sortOrder === 'odds-asc' ? (
-                                    <ChevronUp className="h-4 w-4 text-primary" />
+                                    <ChevronUp className="h-4 w-4 text-primary" aria-hidden="true" />
                                   ) : sortOrder === 'odds-desc' ? (
-                                    <ChevronDown className="h-4 w-4 text-primary" />
+                                    <ChevronDown className="h-4 w-4 text-primary" aria-hidden="true" />
                                   ) : (
-                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    <ChevronUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                                   )}
                                 </button>
                               </div>

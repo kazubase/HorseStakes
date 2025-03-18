@@ -80,15 +80,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // ナビゲーションのレンダリング関数
   const renderNavigation = useMemo(() => (
     <div className="flex justify-around h-10">
-      <Link href="/">
+      <Link href="/" aria-label="レース選択ページへ移動">
         <div className="flex items-center justify-center px-4 h-full hover:text-primary hover:bg-muted/50 transition-colors">
-          <FaList className="h-4 w-4 mr-1.5" />
+          <FaList className="h-4 w-4 mr-1.5" aria-hidden="true" />
           <span className="text-sm font-medium">レース選択</span>
         </div>
       </Link>
-      <Link href="/guide">
+      <Link href="/guide" aria-label="使い方ガイドページへ移動">
         <div className="flex items-center justify-center px-4 h-full hover:text-primary hover:bg-muted/50 transition-colors">
-          <HelpCircle className="h-4 w-4 mr-1.5" />
+          <HelpCircle className="h-4 w-4 mr-1.5" aria-hidden="true" />
           <span className="text-sm font-medium">使い方</span>
         </div>
       </Link>
@@ -98,16 +98,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* ヘッダー */}
-      <div className={`fixed top-0 left-0 right-0 z-20 transition-transform duration-300 will-change-transform ${
-        isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
-      }`}>
+      <div 
+        className={`fixed top-0 left-0 right-0 z-20 transition-transform duration-300 will-change-transform ${
+          isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+        }`}
+        role="banner"
+      >
         <header className="border-b bg-card/80 backdrop-blur-sm">
           <div className="container mx-auto px-4 h-12 flex items-center justify-between">
-            <Link href="/">
+            <Link href="/" aria-label="ホームページへ移動">
               <div className="flex items-center gap-3 cursor-pointer">
                 <img 
                   src="/images/horseshoe-icon.webp" 
-                  alt="馬券戦略" 
+                  alt="馬券戦略アプリロゴ" 
                   className="h-9 w-9 rounded-lg shadow-sm"
                   loading="lazy"
                   width="36"
@@ -123,9 +126,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       
       {/* レース一覧画面以外の場合のみ上部ナビゲーションを表示 */}
       {!isRaceListPage && (
-        <div className={`fixed top-12 left-0 right-0 z-10 transition-opacity duration-300 will-change-opacity ${
-          isNavVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}>
+        <div 
+          className={`fixed top-12 left-0 right-0 z-10 transition-opacity duration-300 will-change-opacity ${
+            isNavVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+          role="navigation" 
+          aria-label="サイトナビゲーション"
+        >
           <nav className="border-b bg-card/80 backdrop-blur-sm">
             <div className="container mx-auto">
               {renderNavigation}
@@ -136,13 +143,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       {/* メインコンテンツ */}
       <div className="h-12"></div>
-      <main className={`flex-1 container mx-auto px-4 py-6 ${isRaceListPage ? '' : 'mt-10'}`}>
+      <main className={`flex-1 container mx-auto px-4 py-6 ${isRaceListPage ? '' : 'mt-10'}`} role="main">
         {children}
       </main>
 
       {/* レース一覧画面の場合のみフッターナビゲーションを表示 */}
       {isRaceListPage && (
-        <div className="fixed bottom-0 left-0 right-0 z-20 border-t bg-card/95 backdrop-blur-md shadow-lg">
+        <div 
+          className="fixed bottom-0 left-0 right-0 z-20 border-t bg-card/95 backdrop-blur-md shadow-lg"
+          role="navigation" 
+          aria-label="フッターナビゲーション"
+        >
           <div className="container mx-auto">
             {renderNavigation}
           </div>
