@@ -115,6 +115,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   loading="lazy"
                   width="36"
                   height="36"
+                  decoding="async"
                   {...{ fetchpriority: "high" }}
                 />
                 <span className="font-bold text-xl font-yuji">馬券戦略</span>

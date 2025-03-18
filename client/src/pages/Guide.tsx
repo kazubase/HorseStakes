@@ -154,6 +154,9 @@ export default function Guide() {
                 src="/images/horseshoe-icon.webp" 
                 alt="競馬予想アプリのロゴ - 馬蹄アイコン" 
                 className="h-6 w-6"
+                width="24"
+                height="24"
+                loading="lazy"
               />
             </div>
             <div>
@@ -174,6 +177,9 @@ export default function Guide() {
                       src="/images/betting-generation.webp" 
                       alt="馬券候補生成プロセスの図解 - 確率計算から候補抽出までのフロー" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
+                      width="512"
+                      height="300"
+                      loading="lazy"
                     />
                   </div>
                   <p className="text-sm text-muted-foreground mt-4 px-2">
@@ -187,6 +193,9 @@ export default function Guide() {
                       src="/images/ai-analysis.webp" 
                       alt="AI分析プロセスの図解 - 期待値と確率に基づく最適な馬券組み合わせの分析" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
+                      width="512"
+                      height="300"
+                      loading="lazy"
                     />
                   </div>
                   <p className="text-sm text-muted-foreground mt-4 px-2">
@@ -200,6 +209,9 @@ export default function Guide() {
                       src="/images/fund-optimization.webp" 
                       alt="資金配分最適化プロセスの図解 - シャープレシオに基づく投資額決定方法" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
+                      width="512"
+                      height="300"
+                      loading="lazy"
                     />
                   </div>
                   <p className="text-sm text-muted-foreground mt-4 px-2">

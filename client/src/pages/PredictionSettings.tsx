@@ -666,7 +666,10 @@ export default function PredictionSettings() {
                         <div className={`
                           w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg font-bold shadow-sm text-xs
                           ${getFrameColor(horse.frame)}
-                        `}>
+                        `}
+                         role="img"
+                         aria-label={`馬番${horse.number}、枠番${horse.frame}`}
+                        >
                           {horse.number}
                         </div>
                         <div id={`horse-win-name-${horse.id}`} className="text-xs sm:text-sm font-medium break-words flex-1">
@@ -698,8 +701,8 @@ export default function PredictionSettings() {
                               onChange={(e) => handleWinDirectInput(horse.id, e.target.value)}
                               onBlur={(e) => handleWinInputBlur(horse.id, e.target.value)}
                               className={`w-full text-right text-base sm:text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-8 ${
-                                (winProbabilities[horse.id] || 0) >= 30 ? 'text-primary' : 
-                                (winProbabilities[horse.id] || 0) >= 20 ? 'text-primary/80' : ''
+                                (winProbabilities[horse.id] || 0) >= 30 ? 'text-primary font-extrabold' : 
+                                (winProbabilities[horse.id] || 0) >= 20 ? 'text-primary font-bold' : 'text-foreground'
                               }`}
                               aria-labelledby={`horse-win-name-${horse.id}`}
                               aria-label={`${horse.name}の単勝確率`}
@@ -728,21 +731,11 @@ export default function PredictionSettings() {
                         max={100}
                         min={0}
                         step={1}
-                        aria-label={`${horse.name}の単勝確率設定`}
+                        aria-label={`${horse.name}の単勝確率: ${(winProbabilities[horse.id] || 0).toFixed(1)}%`}
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-valuenow={winProbabilities[horse.id] || 0}
-                        className="relative
-                          [&_[role=slider]]:h-4.5 
-                          [&_[role=slider]]:w-4.5 
-                          [&_[role=slider]]:hover:h-5 
-                          [&_[role=slider]]:hover:w-5 
-                          [&_[role=slider]]:bg-primary
-                          [&_[role=slider]]:border-2
-                          [&_[role=slider]]:border-background
-                          [&_.track]:h-1.5
-                          [&_.track]:bg-primary/30
-                          [&_.range]:bg-primary/60"
+                        className="relative mt-1 mb-2"
                       />
                     </div>
                   ))}
@@ -798,7 +791,10 @@ export default function PredictionSettings() {
                         <div className={`
                           w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg font-bold shadow-sm text-xs
                           ${getFrameColor(horse.frame)}
-                        `}>
+                        `}
+                         role="img"
+                         aria-label={`馬番${horse.number}、枠番${horse.frame}`}
+                        >
                           {horse.number}
                         </div>
                         <div id={`horse-place-name-${horse.id}`} className="text-xs sm:text-sm font-medium break-words flex-1">
@@ -830,8 +826,8 @@ export default function PredictionSettings() {
                               onChange={(e) => handlePlaceDirectInput(horse.id, e.target.value)}
                               onBlur={(e) => handlePlaceInputBlur(horse.id, e.target.value)}
                               className={`w-full text-right text-base sm:text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-8 ${
-                                (placeProbabilities[horse.id] || 0) >= 75 ? 'text-primary' : 
-                                (placeProbabilities[horse.id] || 0) >= 50 ? 'text-primary/80' : ''
+                                (placeProbabilities[horse.id] || 0) >= 75 ? 'text-primary font-extrabold' : 
+                                (placeProbabilities[horse.id] || 0) >= 50 ? 'text-primary font-bold' : 'text-foreground'
                               }`}
                               aria-labelledby={`horse-place-name-${horse.id}`}
                               aria-label={`${horse.name}の複勝確率`}
@@ -860,21 +856,11 @@ export default function PredictionSettings() {
                         max={100}
                         min={0}
                         step={1}
-                        aria-label={`${horse.name}の複勝確率設定`}
+                        aria-label={`${horse.name}の複勝確率: ${(placeProbabilities[horse.id] || 0).toFixed(1)}%`}
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-valuenow={placeProbabilities[horse.id] || 0}
-                        className="relative
-                          [&_[role=slider]]:h-4.5 
-                          [&_[role=slider]]:w-4.5 
-                          [&_[role=slider]]:hover:h-5 
-                          [&_[role=slider]]:hover:w-5 
-                          [&_[role=slider]]:bg-primary
-                          [&_[role=slider]]:border-2
-                          [&_[role=slider]]:border-background
-                          [&_.track]:h-1.5
-                          [&_.track]:bg-primary/30
-                          [&_.range]:bg-primary/60"
+                        className="relative mt-1 mb-2"
                       />
                     </div>
                   ))}
@@ -1000,34 +986,21 @@ export default function PredictionSettings() {
                       min={2.0}
                       max={20.0}
                       step={1.0}
-                      aria-label="リスクリワード設定"
+                      aria-label={`リスクリワード設定: 現在${riskRatio.toFixed(1)}倍`}
                       aria-valuemin={2.0}
                       aria-valuemax={20.0}
                       aria-valuenow={riskRatio}
-                      className="my-4 
-                        [&_[role=slider]]:h-5 
-                        [&_[role=slider]]:w-5 
-                        [&_[role=slider]]:hover:h-6 
-                        [&_[role=slider]]:hover:w-6 
-                        [&_[role=slider]]:transition-all 
-                        [&_[role=slider]]:bg-primary
-                        [&_[role=slider]]:border-2
-                        [&_[role=slider]]:border-background
-                        [&_[role=slider]]:shadow-lg
-                        [&_.range]:bg-primary/60
-                        [&_.track]:h-2 
-                        [&_.track]:bg-primary/30
-                        [&_.track]:pointer-events-none"
+                      className="my-4"
                     />
-                    <p className="text-sm font-medium text-right text-primary">
+                    <p className="text-sm font-medium text-right text-primary" aria-live="polite" aria-atomic="true">
                       ×{riskRatio.toFixed(1)}
                     </p>
 
-                    <div className="space-y-2 text-sm text-muted-foreground mt-6">
-                      <p className="font-medium">※ 高いリスクリワードを設定すると</p>
+                    <div className="space-y-2 text-sm mt-6">
+                      <p className="font-medium text-foreground">※ 高いリスクリワードを設定すると</p>
                       <ul className="list-disc list-inside space-y-1.5 ml-2">
-                        <li className="text-emerald-500">より大きな利益を狙えます</li>
-                        <li className="text-amber-500">しかし的中率は低くなる傾向があります</li>
+                        <li className="text-emerald-600 font-medium">より大きな利益を狙えます</li>
+                        <li className="text-amber-600 font-medium">しかし的中率は低くなる傾向があります</li>
                       </ul>
                     </div>
                   </div>
@@ -1044,14 +1017,14 @@ export default function PredictionSettings() {
 // 枠番の色を決定する関数
 function getFrameColor(frame: number) {
   const colors = {
-    1: 'bg-white text-black border border-gray-200',
-    2: 'bg-black text-white',
-    3: 'bg-red-600 text-white',
-    4: 'bg-blue-600 text-white',
-    5: 'bg-yellow-400 text-black',
-    6: 'bg-green-600 text-white',
-    7: 'bg-orange-500 text-white',
-    8: 'bg-pink-400 text-white'
+    1: 'bg-white text-black border-2 border-gray-400',
+    2: 'bg-black text-white border border-gray-400',
+    3: 'bg-red-700 text-white',
+    4: 'bg-blue-700 text-white',
+    5: 'bg-yellow-500 text-black border border-black',
+    6: 'bg-green-700 text-white',
+    7: 'bg-orange-600 text-white',
+    8: 'bg-pink-500 text-white'
   };
-  return colors[frame as keyof typeof colors] || 'bg-gray-200';
+  return colors[frame as keyof typeof colors] || 'bg-gray-300 text-black';
 } 

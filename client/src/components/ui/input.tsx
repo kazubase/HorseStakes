@@ -7,6 +7,13 @@ export interface InputProps
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {
+    // 数値入力の場合のみ適用する属性
+    const ariaProps = type === "number" ? {
+      "aria-valuemin": props["aria-valuemin"],
+      "aria-valuemax": props["aria-valuemax"],
+      "aria-valuenow": props["aria-valuenow"],
+    } : {};
+
     return (
       <input
         type={type}
@@ -16,10 +23,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         ref={ref}
         aria-label={props["aria-label"]}
-        aria-valuemin={props["aria-valuemin"]}
-        aria-valuemax={props["aria-valuemax"]}
-        aria-valuenow={props["aria-valuenow"]}
         aria-labelledby={props["aria-labelledby"]}
+        {...ariaProps}
         {...props}
       />
     )
