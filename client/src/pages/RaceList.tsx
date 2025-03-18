@@ -266,29 +266,36 @@ export default function RaceList() {
       </Helmet>
 
       {/* ヘッダーセクション */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-primary/10 p-6 mb-8 shadow-sm">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-primary/10 p-3 sm:p-4 md:p-6 mb-3 sm:mb-5 md:mb-8 shadow-sm">
         <div className="absolute inset-0 bg-grid-primary/5 [mask-image:linear-gradient(to_bottom,transparent_20%,black_70%)]" />
-        <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+        <div className="relative flex justify-between items-start gap-2 sm:gap-3 md:gap-5">
+          {/* タイトルセクション - モバイルでは非表示 */}
+          <div className="hidden sm:flex flex-col gap-1 md:gap-2">
+            <div className="flex items-center gap-2 md:gap-3">
+              <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent whitespace-nowrap">
                 レース一覧
               </h1>
-              <span className="hidden sm:inline-block text-xs text-muted-foreground bg-primary/5 px-3 py-1 rounded-full">
-                競馬予想・回収率アップ支援ツール
+              <span className="text-xs text-muted-foreground bg-primary/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full whitespace-nowrap">
+                競馬予想・回収率アップ
               </span>
             </div>
-            <p className="text-sm text-muted-foreground max-w-md mb-3 lg:mb-0">
-              AIを活用した馬券戦略で的中率と期待値を最適化します
+            <p className="text-xs md:text-sm text-muted-foreground max-w-md">
+              AIで的中率と期待値を最適化
             </p>
-            <div className="flex items-center gap-2 flex-wrap">
+          </div>
+          
+          {/* カレンダーと検索フィールド - フレキシブルレイアウト */}
+          <div className="flex w-full sm:w-auto justify-between sm:justify-end items-center gap-2">
+            {/* カレンダー - モバイルでは左側 */}
+            <div className="order-1">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="flex items-center gap-2 bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all duration-300"
+                    size="sm"
+                    className="flex items-center gap-1 md:gap-2 bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all duration-300 text-[10px] sm:text-xs md:text-sm h-7 sm:h-8 md:h-9 px-2 sm:px-3"
                   >
-                    <CalendarIcon className="h-4 w-4 text-primary" />
+                    <CalendarIcon className="h-3 w-3 sm:h-3.5 md:h-4 sm:w-3.5 md:w-4 text-primary" />
                     {format(selectedDate, 'yyyy/MM/dd')}
                   </Button>
                 </PopoverTrigger>
@@ -303,30 +310,33 @@ export default function RaceList() {
                   />
                 </PopoverContent>
               </Popover>
-              {selectedDate.getDay() >= 1 && selectedDate.getDay() <= 5 && (
-                <span className="text-sm text-muted-foreground bg-primary/10 px-3 py-1 rounded-full">
-                  ※平日は直前の週末のレースを表示
-                </span>
-              )}
             </div>
-          </div>
-          
-          <div className="w-full lg:w-auto mt-4 lg:mt-0">
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary h-4 w-4 z-10" />
+            
+            {/* 検索フィールド - モバイルでは右側 */}
+            <div className="relative w-1/2 sm:w-52 md:w-72 order-2">
+              <Search className="absolute left-2 sm:left-2.5 md:left-3 top-1/2 -translate-y-1/2 text-primary h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 z-10" />
               <Input
                 type="text"
-                placeholder="レース名またはレースIDで検索..."
+                placeholder="レース名またはIDで検索..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setShowAllVenues(e.target.value !== "");
                 }}
-                className="pl-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-2 focus:ring-primary/20 text-base"
+                className="pl-7 sm:pl-8 md:pl-10 py-1 h-7 sm:h-8 md:h-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-1 sm:focus:ring-1 md:focus:ring-2 focus:ring-primary/20 text-[10px] sm:text-xs md:text-base"
               />
             </div>
           </div>
         </div>
+        
+        {/* 平日表示の注釈 - モバイルでは非表示 */}
+        {selectedDate.getDay() >= 1 && selectedDate.getDay() <= 5 && (
+          <div className="hidden sm:block mt-2">
+            <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+              ※平日は直前の週末のレースを表示
+            </span>
+          </div>
+        )}
       </div>
 
       {venues.length > 0 ? (
@@ -335,18 +345,18 @@ export default function RaceList() {
           onValueChange={setSelectedVenue}
           className="w-full"
         >
-          <div className="relative mb-6 -mx-4 sm:mx-0">
+          <div className="relative mb-3 sm:mb-4 md:mb-6 -mx-4 sm:mx-0">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="px-4 sm:px-0">
                 <TabsList 
-                  className="bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/70 rounded-xl p-1.5 flex mx-auto border border-primary/20 shadow-sm"
+                  className="bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/70 rounded-lg sm:rounded-lg md:rounded-xl p-1 sm:p-1 md:p-1.5 flex mx-auto border border-primary/20 shadow-sm"
                   style={{ minWidth: 'min-content' }}
                 >
                   {venues.map(venue => (
                     <TabsTrigger 
                       key={venue.id} 
                       value={venue.id}
-                      className="flex-shrink-0 px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg transition-all duration-300 hover:bg-primary/10"
+                      className="flex-shrink-0 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md sm:rounded-md md:rounded-lg transition-all duration-300 hover:bg-primary/10"
                     >
                       {venue.name}
                     </TabsTrigger>
@@ -354,18 +364,18 @@ export default function RaceList() {
                 </TabsList>
               </div>
             </div>
-            <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-background via-background/100 to-transparent pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background via-background/100 to-transparent pointer-events-none" />
+            <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-10 md:w-12 bg-gradient-to-r from-background via-background/100 to-transparent pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-10 md:w-12 bg-gradient-to-l from-background via-background/100 to-transparent pointer-events-none" />
           </div>
 
           {venues.map(venue => (
             <TabsContent key={venue.id} value={venue.id}>
-              <div className="grid gap-4 pb-20 md:pb-0">
+              <div className="grid gap-3 sm:gap-3 md:gap-4 pb-16 md:pb-0">
                 {filterRaces(races, venue.id).length === 0 ? (
-                  <div className="text-center text-muted-foreground py-12 bg-background/70 backdrop-blur-sm rounded-xl border border-primary/20 shadow-sm">
-                    <div className="flex flex-col items-center gap-3">
-                      <Search className="h-10 w-10 text-primary/30" />
-                      <p className="text-lg font-medium">
+                  <div className="text-center text-muted-foreground py-8 sm:py-10 md:py-12 bg-background/70 backdrop-blur-sm rounded-xl border border-primary/20 shadow-sm">
+                    <div className="flex flex-col items-center gap-2 sm:gap-2.5 md:gap-3">
+                      <Search className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 text-primary/30" />
+                      <p className="text-base sm:text-base md:text-lg font-medium">
                         {searchQuery ? "検索結果が見つかりません" : "レースがありません"}
                       </p>
                     </div>
@@ -374,32 +384,32 @@ export default function RaceList() {
                   filterRaces(races, venue.id).map(race => (
                     <Card 
                       key={race.id}
-                      className="cursor-pointer group relative overflow-hidden bg-background/70 backdrop-blur-sm border-primary/20 hover:bg-primary/5 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-md rounded-xl"
+                      className="cursor-pointer group relative overflow-hidden bg-background/70 backdrop-blur-sm border-primary/20 hover:bg-primary/5 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-md rounded-lg sm:rounded-lg md:rounded-xl"
                       onClick={() => setLocation(`/race/${race.id}`)}
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <CardContent className="relative p-5">
+                      <CardContent className="relative p-3 sm:p-4 md:p-5">
                         <div className="flex justify-between items-center">
                           <div>
-                            <h3 className="font-bold text-lg text-foreground/90 group-hover:text-primary transition-colors duration-300">
+                            <h3 className="font-bold text-base sm:text-base md:text-lg text-foreground/90 group-hover:text-primary transition-colors duration-300">
                               {race.name}
                             </h3>
-                            <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                            <p className="text-xs sm:text-xs md:text-sm text-muted-foreground flex items-center gap-2 mt-1">
                               <span className="text-muted-foreground">
                                 {format(new Date(race.startTime), 'MM/dd(E)', { locale: ja })}
                               </span>
-                              <span className="bg-primary/15 px-2.5 py-0.5 rounded-full text-primary font-medium">
+                              <span className="bg-primary/15 px-2 sm:px-2 md:px-2.5 py-0.5 rounded-full text-primary font-medium">
                                 {format(new Date(race.startTime), 'HH:mm')}
                               </span>
                             </p>
                           </div>
                           <div className="text-right">
                             {race.status === 'done' && (
-                              <p className="text-sm font-medium text-foreground/80 bg-primary/10 px-3 py-1 rounded-full">
+                              <p className="text-xs sm:text-xs md:text-sm font-medium text-foreground/80 bg-primary/10 px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-0.5 md:py-1 rounded-full">
                                 発走済
                               </p>
                             )}
-                            <p className="text-xs text-muted-foreground mt-2">
+                            <p className="text-[10px] sm:text-[10px] md:text-xs text-muted-foreground mt-1 sm:mt-1 md:mt-2">
                               ID: {race.id}
                             </p>
                           </div>
@@ -413,10 +423,10 @@ export default function RaceList() {
           ))}
         </Tabs>
       ) : (
-        <div className="text-center text-muted-foreground py-16 bg-background/70 backdrop-blur-sm rounded-xl border border-primary/20 shadow-sm">
-          <div className="flex flex-col items-center gap-4">
-            <CalendarIcon className="h-12 w-12 text-primary/30" />
-            <p className="text-xl font-medium">開催中のレースはありません</p>
+        <div className="text-center text-muted-foreground py-12 sm:py-14 md:py-16 bg-background/70 backdrop-blur-sm rounded-xl border border-primary/20 shadow-sm">
+          <div className="flex flex-col items-center gap-3 sm:gap-3.5 md:gap-4">
+            <CalendarIcon className="h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 text-primary/30" />
+            <p className="text-lg sm:text-lg md:text-xl font-medium">開催中のレースはありません</p>
           </div>
         </div>
       )}
