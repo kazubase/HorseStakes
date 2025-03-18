@@ -339,13 +339,24 @@ export default function Home() {
       const aOdds = latestOdds?.find(odd => Number(odd.horseId) === a.number)?.odds;
       const bOdds = latestOdds?.find(odd => Number(odd.horseId) === b.number)?.odds;
       
-      // オッズがない場合は最後に表示
-      if (!aOdds) return 1;
-      if (!bOdds) return -1;
+      // オッズがない場合やNaNの場合は最後に表示
+      const aValue = aOdds ? parseFloat(aOdds) : NaN;
+      const bValue = bOdds ? parseFloat(bOdds) : NaN;
       
-      const aValue = parseFloat(aOdds);
-      const bValue = parseFloat(bOdds);
+      // どちらかがNaNの場合の処理
+      const aIsNaN = isNaN(aValue);
+      const bIsNaN = isNaN(bValue);
       
+      // 両方NaNならそのまま（馬番で比較）
+      if (aIsNaN && bIsNaN) return a.number - b.number;
+      
+      // aだけがNaNなら後ろに
+      if (aIsNaN) return 1;
+      
+      // bだけがNaNなら前に
+      if (bIsNaN) return -1;
+      
+      // 両方数値ならオッズで比較
       return sortOrder === 'odds-asc' 
         ? aValue - bValue 
         : bValue - aValue;
