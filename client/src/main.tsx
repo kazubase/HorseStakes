@@ -34,20 +34,50 @@ const setCsrfToken = () => {
 
 // パフォーマンス最適化：ロード後に非クリティカルリソースを読み込む
 const loadNonCriticalResources = () => {
-  // 画面が表示された後に実行
-  if (window.requestIdleCallback) {
-    window.requestIdleCallback(() => {
-      // 必要な追加リソースをここで読み込み
-      const preconnectLink = document.createElement('link');
-      preconnectLink.rel = 'preconnect';
-      preconnectLink.href = 'https://fonts.googleapis.com';
-      document.head.appendChild(preconnectLink);
+  // Intersection Observerを使用して、リソースが視界に入った時に読み込む
+  const lazyLoadResources = () => {
+    // 遅延読み込み対象の要素を監視
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // 要素が表示領域に入った場合の処理
+          observer.unobserve(entry.target);
+          
+          // 非クリティカルなCSS/JSを読み込む
+          const targetElement = entry.target as HTMLElement;
+          if (targetElement.dataset.src) {
+            const src = targetElement.dataset.src;
+            if (src.endsWith('.js')) {
+              const script = document.createElement('script');
+              script.src = src;
+              script.async = true;
+              document.body.appendChild(script);
+            } else if (src.endsWith('.css')) {
+              const link = document.createElement('link');
+              link.rel = 'stylesheet';
+              link.href = src;
+              document.head.appendChild(link);
+            }
+          }
+        }
+      });
+    }, { rootMargin: '200px' });
+    
+    // LazyLoad対象の要素を監視
+    document.querySelectorAll('[data-lazy]').forEach(el => {
+      observer.observe(el);
     });
+  };
+
+  // 画面が表示された後に実行
+  if ('requestIdleCallback' in window) {
+    // @ts-ignore
+    window.requestIdleCallback(() => {
+      lazyLoadResources();
+    }, { timeout: 2000 });
   } else {
-    // requestIdleCallbackが利用できないブラウザ用のフォールバック
-    setTimeout(() => {
-      // 同様の処理
-    }, 1000);
+    // フォールバック
+    setTimeout(lazyLoadResources, 1000);
   }
 };
 

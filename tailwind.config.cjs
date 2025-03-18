@@ -5,7 +5,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        'yuji': ['"Yuji Syuku"', 'serif'],
+        'yuji': ['"Yuji Syuku"', '"Yuji Syuku Fallback"', 'serif'],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -104,5 +104,25 @@ module.exports = {
     extend: {
       backdropFiliter: ['responsive']
     }
-  }
+  },
+  safelist: [
+    'yuji-syuku',
+    'fonts-loaded',
+  ],
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
+  purge: {
+    enabled: process.env.NODE_ENV === 'production',
+    content: [
+      './client/index.html',
+      './client/src/**/*.{js,jsx,ts,tsx}',
+    ],
+    options: {
+      safelist: [
+        'yuji-syuku',
+        'fonts-loaded',
+      ],
+    },
+  },
 };

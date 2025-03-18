@@ -145,6 +145,11 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
   },
   css: {
-    postcss: path.resolve(__dirname, 'postcss.config.cjs')
+    postcss: path.resolve(__dirname, 'postcss.config.cjs'),
+    devSourcemap: false,
+    modules: {
+      scopeBehaviour: 'local',
+      localsConvention: 'camelCaseOnly',
+    },
   },
 });

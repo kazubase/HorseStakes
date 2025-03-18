@@ -36,16 +36,75 @@
     <link rel="preload" href="/images/horseshoe-icon2.webp" as="image" fetchpriority="high">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap&text=競馬予想馬券作成アシスタント回収率アップの戦略">
     <link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap&text=競馬予想馬券作成アシスタント回収率アップの戦略" rel="stylesheet">
+    <style>
+      /* フォントフォールバック用のスタイル */
+      @font-face {
+        font-family: 'Yuji Syuku Fallback';
+        src: local('serif');
+        size-adjust: 105%;
+        ascent-override: 90%;
+        descent-override: 10%;
+        line-gap-override: 10%;
+      }
+      
+      /* フォントロード前のスタイル */
+      .yuji-syuku {
+        font-family: 'Yuji Syuku Fallback', serif;
+      }
+      
+      /* フォントロード後のスタイル */
+      .fonts-loaded .yuji-syuku {
+        font-family: 'Yuji Syuku', serif !important;
+      }
+
+      /* 既存のfont-yujiクラスにも適用 */
+      .font-yuji {
+        font-family: 'Yuji Syuku Fallback', serif;
+      }
+      
+      /* フォントロード後のスタイル */
+      .fonts-loaded .font-yuji {
+        font-family: 'Yuji Syuku', serif !important;
+      }
+    </style>
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap&text=競馬予想馬券作成アシスタント回収率アップの戦略" rel="stylesheet">
+    </noscript>
     <script>
       // フォントのフォールバック処理
       (function() {
-        // Google Fontsの読み込み状態を監視
-        if ('fonts' in document) {
-          document.fonts.ready.then(function() {
-            document.documentElement.classList.add('fonts-loaded');
-          });
+        // クラスをすぐに追加してフォント読み込みの遅延による画面のちらつきを防止
+        if (!('fonts' in document)) {
+          document.documentElement.classList.add('fonts-loaded');
+          return;
         }
+
+        // 特定のフォントが読み込まれたかを確認
+        var font = new FontFace('Yuji Syuku', 'url(https://fonts.gstatic.com/s/yujisyuku/v5/BngNUXdTV3vO6Lw5ApOh4ljBiCt9VQ.woff2)', {
+            style: 'normal',
+            weight: '400',
+        });
+
+        // フォントの読み込みを監視
+        Promise.all([
+          document.fonts.ready,
+          font.load().then(function(loadedFont) {
+            document.fonts.add(loadedFont);
+          }).catch(function() {
+            console.log('フォントの読み込みに失敗しました。フォールバックフォントを使用します。');
+          })
+        ]).then(function() {
+          document.documentElement.classList.add('fonts-loaded');
+        });
+
+        // タイムアウト処理（5秒後に強制的にフォントを適用）
+        setTimeout(function() {
+          if (!document.documentElement.classList.contains('fonts-loaded')) {
+            document.documentElement.classList.add('fonts-loaded');
+          }
+        }, 5000);
       })();
     </script>
     <!-- React global definition to prevent dependency issues -->
