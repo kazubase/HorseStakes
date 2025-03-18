@@ -37,17 +37,37 @@ TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 
 const TabsContent = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content
-    ref={ref}
-    className={cn(
-      "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-      className
-    )}
-    {...props}
-  />
-))
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content> & {
+    lazyMount?: boolean;
+  }
+>(({ className, lazyMount = false, ...props }, ref) => {
+  const [isMounted, setIsMounted] = React.useState(!lazyMount);
+  
+  React.useEffect(() => {
+    // lazyMountがtrueの場合、タブがアクティブになったときだけマウントする
+    const isActive = (props as any)?.["data-state"] === "active";
+    if (lazyMount && isActive && !isMounted) {
+      setIsMounted(true);
+    }
+  }, [lazyMount, props, isMounted]);
+  
+  if (lazyMount && !isMounted && (props as any)?.["data-state"] !== "active") {
+    return null;
+  }
+  
+  return (
+    <TabsPrimitive.Content
+      ref={ref}
+      className={cn(
+        "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "data-[state=inactive]:opacity-0 data-[state=active]:opacity-100 transition-opacity",
+        className
+      )}
+      tabIndex={-1}
+      {...props}
+    />
+  );
+})
 TabsContent.displayName = TabsPrimitive.Content.displayName
 
 export { Tabs, TabsList, TabsTrigger, TabsContent }
