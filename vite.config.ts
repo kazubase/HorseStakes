@@ -3,6 +3,11 @@ import react from "@vitejs/plugin-react";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 
+// パフォーマンス最適化のための設定
+// 1. コードチャンキング: 遅延ロードでコードを複数の小さなチャンクに分割
+// 2. ツリーシェイキング: 未使用のコードを削除
+// 3. 圧縮最適化: terserを使用したJS圧縮
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -49,13 +54,54 @@ export default defineConfig({
     outDir: path.resolve(__dirname, 'dist/client'),
     emptyOutDir: true,
     sourcemap: false,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        pure_funcs: ['console.log'],
+        passes: 2,
+      },
+      mangle: true,
+    },
     rollupOptions: {
+      treeshake: {
+        moduleSideEffects: true,
+        propertyReadSideEffects: true,
+        tryCatchDeoptimization: false
+      },
       output: {
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]',
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || 
+              id.includes('node_modules/wouter')) {
+            return 'vendor';
+          }
+          if (id.includes('node_modules/@radix-ui') || 
+              id.includes('node_modules/lucide-react') ||
+              id.includes('node_modules/clsx') ||
+              id.includes('node_modules/class-variance-authority') ||
+              id.includes('node_modules/tailwind-merge')) {
+            return 'ui';
+          }
+          if (id.includes('node_modules/@tanstack/react-query') ||
+              id.includes('node_modules/jotai') ||
+              id.includes('node_modules/date-fns')) {
+            return 'data';
+          }
+          if (id.includes('node_modules/recharts')) {
+            return 'charts';
+          }
+          if (id.includes('node_modules/react-hook-form') ||
+              id.includes('node_modules/@hookform/resolvers') ||
+              id.includes('node_modules/zod')) {
+            return 'forms';
+          }
+        },
       },
     },
+    chunkSizeWarningLimit: 600,
   },
   css: {
     postcss: path.resolve(__dirname, 'postcss.config.cjs')
