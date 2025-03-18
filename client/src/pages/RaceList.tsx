@@ -293,9 +293,9 @@ export default function RaceList() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="flex items-center gap-1 sm:gap-1.5 md:gap-2 bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all duration-300 text-[10px] sm:text-xs md:text-sm h-7 sm:h-8 md:h-9 px-2 sm:px-3"
+                    className="flex items-center gap-1 sm:gap-1.5 md:gap-2 bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all duration-300 text-[14px] sm:text-xs md:text-sm h-8 sm:h-8 md:h-9 px-2.5 sm:px-3"
                   >
-                    <CalendarIcon className="h-3 w-3 sm:h-3.5 md:h-4 sm:w-3.5 md:w-4 text-primary" />
+                    <CalendarIcon className="h-3.5 w-3.5 sm:h-3.5 md:h-4 sm:w-3.5 md:w-4 text-primary" />
                     {format(selectedDate, 'yyyy/MM/dd')}
                   </Button>
                 </PopoverTrigger>
@@ -313,8 +313,8 @@ export default function RaceList() {
             </div>
             
             {/* 検索フィールド - モバイルでは右側 */}
-            <div className="relative w-2/5 sm:w-48 md:w-54 order-2">
-              <Search className="absolute left-2 sm:left-2.5 md:left-3 top-1/2 -translate-y-1/2 text-primary h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 z-10" />
+            <div className="relative w-1/2 sm:w-48 md:w-54 order-2">
+              <Search className="absolute left-2.5 sm:left-2.5 md:left-3 top-1/2 -translate-y-1/2 text-primary h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 z-10" />
               <Input
                 type="text"
                 placeholder="レース名で検索..."
@@ -323,7 +323,7 @@ export default function RaceList() {
                   setSearchQuery(e.target.value);
                   setShowAllVenues(e.target.value !== "");
                 }}
-                className="pl-7 sm:pl-9 md:pl-10 py-1 h-7 sm:h-9 md:h-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-1 sm:focus:ring-1 md:focus:ring-2 focus:ring-primary/20 text-[10px] sm:text-xs md:text-base"
+                className="pl-8 sm:pl-9 md:pl-10 py-1 h-8 sm:h-9 md:h-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-1 sm:focus:ring-1 md:focus:ring-2 focus:ring-primary/20 text-[14px] sm:text-xs md:text-base"
               />
             </div>
           </div>
