@@ -22,7 +22,7 @@
       default-src 'self';
       script-src 'self' 'unsafe-inline' 'unsafe-eval';
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-      font-src 'self' https://fonts.gstatic.com;
+      font-src 'self' https://fonts.gstatic.com data:;
       img-src 'self' data: blob:;
       connect-src 'self' https://horse-stakes.com;
     ">
@@ -36,9 +36,12 @@
     <link rel="preload" href="/images/horseshoe-icon2.webp" as="image" fetchpriority="high">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap&text=競馬予想馬券作成アシスタント回収率アップの戦略">
-    <link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap&text=競馬予想馬券作成アシスタント回収率アップの戦略" rel="stylesheet">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap">
     <style>
+      /* フォントの直接インポート */
+      @import url('https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap');
+      
       /* フォントフォールバック用のスタイル */
       @font-face {
         font-family: 'Yuji Syuku Fallback';
@@ -51,7 +54,7 @@
       
       /* フォントロード前のスタイル */
       .yuji-syuku {
-        font-family: 'Yuji Syuku Fallback', serif;
+        font-family: 'Yuji Syuku', 'Yuji Syuku Fallback', serif;
       }
       
       /* フォントロード後のスタイル */
@@ -61,7 +64,7 @@
 
       /* 既存のfont-yujiクラスにも適用 */
       .font-yuji {
-        font-family: 'Yuji Syuku Fallback', serif;
+        font-family: 'Yuji Syuku', 'Yuji Syuku Fallback', serif;
       }
       
       /* フォントロード後のスタイル */
@@ -70,41 +73,31 @@
       }
     </style>
     <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap&text=競馬予想馬券作成アシスタント回収率アップの戦略" rel="stylesheet">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap">
     </noscript>
     <script>
-      // フォントのフォールバック処理
+      // フォントのフォールバック処理 - シンプルかつ確実に
       (function() {
-        // クラスをすぐに追加してフォント読み込みの遅延による画面のちらつきを防止
-        if (!('fonts' in document)) {
-          document.documentElement.classList.add('fonts-loaded');
-          return;
+        // 即座にフォント読み込み済みフラグを設定
+        document.documentElement.classList.add('fonts-loaded');
+        
+        // フォームフィールドにIDを付与する補助関数
+        function addMissingIdsToFormFields() {
+          const formFields = document.querySelectorAll('input, select, textarea');
+          formFields.forEach((field, index) => {
+            if (!field.id && !field.name) {
+              const fieldType = field.type || 'field';
+              field.id = `${fieldType}-${index}`;
+            }
+          });
         }
-
-        // 特定のフォントが読み込まれたかを確認
-        var font = new FontFace('Yuji Syuku', 'url(https://fonts.gstatic.com/s/yujisyuku/v5/BngNUXdTV3vO6Lw5ApOh4ljBiCt9VQ.woff2)', {
-            style: 'normal',
-            weight: '400',
-        });
-
-        // フォントの読み込みを監視
-        Promise.all([
-          document.fonts.ready,
-          font.load().then(function(loadedFont) {
-            document.fonts.add(loadedFont);
-          }).catch(function() {
-            console.log('フォントの読み込みに失敗しました。フォールバックフォントを使用します。');
-          })
-        ]).then(function() {
-          document.documentElement.classList.add('fonts-loaded');
-        });
-
-        // タイムアウト処理（5秒後に強制的にフォントを適用）
-        setTimeout(function() {
-          if (!document.documentElement.classList.contains('fonts-loaded')) {
-            document.documentElement.classList.add('fonts-loaded');
-          }
-        }, 5000);
+        
+        // DOMContentLoaded時にフォームフィールドのID付与
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', addMissingIdsToFormFields);
+        } else {
+          addMissingIdsToFormFields();
+        }
       })();
     </script>
     <!-- React global definition to prevent dependency issues -->
