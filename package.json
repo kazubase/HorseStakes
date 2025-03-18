@@ -72,6 +72,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
+    "compression": "^1.8.0",
     "cookie-parser": "^1.4.7",
     "csurf": "^1.10.0",
     "date-fns": "^3.6.0",
@@ -122,6 +123,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/compression": "^1.7.5",
     "@types/lodash": "^4.17.15",
     "esbuild": "^0.24.0"
   },

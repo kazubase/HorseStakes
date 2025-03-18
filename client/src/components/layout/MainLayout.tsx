@@ -106,7 +106,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <Link href="/">
               <div className="flex items-center gap-3 cursor-pointer">
                 <img 
-                  src="/horseshoe-icon2.PNG" 
+                  src="/horseshoe-icon.webp" 
                   alt="馬券戦略" 
                   className="h-9 w-9 rounded-lg shadow-sm"
                   loading="lazy"

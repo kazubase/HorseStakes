@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import csrf from 'csurf';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,6 +20,21 @@ dotenv.config({
 
 const app = express();
 app.set('trust proxy', 1);  // Herokuで必要な設定
+
+// 圧縮ミドルウェアを追加
+app.use(compression({
+  // 1KB以上のレスポンスを圧縮する（デフォルトは1KB）
+  threshold: 1024,
+  // レベル6は圧縮率とパフォーマンスのバランスが良い（範囲は0-9）
+  level: 6,
+  // HTMLやJavaScript、CSSやJSONなどのテキストベースのコンテンツを圧縮
+  filter: (req, res) => {
+    const contentType = res.getHeader('Content-Type') as string;
+    if (!contentType) return false;
+    return /text|javascript|json|xml|application\/.*\+json/i.test(contentType);
+  }
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(
