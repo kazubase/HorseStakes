@@ -10,3 +10,6 @@ vite.config.ts.*
 /logs/*.log
 /logs/*.log.*
 *.log
+# ビルド出力
+/dist/
+dist/
