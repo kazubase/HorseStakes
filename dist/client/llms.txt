@@ -1,0 +1,14 @@
+# LLM Operators Configuration
+
+# 許可するLLMオペレーター
+Allow: ChatGPT
+Allow: Claude
+Allow: Gemini
+Allow: Perplexity
+Allow: Copilot
+
+# 禁止するLLMオペレーター
+Disallow: None
+
+# サイトマップ
+Sitemap: https://horse-stakes.com/sitemap.xml
