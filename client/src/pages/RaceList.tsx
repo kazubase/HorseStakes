@@ -429,6 +429,7 @@ export default function RaceList() {
         <meta name="description" content="競馬予想と馬券作成をサポートするAIアシスタント。最新レース情報から的中率と期待値を計算し、回収率アップのための最適な馬券戦略を提案します。初心者から上級者まで簡単に利用できる競馬予想ツール。" />
         <link rel="canonical" href="https://horse-stakes.com" />
         <meta name="keywords" content="競馬予想,馬券作成,回収率アップ,期待値,競馬AI,馬券予想,競馬攻略,馬券戦略,競馬必勝法,馬券購入,競馬初心者,競馬予想サイト" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
       </Helmet>
 
       <HeaderSection
