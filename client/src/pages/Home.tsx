@@ -66,8 +66,15 @@ export default function Home() {
   const horseGroups = useMemo(() => {
     if (!latestOdds || latestOdds.length === 0) return [];
     
-    // オッズでソートした馬リストを作成
-    const sortedOdds = [...latestOdds].sort((a, b) => parseFloat(a.odds) - parseFloat(b.odds));
+    // オッズでソートした馬リストを作成（NaNを除外）
+    const sortedOdds = [...latestOdds]
+      .filter(odd => !isNaN(parseFloat(odd.odds)))
+      .sort((a, b) => parseFloat(a.odds) - parseFloat(b.odds));
+    
+    // NaNのオッズを持つ馬のIDを取得
+    const nanHorseIds = latestOdds
+      .filter(odd => isNaN(parseFloat(odd.odds)))
+      .map(odd => Number(odd.horseId));
     
     const groups: number[][] = [];
     let currentGroup: number[] = [];
@@ -76,17 +83,17 @@ export default function Home() {
     // 相対的な差分の閾値を動的に計算
     // レースのオッズ分布に基づいて閾値を調整
     const calculateDynamicThreshold = () => {
-      // 最小オッズと最大オッズを取得
-      const minOdds = parseFloat(sortedOdds[0].odds);
-      const maxOdds = parseFloat(sortedOdds[sortedOdds.length - 1].odds);
+      // 最小オッズと最大オッズを取得（NaNを除外）
+      const validOdds = sortedOdds.map(odd => parseFloat(odd.odds));
+      const minOdds = Math.min(...validOdds);
+      const maxOdds = Math.max(...validOdds);
       
       // オッズの範囲が広い場合は閾値を大きく、狭い場合は小さくする
       const oddsRange = maxOdds - minOdds;
       
       // オッズの標準偏差を計算
-      const oddsValues = sortedOdds.map(odd => parseFloat(odd.odds));
-      const avgOdds = oddsValues.reduce((sum, odds) => sum + odds, 0) / oddsValues.length;
-      const variance = oddsValues.reduce((sum, odds) => sum + Math.pow(odds - avgOdds, 2), 0) / oddsValues.length;
+      const avgOdds = validOdds.reduce((sum, odds) => sum + odds, 0) / validOdds.length;
+      const variance = validOdds.reduce((sum, odds) => sum + Math.pow(odds - avgOdds, 2), 0) / validOdds.length;
       const stdDev = Math.sqrt(variance);
       
       // 標準偏差と範囲に基づいて閾値を計算
@@ -143,6 +150,11 @@ export default function Home() {
     // 最後のグループを追加
     if (currentGroup.length > 0) {
       groups.push(currentGroup);
+    }
+    
+    // NaNのオッズを持つ馬を最後のグループとして追加
+    if (nanHorseIds.length > 0) {
+      groups.push(nanHorseIds);
     }
     
     return groups;
