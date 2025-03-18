@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import * as ReactJSXRuntime from 'react/jsx-runtime'
 import App from './App'
 import './index.css'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -7,9 +8,14 @@ import { queryClient } from './lib/queryClient'
 import { HelmetProvider } from 'react-helmet-async'
 import { Toaster } from "@/components/ui/toaster";
 
-// React18の新機能を使用するための設定
+// React関連のグローバル設定
+// Reactとその依存関係をグローバルに公開
+window.React = React;
+// JSX Runtimeもグローバルに公開
 // @ts-ignore
-window.React = React; // グローバルにReactを割り当て（RadixUIの依存解決のため）
+window.ReactJSXRuntime = ReactJSXRuntime;
+// @ts-ignore
+window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { isDisabled: true };
 
 // CSRFトークンを設定
 const setCsrfToken = () => {

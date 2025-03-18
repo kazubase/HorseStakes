@@ -8,7 +8,18 @@ const Loading = () => (
   </div>
 );
 
-// 遅延ロード用にimportを変更
+// 遅延ロードの依存関係を明示的に解決
+// ReactとRadix UIの依存関係を事前読み込み
+const preloadReactDependencies = () => {
+  // 依存関係のインポートを強制
+  import('react/jsx-runtime');
+  import('@radix-ui/react-slot');
+};
+
+// 依存関係を事前読み込み
+preloadReactDependencies();
+
+// 遅延ロード用にimportを変更（依存関係が解決された後に実行）
 const Home = lazy(() => import("@/pages/Home"));
 const RaceList = lazy(() => import("@/pages/RaceList"));
 const Strategy = lazy(() => import("@/pages/Strategy"));

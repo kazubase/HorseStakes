@@ -48,6 +48,21 @@
         }
       })();
     </script>
+    <!-- React global definition to prevent dependency issues -->
+    <script>
+      window.__reactLoaded = false;
+      Object.defineProperty(window, 'React', {
+        configurable: true,
+        set: function(value) {
+          delete window.React;
+          window.React = value;
+          window.__reactLoaded = true;
+        },
+        get: function() {
+          return window.__reactLoaded ? window.React : undefined;
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

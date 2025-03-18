@@ -96,55 +96,49 @@ export default defineConfig({
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]',
-        manualChunks(id) {
-          // Reactとその依存関係は全て同じチャンクに
-          if (id.includes('node_modules/react') || 
-              id.includes('node_modules/react-dom') ||
-              id.includes('node_modules/scheduler') ||
-              id.includes('node_modules/@radix-ui/react-primitive') ||
-              id.includes('node_modules/wouter')) {
-            return 'vendor';
-          }
-          
-          // Radix UIのコアユーティリティを一つのチャンクに
-          if (id.includes('node_modules/@radix-ui/react-slot') ||
-              id.includes('node_modules/@radix-ui/react-context') ||
-              id.includes('node_modules/@radix-ui/react-compose-refs') ||
-              id.includes('node_modules/@radix-ui/react-use-callback-ref') ||
-              id.includes('node_modules/@radix-ui/react-use-controllable-state') ||
-              id.includes('node_modules/@radix-ui/react-id') ||
-              id.includes('node_modules/@radix-ui/react-direction') ||
-              id.includes('node_modules/@radix-ui/react-use-layout-effect')) {
-            return 'react-utils';
-          }
-          
-          // UIコンポーネントライブラリをより大きなグループに
-          if (id.includes('node_modules/@radix-ui') || 
-              id.includes('node_modules/lucide-react') ||
-              id.includes('node_modules/clsx') ||
-              id.includes('node_modules/class-variance-authority') ||
-              id.includes('node_modules/tailwind-merge')) {
-            return 'ui';
-          }
-          
-          // データ処理ライブラリ
-          if (id.includes('node_modules/@tanstack/react-query') ||
-              id.includes('node_modules/jotai') ||
-              id.includes('node_modules/date-fns')) {
-            return 'data';
-          }
-          
-          // グラフライブラリ
-          if (id.includes('node_modules/recharts')) {
-            return 'charts';
-          }
-          
-          // フォームライブラリ
-          if (id.includes('node_modules/react-hook-form') ||
-              id.includes('node_modules/@hookform/resolvers') ||
-              id.includes('node_modules/zod')) {
-            return 'forms';
-          }
+        inlineDynamicImports: false,
+        experimentalMinChunkSize: 10000,
+        manualChunks: {
+          'react-vendor': [
+            'react', 
+            'react-dom', 
+            'react/jsx-runtime',
+            'scheduler',
+            'wouter',
+            '@radix-ui/react-primitive',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-context',
+            '@radix-ui/react-compose-refs',
+            '@radix-ui/react-use-callback-ref',
+            '@radix-ui/react-use-controllable-state',
+            '@radix-ui/react-id',
+            '@radix-ui/react-direction',
+            '@radix-ui/react-use-layout-effect'
+          ],
+          'ui': [
+            '@radix-ui/react-accordion',
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-label',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tooltip',
+            'class-variance-authority',
+            'clsx',
+            'tailwind-merge',
+            'lucide-react'
+          ],
+          'data': [
+            '@tanstack/react-query',
+            'jotai',
+            'date-fns'
+          ],
+          'charts': ['recharts'],
+          'forms': [
+            'react-hook-form',
+            '@hookform/resolvers',
+            'zod'
+          ]
         },
       },
     },
