@@ -690,7 +690,7 @@ export default function Home() {
                   </div>
                 ) : (
                   <>
-                    <h1 className="text-xl sm:text-2xl font-bold mb-2">{race?.name}</h1>
+                    <h1 className="text-base sm:text-2xl font-bold mb-2">{race?.name}</h1>
                     <p className="text-sm sm:text-base text-muted-foreground">
                       {format(new Date(race?.startTime!), 'yyyy年M月d日')} {race?.venue} {format(new Date(race?.startTime!), 'HH:mm')}発走
                     </p>
@@ -699,7 +699,7 @@ export default function Home() {
               </div>
               {!raceLoading && (
                 <div className="text-right">
-                  <p className="text-lg font-semibold">
+                  <p className="text-sm sm:text-base font-semibold">
                     {race?.status === 'done' ? '発走済' : null}
                   </p>
                 </div>
@@ -876,7 +876,7 @@ export default function Home() {
               {/* 右カラム: オッズ推移グラフ */}
               <Card className="lg:col-span-6 bg-background/50 backdrop-blur-sm overflow-hidden">
                 <CardContent className="p-2 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between p-2 sm:p-0 sm:mb-4">
                     <h2 className="text-lg sm:text-xl font-semibold">オッズ推移</h2>
                     <div className="text-xs text-muted-foreground">
                       {formattedOddsData.length > 0 && 
