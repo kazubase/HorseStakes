@@ -15,7 +15,26 @@ export default defineConfig({
   plugins: [react()],
   // 依存関係の最適化
   optimizeDeps: {
-    include: ['react', 'react-dom', 'wouter']
+    include: [
+      'react', 
+      'react-dom', 
+      'wouter',
+      '@radix-ui/react-slot',
+      '@radix-ui/react-primitive'
+    ],
+    esbuildOptions: {
+      define: {
+        global: 'globalThis',
+      },
+    },
+  },
+  esbuild: {
+    // グローバルな名前の定義
+    define: {
+      'process.env.NODE_ENV': JSON.stringify('production')
+    },
+    // トランスパイルの対象設定
+    target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
   },
   server: {
     hmr: {
@@ -78,34 +97,49 @@ export default defineConfig({
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]',
         manualChunks(id) {
+          // Reactとその依存関係は全て同じチャンクに
           if (id.includes('node_modules/react') || 
               id.includes('node_modules/react-dom') ||
               id.includes('node_modules/scheduler') ||
+              id.includes('node_modules/@radix-ui/react-primitive') ||
               id.includes('node_modules/wouter')) {
             return 'vendor';
           }
+          
+          // Radix UIのコアユーティリティを一つのチャンクに
+          if (id.includes('node_modules/@radix-ui/react-slot') ||
+              id.includes('node_modules/@radix-ui/react-context') ||
+              id.includes('node_modules/@radix-ui/react-compose-refs') ||
+              id.includes('node_modules/@radix-ui/react-use-callback-ref') ||
+              id.includes('node_modules/@radix-ui/react-use-controllable-state') ||
+              id.includes('node_modules/@radix-ui/react-id') ||
+              id.includes('node_modules/@radix-ui/react-direction') ||
+              id.includes('node_modules/@radix-ui/react-use-layout-effect')) {
+            return 'react-utils';
+          }
+          
+          // UIコンポーネントライブラリをより大きなグループに
           if (id.includes('node_modules/@radix-ui') || 
               id.includes('node_modules/lucide-react') ||
               id.includes('node_modules/clsx') ||
               id.includes('node_modules/class-variance-authority') ||
               id.includes('node_modules/tailwind-merge')) {
-            if (id.includes('node_modules/@radix-ui/react-') &&
-                !id.includes('node_modules/@radix-ui/react-primitive')) {
-              const match = id.match(/@radix-ui\/react-([^/]+)/);
-              if (match && match[1]) {
-                return `ui-${match[1]}`;
-              }
-            }
-            return 'ui-base';
+            return 'ui';
           }
+          
+          // データ処理ライブラリ
           if (id.includes('node_modules/@tanstack/react-query') ||
               id.includes('node_modules/jotai') ||
               id.includes('node_modules/date-fns')) {
             return 'data';
           }
+          
+          // グラフライブラリ
           if (id.includes('node_modules/recharts')) {
             return 'charts';
           }
+          
+          // フォームライブラリ
           if (id.includes('node_modules/react-hook-form') ||
               id.includes('node_modules/@hookform/resolvers') ||
               id.includes('node_modules/zod')) {

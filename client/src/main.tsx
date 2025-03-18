@@ -7,6 +7,10 @@ import { queryClient } from './lib/queryClient'
 import { HelmetProvider } from 'react-helmet-async'
 import { Toaster } from "@/components/ui/toaster";
 
+// React18の新機能を使用するための設定
+// @ts-ignore
+window.React = React; // グローバルにReactを割り当て（RadixUIの依存解決のため）
+
 // CSRFトークンを設定
 const setCsrfToken = () => {
   const token = document.cookie
