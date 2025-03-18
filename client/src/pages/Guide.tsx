@@ -151,7 +151,7 @@ export default function Guide() {
           <div className="hidden md:flex items-center gap-3 mt-12 text-muted-foreground">
             <div className="bg-primary/10 p-3 rounded-full">
               <img 
-                src="/src/assets/images/horseshoe-icon2.webp" 
+                src="/images/horseshoe-icon.webp" 
                 alt="馬蹄アイコン" 
                 className="h-6 w-6"
               />
@@ -171,7 +171,7 @@ export default function Guide() {
                 <div className="group">
                   <div className="overflow-hidden rounded-lg border border-primary/10 transition-all duration-300 group-hover:border-primary/20">
                     <img 
-                      src="/src/assets/images/betting-generation.webp" 
+                      src="/images/betting-generation.webp" 
                       alt="馬券候補の生成プロセス" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
                     />
@@ -184,7 +184,7 @@ export default function Guide() {
                 <div className="group">
                   <div className="overflow-hidden rounded-lg border border-primary/10 transition-all duration-300 group-hover:border-primary/20">
                     <img 
-                      src="/src/assets/images/ai-analysis.webp" 
+                      src="/images/ai-analysis.webp" 
                       alt="AI分析プロセス" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
                     />
@@ -197,7 +197,7 @@ export default function Guide() {
                 <div className="group">
                   <div className="overflow-hidden rounded-lg border border-primary/10 transition-all duration-300 group-hover:border-primary/20">
                     <img 
-                      src="/src/assets/images/fund-optimization.webp" 
+                      src="/images/fund-optimization.webp" 
                       alt="資金配分の最適化プロセス" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
                     />
