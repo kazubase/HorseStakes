@@ -13,6 +13,10 @@ const __dirname = dirname(__filename);
 
 export default defineConfig({
   plugins: [react()],
+  // 依存関係の最適化
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'wouter']
+  },
   server: {
     hmr: {
       protocol: 'ws',
@@ -75,6 +79,8 @@ export default defineConfig({
         assetFileNames: 'assets/[name].[hash].[ext]',
         manualChunks(id) {
           if (id.includes('node_modules/react') || 
+              id.includes('node_modules/react-dom') ||
+              id.includes('node_modules/scheduler') ||
               id.includes('node_modules/wouter')) {
             return 'vendor';
           }
@@ -83,7 +89,14 @@ export default defineConfig({
               id.includes('node_modules/clsx') ||
               id.includes('node_modules/class-variance-authority') ||
               id.includes('node_modules/tailwind-merge')) {
-            return 'ui';
+            if (id.includes('node_modules/@radix-ui/react-') &&
+                !id.includes('node_modules/@radix-ui/react-primitive')) {
+              const match = id.match(/@radix-ui\/react-([^/]+)/);
+              if (match && match[1]) {
+                return `ui-${match[1]}`;
+              }
+            }
+            return 'ui-base';
           }
           if (id.includes('node_modules/@tanstack/react-query') ||
               id.includes('node_modules/jotai') ||
