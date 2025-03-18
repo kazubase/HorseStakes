@@ -576,6 +576,7 @@ export default function PredictionSettings() {
               !!error
             }
             className="relative overflow-hidden group sm:size-lg size-xs sm:px-4 px-2"
+            aria-label="馬券分析画面へ進む"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <span className="relative flex items-center gap-1">
@@ -587,33 +588,39 @@ export default function PredictionSettings() {
           </Button>
         </div>
 
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid grid-cols-3 w-full bg-background/50 backdrop-blur-sm border border-primary/10 p-0 rounded-xl shadow-sm overflow-hidden">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full" aria-label="予想設定タブ">
+          <TabsList className="grid grid-cols-3 w-full bg-background/50 backdrop-blur-sm border border-primary/10 p-0 rounded-xl shadow-sm overflow-hidden" aria-label="予想設定タブリスト">
             <TabsTrigger 
               value="win" 
               className="flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+              aria-controls="win-tab"
+              aria-selected={activeTab === "win"}
             >
-              <Trophy className="h-4 w-4 transition-transform data-[state=active]:scale-110" />
+              <Trophy className="h-4 w-4 transition-transform data-[state=active]:scale-110" aria-hidden="true" />
               <span className="font-medium">単勝確率</span>
             </TabsTrigger>
             <TabsTrigger 
               value="place" 
               className="flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+              aria-controls="place-tab"
+              aria-selected={activeTab === "place"}
             >
-              <Award className="h-4 w-4 transition-transform data-[state=active]:scale-110" />
+              <Award className="h-4 w-4 transition-transform data-[state=active]:scale-110" aria-hidden="true" />
               <span className="font-medium">複勝確率</span>
             </TabsTrigger>
             <TabsTrigger 
               value="budget" 
               className="flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+              aria-controls="budget-tab"
+              aria-selected={activeTab === "budget"}
             >
-              <Wallet className="h-4 w-4 transition-transform data-[state=active]:scale-110" />
+              <Wallet className="h-4 w-4 transition-transform data-[state=active]:scale-110" aria-hidden="true" />
               <span className="font-medium">予算設定</span>
             </TabsTrigger>
           </TabsList>
           
           {/* 単勝確率タブ */}
-          <TabsContent value="win" className="space-y-4 mt-4">
+          <TabsContent id="win-tab" value="win" className="space-y-4 mt-4" role="tabpanel" aria-labelledby="win-tab">
             <div className="sticky top-4 z-50 h-[72px]">
               <AnimatePresence>
                 {horses && Math.abs(winTotalProbability - 100) > 0.1 && (
@@ -624,13 +631,13 @@ export default function PredictionSettings() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <Alert variant="default" className="border border-emerald-500/20 bg-emerald-500/5 shadow-lg backdrop-blur-sm">
-                      <AlertCircle className="h-4 w-4 text-emerald-400" />
-                      <AlertDescription className="flex items-center justify-between text-emerald-100">
+                    <Alert variant="default" className="border border-emerald-500/30 bg-emerald-500/10 shadow-lg backdrop-blur-sm">
+                      <AlertCircle className="h-4 w-4 text-emerald-500" />
+                      <AlertDescription className="flex items-center justify-between text-emerald-50">
                         <span>
                           全ての確率の合計が100%になるように調整してください
                           <br />
-                          <span className="text-sm text-emerald-400/80">
+                          <span className="text-sm text-emerald-400">
                             現在の合計: {winTotalProbability.toFixed(1)}%
                           </span>
                         </span>
@@ -638,7 +645,8 @@ export default function PredictionSettings() {
                           variant="outline" 
                           size="sm"
                           onClick={normalizeWinProbabilities}
-                          className="border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-100 whitespace-nowrap"
+                          className="border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap"
+                          aria-label="確率を一括調整する"
                         >
                           一括調整
                         </Button>
@@ -671,10 +679,11 @@ export default function PredictionSettings() {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0"
+                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0 border-primary/40"
                             onClick={() => handleWinProbabilityIncrement(horse.id, -5)}
+                            aria-label={`${horse.name}の確率を5%減らす`}
                           >
-                            <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
                           </Button>
                           
                           <div className="flex items-center flex-1 mx-0.5">
@@ -700,10 +709,11 @@ export default function PredictionSettings() {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0"
+                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0 border-primary/40"
                             onClick={() => handleWinProbabilityIncrement(horse.id, 5)}
+                            aria-label={`${horse.name}の確率を5%増やす`}
                           >
-                            <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
                           </Button>
                         </div>
                       </div>
@@ -714,14 +724,21 @@ export default function PredictionSettings() {
                         max={100}
                         min={0}
                         step={1}
+                        aria-label={`${horse.name}の単勝確率設定`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={winProbabilities[horse.id] || 0}
                         className="relative
                           [&_[role=slider]]:h-4.5 
                           [&_[role=slider]]:w-4.5 
                           [&_[role=slider]]:hover:h-5 
                           [&_[role=slider]]:hover:w-5 
+                          [&_[role=slider]]:bg-primary
+                          [&_[role=slider]]:border-2
+                          [&_[role=slider]]:border-background
                           [&_.track]:h-1.5
-                          [&_.track]:bg-primary/20
-                          [&_.range]:bg-primary/40"
+                          [&_.track]:bg-primary/30
+                          [&_.range]:bg-primary/60"
                       />
                     </div>
                   ))}
@@ -731,7 +748,7 @@ export default function PredictionSettings() {
           </TabsContent>
           
           {/* 複勝確率タブ */}
-          <TabsContent value="place" className="space-y-4 mt-4">
+          <TabsContent id="place-tab" value="place" className="space-y-4 mt-4" role="tabpanel" aria-labelledby="place-tab">
             <div className="sticky top-4 z-50 h-[72px]">
               <AnimatePresence>
                 {horses && Math.abs(placeTotalProbability - getRequiredTotalProbability(horses.length)) > 0.1 && (
@@ -742,13 +759,13 @@ export default function PredictionSettings() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <Alert variant="default" className="border border-emerald-500/20 bg-emerald-500/5 shadow-lg backdrop-blur-sm">
-                      <AlertCircle className="h-4 w-4 text-emerald-400" />
-                      <AlertDescription className="flex items-center justify-between text-emerald-100">
+                    <Alert variant="default" className="border border-emerald-500/30 bg-emerald-500/10 shadow-lg backdrop-blur-sm">
+                      <AlertCircle className="h-4 w-4 text-emerald-500" />
+                      <AlertDescription className="flex items-center justify-between text-emerald-50">
                         <span>
                           全ての確率の合計が{getRequiredTotalProbability(horses.length)}%になるように調整してください
                           <br />
-                          <span className="text-sm text-emerald-400/80">
+                          <span className="text-sm text-emerald-400">
                             現在の合計: {placeTotalProbability.toFixed(1)}%
                           </span>
                         </span>
@@ -756,7 +773,8 @@ export default function PredictionSettings() {
                           variant="outline" 
                           size="sm"
                           onClick={normalizePlaceProbabilities}
-                          className="border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-100 whitespace-nowrap"
+                          className="border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap"
+                          aria-label="複勝確率を一括調整する"
                         >
                           一括調整
                         </Button>
@@ -789,10 +807,11 @@ export default function PredictionSettings() {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0"
+                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0 border-primary/40"
                             onClick={() => handlePlaceProbabilityIncrement(horse.id, -5)}
+                            aria-label={`${horse.name}の複勝確率を5%減らす`}
                           >
-                            <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
                           </Button>
                           
                           <div className="flex items-center flex-1 mx-0.5">
@@ -818,10 +837,11 @@ export default function PredictionSettings() {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0"
+                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0 border-primary/40"
                             onClick={() => handlePlaceProbabilityIncrement(horse.id, 5)}
+                            aria-label={`${horse.name}の複勝確率を5%増やす`}
                           >
-                            <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
                           </Button>
                         </div>
                       </div>
@@ -832,14 +852,21 @@ export default function PredictionSettings() {
                         max={100}
                         min={0}
                         step={1}
+                        aria-label={`${horse.name}の複勝確率設定`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={placeProbabilities[horse.id] || 0}
                         className="relative
                           [&_[role=slider]]:h-4.5 
                           [&_[role=slider]]:w-4.5 
                           [&_[role=slider]]:hover:h-5 
                           [&_[role=slider]]:hover:w-5 
+                          [&_[role=slider]]:bg-primary
+                          [&_[role=slider]]:border-2
+                          [&_[role=slider]]:border-background
                           [&_.track]:h-1.5
-                          [&_.track]:bg-primary/20
-                          [&_.range]:bg-primary/40"
+                          [&_.track]:bg-primary/30
+                          [&_.range]:bg-primary/60"
                       />
                     </div>
                   ))}
@@ -849,7 +876,7 @@ export default function PredictionSettings() {
           </TabsContent>
           
           {/* 予算設定タブ */}
-          <TabsContent value="budget" className="space-y-4 mt-4">
+          <TabsContent id="budget-tab" value="budget" className="space-y-4 mt-4" role="tabpanel" aria-labelledby="budget-tab">
             {error && (
               <Alert variant="destructive" className="bg-destructive/10 border-destructive/20">
                 <AlertCircle className="h-4 w-4" />
@@ -881,6 +908,7 @@ export default function PredictionSettings() {
                             size="icon" 
                             className="h-4 w-4 p-0 hover:bg-transparent"
                             style={{ touchAction: 'none' }}
+                            aria-label="購入予算についての情報"
                           >
                             <Info className="h-4 w-4 text-muted-foreground" />
                           </Button>
@@ -910,6 +938,7 @@ export default function PredictionSettings() {
                       onBlur={(e) => handleBudgetBlur(e.target.value)}
                       min={0}
                       step={100}
+                      aria-label="購入予算（円）"
                       className="text-lg bg-background/80 backdrop-blur-sm border-primary/10 focus:border-primary/30 transition-all"
                     />
                     <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -933,7 +962,7 @@ export default function PredictionSettings() {
                           className="cursor-pointer touch-none"
                           asChild
                         >
-                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-transparent">
+                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-transparent" aria-label="リスクリワードについての情報">
                             <Info className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </TooltipTrigger>
@@ -963,6 +992,10 @@ export default function PredictionSettings() {
                       min={2.0}
                       max={20.0}
                       step={1.0}
+                      aria-label="リスクリワード設定"
+                      aria-valuemin={2.0}
+                      aria-valuemax={20.0}
+                      aria-valuenow={riskRatio}
                       className="my-4 
                         [&_[role=slider]]:h-5 
                         [&_[role=slider]]:w-5 
@@ -973,9 +1006,9 @@ export default function PredictionSettings() {
                         [&_[role=slider]]:border-2
                         [&_[role=slider]]:border-background
                         [&_[role=slider]]:shadow-lg
-                        [&_.range]:bg-primary/50
+                        [&_.range]:bg-primary/60
                         [&_.track]:h-2 
-                        [&_.track]:bg-primary/20
+                        [&_.track]:bg-primary/30
                         [&_.track]:pointer-events-none"
                     />
                     <p className="text-sm font-medium text-right text-primary">
