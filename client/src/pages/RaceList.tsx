@@ -266,26 +266,26 @@ export default function RaceList() {
       </Helmet>
 
       {/* ヘッダーセクション */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-primary/10 p-3 sm:p-4 md:p-6 mb-3 sm:mb-5 md:mb-8 shadow-sm">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-primary/10 p-3 sm:p-5 md:p-6 mb-3 sm:mb-6 md:mb-8 shadow-sm">
         <div className="absolute inset-0 bg-grid-primary/5 [mask-image:linear-gradient(to_bottom,transparent_20%,black_70%)]" />
-        <div className="relative flex justify-between items-start gap-2 sm:gap-3 md:gap-5">
+        <div className="relative flex justify-between items-start gap-2 sm:gap-4 md:gap-5">
           {/* タイトルセクション - モバイルでは非表示 */}
           <div className="hidden sm:flex flex-col gap-1 md:gap-2">
             <div className="flex items-center gap-2 md:gap-3">
-              <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent whitespace-nowrap">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent whitespace-nowrap">
                 レース一覧
               </h1>
-              <span className="text-xs text-muted-foreground bg-primary/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full whitespace-nowrap">
+              <span className="text-xs sm:text-sm text-muted-foreground bg-primary/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full whitespace-nowrap">
                 競馬予想・回収率アップ
               </span>
             </div>
-            <p className="text-xs md:text-sm text-muted-foreground max-w-md">
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-md">
               AIで的中率と期待値を最適化
             </p>
           </div>
           
           {/* カレンダーと検索フィールド - フレキシブルレイアウト */}
-          <div className="flex w-full sm:w-auto justify-between sm:justify-end items-center gap-2">
+          <div className="flex w-full sm:w-auto justify-between sm:justify-end items-center gap-2 sm:gap-3">
             {/* カレンダー - モバイルでは左側 */}
             <div className="order-1">
               <Popover>
@@ -293,7 +293,7 @@ export default function RaceList() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="flex items-center gap-1 md:gap-2 bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all duration-300 text-[10px] sm:text-xs md:text-sm h-7 sm:h-8 md:h-9 px-2 sm:px-3"
+                    className="flex items-center gap-1 sm:gap-1.5 md:gap-2 bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all duration-300 text-[10px] sm:text-xs md:text-sm h-7 sm:h-8 md:h-9 px-2 sm:px-3"
                   >
                     <CalendarIcon className="h-3 w-3 sm:h-3.5 md:h-4 sm:w-3.5 md:w-4 text-primary" />
                     {format(selectedDate, 'yyyy/MM/dd')}
@@ -313,17 +313,17 @@ export default function RaceList() {
             </div>
             
             {/* 検索フィールド - モバイルでは右側 */}
-            <div className="relative w-1/2 sm:w-52 md:w-72 order-2">
+            <div className="relative w-2/5 sm:w-48 md:w-54 order-2">
               <Search className="absolute left-2 sm:left-2.5 md:left-3 top-1/2 -translate-y-1/2 text-primary h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 z-10" />
               <Input
                 type="text"
-                placeholder="レース名またはIDで検索..."
+                placeholder="レース名で検索..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setShowAllVenues(e.target.value !== "");
                 }}
-                className="pl-7 sm:pl-8 md:pl-10 py-1 h-7 sm:h-8 md:h-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-1 sm:focus:ring-1 md:focus:ring-2 focus:ring-primary/20 text-[10px] sm:text-xs md:text-base"
+                className="pl-7 sm:pl-9 md:pl-10 py-1 h-7 sm:h-9 md:h-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-1 sm:focus:ring-1 md:focus:ring-2 focus:ring-primary/20 text-[10px] sm:text-xs md:text-base"
               />
             </div>
           </div>
@@ -331,7 +331,7 @@ export default function RaceList() {
         
         {/* 平日表示の注釈 - モバイルでは非表示 */}
         {selectedDate.getDay() >= 1 && selectedDate.getDay() <= 5 && (
-          <div className="hidden sm:block mt-2">
+          <div className="hidden sm:block mt-2 sm:mt-3">
             <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full whitespace-nowrap">
               ※平日は直前の週末のレースを表示
             </span>
@@ -345,11 +345,11 @@ export default function RaceList() {
           onValueChange={setSelectedVenue}
           className="w-full"
         >
-          <div className="relative mb-3 sm:mb-4 md:mb-6 -mx-4 sm:mx-0">
+          <div className="relative mb-3 sm:mb-5 md:mb-6 -mx-4 sm:mx-0">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="px-4 sm:px-0">
                 <TabsList 
-                  className="bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/70 rounded-lg sm:rounded-lg md:rounded-xl p-1 sm:p-1 md:p-1.5 flex mx-auto border border-primary/20 shadow-sm"
+                  className="bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/70 rounded-lg sm:rounded-lg md:rounded-xl p-1 sm:p-1.5 md:p-1.5 flex mx-auto border border-primary/20 shadow-sm"
                   style={{ minWidth: 'min-content' }}
                 >
                   {venues.map(venue => (
@@ -391,25 +391,25 @@ export default function RaceList() {
                       <CardContent className="relative p-3 sm:p-4 md:p-5">
                         <div className="flex justify-between items-center">
                           <div>
-                            <h3 className="font-bold text-base sm:text-base md:text-lg text-foreground/90 group-hover:text-primary transition-colors duration-300">
+                            <h3 className="font-bold text-base sm:text-lg md:text-lg text-foreground/90 group-hover:text-primary transition-colors duration-300">
                               {race.name}
                             </h3>
-                            <p className="text-xs sm:text-xs md:text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                            <p className="text-xs sm:text-sm md:text-sm text-muted-foreground flex items-center gap-2 mt-1">
                               <span className="text-muted-foreground">
                                 {format(new Date(race.startTime), 'MM/dd(E)', { locale: ja })}
                               </span>
-                              <span className="bg-primary/15 px-2 sm:px-2 md:px-2.5 py-0.5 rounded-full text-primary font-medium">
+                              <span className="bg-primary/15 px-2 sm:px-2.5 md:px-2.5 py-0.5 rounded-full text-primary font-medium">
                                 {format(new Date(race.startTime), 'HH:mm')}
                               </span>
                             </p>
                           </div>
                           <div className="text-right">
                             {race.status === 'done' && (
-                              <p className="text-xs sm:text-xs md:text-sm font-medium text-foreground/80 bg-primary/10 px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-0.5 md:py-1 rounded-full">
+                              <p className="text-xs sm:text-sm md:text-sm font-medium text-foreground/80 bg-primary/10 px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-0.5 md:py-1 rounded-full">
                                 発走済
                               </p>
                             )}
-                            <p className="text-[10px] sm:text-[10px] md:text-xs text-muted-foreground mt-1 sm:mt-1 md:mt-2">
+                            <p className="text-[10px] sm:text-xs md:text-xs text-muted-foreground mt-1 sm:mt-1.5 md:mt-2">
                               ID: {race.id}
                             </p>
                           </div>
