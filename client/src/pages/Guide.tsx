@@ -13,7 +13,7 @@ export default function Guide() {
       </Helmet>
 
       {/* ヘッダーセクション */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-primary/10 p-6 mb-8 shadow-sm">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-t from-background to-primary/10 p-6 mb-8 shadow-sm">
         <div className="absolute inset-0 bg-grid-primary/5 [mask-image:linear-gradient(to_bottom,transparent_20%,black_70%)]" />
         <div className="relative flex flex-col gap-3">
           <div className="flex items-center gap-2">

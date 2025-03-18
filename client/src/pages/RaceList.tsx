@@ -128,7 +128,7 @@ const HeaderSection = memo(({
   setSearchQuery: (query: string) => void, 
   setShowAllVenues: (show: boolean) => void 
 }) => (
-  <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-primary/10 p-3 sm:p-5 md:p-6 mb-3 sm:mb-6 md:mb-8 shadow-sm">
+  <div className="relative overflow-hidden rounded-xl bg-gradient-to-t from-background to-primary/10 p-3 sm:p-5 md:p-6 mb-3 sm:mb-6 md:mb-8 shadow-sm">
     <div className="absolute inset-0 bg-grid-primary/5 [mask-image:linear-gradient(to_bottom,transparent_20%,black_70%)]" />
     <div className="relative flex justify-between items-start gap-2 sm:gap-4 md:gap-5">
       {/* タイトルセクション - モバイルでは非表示 */}
@@ -464,8 +464,8 @@ export default function RaceList() {
                 </TabsList>
               </div>
             </div>
-            <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-10 md:w-12 bg-gradient-to-r from-background via-background/100 to-transparent pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-10 md:w-12 bg-gradient-to-l from-background via-background/100 to-transparent pointer-events-none" />
+            <div className="absolute left-0 top-0 bottom-0 w-6 sm:w-3 md:w-3 bg-gradient-to-r from-background via-background/100 to-background pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-6 sm:w-3 md:w-3 bg-gradient-to-l from-background via-background/100 to-background pointer-events-none" />
           </div>
 
           {venues.map(venue => (
