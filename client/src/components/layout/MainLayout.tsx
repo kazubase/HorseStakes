@@ -118,7 +118,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   decoding="async"
                   {...{ fetchpriority: "high" }}
                 />
-                <span className="font-bold text-xl font-yuji yuji-syuku">馬券戦略</span>
+                <span className="font-bold text-2xl font-yuji yuji-syuku">馬券戦略</span>
               </div>
             </Link>
           </div>
