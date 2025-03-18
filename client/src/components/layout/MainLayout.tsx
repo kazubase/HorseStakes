@@ -129,7 +129,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   // メインコンテンツのクラス
   const mainContentClass = useMemo(() => 
-    `flex-1 container mx-auto px-4 py-6 ${isRaceListPage ? '' : 'mt-10'}`,
+    `flex-1 container mx-auto px-4 py-6 ${isRaceListPage ? '' : 'mt-4'}`,
     [isRaceListPage]
   );
 

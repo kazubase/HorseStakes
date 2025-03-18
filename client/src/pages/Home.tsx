@@ -673,12 +673,12 @@ export default function Home() {
 
   return (
     <MainLayout>
-      <div className="space-y-4 sm:space-y-6 relative min-h-screen pb-8">
+      <div className="space-y-4 sm:space-y-5 relative min-h-screen pb-8">
         <div className="absolute inset-0 from-primary/10 via-background/5 to-transparent opacity-30 h-full w-full" />
         
         {/* レース情報カード - 最初に表示する重要コンテンツ */}
         <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5 relative z-10">
-          <CardContent className="p-4 sm:p-6">
+          <CardContent className="p-3 sm:p-5">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
             <div className="flex justify-between items-start relative">
               <div>
@@ -690,11 +690,10 @@ export default function Home() {
                   </div>
                 ) : (
                   <>
-                    <h1 className="text-2xl font-bold mb-2">{race?.name}</h1>
-                    <p className="text-muted-foreground">
-                      {format(new Date(race?.startTime!), 'yyyy年M月d日 HH:mm')} 発走
+                    <h1 className="text-xl sm:text-2xl font-bold mb-2">{race?.name}</h1>
+                    <p className="text-sm sm:text-base text-muted-foreground">
+                      {format(new Date(race?.startTime!), 'yyyy年M月d日')} {race?.venue} {format(new Date(race?.startTime!), 'HH:mm')}発走
                     </p>
-                    <p className="text-muted-foreground">{race?.venue}</p>
                   </>
                 )}
               </div>
@@ -746,7 +745,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
                   
                   <div className="relative">
-                    <div className="flex justify-between items-center p-4 sm:p-0 sm:mb-4">
+                    <div className="flex justify-between items-center pt-4 pl-4 sm:p-0 sm:mb-4">
                       <h2 className="text-lg sm:text-xl font-semibold">出馬表</h2>
                     </div>
 
