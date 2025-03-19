@@ -698,7 +698,19 @@ export default function Home() {
                 )}
               </div>
               {!raceLoading && (
-                <div className="text-right">
+                <div className="text-right flex flex-col items-end gap-2">
+                  <Button 
+                    onClick={() => window.location.href = `/predict/${id}`}
+                    size="sm"
+                    className="relative overflow-hidden group text-xs sm:text-sm px-2 py-1 h-auto sm:h-9 sm:px-3 sm:py-2"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative flex items-center justify-center">
+                      <ChartBar className="mr-1 h-3 w-3 sm:h-4 sm:w-4 sm:mr-1.5 transition-transform duration-300 group-hover:scale-110" />
+                      <span className="relative">確率予想へ</span>
+                      <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 ml-0.5 sm:ml-1" />
+                    </div>
+                  </Button>
                   <p className="text-sm sm:text-base font-semibold">
                     {race?.status === 'done' ? '発走済' : null}
                   </p>
@@ -958,22 +970,6 @@ export default function Home() {
             </div>
           </>
         )}
-
-        {/* 予想確率入力ボタン */}
-        <div className="flex justify-center relative z-10">
-          <Button 
-            size="lg" 
-            className="w-full max-w-md h-16 relative overflow-hidden group"
-            onClick={() => window.location.href = `/predict/${id}`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="relative flex items-center justify-center">
-              <ChartBar className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-              <span className="relative">確率予想へ</span>
-              <ArrowRight className="sm:h-4 sm:w-4 h-3 w-3 sm:ml-1" />
-            </div>
-          </Button>
-        </div>
       </div>
     </MainLayout>
   );
