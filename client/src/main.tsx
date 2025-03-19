@@ -15,7 +15,14 @@ window.React = React;
 // @ts-ignore
 window.ReactJSXRuntime = ReactJSXRuntime;
 // @ts-ignore
-window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { isDisabled: true };
+window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = process.env.NODE_ENV === 'production' 
+  ? { isDisabled: true }
+  : (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__;
+
+// デバッグ用に環境変数の状態を出力
+if (process.env.NODE_ENV !== 'production') {
+  console.log('Running in development mode - NODE_ENV:', process.env.NODE_ENV);
+}
 
 // CSRFトークンを設定
 const setCsrfToken = () => {

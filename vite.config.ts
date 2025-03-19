@@ -31,7 +31,7 @@ export default defineConfig({
   esbuild: {
     // グローバルな名前の定義
     define: {
-      'process.env.NODE_ENV': JSON.stringify('production')
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
     },
     // トランスパイルの対象設定
     target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
@@ -80,8 +80,8 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
-        pure_funcs: ['console.log'],
+        drop_console: process.env.NODE_ENV === 'production',
+        pure_funcs: process.env.NODE_ENV === 'production' ? ['console.log'] : [],
         passes: 2,
       },
       mangle: true,
