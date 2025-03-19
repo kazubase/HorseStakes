@@ -681,15 +681,14 @@ export default function PredictionSettings() {
                         <div className="flex items-center justify-between gap-0.5">
                           <Button
                             variant="outline"
-                            size="icon"
-                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0 border-primary/40"
+                            className="h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
                             onClick={() => handleWinProbabilityIncrement(horse.id, -5)}
                             aria-label={`${horse.name}の確率を5%減らす`}
                           >
                             <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
                           </Button>
                           
-                          <div className="flex items-center flex-1 mx-0.5">
+                          <div className="flex items-center justify-center flex-1 mx-0.5">
                             <Input
                               type="number"
                               min="0"
@@ -700,7 +699,7 @@ export default function PredictionSettings() {
                               value={winInputValues[horse.id] || ""}
                               onChange={(e) => handleWinDirectInput(horse.id, e.target.value)}
                               onBlur={(e) => handleWinInputBlur(horse.id, e.target.value)}
-                              className={`w-full text-right text-base sm:text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-8 ${
+                              className={`w-12 sm:w-20 text-right text-base sm:text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-8 ${
                                 (winProbabilities[horse.id] || 0) >= 30 ? 'text-primary font-extrabold' : 
                                 (winProbabilities[horse.id] || 0) >= 20 ? 'text-primary font-bold' : 'text-foreground'
                               }`}
@@ -715,8 +714,7 @@ export default function PredictionSettings() {
                           
                           <Button
                             variant="outline"
-                            size="icon"
-                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0 border-primary/40"
+                            className="h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
                             onClick={() => handleWinProbabilityIncrement(horse.id, 5)}
                             aria-label={`${horse.name}の確率を5%増やす`}
                           >
@@ -806,15 +804,14 @@ export default function PredictionSettings() {
                         <div className="flex items-center justify-between gap-0.5">
                           <Button
                             variant="outline"
-                            size="icon"
-                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0 border-primary/40"
+                            className="h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
                             onClick={() => handlePlaceProbabilityIncrement(horse.id, -5)}
                             aria-label={`${horse.name}の複勝確率を5%減らす`}
                           >
                             <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
                           </Button>
                           
-                          <div className="flex items-center flex-1 mx-0.5">
+                          <div className="flex items-center justify-center flex-1 mx-0.5">
                             <Input
                               type="number"
                               min={winProbabilities[horse.id] || 0}
@@ -825,7 +822,7 @@ export default function PredictionSettings() {
                               value={placeInputValues[horse.id] || ""}
                               onChange={(e) => handlePlaceDirectInput(horse.id, e.target.value)}
                               onBlur={(e) => handlePlaceInputBlur(horse.id, e.target.value)}
-                              className={`w-full text-right text-base sm:text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-8 ${
+                              className={`w-12 sm:w-20 text-right text-base sm:text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-8 ${
                                 (placeProbabilities[horse.id] || 0) >= 75 ? 'text-primary font-extrabold' : 
                                 (placeProbabilities[horse.id] || 0) >= 50 ? 'text-primary font-bold' : 'text-foreground'
                               }`}
@@ -840,8 +837,7 @@ export default function PredictionSettings() {
                           
                           <Button
                             variant="outline"
-                            size="icon"
-                            className="h-5 w-5 sm:h-6 sm:w-6 rounded-full flex-shrink-0 p-0 border-primary/40"
+                            className="h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
                             onClick={() => handlePlaceProbabilityIncrement(horse.id, 5)}
                             aria-label={`${horse.name}の複勝確率を5%増やす`}
                           >
