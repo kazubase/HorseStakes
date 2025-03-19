@@ -756,7 +756,7 @@ export default function PredictionSettings() {
                               onBlur={(e) => handleWinInputBlur(horse.id, e.target.value)}
                               className={`w-12 sm:w-20 text-right text-base sm:text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-8 ${
                                 (winProbabilities[horse.id] || 0) >= 30 ? 'text-primary font-extrabold' : 
-                                (winProbabilities[horse.id] || 0) >= 20 ? 'text-primary font-bold' : 'text-foreground'
+                                (winProbabilities[horse.id] || 0) >= 20 ? 'text-primary/80 font-bold' : 'text-foreground'
                               }`}
                               aria-labelledby={`horse-win-name-${horse.id}`}
                               aria-label={`${horse.name}の単勝確率`}
@@ -879,7 +879,7 @@ export default function PredictionSettings() {
                               onBlur={(e) => handlePlaceInputBlur(horse.id, e.target.value)}
                               className={`w-12 sm:w-20 text-right text-base sm:text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-8 ${
                                 (placeProbabilities[horse.id] || 0) >= 75 ? 'text-primary font-extrabold' : 
-                                (placeProbabilities[horse.id] || 0) >= 50 ? 'text-primary font-bold' : 'text-foreground'
+                                (placeProbabilities[horse.id] || 0) >= 50 ? 'text-primary/80 font-bold' : 'text-foreground'
                               }`}
                               aria-labelledby={`horse-place-name-${horse.id}`}
                               aria-label={`${horse.name}の複勝確率`}
@@ -990,7 +990,10 @@ export default function PredictionSettings() {
                           value={budgetInputValue}
                           onChange={(e) => handleBudgetDirectInput(e.target.value)}
                           onBlur={(e) => handleBudgetBlur(e.target.value)}
-                          className="w-32 text-right text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-10 text-primary"
+                          className={`w-32 text-right text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-10 ${
+                            budget >= 10000 ? 'text-primary font-extrabold' : 
+                            budget >= 5000 ? 'text-primary/80 font-bold' : 'text-foreground'
+                          }`}
                           aria-label="購入予算（円）"
                         />
                         <span className="text-base font-medium ml-0.5">円</span>
@@ -1049,7 +1052,7 @@ export default function PredictionSettings() {
                         >
                           <p>購入予算に対する希望払戻金の倍率</p>
                           <p className="text-emerald-600 mt-1">高い値：より大きな利益を狙える</p>
-                          <p className="text-amber-600">低い値：的中率が高くなる傾向</p>
+                          <p className="text-amber-600 mt-1">低い値：的中率が高くなる傾向</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -1076,7 +1079,10 @@ export default function PredictionSettings() {
                           name="risk-ratio-input"
                           value={riskRatio.toString()}
                           onChange={(e) => handleRiskRatioDirectInput(e.target.value)}
-                          className="w-24 text-right text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-10 text-primary"
+                          className={`w-24 text-right text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-10 ${
+                            riskRatio >= 10 ? 'text-primary font-extrabold' : 
+                            riskRatio >= 5 ? 'text-primary/80 font-bold' : 'text-foreground'
+                          }`}
                           aria-label="リスクリワード"
                         />
                         <span className="text-base font-medium ml-0.5">倍</span>

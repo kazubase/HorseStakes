@@ -970,7 +970,6 @@ export default function Home() {
             </div>
           </>
         )}
-      </div>
 
         {/* 予想確率入力ボタン */}
         <div className="flex justify-center relative z-10">
@@ -987,6 +986,7 @@ export default function Home() {
             </div>
           </Button>
         </div>
+      </div>
 
     </MainLayout>
   );
