@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Horse } from "@db/schema";
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { AlertCircle, ArrowRight, Award, Wallet, Plus, Minus, Activity, Info, BarChart4, Trophy } from "lucide-react";
+import { AlertCircle, ArrowRight, Award, Wallet, Plus, Minus, Activity, Info, BarChart4, Trophy, ChevronUp, ChevronDown } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { AnimatePresence, motion } from "framer-motion";
@@ -462,6 +462,61 @@ export default function PredictionSettings() {
     setError("");
   };
 
+  const handleBudgetChange = (newValue: number) => {
+    setBudget(newValue);
+    setBudgetInputValue(newValue.toString());
+    setError("");
+  };
+
+  const handleBudgetIncrement = (increment: number) => {
+    const currentValue = budget || 0;
+    const newValue = Math.max(currentValue + increment, 100);
+    handleBudgetChange(newValue);
+  };
+
+  const handleBudgetDirectInput = (value: string) => {
+    setBudgetInputValue(value);
+
+    if (value === "") {
+      setBudget(0);
+      return;
+    }
+
+    const normalizedValue = value.replace(/[０-９，]/g, (s) => {
+      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    }).replace(/,/g, '');
+
+    const numValue = parseInt(normalizedValue, 10);
+    if (!isNaN(numValue) && numValue >= 0) {
+      setBudget(numValue);
+      setError("");
+    }
+  };
+
+  const handleRiskRatioIncrement = (increment: number) => {
+    const currentValue = riskRatio || 2;
+    const newValue = Math.min(Math.max(currentValue + increment, 1), 20);
+    setRiskRatio(newValue);
+    setError("");
+  };
+
+  const handleRiskRatioDirectInput = (value: string) => {
+    if (value === "") {
+      return;
+    }
+
+    const normalizedValue = value.replace(/[０-９．]/g, (s) => {
+      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    });
+
+    const numValue = parseFloat(normalizedValue);
+    if (!isNaN(numValue)) {
+      const clampedValue = Math.min(Math.max(numValue, 1), 20);
+      setRiskRatio(clampedValue);
+      setError("");
+    }
+  };
+
   // タブ切り替え時の処理
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -913,26 +968,57 @@ export default function PredictionSettings() {
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      value={budgetInputValue}
-                      onChange={(e) => {
-                        setBudgetInputValue(e.target.value);
-                        if (e.target.value === "") {
-                          setBudget(0);
-                        } else {
-                          setBudget(Number(e.target.value));
-                        }
-                      }}
-                      onBlur={(e) => handleBudgetBlur(e.target.value)}
-                      min={0}
-                      step={100}
-                      aria-label="購入予算（円）"
-                      className="text-lg bg-background/80 backdrop-blur-sm border-primary/10 focus:border-primary/30 transition-all"
-                    />
-                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="flex flex-col gap-1 mb-1">
+                    <div className="flex items-center justify-between gap-0.5">
+                      <Button
+                        variant="outline"
+                        className="h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        onClick={() => handleBudgetIncrement(-1000)}
+                        aria-label="予算を1000円減らす"
+                      >
+                        <Minus className="h-3 w-3 text-primary" />
+                      </Button>
+                      
+                      <div className="flex items-center justify-center flex-1 mx-0.5 relative">
+                        <Input
+                          type="number"
+                          min="100"
+                          step="100"
+                          id="budget-input"
+                          name="budget-input"
+                          value={budgetInputValue}
+                          onChange={(e) => handleBudgetDirectInput(e.target.value)}
+                          onBlur={(e) => handleBudgetBlur(e.target.value)}
+                          className="w-32 text-right text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-10 text-primary"
+                          aria-label="購入予算（円）"
+                        />
+                        <span className="text-base font-medium ml-0.5">円</span>
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        className="h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        onClick={() => handleBudgetIncrement(1000)}
+                        aria-label="予算を1000円増やす"
+                      >
+                        <Plus className="h-3 w-3 text-primary" />
+                      </Button>
+                    </div>
                   </div>
+                  
+                  <Slider
+                    value={[budget]}
+                    onValueChange={([value]) => handleBudgetChange(value)}
+                    max={50000}
+                    min={100}
+                    step={100}
+                    aria-label={`購入予算: 現在${budget.toLocaleString()}円`}
+                    aria-valuemin={100}
+                    aria-valuemax={50000}
+                    aria-valuenow={budget}
+                    className="relative mt-3 mb-2"
+                  />
                 </div>
 
                 <div className="pt-6 border-t border-primary/10">
@@ -961,45 +1047,64 @@ export default function PredictionSettings() {
                           sideOffset={5}
                           className="max-w-[calc(100vw-12rem)] sm:max-w-sm break-words touch-none"
                         >
-                          <p>リスクに対してどの程度のリターンを求めるかを設定します。</p>
-                          <p>例：5.0は「リスクの5倍のリターン」を意味します。</p>
+                          <p>購入予算に対する希望払戻金の倍率</p>
+                          <p className="text-emerald-600 mt-1">高い値：より大きな利益を狙える</p>
+                          <p className="text-amber-600">低い値：的中率が高くなる傾向</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                  <div 
-                    className="touch-none relative bg-background/80 backdrop-blur-sm rounded-lg p-4 border border-primary/10" 
-                    onTouchMove={(e) => e.preventDefault()}
-                    onPointerMove={(e) => {
-                      if (e.pointerType === 'mouse' && e.buttons === 0) {
-                        e.preventDefault();
-                      }
-                    }}
-                  >
-                    <Slider
-                      value={[riskRatio]}
-                      onValueChange={handleRiskRatioChange}
-                      min={2.0}
-                      max={20.0}
-                      step={1.0}
-                      aria-label={`リスクリワード設定: 現在${riskRatio.toFixed(1)}倍`}
-                      aria-valuemin={2.0}
-                      aria-valuemax={20.0}
-                      aria-valuenow={riskRatio}
-                      className="my-4"
-                    />
-                    <p className="text-sm font-medium text-right text-primary" aria-live="polite" aria-atomic="true">
-                      ×{riskRatio.toFixed(1)}
-                    </p>
-
-                    <div className="space-y-2 text-sm mt-6">
-                      <p className="font-medium text-foreground">※ 高いリスクリワードを設定すると</p>
-                      <ul className="list-disc list-inside space-y-1.5 ml-2">
-                        <li className="text-emerald-600 font-medium">より大きな利益を狙えます</li>
-                        <li className="text-amber-600 font-medium">しかし的中率は低くなる傾向があります</li>
-                      </ul>
+                  
+                  <div className="flex flex-col gap-1 mb-1">
+                    <div className="flex items-center justify-between gap-0.5">
+                      <Button
+                        variant="outline"
+                        className="h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        onClick={() => handleRiskRatioIncrement(-5)}
+                        aria-label="リスクリワードを5減らす"
+                      >
+                        <Minus className="h-3 w-3 text-primary" />
+                      </Button>
+                      
+                      <div className="flex items-center justify-center flex-1 mx-0.5 relative">
+                        <Input
+                          type="number"
+                          min="1"
+                          max="20"
+                          step="1"
+                          id="risk-ratio-input"
+                          name="risk-ratio-input"
+                          value={riskRatio.toString()}
+                          onChange={(e) => handleRiskRatioDirectInput(e.target.value)}
+                          className="w-24 text-right text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-10 text-primary"
+                          aria-label="リスクリワード"
+                        />
+                        <span className="text-base font-medium ml-0.5">倍</span>
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        className="h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        onClick={() => handleRiskRatioIncrement(5)}
+                        aria-label="リスクリワードを5増やす"
+                      >
+                        <Plus className="h-3 w-3 text-primary" />
+                      </Button>
                     </div>
                   </div>
+                  
+                  <Slider
+                    value={[riskRatio]}
+                    onValueChange={handleRiskRatioChange}
+                    min={1.0}
+                    max={20.0}
+                    step={1.0}
+                    aria-label={`リスクリワード設定: 現在${riskRatio}倍`}
+                    aria-valuemin={1.0}
+                    aria-valuemax={20.0}
+                    aria-valuenow={riskRatio}
+                    className="my-4"
+                  />
                 </div>
               </CardContent>
             </Card>
