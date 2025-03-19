@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Horse, Race, TanOddsHistory } from "@db/schema";
 import { format } from "date-fns";
 import MainLayout from "@/components/layout/MainLayout";
-import { RefreshCw, Trophy, ArrowRight, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
+import { ChartBar, Trophy, ArrowRight, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import RaceList from "@/pages/RaceList";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
@@ -968,8 +968,8 @@ export default function Home() {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative flex items-center justify-center">
-              <Trophy className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-              <span className="relative">予想設定</span>
+              <ChartBar className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+              <span className="relative">確率予想へ</span>
               <ArrowRight className="sm:h-4 sm:w-4 h-3 w-3 sm:ml-1" />
             </div>
           </Button>
