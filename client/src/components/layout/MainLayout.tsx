@@ -150,7 +150,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* レース一覧画面以外の場合のみ上部ナビゲーションを表示 */}
       {!isRaceListPage && (
         <div 
-          className={`fixed top-12 left-0 right-0 z-10 transition-opacity duration-300 will-change-opacity ${navVisibilityClass}`}
+          className={`fixed top-12 left-0 right-0 z-20 transition-opacity duration-300 will-change-opacity ${navVisibilityClass}`}
           role="navigation" 
           aria-label="サイトナビゲーション"
         >
