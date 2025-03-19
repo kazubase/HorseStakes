@@ -425,12 +425,69 @@ export default function RaceList() {
   return (
     <MainLayout>
       <Helmet>
-        <title>競馬予想・馬券作成アシスタント | 最新レース一覧と回収率アップの馬券戦略</title>
-        <meta name="description" content="競馬予想と馬券作成をサポートするAIアシスタント。最新レース情報から的中率と期待値を計算し、回収率アップのための最適な馬券戦略を提案します。初心者から上級者まで簡単に利用できる競馬予想ツール。" />
+        <title>馬券戦略 | 最新レース一覧と回収率アップの競馬予想ツール</title>
+        <meta name="description" content="競馬予想と馬券作成をサポートする馬券戦略アプリ。最新レース情報から的中率と期待値を計算し、回収率アップのための最適な馬券戦略を提案します。初心者から上級者まで簡単に利用できる競馬予想ツール。" />
+        <meta name="keywords" content="馬券戦略,競馬予想,馬券作成,回収率アップ,期待値,競馬AI,馬券予想,競馬攻略,競馬必勝法,馬券購入,競馬初心者,競馬予想サイト" />
         <link rel="canonical" href="https://horse-stakes.com" />
-        <meta name="keywords" content="競馬予想,馬券作成,回収率アップ,期待値,競馬AI,馬券予想,競馬攻略,馬券戦略,競馬必勝法,馬券購入,競馬初心者,競馬予想サイト" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta property="og:title" content="馬券戦略 | 最新レース一覧と回収率アップの競馬予想ツール" />
+        <meta property="og:description" content="競馬予想と馬券作成をサポートする馬券戦略アプリ。最新レース情報から的中率と期待値を計算し、回収率アップのための最適な馬券戦略を提案します。" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://horse-stakes.com" />
+        <meta property="og:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="馬券戦略 | 最新レース一覧と回収率アップの競馬予想ツール" />
+        <meta name="twitter:description" content="競馬予想と馬券作成をサポートする馬券戦略アプリ。最新レース情報から的中率と期待値を計算し、回収率アップのための最適な馬券戦略を提案します。" />
+        <meta name="twitter:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
       </Helmet>
+
+      {/* 構造化データの追加 */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "name": "馬券戦略",
+          "description": "競馬予想と馬券作成をサポートするAIアシスタント。最新レース情報から的中率と期待値を計算し、回収率アップのための最適な馬券戦略を提案します。",
+          "applicationCategory": "UtilityApplication",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "JPY"
+          },
+          "operatingSystem": "Web",
+          "url": "https://horse-stakes.com",
+          "featureList": [
+            "最新レース情報の表示",
+            "AIによる馬券戦略の提案",
+            "期待値計算",
+            "回収率最適化",
+            "初心者向けガイド"
+          ],
+          "screenshot": "https://horse-stakes.com/images/horseshoe-icon2.webp",
+          "browserRequirements": "JavaScriptを有効にしてください"
+        })}
+      </script>
+
+      {/* レース情報の構造化データ */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "itemListElement": races.map((race, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "item": {
+              "@type": "Event",
+              "name": race.name,
+              "startDate": race.startTime,
+              "location": {
+                "@type": "Place",
+                "name": race.venue
+              },
+              "status": race.status === 'done' ? "EventFinished" : "EventScheduled"
+            }
+          }))
+        })}
+      </script>
 
       <HeaderSection
         selectedDate={selectedDate}

@@ -7,10 +7,99 @@ export default function Guide() {
   return (
     <MainLayout>
       <Helmet>
-        <title>競馬予想・馬券作成の使い方ガイド | 回収率アップの馬券戦略</title>
-        <meta name="description" content="競馬予想と馬券作成をサポートするAIアシスタントの使い方ガイド。的中率と期待値を計算し、回収率アップのための最適な馬券戦略を提案します。初心者から上級者まで簡単に利用できる競馬予想ツールです。" />
+        <title>馬券戦略の使い方 | 初心者向け馬券の買い方と回収率アップのコツ</title>
+        <meta name="description" content="競馬初心者向けの馬券の買い方ガイド。馬券戦略AIを使った期待値計算と回収率アップの方法を解説。馬券の種類、確率計算、効率的な投資戦略まで、競馬予想の基礎から実践まで完全網羅。" />
+        <meta name="keywords" content="馬券戦略,馬券 買い方,競馬 初心者,競馬 回収率,競馬 期待値計算,馬券 期待値,競馬 確率計算,競馬 勝つコツ,競馬予想 無料,馬券 種類,競馬 回収率アップ" />
         <link rel="canonical" href="https://horse-stakes.com/guide" />
+        <meta property="og:title" content="馬券戦略の使い方 | 初心者向け馬券の買い方と回収率アップのコツ" />
+        <meta property="og:description" content="競馬初心者向けの馬券の買い方ガイド。馬券戦略AIを使った期待値計算と回収率アップの方法を解説。馬券の種類、確率計算、効率的な投資戦略まで、競馬予想の基礎から実践まで完全網羅。" />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://horse-stakes.com/guide" />
+        <meta property="og:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="馬券戦略の使い方 | 初心者向け馬券の買い方と回収率アップのコツ" />
+        <meta name="twitter:description" content="競馬初心者向けの馬券の買い方ガイド。馬券戦略AIを使った期待値計算と回収率アップの方法を解説。" />
+        <meta name="twitter:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
       </Helmet>
+
+      {/* 構造化データの追加 */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "headline": "馬券戦略の使い方 | 初心者向け馬券の買い方と回収率アップのコツ",
+          "description": "競馬初心者向けの馬券の買い方ガイド。馬券戦略AIを使った期待値計算と回収率アップの方法を解説。",
+          "image": "https://horse-stakes.com/images/horseshoe-icon2.webp",
+          "author": {
+            "@type": "Organization",
+            "name": "馬券戦略"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "馬券戦略",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://horse-stakes.com/images/horseshoe-icon2.webp"
+            }
+          },
+          "datePublished": "2025-03-19",
+          "dateModified": "2025-03-19",
+          "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://horse-stakes.com/guide"
+          }
+        })}
+      </script>
+
+      {/* FAQの構造化データ */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "競馬初心者でも使えますか？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "はい、競馬初心者の方でも簡単に使えるよう設計されています。単勝確率と複勝確率を入力するだけで、馬券戦略AIが最適な馬券作成方法を提案します。馬券の種類や組み合わせに悩む必要はありません。"
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "回収率を上げるコツはありますか？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "回収率向上のポイントは、正確な確率予想と適切な資金配分です。オッズと自分の予想確率のギャップを見つけ、期待値の高い馬券を選ぶことが重要です。馬券戦略アプリはそのプロセスを自動化し、最適な馬券戦略を提案します。"
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "どのような馬券種類に対応していますか？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "単勝、複勝、馬連、馬単、ワイド、三連複、三連単など、JRAの主要な馬券種類すべてに対応しています。馬券戦略AIがレース状況に応じて最適な馬券種類を選択し、組み合わせを提案します。"
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "馬券はどこで買えますか？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "JRAの公式サイトや、ネット競馬サイトで馬券を購入できます。馬券戦略アプリは馬券の購入を直接行うことはできませんが、最適な馬券戦略を提案し、購入の判断材料を提供します。"
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "期待値計算とは何ですか？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "期待値計算は、馬券の投資価値を数値化する方法です。オッズと予想確率を組み合わせて、長期的な収益性を評価します。馬券戦略では、AIが自動的に期待値を計算し、最も投資価値の高い馬券を提案します。"
+              }
+            }
+          ]
+        })}
+      </script>
 
       {/* ヘッダーセクション */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-t from-background to-primary/10 p-6 mb-8 shadow-sm">
@@ -22,7 +111,7 @@ export default function Guide() {
             <span className="text-sm font-medium">使い方ガイド</span>
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-            競馬予想・馬券作成アシスタントの使い方
+            馬券戦略の使い方
           </h1>
           <div className="flex flex-wrap gap-2 mt-1">
             <span className="inline-flex items-center text-xs bg-primary/10 px-3 py-1 rounded-full text-primary">
@@ -232,7 +321,7 @@ export default function Guide() {
               <CardTitle>競馬初心者でも使えますか？</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>はい、競馬初心者の方でも簡単に使えるよう設計されています。単勝確率と複勝確率を入力するだけで、AIが最適な馬券戦略を提案します。馬券の種類や組み合わせに悩む必要はありません。</p>
+              <p>はい、競馬初心者の方でも簡単に使えるよう設計されています。単勝確率と複勝確率を入力するだけで、馬券戦略AIが最適な馬券作成方法を提案します。馬券の種類や組み合わせに悩む必要はありません。</p>
             </CardContent>
           </Card>
           
@@ -241,7 +330,7 @@ export default function Guide() {
               <CardTitle>回収率を上げるコツはありますか？</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>回収率向上のポイントは、正確な確率予想と適切な資金配分です。オッズと自分の予想確率のギャップを見つけ、期待値の高い馬券を選ぶことが重要です。当サービスはそのプロセスを自動化し、最適な馬券戦略を提案します。</p>
+              <p>回収率向上のポイントは、正確な確率予想と適切な資金配分です。オッズと自分の予想確率のギャップを見つけ、期待値の高い馬券を選ぶことが重要です。馬券戦略アプリはそのプロセスを自動化し、最適な馬券戦略を提案します。</p>
             </CardContent>
           </Card>
           
@@ -250,7 +339,7 @@ export default function Guide() {
               <CardTitle>どのような馬券種類に対応していますか？</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>単勝、複勝、馬連、馬単、ワイド、三連複、三連単など、JRAの主要な馬券種類すべてに対応しています。AIがレース状況に応じて最適な馬券種類を選択し、組み合わせを提案します。</p>
+              <p>単勝、複勝、馬連、馬単、ワイド、３連複、３連単など、JRAの主要な馬券種類すべてに対応しています。馬券戦略AIがレース状況に応じて最適な馬券種類を選択し、組み合わせを提案します。</p>
             </CardContent>
           </Card>
         </div>
