@@ -94,7 +94,7 @@ export default function Home() {
       const minOdds = Math.min(...validOdds);
       const maxOdds = Math.max(...validOdds);
       
-      // オッズの範囲が広い場合は閾値を大きく、狭い場合は小さくする
+      // オッズの範囲
       const oddsRange = maxOdds - minOdds;
       
       // オッズの標準偏差を計算
@@ -102,31 +102,56 @@ export default function Home() {
       const variance = validOdds.reduce((sum, odds) => sum + Math.pow(odds - avgOdds, 2), 0) / validOdds.length;
       const stdDev = Math.sqrt(variance);
       
-      // 標準偏差と範囲に基づいて閾値を計算
-      // 標準偏差が大きい（オッズのばらつきが大きい）場合は閾値を大きくする
-      const baseThreshold = 0.15; // 基本閾値
+      // 変動係数（標準偏差/平均）を計算
+      const cv = stdDev / avgOdds;
       
-      // 調整係数を調整
-      const rangeAdjustment = oddsRange / 400; // 範囲による調整係数をさらに小さくする
-      const stdDevAdjustment = stdDev / 40; // 標準偏差による調整係数をさらに小さくする
+      // 連続するオッズの相対差分を計算
+      const relDiffs: number[] = [];
+      for (let i = 1; i < validOdds.length; i++) {
+        const diff = (validOdds[i] - validOdds[i-1]) / validOdds[i-1];
+        relDiffs.push(diff);
+      }
       
-      // 変動係数（標準偏差/平均）を使用して相対的なばらつきを考慮
-      const coefficientOfVariation = stdDev / avgOdds;
-      const cvAdjustment = coefficientOfVariation * 0.15; // 変動係数による調整を小さくする
+      // 相対差分をソートして、自然な分割点を探す
+      const sortedDiffs = [...relDiffs].sort((a, b) => a - b);
       
-      // 馬の数に基づく調整（馬が多いレースでは閾値を小さく）
-      const horseCountAdjustment = Math.max(0, 0.25 - (sortedOdds.length / 40));
+      // 上位25%の差分を取得（これが自然な分割点の候補）
+      const significantDiffIndex = Math.floor(sortedDiffs.length * 0.75);
+      const significantDiff = sortedDiffs[significantDiffIndex] || 0.15;
       
-      // 最小オッズに基づく調整（最小オッズが小さいほど閾値を小さく）
-      const minOddsAdjustment = Math.max(0, (minOdds - 2) / 20);
+      // レースの状況に応じた基本閾値を設定
+      let baseThreshold: number;
       
-      // 最終的な閾値（最小0.15、最大0.45）- 上限をさらに下げる
-      const threshold = baseThreshold + rangeAdjustment + stdDevAdjustment + cvAdjustment + horseCountAdjustment + minOddsAdjustment;
+      // 馬の数によって基本閾値を調整
+      if (validOdds.length <= 8) {
+        // 少頭数レースではより大きな閾値を使用
+        baseThreshold = 0.2;
+      } else if (validOdds.length >= 16) {
+        // 多頭数レースではより小さな閾値を使用
+        baseThreshold = 0.12;
+      } else {
+        // 中間のレースでは標準的な閾値を使用
+        baseThreshold = 0.15;
+      }
       
-      return Math.min(0.45, Math.max(0.15, threshold));
+      // 分散が小さいレース（オッズが均等に分布）では閾値を下げる
+      // 分散が大きいレース（オッズにばらつきがある）では閾値を上げる
+      const cvAdjustment = cv < 0.3 ? -0.05 : cv > 0.8 ? 0.05 : 0;
+      
+      // 最終的な閾値を計算（自然な分割点と基本閾値の加重平均）
+      const weightedThreshold = (significantDiff * 0.7) + (baseThreshold * 0.3);
+      
+      // 分散に基づく調整を適用
+      const adjustedThreshold = weightedThreshold + cvAdjustment;
+      
+      // 閾値の下限と上限を設定
+      return Math.min(0.45, Math.max(0.1, adjustedThreshold));
     };
     
     const THRESHOLD = calculateDynamicThreshold();
+    
+    // グループ化する際の最大メンバー数（特に人気グループが大きくなりすぎるのを防ぐ）
+    const MAX_GROUP_SIZE = Math.min(6, Math.ceil(sortedOdds.length / 3));
     
     sortedOdds.forEach((odd, index) => {
       const currentOdds = parseFloat(odd.odds);
@@ -141,8 +166,8 @@ export default function Home() {
       // 前の馬とのオッズの相対的な差を計算
       const relativeDiff = (currentOdds - prevOdds) / prevOdds;
       
-      // 差が閾値より大きい場合は新しいグループを作成
-      if (relativeDiff > THRESHOLD) {
+      // 差が閾値より大きい場合、または現在のグループが最大サイズに達した場合は新しいグループを作成
+      if (relativeDiff > THRESHOLD || currentGroup.length >= MAX_GROUP_SIZE) {
         groups.push([...currentGroup]);
         currentGroup = [Number(odd.horseId)];
       } else {
@@ -238,6 +263,7 @@ export default function Home() {
           dateOnly: getDateOnly(timestamp),
           timeOnly: getTimeOnly(timestamp),
           isDateChanged,
+          isFirst: index === 0, // 最初のデータポイントかどうかのフラグを追加
           ...odds.reduce((acc, odd: any) => ({
             ...acc,
             [`horse${odd.horseId}`]: parseFloat(odd.odds)
@@ -246,16 +272,40 @@ export default function Home() {
       });
   }, [oddsHistory]);
 
+  // 表示データのフィルタリングフラグを追加
+  const [excludeInitialData, setExcludeInitialData] = useState(false);
+
+  // 時間軸のズームレベルを管理する状態を追加
+  const [timeZoom, setTimeZoom] = useState<'all' | 'normal'>('normal');
+
+  // フィルタリングされたオッズデータ
+  const filteredOddsData = useMemo(() => {
+    if (!formattedOddsData.length) return [];
+    
+    // まず初期値の除外を適用
+    let data = formattedOddsData;
+    if (excludeInitialData && formattedOddsData.length > 2) {
+      data = formattedOddsData.filter(data => !data.isFirst);
+    }
+    
+    return data;
+  }, [formattedOddsData, excludeInitialData]);
+
   // selectedHorsesの状態管理
   const [selectedHorses, setSelectedHorses] = useState<number[]>([]);
 
-  // 初期選択を設定するuseEffect
+  // 初期選択を設定するuseEffect - データ点が少ない場合は全体表示をデフォルトに
   useEffect(() => {
     if (!latestOddsLoading && horseGroups.length > 0) {
       // 最初のグループ（人気グループ）を選択
       setSelectedHorses(horseGroups[0]);
     }
-  }, [latestOddsLoading, horseGroups]);
+    
+    // データ点が少ない場合は全体表示をデフォルトに
+    if (formattedOddsData.length > 0 && formattedOddsData.length <= 10) {
+      setTimeZoom('all');
+    }
+  }, [latestOddsLoading, horseGroups, formattedOddsData.length]);
 
   // グループを切り替える関数
   const switchGroup = useCallback((index: number) => {
@@ -382,9 +432,82 @@ export default function Home() {
     ? sortedHorses.filter(h => selectedHorses.includes(h.number))
     : sortedHorses;
 
+  // windowサイズを検出するカスタムフック追加
+  const useWindowSize = () => {
+    const [windowSize, setWindowSize] = useState({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+
+    useEffect(() => {
+      const handleResize = () => {
+        setWindowSize({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+      };
+
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    return windowSize;
+  };
+
+  // windowサイズを取得
+  const { width: windowWidth } = useWindowSize();
+
+  // データポイント数に基づくグラフの最小幅を計算 - モバイルでの最小幅を調整
+  const calculateChartMinWidth = useMemo(() => {
+    const isMobile = windowWidth < 640;
+    const dataPointCount = filteredOddsData.length;
+    
+    if (dataPointCount <= 0) return 0;
+    
+    // ズームレベルに応じて幅を調整
+    if (timeZoom === 'all') {
+      // 全体表示の場合はコンテナサイズに合わせる
+      return isMobile ? '100%' : '100%';
+    }
+    
+    // normal モード用の設定
+    let pointWidth = 20; // 標準表示
+    
+    // モバイルでは全体的に縮小
+    if (isMobile) {
+      pointWidth = 10; // モバイル用に適切な値に調整
+      
+      // モバイルでは少ないデータポイントの場合コンテナ幅に合わせる
+      if (dataPointCount <= 10) {
+        return '100%';
+      }
+    }
+    
+    // 最低幅を計算
+    return Math.max(isMobile ? windowWidth * 1.5 : 800, dataPointCount * pointWidth);
+  }, [filteredOddsData.length, windowWidth, timeZoom]);
+
+  // グラフの時間軸を変更する関数
+  const handleTimeZoomChange = useCallback((zoom: 'all' | 'normal') => {
+    setTimeZoom(zoom);
+    
+    // ズーム変更時にスクロールを最適化
+    setTimeout(() => {
+      if (chartContainerRef.current) {
+        if (zoom === 'all') {
+          // 全体表示の場合は左端にスクロール
+          chartContainerRef.current.scrollLeft = 0;
+        } else {
+          // それ以外は右端にスクロール（最新データを表示）
+          chartContainerRef.current.scrollLeft = chartContainerRef.current.scrollWidth;
+        }
+      }
+    }, 100);
+  }, []);
+
   // オッズ推移グラフコンポーネントを最適化し、メモ化
   const OddsChart = useMemo(() => {
-    if (formattedOddsData.length === 0) {
+    if (filteredOddsData.length === 0) {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground">
           オッズデータがありません
@@ -392,10 +515,35 @@ export default function Home() {
       );
     }
 
+    // X軸の設定をズームレベルに基づいて調整
+    const getXAxisConfig = () => {
+      // デフォルト設定
+      let interval: number | 'preserveStartEnd' | 'preserveEnd' | 'preserveStart' | 'equidistantPreserveStart' = 'preserveStartEnd';
+      let minTickGap = 50;
+      
+      const isMobile = windowWidth < 640;
+      
+      // ズームレベルに応じた調整
+      if (timeZoom === 'all') {
+        // 全体表示モードでは開始・終了・日付変更点を優先
+        interval = 'preserveStartEnd';
+        minTickGap = isMobile ? 50 : 100;
+        return { interval, minTickGap };
+      }
+      
+      // normal モード
+      interval = isMobile ? 'preserveEnd' : Math.max(1, Math.floor(filteredOddsData.length / 7));
+      minTickGap = isMobile ? 30 : 60;
+      
+      return { interval, minTickGap };
+    };
+    
+    const xAxisConfig = getXAxisConfig();
+
     return (
       <ResponsiveContainer width="100%" height="100%">
         <LineChart 
-          data={formattedOddsData}
+          data={filteredOddsData}
           margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
         >
           <defs>
@@ -428,16 +576,16 @@ export default function Home() {
           {/* X軸 */}
           <XAxis 
             dataKey="timestamp"
-            interval="preserveStartEnd"
-            minTickGap={50}
+            interval={xAxisConfig.interval}
+            minTickGap={xAxisConfig.minTickGap}
             tick={(props) => {
               const { x, y, payload } = props;
-              const dataIndex = formattedOddsData.findIndex(item => item.timestamp === payload.value);
-              const data = formattedOddsData[dataIndex];
+              const dataIndex = filteredOddsData.findIndex(item => item.timestamp === payload.value);
+              const data = filteredOddsData[dataIndex];
               
               // 日付が変わるポイントか最初と最後のポイントの場合は日付と時刻を表示
               // それ以外は時刻のみ表示
-              const displayText = data?.isDateChanged || dataIndex === 0 || dataIndex === formattedOddsData.length - 1
+              const displayText = data?.isDateChanged || dataIndex === 0 || dataIndex === filteredOddsData.length - 1
                 ? data.dateOnly + ' ' + data.timeOnly
                 : data.timeOnly;
               
@@ -475,12 +623,62 @@ export default function Home() {
           
           {/* Y軸 */}
           <YAxis 
-            domain={['dataMin', 'dataMax']}
+            domain={(_) => {
+              // 各馬ごとの最小・最大オッズからレンジを決定
+              const visibleHorseIds = visibleHorses.map(h => h.number);
+              
+              // 現在表示中の馬のオッズデータだけを考慮
+              const visibleOddsValues = filteredOddsData.flatMap(data => {
+                return visibleHorseIds.map(horseId => {
+                  const key = `horse${horseId}` as keyof typeof data;
+                  const value = data[key];
+                  return typeof value === 'number' && !isNaN(value) ? value : null;
+                }).filter(Boolean) as number[];
+              });
+              
+              if (visibleOddsValues.length === 0) return [0, 100];
+              
+              // 外れ値の除外のため、値をソートして統計的に処理
+              const sortedValues = [...visibleOddsValues].sort((a, b) => a - b);
+              
+              // 四分位範囲を計算して外れ値を特定
+              const q1Index = Math.floor(sortedValues.length * 0.25);
+              const q3Index = Math.floor(sortedValues.length * 0.75);
+              const q1 = sortedValues[q1Index];
+              const q3 = sortedValues[q3Index];
+              const iqr = q3 - q1;
+              
+              // 外れ値の境界を計算（標準的な1.5*IQRルールを緩和して2.5*IQRを使用）
+              const lowerBound = Math.max(0, q1 - 2.5 * iqr);
+              const upperBound = q3 + 2.5 * iqr;
+              
+              // 範囲内のデータのみを使用
+              const filteredValues = sortedValues.filter(v => v >= lowerBound && v <= upperBound);
+              
+              if (filteredValues.length === 0) {
+                // 全てが外れ値の場合は元のデータを使用
+                const actualMin = Math.min(...visibleOddsValues);
+                const actualMax = Math.max(...visibleOddsValues);
+                const range = actualMax - actualMin;
+                const margin = range * 0.15; // マージンを増加
+                return [Math.max(0, actualMin - margin), actualMax + margin];
+              }
+              
+              // フィルタリングされた値の範囲を取得
+              const actualMin = filteredValues[0];
+              const actualMax = filteredValues[filteredValues.length - 1];
+              
+              // 適切なマージンを追加（マージンを増加）
+              const range = actualMax - actualMin;
+              const margin = range * 0.15;
+              
+              return [Math.max(0, actualMin - margin), actualMax + margin];
+            }}
             tickFormatter={(value) => value.toFixed(1)}
             tick={{ fill: 'hsl(var(--muted-foreground))' }}
             axisLine={{ stroke: 'hsl(var(--border))' }}
             tickLine={{ stroke: 'hsl(var(--border))' }}
-            width={45}
+            width={55}
             allowDecimals={true}
             tickCount={6}
             padding={{ top: 10, bottom: 10 }}
@@ -532,7 +730,7 @@ export default function Home() {
           {/* 垂直の参照線を追加 */}
           <ReferenceLine
             isFront={true}
-            x={formattedOddsData[0]?.timestamp}
+            x={filteredOddsData[0]?.timestamp}
             stroke="hsl(var(--muted-foreground)/0.3)"
             strokeDasharray="3 3"
             label={{
@@ -546,7 +744,7 @@ export default function Home() {
           {/* 最新データの参照線 */}
           <ReferenceLine
             isFront={true}
-            x={formattedOddsData[formattedOddsData.length - 1]?.timestamp}
+            x={filteredOddsData[filteredOddsData.length - 1]?.timestamp}
             stroke="hsl(var(--primary)/0.5)"
             strokeDasharray="3 3"
             label={{
@@ -597,7 +795,7 @@ export default function Home() {
         </LineChart>
       </ResponsiveContainer>
     );
-  }, [formattedOddsData, visibleHorses, selectedHorses]);
+  }, [filteredOddsData, visibleHorses, selectedHorses, windowWidth, timeZoom]);
 
   // グラフコンテナのref追加
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -607,14 +805,14 @@ export default function Home() {
     if (chartContainerRef.current) {
       chartContainerRef.current.scrollLeft = chartContainerRef.current.scrollWidth;
     }
-  }, [formattedOddsData]);
+  }, [filteredOddsData]);
 
   // オッズの変動率を計算する関数を追加
   const calculateOddsChange = useCallback((horseId: number) => {
-    if (formattedOddsData.length < 2) return 0;
+    if (filteredOddsData.length < 2) return 0;
     
-    const firstData = formattedOddsData[0];
-    const latestData = formattedOddsData[formattedOddsData.length - 1];
+    const firstData = filteredOddsData[0];
+    const latestData = filteredOddsData[filteredOddsData.length - 1];
     
     const firstOdds = Number(firstData[`horse${horseId}` as keyof typeof firstData]);
     const latestOdds = Number(latestData[`horse${horseId}` as keyof typeof latestData]);
@@ -623,7 +821,7 @@ export default function Home() {
     
     // 変動率を計算（マイナスなら下降、プラスなら上昇）
     return ((latestOdds - firstOdds) / firstOdds) * 100;
-  }, [formattedOddsData]);
+  }, [filteredOddsData]);
   
   // オッズ変動に基づく色を取得する関数
   const getOddsChangeColor = useCallback((changePercent: number) => {
@@ -643,11 +841,11 @@ export default function Home() {
 
   // 直近の変動率を計算する関数を追加
   const calculateRecentOddsChange = useCallback((horseId: number) => {
-    if (formattedOddsData.length < 3) return 0; // 少なくとも3つのデータポイントが必要
+    if (filteredOddsData.length < 3) return 0; // 少なくとも3つのデータポイントが必要
     
     // 最新のデータと、その1つ前のデータを取得
-    const latestData = formattedOddsData[formattedOddsData.length - 1];
-    const previousData = formattedOddsData[formattedOddsData.length - 2];
+    const latestData = filteredOddsData[filteredOddsData.length - 1];
+    const previousData = filteredOddsData[filteredOddsData.length - 2];
     
     const previousOdds = Number(previousData[`horse${horseId}` as keyof typeof previousData]);
     const latestOdds = Number(latestData[`horse${horseId}` as keyof typeof latestData]);
@@ -656,7 +854,7 @@ export default function Home() {
     
     // 直近の変動率を計算
     return ((latestOdds - previousOdds) / previousOdds) * 100;
-  }, [formattedOddsData]);
+  }, [filteredOddsData]);
   
   // ソートボタンのクリックハンドラを追加
   const handleSortClick = useCallback((type: 'number' | 'odds') => {
@@ -864,7 +1062,7 @@ export default function Home() {
                                     `}>
                                       {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
                                     </span>
-                                    {formattedOddsData.length >= 3 && (
+                                    {filteredOddsData.length >= 3 && (
                                       <span className={`text-xs ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
                                         {getOddsChangeArrow(calculateRecentOddsChange(horse.number))}
                                       </span>
@@ -889,12 +1087,32 @@ export default function Home() {
               <Card className="lg:col-span-6 bg-background/50 backdrop-blur-sm overflow-hidden">
                 <CardContent className="p-2 sm:p-6">
                   <div className="flex items-center justify-between p-2 sm:p-0 sm:mb-4">
-                    <h2 className="text-lg sm:text-xl font-semibold">オッズ推移</h2>
-                    <div className="text-xs text-muted-foreground">
-                      {formattedOddsData.length > 0 && 
-                        `${formattedOddsData[0].timestamp} - ${formattedOddsData[formattedOddsData.length - 1].timestamp}`
-                      }
+                    <h2 className="text-lg sm:text-xl font-semibold whitespace-nowrap">オッズ推移</h2>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`text-xs ${excludeInitialData ? 'bg-primary/10' : ''} min-w-[80px]`}
+                        onClick={() => setExcludeInitialData(!excludeInitialData)}
+                      >
+                        <span className="sm:block hidden">{excludeInitialData ? '初期値を除外中' : '初期値を除外'}</span>
+                        <span className="sm:hidden block text-center leading-tight">
+                          {excludeInitialData ? '初期値\n除外中' : '初期値\n除外'}
+                        </span>
+                      </Button>
+                      <div className="text-xs text-muted-foreground hidden sm:block">
+                        {filteredOddsData.length > 0 && 
+                          `${filteredOddsData[0].timestamp} - ${filteredOddsData[filteredOddsData.length - 1].timestamp}`
+                        }
+                      </div>
                     </div>
+                  </div>
+                  
+                  {/* スマホサイズのみのタイムスタンプ表示 */}
+                  <div className="text-xs text-muted-foreground text-center sm:hidden mb-2">
+                    {filteredOddsData.length > 0 && 
+                      `${filteredOddsData[0].timestamp} - ${filteredOddsData[filteredOddsData.length - 1].timestamp}`
+                    }
                   </div>
                   
                   {/* グループ切り替えボタン */}
@@ -944,26 +1162,57 @@ export default function Home() {
                         
                         {/* スクロール可能なコンテナ */}
                         <div 
-                          className="absolute inset-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent" 
+                          className={`absolute inset-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent`} 
                           ref={chartContainerRef}
                         >
                           {/* グラフコンテンツ */}
-                          <div className="h-full min-w-[800px]">
+                          <div 
+                            className="h-full" 
+                            style={{ 
+                              minWidth: typeof calculateChartMinWidth === 'string' 
+                                ? calculateChartMinWidth 
+                                : `${calculateChartMinWidth}px` 
+                            }}
+                          >
                             {OddsChart}
                           </div>
                         </div>
                         
-                        {/* 左右のフェードエフェクト - スクロールコンテナの上に固定 */}
-                        <div className="absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-r from-background/80 to-transparent" />
-                        <div className="absolute right-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-l from-background/80 to-transparent" />
+                        {/* スマホでスクロールが不要な場合はフェードエフェクトを非表示に */}
+                        {windowWidth >= 640 && (
+                          <>
+                            <div className="absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-r from-background/80 to-transparent" />
+                            <div className="absolute right-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-l from-background/80 to-transparent" />
+                          </>
+                        )}
                       </>
                     )}
                   </div>
                   
-                  {/* グラフ操作ガイド */}
-                  <div className="mt-3 text-xs text-muted-foreground text-center">
-                    <p>左右にスクロールして時間推移を確認できます</p>
-                    <p className="mt-1">馬名をタップすると表示/非表示を切り替えられます</p>
+                  {/* 時間軸切り替えボタン - グラフの下に移動 */}
+                  {formattedOddsData.length > 4 && (
+                    <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                      <div className="flex text-xs border border-border rounded-md overflow-hidden">
+                        <button 
+                          className={`px-3 py-1.5 ${timeZoom === 'all' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'}`}
+                          onClick={() => handleTimeZoomChange('all')}
+                        >
+                          全体表示
+                        </button>
+                        <button 
+                          className={`px-3 py-1.5 border-l border-border ${timeZoom === 'normal' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'}`}
+                          onClick={() => handleTimeZoomChange('normal')}
+                        >
+                          標準表示
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* グラフ操作ガイド - スマホサイズでスクロールが不要な場合は非表示 */}
+                  <div className="mt-2 text-xs text-muted-foreground text-center">
+                    {windowWidth >= 640 && <p>左右にスクロールして時間推移を確認できます</p>}
+                    <p className={windowWidth >= 640 ? "mt-1" : ""}>馬名をタップすると表示/非表示を切り替えられます</p>
                   </div>
                 </CardContent>
               </Card>
