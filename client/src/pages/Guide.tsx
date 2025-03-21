@@ -7,18 +7,18 @@ export default function Guide() {
   return (
     <MainLayout>
       <Helmet>
-        <title>馬券戦略の使い方 | 初心者向け馬券の買い方と回収率アップのコツ</title>
-        <meta name="description" content="競馬初心者向けの馬券の買い方ガイド。馬券戦略AIを使った期待値計算と回収率アップの方法を解説。馬券の種類、確率計算、効率的な投資戦略まで、競馬予想の基礎から実践まで完全網羅。" />
-        <meta name="keywords" content="馬券戦略,馬券 買い方,競馬 初心者,競馬 回収率,競馬 期待値計算,馬券 期待値,競馬 確率計算,競馬 勝つコツ,競馬予想 無料,馬券 種類,競馬 回収率アップ" />
+        <title>馬券戦略ガイド | 競馬の期待値計算と戦略立案の方法</title>
+        <meta name="description" content="競馬の期待値計算に基づく馬券戦略の立て方ガイド。的中率分析と期待値計算の基本から、確率計算を活用した効率的な投資戦略まで競馬予想の実践方法を解説します。" />
+        <meta name="keywords" content="馬券戦略,競馬,期待値,期待値計算,期待値計算ツール,確率計算" />
         <link rel="canonical" href="https://horse-stakes.com/guide" />
-        <meta property="og:title" content="馬券戦略の使い方 | 初心者向け馬券の買い方と回収率アップのコツ" />
-        <meta property="og:description" content="競馬初心者向けの馬券の買い方ガイド。馬券戦略AIを使った期待値計算と回収率アップの方法を解説。馬券の種類、確率計算、効率的な投資戦略まで、競馬予想の基礎から実践まで完全網羅。" />
+        <meta property="og:title" content="馬券戦略ガイド | 競馬の期待値計算と戦略立案の方法" />
+        <meta property="og:description" content="競馬の期待値計算に基づく馬券戦略の立て方ガイド。確率計算を活用した的中率分析と期待値計算の基本から、効率的な投資戦略まで競馬予想の実践方法を解説します。" />
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://horse-stakes.com/guide" />
         <meta property="og:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="馬券戦略の使い方 | 初心者向け馬券の買い方と回収率アップのコツ" />
-        <meta name="twitter:description" content="競馬初心者向けの馬券の買い方ガイド。馬券戦略AIを使った期待値計算と回収率アップの方法を解説。" />
+        <meta name="twitter:title" content="馬券戦略ガイド | 競馬の期待値計算と戦略立案の方法" />
+        <meta name="twitter:description" content="競馬の期待値計算、確率計算を活用した馬券戦略の立て方ガイド。的中率分析の基本から実践まで解説。" />
         <meta name="twitter:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
       </Helmet>
 
@@ -27,8 +27,8 @@ export default function Guide() {
         {JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Article",
-          "headline": "馬券戦略の使い方 | 初心者向け馬券の買い方と回収率アップのコツ",
-          "description": "競馬初心者向けの馬券の買い方ガイド。馬券戦略AIを使った期待値計算と回収率アップの方法を解説。",
+          "headline": "馬券戦略ガイド | 競馬の期待値計算と戦略立案の方法",
+          "description": "競馬の期待値計算に基づく馬券戦略の立て方ガイド。確率計算を活用した的中率分析の基本から、効率的な投資戦略まで競馬予想の実践方法を解説します。",
           "image": "https://horse-stakes.com/images/horseshoe-icon2.webp",
           "author": {
             "@type": "Organization",
@@ -59,42 +59,42 @@ export default function Guide() {
           "mainEntity": [
             {
               "@type": "Question",
-              "name": "競馬初心者でも使えますか？",
+              "name": "競馬初心者でも期待値計算は使えますか？",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "はい、競馬初心者の方でも簡単に使えるよう設計されています。単勝確率と複勝確率を入力するだけで、馬券戦略AIが最適な馬券作成方法を提案します。馬券の種類や組み合わせに悩む必要はありません。"
+                "text": "はい、競馬初心者の方でも簡単に使えるよう設計されています。単勝確率と複勝確率を入力するだけで、馬券戦略が最適な馬券作成方法を提案します。期待値計算の詳細を理解する必要はなく、直感的に使えます。"
               }
             },
             {
               "@type": "Question",
-              "name": "回収率を上げるコツはありますか？",
+              "name": "確率計算と期待値計算の違いは何ですか？",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "回収率向上のポイントは、正確な確率予想と適切な資金配分です。オッズと自分の予想確率のギャップを見つけ、期待値の高い馬券を選ぶことが重要です。馬券戦略アプリはそのプロセスを自動化し、最適な馬券戦略を提案します。"
+                "text": "確率計算は馬券的中の可能性（的中確率）を予測する作業です。一方、期待値計算はその確率とオッズから投資価値を算出するもので、(オッズ×的中確率)の式で表されます。馬券戦略では確率計算の精度が期待値計算の精度を左右する重要な要素となります。"
               }
             },
             {
               "@type": "Question",
-              "name": "どのような馬券種類に対応していますか？",
+              "name": "期待値計算で回収率を上げるコツはありますか？",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "単勝、複勝、馬連、馬単、ワイド、三連複、三連単など、JRAの主要な馬券種類すべてに対応しています。馬券戦略AIがレース状況に応じて最適な馬券種類を選択し、組み合わせを提案します。"
+                "text": "回収率向上のポイントは、正確な確率予想と適切な資金配分です。オッズと自分の予想確率の差を見つけ、期待値の高い馬券を選ぶことが重要です。馬券戦略アプリはそのプロセスを自動化し、最適な投資配分を提案します。"
               }
             },
             {
               "@type": "Question",
-              "name": "馬券はどこで買えますか？",
+              "name": "期待値計算ツールはどのような馬券種類に対応していますか？",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "JRAの公式サイトや、ネット競馬サイトで馬券を購入できます。馬券戦略アプリは馬券の購入を直接行うことはできませんが、最適な馬券戦略を提案し、購入の判断材料を提供します。"
+                "text": "単勝、複勝、馬連、馬単、ワイド、三連複、三連単など、JRAの主要な馬券種類すべてに対応しています。馬券戦略ツールがレース状況に応じて期待値の高い馬券種類を選択し、組み合わせを提案します。"
               }
             },
             {
               "@type": "Question",
-              "name": "期待値計算とは何ですか？",
+              "name": "期待値計算の基本的な数式は？",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "期待値計算は、馬券の投資価値を数値化する方法です。オッズと予想確率を組み合わせて、長期的な収益性を評価します。馬券戦略では、AIが自動的に期待値を計算し、最も投資価値の高い馬券を提案します。"
+                "text": "期待値 = オッズ × 的中確率 の数式で算出されます。例えば、オッズ10倍で的中確率が15%の馬券なら、期待値は 10 × 0.15 = 1.5 となります。期待値が1以上であれば理論上は長期的に利益が期待できる馬券と言えます。"
               }
             }
           ]
@@ -132,15 +132,15 @@ export default function Guide() {
 
       <div className="mb-8">
         <p className="text-lg text-muted-foreground">
-          回収率アップを目指す競馬ファンのための、AI駆動の馬券戦略ツールの使い方をご紹介します。
-          的中率と期待値を計算し、最適な馬券の組み合わせを提案します。初心者から上級者まで、
-          競馬予想の精度を高め、効率的な馬券購入をサポートします。
+          競馬ファンのための期待値計算に基づく馬券戦略ツールの使い方を紹介します。
+          確率計算によって単勝・複勝率を算出し、オッズとの比較で期待値を計算。
+          最適な馬券組み合わせを提案し、長期的な収益向上を目指します。
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="relative">
-          <h2 className="text-2xl font-bold mb-6">ステップバイステップガイド</h2>
+          <h2 className="text-2xl font-bold mb-6">期待値計算と馬券戦略ガイド</h2>
           <div className="space-y-4">
             <Card className="overflow-hidden bg-background/50 backdrop-blur-sm hover:bg-background/60 transition-all duration-300">
               <CardHeader className="relative pb-4">
@@ -156,21 +156,21 @@ export default function Guide() {
                 <div className="space-y-3">
                   <p className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">1</span>
-                    レース一覧から投票したいレースを選択
+                    レース一覧から期待値計算したいレースを選択
                   </p>
                   <p className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">2</span>
-                    レース検索から過去に開催されたレースを検索
+                    レース検索から過去に開催されたレースも検索可能
                   </p>
                 </div>
                 <div className="mt-4 space-y-1.5 rounded-lg bg-secondary/30 p-3">
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary/50" />
-                    レース一覧には当日9時からレースが表示されます
+                    レース一覧には当日のレース情報が表示されます
                   </p>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary/50" />
-                    現在は2024年日本ダービー、ジャパンカップ、有馬記念を検索できます
+                    主要レースの期待値計算データを検索で見つけられます
                   </p>
                 </div>
               </CardContent>
@@ -183,24 +183,24 @@ export default function Guide() {
                   <div className="bg-primary/10 p-2 rounded-full">
                     <Trophy className="h-5 w-5 text-primary" />
                   </div>
-                  Step 2: 確率を予想する
+                  Step 2: 確率計算と予想値入力
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="space-y-3">
                   <p className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">1</span>
-                    単勝確率は合計100％、複勝確率は合計300％となるように入力
+                    単勝確率と複勝確率を入力（確率計算による期待値計算の基礎データ）
                   </p>
                   <p className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">2</span>
-                    投資金額、リスクリワードを入力
+                    投資金額とリスク許容度を設定して期待値を最適化
                   </p>
                 </div>
                 <div className="mt-4 rounded-lg bg-secondary/30 p-3">
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary/50" />
-                    AIがあなたの入力に応じて最適な馬券を提案します
+                    確率計算の精度が期待値計算の精度を左右します
                   </p>
                 </div>
               </CardContent>
@@ -213,24 +213,24 @@ export default function Guide() {
                   <div className="bg-primary/10 p-2 rounded-full">
                     <Ticket className="h-5 w-5 text-primary" />
                   </div>
-                  Step 3: 戦略を確認する
+                  Step 3: 期待値に基づく戦略確認
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="space-y-3">
                   <p className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">1</span>
-                    AIが提案する馬券の組み合わせを確認
+                    期待値の高い馬券組み合わせを確認
                   </p>
                   <p className="flex items-center gap-2">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">2</span>
-                    資金配分、選定理由も確認できます
+                    最適な資金配分を確認
                   </p>
                 </div>
                 <div className="mt-4 rounded-lg bg-secondary/30 p-3">
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary/50" />
-                    AIが出力する内容は必ずしも正確ではないことに注意して下さい
+                    プラスの期待値を持つ馬券が表示され、回収率向上につながります
                   </p>
                 </div>
               </CardContent>
@@ -250,13 +250,13 @@ export default function Guide() {
             </div>
             <div>
               <p className="font-semibold">馬券戦略</p>
-              <p className="text-sm">AI駆動の投資最適化で回収率アップ</p>
+              <p className="text-sm">期待値計算と確率計算で回収率アップを実現</p>
             </div>
           </div>
         </div>
 
         <div>
-          <h2 className="text-2xl font-bold mb-6">馬券生成の仕組みと回収率向上のポイント</h2>
+          <h2 className="text-2xl font-bold mb-6">期待値計算の仕組みと回収率向上のポイント</h2>
           <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
             <CardContent className="space-y-8 pt-6">
               <div className="space-y-12">
@@ -264,7 +264,7 @@ export default function Guide() {
                   <div className="overflow-hidden rounded-lg border border-primary/10 transition-all duration-300 group-hover:border-primary/20">
                     <img 
                       src="/images/betting-generation.webp" 
-                      alt="馬券候補生成プロセスの図解 - 確率計算から候補抽出までのフロー" 
+                      alt="期待値計算プロセスの図解 - 確率とオッズから期待値を算出するフロー" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
                       width="512"
                       height="300"
@@ -272,7 +272,7 @@ export default function Guide() {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground mt-4 px-2">
-                    単勝、複勝など全ての券種について期待値と的中確率を計算し、有望な候補を抽出します
+                    確率計算を基に単勝、複勝など全ての券種について期待値と的中確率を計算し、プラスの期待値を持つ馬券を抽出します
                   </p>
                 </div>
 
@@ -280,7 +280,7 @@ export default function Guide() {
                   <div className="overflow-hidden rounded-lg border border-primary/10 transition-all duration-300 group-hover:border-primary/20">
                     <img 
                       src="/images/ai-analysis.webp" 
-                      alt="AI分析プロセスの図解 - 期待値と確率に基づく最適な馬券組み合わせの分析" 
+                      alt="期待値分析プロセスの図解 - 期待値に基づく最適な馬券組み合わせの分析" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
                       width="512"
                       height="300"
@@ -296,7 +296,7 @@ export default function Guide() {
                   <div className="overflow-hidden rounded-lg border border-primary/10 transition-all duration-300 group-hover:border-primary/20">
                     <img 
                       src="/images/fund-optimization.webp" 
-                      alt="資金配分最適化プロセスの図解 - シャープレシオに基づく投資額決定方法" 
+                      alt="期待値に基づく資金配分最適化の図解 - 期待値とリスクのバランスによる投資額決定方法" 
                       className="w-full max-w-lg mx-auto dark:opacity-90 transition-transform duration-300 group-hover:scale-[1.02]"
                       width="512"
                       height="300"
@@ -304,7 +304,7 @@ export default function Guide() {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground mt-4 px-2">
-                    シャープレシオの最大化を目指し、リスクとリターンのバランスを考慮して投資額を決定します
+                    期待値とリスクのバランスを最適化し、長期的な回収率向上を目指した資金配分を決定します
                   </p>
                 </div>
               </div>
@@ -314,41 +314,59 @@ export default function Guide() {
       </div>
       
       <div className="mt-16">
-        <h2 className="text-2xl font-bold mb-6">よくある質問</h2>
+        <h2 className="text-2xl font-bold mb-6">期待値計算と確率計算に関するよくある質問</h2>
         <div className="space-y-6">
           <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>競馬初心者でも使えますか？</CardTitle>
+              <CardTitle>競馬初心者でも期待値計算は使えますか？</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>はい、競馬初心者の方でも簡単に使えるよう設計されています。単勝確率と複勝確率を入力するだけで、馬券戦略AIが最適な馬券作成方法を提案します。馬券の種類や組み合わせに悩む必要はありません。</p>
+              <p>はい、競馬初心者の方でも簡単に使えるよう設計されています。単勝確率と複勝確率を入力するだけで、馬券戦略が最適な馬券作成方法を提案します。期待値計算の詳細を理解する必要はなく、直感的に使えます。</p>
             </CardContent>
           </Card>
           
           <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>回収率を上げるコツはありますか？</CardTitle>
+              <CardTitle>確率計算と期待値計算の違いは何ですか？</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>回収率向上のポイントは、正確な確率予想と適切な資金配分です。オッズと自分の予想確率のギャップを見つけ、期待値の高い馬券を選ぶことが重要です。馬券戦略アプリはそのプロセスを自動化し、最適な馬券戦略を提案します。</p>
+              <p>確率計算は馬券的中の可能性（的中確率）を予測する作業です。一方、期待値計算はその確率とオッズから投資価値を算出するもので、(オッズ×的中確率)の式で表されます。馬券戦略では確率計算の精度が期待値計算の精度を左右する重要な要素となります。</p>
             </CardContent>
           </Card>
           
           <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>どのような馬券種類に対応していますか？</CardTitle>
+              <CardTitle>期待値計算で回収率を上げるコツはありますか？</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>単勝、複勝、馬連、馬単、ワイド、３連複、３連単など、JRAの主要な馬券種類すべてに対応しています。馬券戦略AIがレース状況に応じて最適な馬券種類を選択し、組み合わせを提案します。</p>
+              <p>回収率向上のポイントは、正確な確率予想と適切な資金配分です。オッズと自分の予想確率の差を見つけ、期待値の高い馬券を選ぶことが重要です。馬券戦略アプリはそのプロセスを自動化し、最適な投資配分を提案します。</p>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>期待値計算ツールはどのような馬券種類に対応していますか？</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>単勝、複勝、馬連、馬単、ワイド、三連複、三連単など、JRAの主要な馬券種類すべてに対応しています。馬券戦略ツールがレース状況に応じて期待値の高い馬券種類を選択し、組み合わせを提案します。</p>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>期待値計算の基本的な数式は？</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>期待値 = オッズ × 的中確率 の数式で算出されます。例えば、オッズ10倍で的中確率が15%の馬券なら、期待値は 10 × 0.15 = 1.5 となります。期待値が1以上であれば理論上は長期的に利益が期待できる馬券と言えます。</p>
             </CardContent>
           </Card>
         </div>
       </div>
       
       <div className="mt-16 text-center">
-        <h2 className="text-2xl font-bold mb-4">今すぐ競馬予想を始めましょう</h2>
+        <h2 className="text-2xl font-bold mb-4">確率計算と期待値計算ツールで競馬予想を始めましょう</h2>
         <p className="text-lg text-muted-foreground mb-6">
-          AIを活用した馬券戦略で回収率アップを目指しませんか？
+          期待値計算と確率計算に基づく馬券戦略で、効率的な競馬投資と回収率アップを実現しませんか？
         </p>
         <a 
           href="/" 
