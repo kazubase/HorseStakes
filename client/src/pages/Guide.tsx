@@ -2,8 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MainLayout from "@/components/layout/MainLayout";
 import { Ticket, Calendar, Coins, Trophy, ChevronRight, Info, Award, BarChart3 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { useThemeStore } from "@/stores/themeStore";
 
 export default function Guide() {
+  const { theme } = useThemeStore();
+  
   return (
     <MainLayout>
       <Helmet>
@@ -145,20 +148,20 @@ export default function Guide() {
             <Card className="overflow-hidden bg-background/50 backdrop-blur-sm hover:bg-background/60 transition-all duration-300">
               <CardHeader className="relative pb-4">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
-                <CardTitle className="relative flex items-center gap-2">
+                <CardTitle className="relative flex items-center gap-2 text-foreground">
                   <div className="bg-primary/10 p-2 rounded-full">
                     <Calendar className="h-5 w-5 text-primary" />
                   </div>
                   Step 1: レースを選ぶ
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2 text-foreground">
                 <div className="space-y-3">
-                  <p className="flex items-center gap-2">
+                  <p className="flex items-center gap-2 text-foreground">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">1</span>
                     レース一覧から期待値計算したいレースを選択
                   </p>
-                  <p className="flex items-center gap-2">
+                  <p className="flex items-center gap-2 text-foreground">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">2</span>
                     レース検索から過去に開催されたレースも検索可能
                   </p>
@@ -179,20 +182,20 @@ export default function Guide() {
             <Card className="overflow-hidden bg-background/50 backdrop-blur-sm hover:bg-background/60 transition-all duration-300">
               <CardHeader className="relative pb-4">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
-                <CardTitle className="relative flex items-center gap-2">
+                <CardTitle className="relative flex items-center gap-2 text-foreground">
                   <div className="bg-primary/10 p-2 rounded-full">
                     <Trophy className="h-5 w-5 text-primary" />
                   </div>
                   Step 2: 確率計算と予想値入力
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2 text-foreground">
                 <div className="space-y-3">
-                  <p className="flex items-center gap-2">
+                  <p className="flex items-center gap-2 text-foreground">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">1</span>
                     単勝確率と複勝確率を入力（確率計算による期待値計算の基礎データ）
                   </p>
-                  <p className="flex items-center gap-2">
+                  <p className="flex items-center gap-2 text-foreground">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">2</span>
                     投資金額とリスク許容度を設定して期待値を最適化
                   </p>
@@ -209,20 +212,20 @@ export default function Guide() {
             <Card className="overflow-hidden bg-background/50 backdrop-blur-sm hover:bg-background/60 transition-all duration-300">
               <CardHeader className="relative pb-4">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
-                <CardTitle className="relative flex items-center gap-2">
+                <CardTitle className="relative flex items-center gap-2 text-foreground">
                   <div className="bg-primary/10 p-2 rounded-full">
                     <Ticket className="h-5 w-5 text-primary" />
                   </div>
                   Step 3: 期待値に基づく戦略確認
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2 text-foreground">
                 <div className="space-y-3">
-                  <p className="flex items-center gap-2">
+                  <p className="flex items-center gap-2 text-foreground">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">1</span>
                     期待値の高い馬券組み合わせを確認
                   </p>
-                  <p className="flex items-center gap-2">
+                  <p className="flex items-center gap-2 text-foreground">
                     <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">2</span>
                     最適な資金配分を確認
                   </p>
@@ -239,14 +242,25 @@ export default function Guide() {
           
           <div className="hidden md:flex items-center gap-3 mt-12 text-muted-foreground">
             <div className="bg-primary/10 p-3 rounded-full">
-              <img 
-                src="/images/horseshoe-icon.webp" 
-                alt="競馬予想アプリのロゴ - 馬蹄アイコン" 
-                className="h-6 w-6"
-                width="24"
-                height="24"
-                loading="lazy"
-              />
+              {theme === 'light' ? (
+                <img 
+                  src="/images/horseshoe-icon-light.webp" 
+                  alt="競馬予想アプリのロゴ - 馬蹄アイコン" 
+                  className="h-6 w-6"
+                  width="24"
+                  height="24"
+                  loading="lazy"
+                />
+              ) : (
+                <img 
+                  src="/images/horseshoe-icon.webp" 
+                  alt="競馬予想アプリのロゴ - 馬蹄アイコン" 
+                  className="h-6 w-6"
+                  width="24"
+                  height="24"
+                  loading="lazy"
+                />
+              )}
             </div>
             <div>
               <p className="font-semibold">馬券戦略</p>
@@ -318,45 +332,45 @@ export default function Guide() {
         <div className="space-y-6">
           <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>競馬初心者でも期待値計算は使えますか？</CardTitle>
+              <CardTitle className="text-foreground">競馬初心者でも期待値計算は使えますか？</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-foreground">
               <p>はい、競馬初心者の方でも簡単に使えるよう設計されています。単勝確率と複勝確率を入力するだけで、馬券戦略が最適な馬券作成方法を提案します。期待値計算の詳細を理解する必要はなく、直感的に使えます。</p>
             </CardContent>
           </Card>
           
           <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>確率計算と期待値計算の違いは何ですか？</CardTitle>
+              <CardTitle className="text-foreground">確率計算と期待値計算の違いは何ですか？</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-foreground">
               <p>確率計算は馬券的中の可能性（的中確率）を予測する作業です。一方、期待値計算はその確率とオッズから投資価値を算出するもので、(オッズ×的中確率)の式で表されます。馬券戦略では確率計算の精度が期待値計算の精度を左右する重要な要素となります。</p>
             </CardContent>
           </Card>
           
           <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>期待値計算で回収率を上げるコツはありますか？</CardTitle>
+              <CardTitle className="text-foreground">期待値計算で回収率を上げるコツはありますか？</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-foreground">
               <p>回収率向上のポイントは、正確な確率予想と適切な資金配分です。オッズと自分の予想確率の差を見つけ、期待値の高い馬券を選ぶことが重要です。馬券戦略アプリはそのプロセスを自動化し、最適な投資配分を提案します。</p>
             </CardContent>
           </Card>
 
           <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>期待値計算ツールはどのような馬券種類に対応していますか？</CardTitle>
+              <CardTitle className="text-foreground">期待値計算ツールはどのような馬券種類に対応していますか？</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-foreground">
               <p>単勝、複勝、馬連、馬単、ワイド、三連複、三連単など、JRAの主要な馬券種類すべてに対応しています。馬券戦略ツールがレース状況に応じて期待値の高い馬券種類を選択し、組み合わせを提案します。</p>
             </CardContent>
           </Card>
 
           <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>期待値計算の基本的な数式は？</CardTitle>
+              <CardTitle className="text-foreground">期待値計算の基本的な数式は？</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-foreground">
               <p>期待値 = オッズ × 的中確率 の数式で算出されます。例えば、オッズ10倍で的中確率が15%の馬券なら、期待値は 10 × 0.15 = 1.5 となります。期待値が1以上であれば理論上は長期的に利益が期待できる馬券と言えます。</p>
             </CardContent>
           </Card>

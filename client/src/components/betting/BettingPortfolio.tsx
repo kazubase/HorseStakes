@@ -6,12 +6,15 @@ import type { GeminiStrategy } from '@/lib/geminiApi';
 import { normalizeStringProbability } from '@/lib/utils/probability';
 import { Loader2 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
+import { useThemeStore } from "@/stores/themeStore";
+import { cn } from "@/lib/utils";
 
 export function BettingPortfolio() {
   const [selectionState] = useAtom(selectionStateAtom);
   const [geminiProgress] = useAtom(geminiProgressAtom);
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const [isLoading, setIsLoading] = useState(true);
+  const { theme } = useThemeStore();
 
   const strategy: GeminiStrategy = useMemo(() => {
     if (!selectionState.selectedBets.length) {
@@ -89,21 +92,50 @@ export function BettingPortfolio() {
     const progressValue = geminiProgress.step * 100 / 3; // 0, 25, 50, 75, 100
     
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-        <p className="text-muted-foreground mb-4">{geminiProgress.message || 'ポートフォリオを最適化中...'}</p>
+      <div className={cn(
+        "flex flex-col items-center justify-center min-h-[50vh] p-8",
+        theme === 'light'
+          ? "bg-white/80 backdrop-blur-sm rounded-lg border border-gray-200 shadow-sm"
+          : ""
+      )}>
+        <Loader2 className={cn(
+          "h-12 w-12 animate-spin mb-4",
+          theme === 'light'
+            ? "text-indigo-600"
+            : "text-primary"
+        )} />
+        <p className={cn(
+          "mb-4 font-medium",
+          theme === 'light'
+            ? "text-gray-700"
+            : "text-muted-foreground"
+        )}>{geminiProgress.message || 'ポートフォリオを最適化中...'}</p>
         
         {/* 進捗バー */}
         <div className="w-full max-w-md mb-2">
-          <Progress value={progressValue} className="h-2" />
+          <Progress value={progressValue} className={
+            theme === 'light'
+              ? "h-2 bg-gray-100"
+              : "h-2"
+          } />
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className={cn(
+          "text-xs",
+          theme === 'light'
+            ? "text-gray-500"
+            : "text-muted-foreground"
+        )}>
           ステップ {geminiProgress.step}/3: {getStepDescription(geminiProgress.step)}
         </p>
         
         {/* エラーメッセージ */}
         {geminiProgress.error && (
-          <div className="mt-4 p-3 bg-destructive/10 text-destructive rounded-md">
+          <div className={cn(
+            "mt-4 p-3 rounded-md",
+            theme === 'light'
+              ? "bg-red-50 text-red-600 border border-red-200"
+              : "bg-destructive/10 text-destructive"
+          )}>
             {geminiProgress.error}
           </div>
         )}
@@ -113,7 +145,12 @@ export function BettingPortfolio() {
 
   if (!strategy.recommendations.length) {
     return (
-      <div className="text-center text-muted-foreground p-4">
+      <div className={cn(
+        "text-center p-8 rounded-lg",
+        theme === 'light'
+          ? "bg-gray-50 text-gray-600 border border-gray-200"
+          : "text-muted-foreground"
+      )}>
         馬券が選択されていません
       </div>
     );

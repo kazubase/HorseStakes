@@ -1,46 +1,95 @@
 import { Link } from "wouter";
 import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { FaList } from "react-icons/fa";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Sun, Moon } from "lucide-react";
 import { useLocation } from "wouter";
+import { useThemeStore } from "@/stores/themeStore";
 
 // ロゴコンポーネントをメモ化して不要な再レンダリングを防止
-const Logo = memo(() => (
-  <Link href="/" aria-label="ホームページへ移動">
-    <div className="flex items-center gap-3 cursor-pointer">
-      <img 
-        src="/images/horseshoe-icon.webp" 
-        alt="馬券戦略アプリロゴ" 
-        className="h-9 w-9 rounded-lg shadow-sm"
-        width="36"
-        height="36"
-        decoding="async"
-        loading="eager"
-        // @ts-ignore - fetchpriorityはHTML標準属性だがReact TypesにはまだないのでTSエラーを抑制
-        fetchpriority="high"
-      />
-      <span className="font-bold text-2xl font-yuji yuji-syuku">馬券戦略</span>
-    </div>
-  </Link>
-));
+const Logo = memo(() => {
+  const { theme } = useThemeStore();
+  
+  return (
+    <Link href="/" aria-label="ホームページへ移動">
+      <div className="flex items-center gap-3 cursor-pointer">
+        {theme === 'light' ? (
+          <img 
+            src="/images/horseshoe-icon-light.webp" 
+            alt="馬券戦略アプリロゴ" 
+            className="h-9 w-9 rounded-lg shadow-sm"
+            width="36"
+            height="36"
+            decoding="async"
+            loading="eager"
+            // @ts-ignore - fetchpriorityはHTML標準属性だがReact TypesにはまだないのでTSエラーを抑制
+            fetchpriority="high"
+          />
+        ) : (
+          <img 
+            src="/images/horseshoe-icon.webp" 
+            alt="馬券戦略アプリロゴ" 
+            className="h-9 w-9 rounded-lg shadow-sm"
+            width="36"
+            height="36"
+            decoding="async"
+            loading="eager"
+            // @ts-ignore - fetchpriorityはHTML標準属性だがReact TypesにはまだないのでTSエラーを抑制
+            fetchpriority="high"
+          />
+        )}
+        <span className="font-bold text-2xl font-yuji yuji-syuku">馬券戦略</span>
+      </div>
+    </Link>
+  );
+});
 
 // ナビゲーションをメモ化
-const Navigation = memo(() => (
-  <div className="flex justify-around h-10">
-    <Link href="/" aria-label="レース選択ページへ移動">
-      <div className="flex items-center justify-center px-4 h-full hover:text-primary hover:bg-muted/50 transition-colors">
-        <FaList className="h-4 w-4 mr-1.5" aria-hidden="true" />
-        <span className="text-sm font-medium">レース選択</span>
-      </div>
-    </Link>
-    <Link href="/guide" aria-label="使い方ガイドページへ移動">
-      <div className="flex items-center justify-center px-4 h-full hover:text-primary hover:bg-muted/50 transition-colors">
-        <HelpCircle className="h-4 w-4 mr-1.5" aria-hidden="true" />
-        <span className="text-sm font-medium">使い方</span>
-      </div>
-    </Link>
-  </div>
-));
+const Navigation = memo(() => {
+  const { theme } = useThemeStore();
+  const navItemClass = theme === 'light' 
+    ? 'flex items-center justify-center px-4 h-full hover:text-primary hover:bg-secondary/60 transition-colors'
+    : 'flex items-center justify-center px-4 h-full hover:text-primary hover:bg-muted/50 transition-colors';
+    
+  return (
+    <div className="flex justify-around h-10">
+      <Link href="/" aria-label="レース選択ページへ移動">
+        <div className={navItemClass}>
+          <FaList className="h-4 w-4 mr-1.5" aria-hidden="true" />
+          <span className="text-sm font-medium">レース選択</span>
+        </div>
+      </Link>
+      <Link href="/guide" aria-label="使い方ガイドページへ移動">
+        <div className={navItemClass}>
+          <HelpCircle className="h-4 w-4 mr-1.5" aria-hidden="true" />
+          <span className="text-sm font-medium">使い方</span>
+        </div>
+      </Link>
+    </div>
+  );
+});
+
+// テーマ切り替えボタンをメモ化
+const ThemeToggle = memo(() => {
+  const { theme, toggleTheme } = useThemeStore();
+  
+  const btnClass = theme === 'light'
+    ? 'flex items-center justify-center w-8 h-8 rounded-md hover:bg-secondary/70 transition-colors'
+    : 'flex items-center justify-center w-8 h-8 rounded-md hover:bg-muted/70 transition-colors';
+  
+  return (
+    <button
+      onClick={toggleTheme}
+      className={btnClass}
+      aria-label={theme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
+    >
+      {theme === 'dark' ? (
+        <Sun className="h-5 w-5" aria-hidden="true" />
+      ) : (
+        <Moon className="h-5 w-5" aria-hidden="true" />
+      )}
+    </button>
+  );
+});
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
@@ -48,6 +97,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [lastScrollY, setLastScrollY] = useState(0);
   const [location] = useLocation();
   const isRaceListPage = useMemo(() => location === "/", [location]);
+  const { theme } = useThemeStore();
 
   // スクロールイベントをデバウンス（制御）するための関数
   const debounce = useCallback((func: Function, wait: number) => {
@@ -133,16 +183,41 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     [isRaceListPage]
   );
 
+  // ヘッダーの背景スタイルを条件付きで設定
+  const headerBgClass = useMemo(() => 
+    theme === 'light' 
+      ? 'border-b bg-card/95 backdrop-blur-sm shadow-sm'
+      : 'border-b bg-card/80 backdrop-blur-sm',
+    [theme]
+  );
+
+  // ナビゲーションの背景スタイルを条件付きで設定
+  const navBgClass = useMemo(() => 
+    theme === 'light' 
+      ? 'border-b bg-card/95 backdrop-blur-sm shadow-sm'
+      : 'border-b bg-card/80 backdrop-blur-sm',
+    [theme]
+  );
+
+  // フッターナビゲーションの背景スタイルを条件付きで設定
+  const footerNavBgClass = useMemo(() => 
+    theme === 'light' 
+      ? 'fixed bottom-0 left-0 right-0 z-20 border-t bg-card/95 backdrop-blur-md shadow-lg'
+      : 'fixed bottom-0 left-0 right-0 z-20 border-t bg-card/95 backdrop-blur-md shadow-lg',
+    [theme]
+  );
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className={`min-h-screen flex flex-col bg-background ${theme}`}>
       {/* ヘッダー */}
       <div 
         className={`fixed top-0 left-0 right-0 z-20 transition-transform duration-300 will-change-transform ${headerTransitionClass}`}
         role="banner"
       >
-        <header className="border-b bg-card/80 backdrop-blur-sm">
+        <header className={headerBgClass}>
           <div className="container mx-auto px-4 h-12 flex items-center justify-between">
             <Logo />
+            <ThemeToggle />
           </div>
         </header>
       </div>
@@ -154,7 +229,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           role="navigation" 
           aria-label="サイトナビゲーション"
         >
-          <nav className="border-b bg-card/80 backdrop-blur-sm">
+          <nav className={navBgClass}>
             <div className="container mx-auto">
               <Navigation />
             </div>
@@ -171,7 +246,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* レース一覧画面の場合のみフッターナビゲーションを表示 */}
       {isRaceListPage && (
         <div 
-          className="fixed bottom-0 left-0 right-0 z-20 border-t bg-card/95 backdrop-blur-md shadow-lg"
+          className={footerNavBgClass}
           role="navigation" 
           aria-label="フッターナビゲーション"
         >

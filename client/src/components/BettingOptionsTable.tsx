@@ -10,6 +10,7 @@ import { calculateTotalProbability } from "@/lib/betInclusionExclusion";
 import { useAtom } from 'jotai';
 import { selectionStateAtom, horsesAtom, winProbsAtom, placeProbsAtom, bettingOptionsStatsAtom } from '@/stores/bettingStrategy';
 import { Spinner } from "@/components/ui/spinner";
+import { useThemeStore } from "@/stores/themeStore";
 
 interface BettingOptionsTableProps {
   bettingOptions: BetProposal[];
@@ -46,6 +47,7 @@ export function BettingOptionsTable({
   const [winProbs] = useAtom(winProbsAtom);
   const [placeProbs] = useAtom(placeProbsAtom);
   const [isCalculating, setIsCalculating] = useState(true);
+  const { theme } = useThemeStore();
   
   // 馬データを構築
   const horseData = useMemo(() => {
@@ -210,11 +212,19 @@ export function BettingOptionsTable({
       .filter(v => v <= value)
       .length / optionsWithStats.options.length;
     
-    if (percentile > 0.8) return 'text-green-500';
-    if (percentile > 0.6) return 'text-green-600';
-    if (percentile > 0.4) return 'text-yellow-500';
-    if (percentile > 0.2) return 'text-yellow-600';
-    return 'text-muted-foreground';
+    if (theme === 'light') {
+      if (percentile > 0.8) return 'text-green-600';
+      if (percentile > 0.6) return 'text-green-700';
+      if (percentile > 0.4) return 'text-amber-600';
+      if (percentile > 0.2) return 'text-amber-700';
+      return 'text-gray-500';
+    } else {
+      if (percentile > 0.8) return 'text-green-500';
+      if (percentile > 0.6) return 'text-green-600';
+      if (percentile > 0.4) return 'text-yellow-500';
+      if (percentile > 0.2) return 'text-yellow-600';
+      return 'text-muted-foreground';
+    }
   };
 
   // オッズの色分けロジック
@@ -225,11 +235,19 @@ export function BettingOptionsTable({
       .filter(v => v <= odds)
       .length / optionsWithStats.options.length;
     
-    if (percentile > 0.8) return 'text-green-500';
-    if (percentile > 0.6) return 'text-green-600';
-    if (percentile > 0.4) return 'text-yellow-500';
-    if (percentile > 0.2) return 'text-yellow-600';
-    return 'text-yellow-600';
+    if (theme === 'light') {
+      if (percentile > 0.8) return 'text-orange-600';
+      if (percentile > 0.6) return 'text-orange-700';
+      if (percentile > 0.4) return 'text-amber-600';
+      if (percentile > 0.2) return 'text-amber-700';
+      return 'text-amber-700';
+    } else {
+      if (percentile > 0.8) return 'text-green-500';
+      if (percentile > 0.6) return 'text-green-600';
+      if (percentile > 0.4) return 'text-yellow-500';
+      if (percentile > 0.2) return 'text-yellow-600';
+      return 'text-yellow-600';
+    }
   };
 
   // 期待値の色分けロジック
@@ -240,11 +258,19 @@ export function BettingOptionsTable({
       .filter(v => v <= ev)
       .length / optionsWithStats.options.length;
     
-    if (percentile > 0.8) return 'text-green-500';
-    if (percentile > 0.6) return 'text-green-600';
-    if (percentile > 0.4) return 'text-yellow-500';
-    if (percentile > 0.2) return 'text-yellow-600';
-    return 'text-muted-foreground';
+    if (theme === 'light') {
+      if (percentile > 0.8) return 'text-indigo-600';
+      if (percentile > 0.6) return 'text-indigo-700';
+      if (percentile > 0.4) return 'text-blue-600';
+      if (percentile > 0.2) return 'text-blue-700';
+      return 'text-gray-500';
+    } else {
+      if (percentile > 0.8) return 'text-green-500';
+      if (percentile > 0.6) return 'text-green-600';
+      if (percentile > 0.4) return 'text-yellow-500';
+      if (percentile > 0.2) return 'text-yellow-600';
+      return 'text-muted-foreground';
+    }
   };
 
   // EVに基づく背景色を決定する関数
@@ -255,10 +281,17 @@ export function BettingOptionsTable({
       .filter(v => v <= ev)
       .length / optionsWithStats.options.length;
     
-    if (percentile > 0.75) return 'bg-green-500/15 hover:bg-green-500/25';
-    if (percentile > 0.5) return 'bg-lime-600/15 hover:bg-lime-600/25';
-    if (percentile > 0.25) return 'bg-yellow-500/10 hover:bg-yellow-500/20';
-    return 'bg-yellow-500/5 hover:bg-yellow-500/15';
+    if (theme === 'light') {
+      if (percentile > 0.75) return 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200';
+      if (percentile > 0.5) return 'bg-lime-50 hover:bg-lime-100 border-lime-200';
+      if (percentile > 0.25) return 'bg-amber-50 hover:bg-amber-100 border-amber-200';
+      return 'bg-gray-50 hover:bg-gray-100 border-gray-200';
+    } else {
+      if (percentile > 0.75) return 'bg-green-500/15 hover:bg-green-500/25';
+      if (percentile > 0.5) return 'bg-lime-600/15 hover:bg-lime-600/25';
+      if (percentile > 0.25) return 'bg-yellow-500/10 hover:bg-yellow-500/20';
+      return 'bg-yellow-500/5 hover:bg-yellow-500/15';
+    }
   };
 
   // 券種でグループ化
@@ -483,7 +516,11 @@ export function BettingOptionsTable({
   return (
     <div className={`space-y-2 ${className || ''}`}>
       {/* 凡例を追加 */}
-      <div className="bg-secondary/30 p-2 rounded-lg text-xs text-muted-foreground">
+      <div className={
+        theme === 'light'
+          ? "bg-gray-100 p-2 rounded-lg text-xs text-gray-600"
+          : "bg-secondary/30 p-2 rounded-lg text-xs text-muted-foreground"
+      }>
         <div className="grid grid-cols-2 gap-2 mb-1">
           <div>買い目</div>
           <div className="text-right">オッズ</div>
@@ -507,10 +544,22 @@ export function BettingOptionsTable({
           const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
 
           return (
-            <Card key={betType} className="bg-background/50 backdrop-blur-sm">
-              <CardHeader className="py-2 px-3 border-b">
+            <Card key={betType} className={
+              theme === 'light'
+                ? "bg-white border border-gray-200 shadow-sm"
+                : "bg-background/50 backdrop-blur-sm"
+            }>
+              <CardHeader className={
+                theme === 'light'
+                  ? "py-2 px-3 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white"
+                  : "py-2 px-3 border-b"
+              }>
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-base font-medium min-w-[4rem]">
+                  <CardTitle className={
+                    theme === 'light'
+                      ? "text-base font-medium min-w-[4rem] text-gray-800"
+                      : "text-base font-medium min-w-[4rem]"
+                  }>
                     {betType}
                   </CardTitle>
                   
@@ -518,7 +567,11 @@ export function BettingOptionsTable({
                     {/* 分析画面の時のみ馬券候補の点数を表示 */}
                     {showAnalysis && (
                       <div className="flex items-center flex-wrap justify-end gap-1.5 text-xs">
-                        <span className="font-medium whitespace-nowrap">
+                        <span className={
+                          theme === 'light'
+                            ? "font-medium whitespace-nowrap text-gray-600"
+                            : "font-medium whitespace-nowrap"
+                        }>
                           {options.length}点
                         </span>
                       </div>
@@ -585,7 +638,9 @@ export function BettingOptionsTable({
                           cursor-pointer
                           ${evClass}
                           ${isSelected(option)
-                            ? 'bg-primary/15 border border-primary/30 shadow-md scale-[1.02] -translate-y-0.5' 
+                            ? theme === 'light' 
+                              ? 'bg-indigo-100 border border-indigo-300 shadow-md scale-[1.02] -translate-y-0.5'
+                              : 'bg-primary/15 border border-primary/30 shadow-md scale-[1.02] -translate-y-0.5' 
                             : 'border border-transparent hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-sm'
                           }
                         `}
@@ -593,14 +648,22 @@ export function BettingOptionsTable({
                         {/* 選択時のリップルエフェクト */}
                         {isSelected(option) && (
                           <div className="absolute inset-0 animate-ripple">
-                            <div className="absolute inset-0 bg-primary/20 animate-pulse" />
+                            <div className={
+                              theme === 'light'
+                                ? "absolute inset-0 bg-indigo-200/30 animate-pulse"
+                                : "absolute inset-0 bg-primary/20 animate-pulse"
+                            } />
                           </div>
                         )}
 
                         {/* グラデーション背景レイヤー */}
                         <div className={`
                           absolute inset-0 
-                          bg-gradient-to-r from-primary/10 via-background/5 to-transparent
+                          ${
+                            theme === 'light'
+                              ? 'bg-gradient-to-r from-gray-50/80 via-white/30 to-transparent'
+                              : 'bg-gradient-to-r from-primary/10 via-background/5 to-transparent'
+                          }
                           transition-opacity duration-300
                           ${isSelected(option) ? 'opacity-0' : 'opacity-100'}
                         `} />
@@ -611,7 +674,11 @@ export function BettingOptionsTable({
                             <span className={`
                               font-medium
                               transition-colors duration-300
-                              ${isSelected(option) ? 'text-primary' : ''}
+                              ${
+                                theme === 'light'
+                                  ? isSelected(option) ? 'text-indigo-700' : 'text-gray-700'
+                                  : isSelected(option) ? 'text-primary' : ''
+                              }
                             `}>
                               {formatHorses(option.horses, option.type)}
                             </span>
@@ -650,21 +717,45 @@ export function BettingOptionsTable({
                         <PopoverTrigger asChild>
                           {BetContent}
                         </PopoverTrigger>
-                        <PopoverContent className="w-96 bg-slate-900/95 backdrop-blur-sm border border-slate-800">
+                        <PopoverContent className={
+                          theme === 'light'
+                            ? "w-96 bg-background border border-secondary/40 shadow-sm"
+                            : "w-96 bg-slate-900/95 backdrop-blur-sm border border-slate-800"
+                        }>
                           <div className="space-y-4">
                             <div>
-                              <h4 className="font-medium text-slate-300 mb-2 px-1">
+                              <h4 className={
+                                theme === 'light'
+                                  ? "font-medium text-foreground mb-2 px-1"
+                                  : "font-medium text-slate-300 mb-2 px-1"
+                              }>
                                 {getCorrelationTitle(option)}
                               </h4>
-                              <div className="grid grid-cols-2 gap-1.5 rounded-lg bg-slate-950/50 p-1.5">
+                              <div className={
+                                theme === 'light'
+                                  ? "grid grid-cols-2 gap-1.5 rounded-lg bg-secondary/10 p-1.5"
+                                  : "grid grid-cols-2 gap-1.5 rounded-lg bg-slate-950/50 p-1.5"
+                              }>
                                 {formatCorrelations(option, relatedCorrelations).map((corr, i) => (
                                   <div key={i} 
                                     className={`
                                       flex justify-between items-center px-2.5 py-1.5 rounded-md
-                                      ${corr.probability >= 0.75 ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-800/20' : 
-                                        corr.probability >= 0.5 ? 'bg-emerald-950/30 text-emerald-400' : 
-                                        corr.probability >= 0.25 ? 'bg-amber-950/30 text-amber-400' : 
-                                        'bg-slate-800/30 text-slate-400'
+                                      ${
+                                        theme === 'light'
+                                          ? corr.probability >= 0.75 
+                                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                                            : corr.probability >= 0.5 
+                                              ? 'bg-emerald-50/80 text-emerald-700' 
+                                              : corr.probability >= 0.25 
+                                                ? 'bg-amber-50/80 text-amber-700' 
+                                                : 'bg-slate-100 text-slate-600'
+                                          : corr.probability >= 0.75 
+                                            ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-800/20' 
+                                            : corr.probability >= 0.5 
+                                              ? 'bg-emerald-950/30 text-emerald-400' 
+                                              : corr.probability >= 0.25 
+                                                ? 'bg-amber-950/30 text-amber-400' 
+                                                : 'bg-slate-800/30 text-slate-400'
                                       }
                                       backdrop-blur-sm hover:bg-opacity-60 transition-all duration-200
                                     `}
@@ -676,10 +767,22 @@ export function BettingOptionsTable({
                                     </span>
                                     <span className={`
                                       text-xs tabular-nums font-semibold
-                                      ${corr.probability >= 0.75 ? 'text-emerald-200' : 
-                                        corr.probability >= 0.5 ? 'text-emerald-400' : 
-                                        corr.probability >= 0.25 ? 'text-amber-400' : 
-                                        'text-slate-400'
+                                      ${
+                                        theme === 'light'
+                                          ? corr.probability >= 0.75 
+                                            ? 'text-emerald-600' 
+                                            : corr.probability >= 0.5 
+                                              ? 'text-emerald-600' 
+                                              : corr.probability >= 0.25 
+                                                ? 'text-amber-600' 
+                                                : 'text-slate-500'
+                                          : corr.probability >= 0.75 
+                                            ? 'text-emerald-200' 
+                                            : corr.probability >= 0.5 
+                                              ? 'text-emerald-400' 
+                                              : corr.probability >= 0.25 
+                                                ? 'text-amber-400' 
+                                                : 'text-slate-400'
                                       }
                                     `}>
                                       {(corr.probability * 100).toFixed(1)}%

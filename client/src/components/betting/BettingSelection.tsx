@@ -10,6 +10,8 @@ import { Sparkles, MousePointer } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getDefaultStore } from 'jotai';
 import { Spinner } from "@/components/ui/spinner";
+import { useThemeStore } from "@/stores/themeStore";
+import { cn } from "@/lib/utils";
 
 export function BettingSelection() {
   const [, setLocation] = useLocation();
@@ -23,6 +25,7 @@ export function BettingSelection() {
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1;
   const [currentStep, setCurrentStep] = useAtom(currentStepAtom);
+  const { theme } = useThemeStore();
   
   // 次へボタンが押されたときに呼び出される関数を追加
   useEffect(() => {
@@ -344,7 +347,12 @@ export function BettingSelection() {
         {/* AI最適化ボタン */}
         <Button
           onClick={handleAiOptimization}
-          className="w-full gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+          className={cn(
+            "w-full gap-2 shadow-sm font-medium",
+            theme === 'light'
+              ? "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white border border-indigo-600"
+              : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+          )}
         >
           <Sparkles className="h-4 w-4" />
           AI自動最適化
@@ -354,12 +362,13 @@ export function BettingSelection() {
         <Button
           onClick={handleOptimizeBets}
           disabled={selectionState.selectedBets.length === 0}
-          className={`
-            w-full gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 
-            hover:from-blue-700 hover:to-cyan-700
-            transition-opacity duration-300
-            ${selectionState.selectedBets.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
-          `}
+          className={cn(
+            "w-full gap-2 shadow-sm font-medium transition-opacity duration-300",
+            theme === 'light'
+              ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white border border-blue-600"
+              : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700",
+            selectionState.selectedBets.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+          )}
         >
           <MousePointer className="h-4 w-4" />
           資金配分最適化
@@ -367,7 +376,11 @@ export function BettingSelection() {
       </div>
 
       {/* 馬券候補 */}
-      <div>
+      <div className={
+        theme === 'light'
+          ? "bg-gradient-to-b from-gray-50/80 to-white/90 p-4 rounded-lg border border-gray-200 shadow-sm"
+          : ""
+      }>
         <BettingOptionsTable 
           bettingOptions={bettingOptions}
           selectedBets={selectionState.selectedBets}

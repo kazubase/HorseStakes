@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { useThemeStore } from "@/stores/themeStore"
 
 import { cn } from "@/lib/utils"
 
@@ -18,6 +19,12 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        lightPrimary: 
+          "bg-primary/90 text-primary-foreground shadow-md hover:bg-primary hover:shadow-lg",
+        lightSecondary: 
+          "bg-secondary/90 text-secondary-foreground shadow-sm hover:bg-secondary hover:shadow-md",
+        lightOutline: 
+          "border border-secondary/30 bg-background shadow-sm hover:bg-secondary/30 hover:text-secondary-foreground hover:shadow-md",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -42,9 +49,19 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+    const { theme } = useThemeStore();
+    
+    // ライトモードの場合、一部のボタンバリアントを自動的に調整
+    let adjustedVariant = variant;
+    if (theme === 'light') {
+      if (variant === 'default') adjustedVariant = 'lightPrimary';
+      if (variant === 'secondary') adjustedVariant = 'lightSecondary';
+      if (variant === 'outline') adjustedVariant = 'lightOutline';
+    }
+    
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(buttonVariants({ variant: adjustedVariant, size, className }))}
         ref={ref}
         {...props}
       />

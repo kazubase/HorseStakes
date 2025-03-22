@@ -12,9 +12,11 @@ import RaceList from "@/pages/RaceList";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import { groupBy } from 'lodash';
+import { useThemeStore } from "@/stores/themeStore";
 
 export default function Home() {
   const { id } = useParams();
+  const { theme } = useThemeStore();
 
   // idがない場合はRaceListを表示
   if (!id) {
@@ -875,9 +877,17 @@ export default function Home() {
         <div className="absolute inset-0 from-primary/10 via-background/5 to-transparent opacity-30 h-full w-full" />
         
         {/* レース情報カード - 最初に表示する重要コンテンツ */}
-        <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5 relative z-10">
+        <Card className={
+          theme === 'light'
+            ? "overflow-hidden bg-gradient-to-br from-secondary/50 to-background relative z-10 border border-secondary/30 shadow-sm"
+            : "overflow-hidden bg-gradient-to-br from-black/40 to-primary/5 relative z-10"
+        }>
           <CardContent className="p-3 sm:p-5">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
+            <div className={
+              theme === 'light'
+                ? "absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent opacity-50"
+                : "absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30"
+            } />
             <div className="flex justify-between items-start relative">
               <div>
                 {raceLoading ? (
@@ -888,7 +898,13 @@ export default function Home() {
                   </div>
                 ) : (
                   <>
-                    <h1 className="text-base sm:text-2xl font-bold mb-2">{race?.name}</h1>
+                    <h1 className={
+                      theme === 'light'
+                        ? "text-base sm:text-2xl font-bold mb-2 tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
+                        : "text-base sm:text-2xl font-bold mb-2 bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent"
+                    }>
+                      {race?.name}
+                    </h1>
                     <p className="text-sm sm:text-base text-muted-foreground">
                       {format(new Date(race?.startTime!), 'yyyy年M月d日')} {race?.venue} {format(new Date(race?.startTime!), 'HH:mm')}発走
                     </p>

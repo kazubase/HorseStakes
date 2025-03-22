@@ -25,6 +25,7 @@ import { calculateConditionalProbability } from '@/lib/betConditionalProbability
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useThemeStore } from "@/stores/themeStore";
 
 // Geminiオプションの型定義
 interface GeminiOptions {
@@ -96,6 +97,8 @@ const PredictionSettingsSection = memo(({
   winProbs: Record<string, number>;
   placeProbs: Record<string, number>;
 }) => {
+  const { theme } = useThemeStore();
+  
   const getFrameColor = useCallback((frame: number) => {
     const colors = {
       1: 'bg-white text-black border border-gray-200',
@@ -111,32 +114,80 @@ const PredictionSettingsSection = memo(({
   }, []);
 
   return (
-    <Card className="overflow-hidden bg-gradient-to-br from-background to-primary/5">
-      <CardHeader className="relative pb-4">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-50" />
-        <CardTitle className="relative">予想設定</CardTitle>
+    <Card className={
+      theme === 'light'
+        ? "overflow-hidden bg-gradient-to-br from-white to-secondary/5 border border-secondary/20 shadow-md"
+        : "overflow-hidden bg-gradient-to-br from-background to-primary/5"
+    }>
+      <CardHeader className={
+        theme === 'light'
+          ? "relative pb-4 border-b border-secondary/20 bg-gradient-to-r from-secondary/10 to-transparent"
+          : "relative pb-4"
+      }>
+        <div className={
+          theme === 'light'
+            ? "absolute inset-0 bg-gradient-to-r from-secondary/10 via-background/5 to-transparent opacity-30"
+            : "absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-50"
+        } />
+        <CardTitle className={
+          theme === 'light'
+            ? "relative text-lg font-bold text-gray-800"
+            : "relative text-lg font-bold"
+        }>予想設定</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         {/* 投資条件 */}
-        <div className="p-4 bg-gradient-to-b from-primary/5">
+        <div className={
+          theme === 'light' 
+            ? "p-4 bg-gradient-to-b from-secondary/5"
+            : "p-4 bg-gradient-to-b from-primary/5"
+        }>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/10">
-              <p className="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent truncate">
+            <div className={
+              theme === 'light'
+                ? "bg-white rounded-xl p-3 shadow-md border border-gray-100"
+                : "bg-background/80 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/10"
+            }>
+              <p className={
+                theme === 'light'
+                  ? "text-base sm:text-lg font-bold text-gray-800 truncate"
+                  : "text-base sm:text-lg font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent truncate"
+              }>
                 ￥{budget.toLocaleString()}
               </p>
-              <p className="text-xs text-muted-foreground mt-1 font-medium">予算</p>
+              <p className={
+                theme === 'light'
+                  ? "text-xs text-gray-500 mt-1 font-medium"
+                  : "text-xs text-muted-foreground mt-1 font-medium"
+              }>予算</p>
             </div>
-            <div className="bg-background/80 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/10">
-              <p className="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <div className={
+              theme === 'light'
+                ? "bg-white rounded-xl p-3 shadow-md border border-gray-100"
+                : "bg-background/80 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-primary/10"
+            }>
+              <p className={
+                theme === 'light'
+                  ? "text-base sm:text-lg font-bold text-gray-800"
+                  : "text-base sm:text-lg font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
+              }>
                 ×{riskRatio.toFixed(1)}
               </p>
-              <p className="text-xs text-muted-foreground mt-1 font-medium">リスクリワード</p>
+              <p className={
+                theme === 'light'
+                  ? "text-xs text-gray-500 mt-1 font-medium"
+                  : "text-xs text-muted-foreground mt-1 font-medium"
+              }>リスクリワード</p>
             </div>
           </div>
         </div>
 
         {/* 予想確率 */}
-        <div className="divide-y divide-border/30">
+        <div className={
+          theme === 'light'
+            ? "divide-y divide-gray-200"
+            : "divide-y divide-border/30"
+        }>
           {horses && horses.length > 0 ? (
             horses
               .map(horse => ({
@@ -152,8 +203,16 @@ const PredictionSettingsSection = memo(({
               })
               .map(horse => (
                 <div key={horse.id} 
-                     className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                     className={
+                       theme === 'light'
+                         ? "relative group hover:bg-gray-50 transition-colors"
+                         : "relative group"
+                     }>
+                  <div className={
+                    theme === 'light'
+                      ? "absolute inset-0 bg-gradient-to-r from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+                      : "absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+                  } />
                   <div className="relative flex items-center px-4 py-3">
                     <div className="flex items-center gap-3 flex-1">
                       <div className={`
@@ -162,26 +221,56 @@ const PredictionSettingsSection = memo(({
                       `}>
                         {horse.number}
                       </div>
-                      <span className="text-sm font-medium">{horse.name}</span>
+                      <span className={
+                        theme === 'light'
+                          ? "text-sm font-medium text-gray-700"
+                          : "text-sm font-medium"
+                      }>{horse.name}</span>
                     </div>
                     <div className="flex gap-6">
                       <div className="text-right">
                         <p className={`text-sm font-bold ${
-                          horse.winProb >= 0.3 ? 'text-primary' : 
-                          horse.winProb >= 0.2 ? 'text-primary/80' : 'text-muted-foreground'
+                          theme === 'light'
+                            ? horse.winProb >= 0.3 
+                              ? 'text-green-600' 
+                              : horse.winProb >= 0.2 
+                                ? 'text-green-500' 
+                                : 'text-gray-500'
+                            : horse.winProb >= 0.3 
+                              ? 'text-primary' 
+                              : horse.winProb >= 0.2 
+                                ? 'text-primary/80' 
+                                : 'text-muted-foreground'
                         }`}>
                           {(horse.winProb * 100).toFixed(0)}%
                         </p>
-                        <p className="text-[10px] text-muted-foreground font-medium">単勝</p>
+                        <p className={
+                          theme === 'light'
+                            ? "text-[10px] text-gray-500 font-medium"
+                            : "text-[10px] text-muted-foreground font-medium"
+                        }>単勝</p>
                       </div>
                       <div className="text-right">
                         <p className={`text-sm font-bold ${
-                          horse.placeProb >= 0.75 ? 'text-primary' : 
-                          horse.placeProb >= 0.5 ? 'text-primary/80' : 'text-muted-foreground'
+                          theme === 'light'
+                            ? horse.placeProb >= 0.75 
+                              ? 'text-green-600' 
+                              : horse.placeProb >= 0.5 
+                                ? 'text-green-500' 
+                                : 'text-gray-500'
+                            : horse.placeProb >= 0.75 
+                              ? 'text-primary' 
+                              : horse.placeProb >= 0.5 
+                                ? 'text-primary/80' 
+                                : 'text-muted-foreground'
                         }`}>
                           {(horse.placeProb * 100).toFixed(0)}%
                         </p>
-                        <p className="text-[10px] text-muted-foreground font-medium">複勝</p>
+                        <p className={
+                          theme === 'light'
+                            ? "text-[10px] text-gray-500 font-medium"
+                            : "text-[10px] text-muted-foreground font-medium"
+                        }>複勝</p>
                       </div>
                     </div>
                   </div>
@@ -206,54 +295,123 @@ const GeminiAnalysisSection = memo(({
 }: { 
   isLoading: boolean; 
   data: any; 
-}) => (
-  <Card className="overflow-hidden bg-gradient-to-br from-black/40 to-primary/5">
-    <CardHeader className="relative pb-4">
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30" />
-      <CardTitle className="relative">分析結果</CardTitle>
-    </CardHeader>
-    <CardContent>
-      {isLoading ? (
-        <div className="flex justify-center items-center p-4">
-          <Spinner className="w-4 h-4" />
-          <span className="ml-2 text-muted-foreground">分析中...</span>
-        </div>
-      ) : data ? (
-        <div className="space-y-4">
-          {data.summary.keyInsights.map((insight: any, i: number) => (
-            <div key={i} 
-                 className="relative overflow-hidden group bg-black/40 backdrop-blur-sm rounded-lg border border-primary/10">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative p-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-xs font-medium text-primary">
-                      {i + 1}
-                    </span>
-                  </div>
-                  {typeof insight === 'string' ? (
-                    <p className="text-sm leading-relaxed">{insight}</p>
-                  ) : (
-                    <div className="space-y-2 flex-1">
-                      <h4 className="text-sm font-medium text-primary">{insight.strategy}</h4>
-                      <p className="text-sm leading-relaxed">{insight.details}</p>
-                      <div className="flex justify-between text-xs mt-2">
-                        <span className="text-muted-foreground">リスク: <span className={`font-medium ${
-                          insight.riskLevel === '低' ? 'text-green-400' : 
-                          insight.riskLevel === '中' ? 'text-yellow-400' : 'text-red-400'
-                        }`}>{insight.riskLevel}</span></span>
-                      </div>
+}) => {
+  const { theme } = useThemeStore();
+  
+  return (
+    <Card className={
+      theme === 'light'
+        ? "overflow-hidden bg-gradient-to-br from-white to-secondary/5 border border-secondary/20 shadow-md"
+        : "overflow-hidden bg-gradient-to-br from-black/40 to-primary/5"
+    }>
+      <CardHeader className={
+        theme === 'light'
+          ? "relative pb-4 border-b border-secondary/20 bg-gradient-to-r from-secondary/10 to-transparent"
+          : "relative pb-4"
+      }>
+        <div className={
+          theme === 'light'
+            ? "absolute inset-0 bg-gradient-to-r from-secondary/10 via-background/5 to-transparent opacity-30"
+            : "absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30"
+        } />
+        <CardTitle className={
+          theme === 'light'
+            ? "relative text-lg font-bold text-gray-800"
+            : "relative text-lg font-bold"
+        }>分析結果</CardTitle>
+      </CardHeader>
+      <CardContent className={
+        theme === 'light'
+          ? "p-4 bg-gradient-to-b from-secondary/5"
+          : "p-4"
+      }>
+        {isLoading ? (
+          <div className="flex justify-center items-center p-4">
+            <Spinner className="w-4 h-4" />
+            <span className={
+              theme === 'light'
+                ? "ml-2 text-gray-500"
+                : "ml-2 text-muted-foreground"
+            }>分析中...</span>
+          </div>
+        ) : data ? (
+          <div className="space-y-4">
+            {data.summary.keyInsights.map((insight: any, i: number) => (
+              <div key={i} 
+                className={
+                  theme === 'light'
+                    ? "relative overflow-hidden group bg-white rounded-lg border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md"
+                    : "relative overflow-hidden group bg-black/40 backdrop-blur-sm rounded-lg border border-primary/10"
+                }>
+                <div className={
+                  theme === 'light'
+                    ? "absolute inset-0 bg-gradient-to-r from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+                    : "absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+                } />
+                <div className="relative p-4">
+                  <div className="flex items-start gap-3">
+                    <div className={
+                      theme === 'light'
+                        ? "w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center shrink-0"
+                        : "w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0"
+                    }>
+                      <span className={
+                        theme === 'light'
+                          ? "text-xs font-medium text-indigo-700"
+                          : "text-xs font-medium text-primary"
+                      }>
+                        {i + 1}
+                      </span>
                     </div>
-                  )}
+                    {typeof insight === 'string' ? (
+                      <p className={
+                        theme === 'light'
+                          ? "text-sm leading-relaxed text-gray-700"
+                          : "text-sm leading-relaxed"
+                      }>{insight}</p>
+                    ) : (
+                      <div className="space-y-2 flex-1">
+                        <h4 className={
+                          theme === 'light'
+                            ? "text-sm font-medium text-indigo-700"
+                            : "text-sm font-medium text-primary"
+                        }>{insight.strategy}</h4>
+                        <p className={
+                          theme === 'light'
+                            ? "text-sm leading-relaxed text-gray-700"
+                            : "text-sm leading-relaxed"
+                        }>{insight.details}</p>
+                        <div className="flex justify-between text-xs mt-2">
+                          <span className={
+                            theme === 'light'
+                              ? "text-gray-500"
+                              : "text-muted-foreground"
+                          }>リスク: <span className={`font-medium ${
+                            theme === 'light'
+                              ? insight.riskLevel === '低' 
+                                ? 'text-green-600' 
+                                : insight.riskLevel === '中' 
+                                  ? 'text-amber-600' 
+                                  : 'text-red-600'
+                              : insight.riskLevel === '低' 
+                                ? 'text-green-400' 
+                                : insight.riskLevel === '中' 
+                                  ? 'text-yellow-400' 
+                                  : 'text-red-400'
+                          }`}>{insight.riskLevel}</span></span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </CardContent>
-  </Card>
-));
+            ))}
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+});
 
 // サイドバーのタブ定義
 interface SidebarTab {
@@ -271,6 +429,7 @@ interface BettingAnalysisProps {
 export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisProps) {
   const { id } = useParams();
   const [location] = useLocation();
+  const { theme } = useThemeStore();
   const [horses, setHorses] = useAtom(horsesAtom);
   const [analysisResult, setAnalysisResult] = useAtom<GeminiAnalysisResult | null>(analysisResultAtom);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -627,21 +786,41 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
 
         {/* サイドバー - レスポンシブ対応を強化 */}
         <div className={cn(
-          "fixed lg:relative right-0 top-0 h-full lg:h-auto z-50 bg-background/95 backdrop-blur-sm border-l border-border/50 transition-all duration-300 ease-in-out overflow-hidden",
+          theme === 'light'
+            ? "fixed lg:relative right-0 top-0 h-full lg:h-auto z-50 bg-white backdrop-blur-sm border-l border-gray-200 transition-all duration-300 ease-in-out overflow-hidden"
+            : "fixed lg:relative right-0 top-0 h-full lg:h-auto z-50 bg-background/95 backdrop-blur-sm border-l border-border/50 transition-all duration-300 ease-in-out overflow-hidden",
           isSidebarOpen 
             ? "translate-x-0 w-full sm:w-96 lg:w-1/3 xl:w-1/4" 
             : "translate-x-full w-full sm:w-96 lg:translate-x-full lg:w-0 lg:opacity-0 lg:invisible"
         )}>
           {/* サイドバーヘッダー */}
-          <div className="flex items-center justify-between p-4 border-b border-border/50">
+          <div className={
+            theme === 'light'
+              ? "flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white"
+              : "flex items-center justify-between p-4 border-b border-border/50"
+          }>
             <div className="flex items-center gap-2">
               {sidebarTabs.map(tab => (
                 <Button
                   key={tab.id}
-                  variant={activeTab === tab.id ? "default" : "ghost"}
+                  variant={
+                    theme === 'light'
+                      ? activeTab === tab.id 
+                        ? "default" 
+                        : "outline"
+                      : activeTab === tab.id 
+                        ? "default" 
+                        : "ghost"
+                  }
                   size="sm"
                   onClick={() => setActiveTab(tab.id)}
-                  className="gap-1"
+                  className={
+                    theme === 'light'
+                      ? "gap-1 font-medium" + (activeTab === tab.id 
+                          ? " bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm" 
+                          : " bg-white border-gray-400 text-gray-800 hover:bg-gray-50 shadow-sm")
+                      : "gap-1"
+                  }
                 >
                   {tab.icon}
                   <span className="inline">{tab.title}</span>
@@ -649,17 +828,25 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
               ))}
             </div>
             <Button
-              variant="ghost"
+              variant={theme === 'light' ? "outline" : "ghost"}
               size="icon"
               onClick={() => setIsSidebarOpen(false)}
-              className="text-muted-foreground hover:text-foreground"
+              className={
+                theme === 'light'
+                  ? "text-gray-500 hover:text-gray-800 border border-gray-200"
+                  : "text-muted-foreground hover:text-foreground"
+              }
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
 
           {/* サイドバーコンテンツ */}
-          <div className="p-4 overflow-y-auto h-[calc(100%-4rem)]">
+          <div className={
+            theme === 'light'
+              ? "p-4 overflow-y-auto h-[calc(100%-4rem)] bg-gradient-to-b from-gray-50/50 to-white/80"
+              : "p-4 overflow-y-auto h-[calc(100%-4rem)]"
+          }>
             {sidebarTabs.find(tab => tab.id === activeTab)?.component}
           </div>
         </div>

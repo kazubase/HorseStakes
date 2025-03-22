@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useEffect } from "react";
+import { memo, useMemo, useRef, useEffect, useCallback } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { GeminiStrategy } from "@/lib/geminiApi";
@@ -14,6 +14,8 @@ import { useAtom } from 'jotai';
 import { bettingOptionsStatsAtom, horsesAtom } from '@/stores/bettingStrategy';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Masonry from 'react-masonry-css';
+import { useThemeStore } from "@/stores/themeStore";
+import { cn } from "@/lib/utils";
 
 interface BettingStrategyTableProps {
   strategy: GeminiStrategy;
@@ -33,6 +35,8 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 }: BettingStrategyTableProps) {
   // レンダリング回数の追跡
   const renderCount = useRef(0);
+  // テーマの取得
+  const { theme } = useThemeStore();
   
   // 最適化計算の結果をメモ化
   const optimizationResult = useMemo(() => {
@@ -169,7 +173,15 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 
   // オッズの色分けロジック - 統計情報があれば使用
   const getOddsColorClass = (odds: number) => {
-    if (optionsStats) {
+    if (theme === 'light') {
+      // ライトモード用の色分け
+      if (odds > 100) return 'text-red-600';
+      if (odds > 50) return 'text-red-500';
+      if (odds > 20) return 'text-orange-600';
+      if (odds > 10) return 'text-orange-500';
+      if (odds > 5) return 'text-blue-600';
+      return 'text-gray-600';
+    } else if (optionsStats) {
       // オッズ値に対するパーセンタイルを計算
       const percentile = optionsStats.options
         .map(o => o.odds)
@@ -194,7 +206,15 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 
   // 確率の色分けロジック - 統計情報があれば使用
   const getProbabilityColorClass = (probability: number) => {
-    if (optionsStats) {
+    if (theme === 'light') {
+      // ライトモード用の色分け
+      if (probability > 0.4) return 'text-green-700 font-semibold';
+      if (probability > 0.2) return 'text-green-600';
+      if (probability > 0.1) return 'text-green-500';
+      if (probability > 0.05) return 'text-amber-600';
+      if (probability > 0.01) return 'text-amber-500';
+      return 'text-gray-600';
+    } else if (optionsStats) {
       // 確率に対するパーセンタイルを計算
       const percentile = optionsStats.options
         .map(o => o.probability)
@@ -265,14 +285,34 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             </Button>
           </PopoverTrigger>
           <PopoverContent 
-            className="w-[280px] sm:w-80 rounded-lg border border-primary/20 bg-black/70 backdrop-blur-sm p-4 shadow-lg" 
+            className={cn(
+              "w-[280px] sm:w-80 rounded-lg shadow-lg p-4",
+              theme === 'light'
+                ? "bg-white/95 backdrop-blur-sm border border-gray-200"
+                : "border border-primary/20 bg-black/70 backdrop-blur-sm"
+            )} 
             sideOffset={5}
           >
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-primary/90">選択理由</h4>
+              <h4 className={cn(
+                "text-sm font-medium",
+                theme === 'light'
+                  ? "text-indigo-700"
+                  : "text-primary/90"
+              )}>選択理由</h4>
               <div className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-30 pointer-events-none" />
-                <p className="text-sm text-white/90 leading-relaxed relative">
+                <div className={cn(
+                  "absolute inset-0 pointer-events-none",
+                  theme === 'light'
+                    ? "bg-gradient-to-r from-indigo-50/50 to-transparent opacity-30"
+                    : "bg-gradient-to-r from-primary/5 to-transparent opacity-30"
+                )} />
+                <p className={cn(
+                  "text-sm leading-relaxed relative",
+                  theme === 'light'
+                    ? "text-gray-700"
+                    : "text-white/90"
+                )}>
                   {bet.reason || '理由なし'}
                 </p>
               </div>
@@ -860,9 +900,13 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 
   // コンポーネント内に追加
   const MonteCarloResults = ({ bets }: { bets: BetProposal[] }) => {
-    const { distributionData, stats } = useMemo(() => {
+    const { theme } = useThemeStore();
+    // テーマが変わっても再計算されないようにする
+    const simulationResults = useMemo(() => {
       return runMonteCarloSimulation(bets);
     }, [bets]);
+    
+    const { distributionData, stats } = simulationResults;
     
     // 総投資額を計算
     const totalInvestment = bets.reduce((sum, bet) => sum + bet.stake, 0);
@@ -870,9 +914,64 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     // 収益率を計算（平均収益÷総投資額×100）
     const returnRate = (stats.mean / totalInvestment) * 100;
     
+    // テーマに依存しない色の設定をメモ化
+    const chartColors = useMemo(() => {
+      const isPositive = stats.mean >= 0;
+      return {
+        strokeColor: isPositive 
+          ? (theme === 'light' ? "#4f46e5" : "#10b981") 
+          : (theme === 'light' ? "#e11d48" : "#ef4444"),
+        fillColor: isPositive
+          ? (theme === 'light' ? "#4f46e5" : "#10b981")
+          : (theme === 'light' ? "#e11d48" : "#ef4444"),
+        tickColor: theme === 'light' ? "#6b7280" : undefined,
+        axisColor: theme === 'light' ? "#e5e7eb" : undefined,
+        backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.7)',
+        borderColor: theme === 'light' ? '1px solid rgba(0, 0, 0, 0.1)' : '1px solid rgba(255, 255, 255, 0.2)',
+        textColor: theme === 'light' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+        labelColor: theme === 'light' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.7)',
+        // 統計情報表示用の色を追加
+        statsBgColor: theme === 'light' ? "bg-gray-50 border border-gray-100" : "bg-background/50",
+        statsMutedText: theme === 'light' ? "text-gray-500" : "text-muted-foreground",
+        statsConfidenceBackground: theme === 'light' 
+          ? 'linear-gradient(to right, #f0f9ff, #e0f2fe, #d8f3dc, #c6f6d5)' 
+          : 'linear-gradient(to right, rgba(0,0,0,0.2), rgba(16, 185, 129, 0.2))',
+        winRateTextColor: theme === 'light' ? "text-indigo-600" : "",
+        profitTextColor: isPositive 
+          ? (theme === 'light' ? "text-green-600" : "") 
+          : (theme === 'light' ? "text-red-600" : ""),
+        returnRateTextColor: returnRate >= 0 
+          ? (theme === 'light' ? "text-green-600" : "")
+          : (theme === 'light' ? "text-red-600" : ""),
+        confidenceTextColorMin: theme === 'light'
+          ? stats.confidenceInterval[0] < 0 ? "text-red-600 font-medium" : "text-green-600 font-medium"
+          : "",
+        confidenceTextColorMax: theme === 'light' ? "text-green-600 font-medium" : "",
+        chartContainerStyle: theme === 'light'
+          ? "bg-white/90 border border-gray-200 shadow-sm"
+          : ""
+      };
+    }, [stats.mean, stats.confidenceInterval, returnRate, theme]);
+    
+    // 値ごとの色をテーマに合わせて設定する関数
+    const getValueColor = useCallback((value: number) => {
+      if (theme === 'light') {
+        return value >= 0 
+          ? value > 10000 ? '#4f46e5' : value > 5000 ? '#6366f1' : '#818cf8' 
+          : value < -10000 ? '#e11d48' : value < -5000 ? '#f43f5e' : '#fb7185';
+      } else {
+        return value >= 0 
+          ? value > 10000 ? '#10b981' : value > 5000 ? '#34d399' : '#6ee7b7'
+          : value < -10000 ? '#ef4444' : value < -5000 ? '#f87171' : '#fca5a5';
+      }
+    }, [theme]);
+    
     return (
       <div className="space-y-4">
-        <div className="h-48 w-full">
+        <div className={cn(
+          "h-48 w-full rounded-lg overflow-hidden",
+          chartColors.chartContainerStyle
+        )}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={distributionData}
@@ -885,23 +984,23 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             >
               <defs>
                 <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorLoss" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  <stop offset="5%" stopColor={chartColors.fillColor} stopOpacity={0.8} />
+                  <stop offset="95%" stopColor={chartColors.fillColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis 
                 dataKey="value" 
                 tickFormatter={(value) => `${value >= 0 ? '+' : ''}${value.toLocaleString()}円`}
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: 10, fill: chartColors.tickColor }}
+                axisLine={{ stroke: chartColors.axisColor }}
+                tickLine={{ stroke: chartColors.axisColor }}
                 interval="preserveStartEnd" // 最初と最後のティックを必ず表示
               />
               <YAxis
                 tickFormatter={(value) => `${value.toFixed(1)}%`}
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: 10, fill: chartColors.tickColor }}
+                axisLine={{ stroke: chartColors.axisColor }}
+                tickLine={{ stroke: chartColors.axisColor }}
                 domain={[0, 'auto']}
               />
               <Tooltip 
@@ -910,9 +1009,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                     return [`${Number(value).toFixed(1)}%`, '確率'];
                   } else {
                     // 収益値に基づいて色を設定（数字部分のみ）
-                    const color = value >= 0 
-                      ? value > 10000 ? '#10b981' : value > 5000 ? '#34d399' : '#6ee7b7' // 緑のグラデーション
-                      : value < -10000 ? '#ef4444' : value < -5000 ? '#f87171' : '#fca5a5'; // 赤のグラデーション
+                    const color = getValueColor(value);
                     return [
                       <span style={{ color }}>
                         {`${value >= 0 ? '+' : ''}${value.toLocaleString()}円`}
@@ -923,17 +1020,15 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                 }}
                 labelFormatter={(value) => {
                   // 収益値に基づいて色を設定（数字部分のみ）
-                  const color = value >= 0 
-                    ? value > 10000 ? '#10b981' : value > 5000 ? '#34d399' : '#6ee7b7' // 緑のグラデーション
-                    : value < -10000 ? '#ef4444' : value < -5000 ? '#f87171' : '#fca5a5'; // 赤のグラデーション
+                  const color = getValueColor(value);
                   return <span>
                     収益: <span style={{ color }}>{`${value >= 0 ? '+' : ''}${value.toLocaleString()}円`}</span>
                   </span>;
                 }}
                 contentStyle={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  backgroundColor: chartColors.backgroundColor,
                   backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  border: chartColors.borderColor,
                   borderRadius: '0.5rem',
                   padding: '1rem',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
@@ -941,57 +1036,87 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                 itemStyle={{
                   fontSize: '0.875rem',
                   padding: '0.25rem 0',
-                  color: 'rgba(255, 255, 255, 0.9)' // 基本テキスト色を追加
+                  color: chartColors.textColor
                 }}
                 labelStyle={{
                   fontSize: '0.75rem',
                   marginBottom: '0.5rem',
-                  color: 'rgba(255, 255, 255, 0.7)' // 基本テキスト色を追加
+                  color: chartColors.labelColor
                 }}
               />
               <Area 
                 type="monotone" 
                 dataKey="percentage"
-                stroke={stats.mean >= 0 ? "#10b981" : "#ef4444"}
+                stroke={chartColors.strokeColor}
                 fillOpacity={1} 
-                fill={`url(#${stats.mean >= 0 ? 'colorProfit' : 'colorLoss'})`} 
+                fill={`url(#colorProfit)`} 
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
         
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-background/50 p-2 rounded-lg">
-            <div className="text-xs text-muted-foreground">勝率</div>
-            <div className="text-lg font-bold">{(stats.winRate * 100).toFixed(1)}%</div>
+          <div className={cn(
+            "p-2 rounded-lg",
+            chartColors.statsBgColor
+          )}>
+            <div className={cn(
+              "text-xs",
+              chartColors.statsMutedText
+            )}>勝率</div>
+            <div className={cn(
+              "text-lg font-bold",
+              chartColors.winRateTextColor
+            )}>{(stats.winRate * 100).toFixed(1)}%</div>
           </div>
-          <div className="bg-background/50 p-2 rounded-lg">
-            <div className="text-xs text-muted-foreground">平均収益</div>
-            <div className="text-lg font-bold">
+          <div className={cn(
+            "p-2 rounded-lg",
+            chartColors.statsBgColor
+          )}>
+            <div className={cn(
+              "text-xs",
+              chartColors.statsMutedText
+            )}>平均収益</div>
+            <div className={cn(
+              "text-lg font-bold",
+              chartColors.profitTextColor
+            )}>
               {stats.mean >= 0 ? '+' : ''}{(Math.round(stats.mean / 10) * 10).toLocaleString()}円
             </div>
           </div>
-          <div className="bg-background/50 p-2 rounded-lg">
-            <div className="text-xs text-muted-foreground">収益率</div>
-            <div className="text-lg font-bold">
+          <div className={cn(
+            "p-2 rounded-lg",
+            chartColors.statsBgColor
+          )}>
+            <div className={cn(
+              "text-xs",
+              chartColors.statsMutedText
+            )}>収益率</div>
+            <div className={cn(
+              "text-lg font-bold",
+              chartColors.returnRateTextColor
+            )}>
               {returnRate >= 0 ? '+' : ''}{returnRate.toFixed(1)}%
             </div>
           </div>
         </div>
         
-        <div className="bg-background/50 p-3 rounded-lg">
-          <div className="text-xs text-muted-foreground mb-2">95%信頼区間</div>
-          <div className="relative h-6 bg-background rounded-full overflow-hidden">
-            <div 
-              className="absolute h-full bg-gradient-to-r from-yellow-500/50 to-green-500/50"
-              style={{ 
-                left: '0%', 
-                width: '100%' 
-              }}
-            />
+        <div className={cn(
+          "p-3 rounded-lg",
+          chartColors.statsBgColor
+        )}>
+          <div className={cn(
+            "text-xs mb-2",
+            chartColors.statsMutedText
+          )}>95%信頼区間</div>
+          <div className="relative h-6 overflow-hidden rounded-full"
+            style={{
+              background: chartColors.statsConfidenceBackground
+            }}
+          >
             <div className="absolute inset-0 flex items-center justify-between px-2 text-xs">
-              <span>{Math.round(stats.confidenceInterval[0]).toLocaleString()}円</span>
-              <span>{Math.round(stats.confidenceInterval[1]).toLocaleString()}円</span>
+              <span className={chartColors.confidenceTextColorMin}>{Math.round(stats.confidenceInterval[0]).toLocaleString()}円</span>
+              <span className={chartColors.confidenceTextColorMax}>{Math.round(stats.confidenceInterval[1]).toLocaleString()}円</span>
             </div>
           </div>
         </div>
@@ -1000,19 +1125,44 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   };
 
   return (
-    <Card className="overflow-hidden bg-gradient-to-br from-background to-primary/5" data-card-container>
-      <CardHeader className="relative pb-2 border-b border-border/50">
+    <Card className={cn(
+      "overflow-hidden",
+      theme === 'light'
+        ? "bg-gradient-to-b from-white to-gray-50 border border-gray-200 shadow-sm"
+        : "bg-gradient-to-br from-background to-primary/5"
+    )} data-card-container>
+      <CardHeader className={cn(
+        "relative pb-2 border-b",
+        theme === 'light'
+          ? "border-gray-200 bg-white"
+          : "border-border/50"
+      )}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-medium">{strategy.description}</CardTitle>
+            <CardTitle className={cn(
+              "text-base",
+              theme === 'light'
+                ? "font-semibold text-gray-800"
+                : "font-medium"
+            )}>{strategy.description}</CardTitle>
             {strategy.summary.riskLevel === 'AI_OPTIMIZED' && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200">
+              <span className={cn(
+                "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
+                theme === 'light'
+                  ? "bg-indigo-50 text-indigo-700"
+                  : "bg-purple-900/50 text-purple-200"
+              )}>
                 <Sparkles className="h-3 w-3 mr-1" />
                 AI最適化
               </span>
             )}
             {strategy.summary.riskLevel === 'USER_SELECTED' && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+              <span className={cn(
+                "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
+                theme === 'light'
+                  ? "bg-blue-50 text-blue-700"
+                  : "bg-blue-900/50 text-blue-200"
+              )}>
                 <MousePointer className="h-3 w-3 mr-1" />
                 手動選択
               </span>
@@ -1024,7 +1174,12 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       <CardContent className="p-2">
         <div className="space-y-3" ref={tableRef}>
           {/* 凡例を追加 */}
-          <div className="bg-secondary/30 p-2 rounded-lg text-xs text-muted-foreground">
+          <div className={cn(
+            "p-2 rounded-lg text-xs",
+            theme === 'light'
+              ? "bg-gray-50 text-gray-600 border border-gray-100"
+              : "bg-secondary/30 text-muted-foreground"
+          )}>
             <div className="grid grid-cols-2 gap-2 mb-1">
               <div>買い目</div>
               <div className="text-right">オッズ</div>
@@ -1046,7 +1201,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                   return acc;
                 }, {} as Record<string, typeof sortedBets>)).length, 
                 4
-              ),    // 券種数と3の小さい方（最大3列）
+              ),    // 券種数と4の小さい方（最大4列）
               1100: Math.min(
                 Object.keys(sortedBets.reduce((acc, bet) => {
                   const type = normalizeTicketType(bet.type);
@@ -1084,58 +1239,108 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               acc[type].push(bet);
               return acc;
             }, {} as Record<string, typeof sortedBets>)).map(([betType, bets]) => (
-              <Card key={betType} className="bg-background/50 backdrop-blur-sm mb-3">
-                <CardHeader className="py-2 px-3 border-b">
+              <Card key={betType} className={cn(
+                "mb-3",
+                theme === 'light'
+                  ? "bg-white border border-gray-200 shadow-sm"
+                  : "bg-background/50 backdrop-blur-sm"
+              )}>
+                <CardHeader className={cn(
+                  "py-2 px-3 border-b",
+                  theme === 'light'
+                    ? "border-gray-100 bg-gradient-to-r from-gray-50 to-white"
+                    : ""
+                )}>
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-base font-medium min-w-[4rem]">
+                    <CardTitle className={cn(
+                      "text-base min-w-[4rem]",
+                      theme === 'light'
+                        ? "font-bold text-gray-800"
+                        : "font-medium"
+                    )}>
                       {betType}
                     </CardTitle>
                     
                     <div className="flex items-center gap-2 flex-shrink">
                       <div className="flex items-center flex-wrap justify-end gap-1.5 text-xs">
-                        <span className="font-medium whitespace-nowrap">
+                        <span className={cn(
+                          "font-medium whitespace-nowrap",
+                          theme === 'light'
+                            ? "text-gray-600"
+                            : ""
+                        )}>
                           {bets.length}点
                         </span>
-                        <span className="font-medium whitespace-nowrap">
+                        <span className={cn(
+                          "font-medium whitespace-nowrap",
+                          theme === 'light'
+                            ? "text-indigo-600"
+                            : ""
+                        )}>
                           {bets.reduce((sum, bet) => sum + bet.stake, 0).toLocaleString()}円
                         </span>
                       </div>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-2">
-                  <div className="space-y-1.5">
+                <CardContent className={cn(
+                  "p-2",
+                  theme === 'light'
+                    ? "bg-white"
+                    : ""
+                )}>
+                  <div className={cn(
+                    "space-y-1.5",
+                    theme === 'light'
+                      ? "divide-y divide-gray-50"
+                      : ""
+                  )}>
                     {bets.map((bet, index) => (
-                      <div key={index}>
+                      <div key={index} className={
+                        theme === 'light'
+                          ? "pt-1 first:pt-0"
+                          : ""
+                      }>
                         <Popover>
                           <PopoverTrigger asChild>
-                            <div className={`
-                              relative overflow-hidden
-                              p-2 rounded-md 
-                              transition-all duration-300 ease-out
-                              cursor-pointer
-                              border border-transparent
-                              hover:border-primary/20 hover:shadow-sm
-                              hover:scale-[1.01] hover:-translate-y-0.5
-                            `}>
+                            <div className={cn(
+                              "relative overflow-hidden p-2 rounded-md transition-all duration-300 ease-out cursor-pointer",
+                              theme === 'light'
+                                ? "border border-gray-100 hover:border-indigo-200 hover:shadow-sm hover:bg-indigo-50/30"
+                                : "border border-transparent hover:border-primary/20 hover:shadow-sm"
+                            )}>
                               {/* EVに基づく背景色 */}
                               <div className={`
                                 absolute inset-0 
-                                ${getEvBackgroundClass(bet.odds || Number(bet.expectedReturn / bet.stake), bet.probability)}
+                                ${theme === 'light'
+                                  ? (() => {
+                                    const ev = (bet.odds || Number(bet.expectedReturn / bet.stake)) * bet.probability;
+                                    if (ev > 1.5) return 'bg-emerald-50 hover:bg-emerald-100';
+                                    if (ev > 1.2) return 'bg-lime-50 hover:bg-lime-100';
+                                    if (ev > 1.0) return 'bg-amber-50 hover:bg-amber-100';
+                                    return 'bg-gray-50 hover:bg-gray-100';
+                                  })()
+                                  : getEvBackgroundClass(bet.odds || Number(bet.expectedReturn / bet.stake), bet.probability)
+                                }
                               `} />
 
-                              {/* グラデーション背景レイヤー */}
-                              <div className="
-                                absolute inset-0 
-                                bg-gradient-to-r from-primary/10 via-background/5 to-transparent 
-                                transition-opacity duration-300
-                                ${isSelected(option) ? 'opacity-0' : 'opacity-100'}
-                              " />
+                              {/* グラデーション背景レイヤー - ライトモードではより控えめに */}
+                              <div className={cn(
+                                "absolute inset-0 transition-opacity duration-300",
+                                theme === 'light'
+                                  ? "bg-gradient-to-r from-gray-50/50 via-white/80 to-transparent"
+                                  : "bg-gradient-to-r from-primary/10 via-background/5 to-transparent"
+                              )} />
                               
                               {/* コンテンツレイヤー */}
                               <div className="relative">
                                 <div className="grid grid-cols-2 gap-2">
-                                  <span className="font-medium">
+                                  <span className={cn(
+                                    "font-medium",
+                                    theme === 'light'
+                                      ? "text-gray-800"
+                                      : ""
+                                  )}>
                                     {formatHorseNumbers(bet.type, bet.horses)}
                                   </span>
                                   <div className="flex items-center justify-end gap-1">
@@ -1149,10 +1354,20 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                                     {(bet.probability * 100).toFixed(1)}%
                                   </span>
                                   <div className="text-right space-y-0.5">
-                                    <span className="font-medium">
+                                    <span className={cn(
+                                      "font-medium",
+                                      theme === 'light'
+                                        ? "text-indigo-600"
+                                        : ""
+                                    )}>
                                       {bet.stake.toLocaleString()}円
                                     </span>
-                                    <span className="block text-muted-foreground text-[10px]">
+                                    <span className={cn(
+                                      "block text-[10px]",
+                                      theme === 'light'
+                                        ? "text-gray-500"
+                                        : "text-muted-foreground"
+                                    )}>
                                       {(Math.round(bet.expectedReturn / 10) * 10).toLocaleString()}円
                                     </span>
                                   </div>
@@ -1161,14 +1376,34 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                             </div>
                           </PopoverTrigger>
                           <PopoverContent 
-                            className="w-[280px] sm:w-80 rounded-lg border border-primary/20 bg-black/70 backdrop-blur-sm p-4 shadow-lg" 
+                            className={cn(
+                              "w-[280px] sm:w-80 rounded-lg shadow-lg p-4",
+                              theme === 'light'
+                                ? "bg-white/95 backdrop-blur-sm border border-gray-200"
+                                : "border border-primary/20 bg-black/70 backdrop-blur-sm"
+                            )} 
                             sideOffset={5}
                           >
                             <div className="space-y-2">
-                              <h4 className="text-sm font-medium text-primary/90">選択理由</h4>
+                              <h4 className={cn(
+                                "text-sm font-medium",
+                                theme === 'light'
+                                  ? "text-indigo-700"
+                                  : "text-primary/90"
+                              )}>選択理由</h4>
                               <div className="relative overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-30 pointer-events-none" />
-                                <p className="text-sm text-white/90 leading-relaxed relative">
+                                <div className={cn(
+                                  "absolute inset-0 pointer-events-none",
+                                  theme === 'light'
+                                    ? "bg-gradient-to-r from-indigo-50/50 to-transparent opacity-30"
+                                    : "bg-gradient-to-r from-primary/5 to-transparent opacity-30"
+                                )} />
+                                <p className={cn(
+                                  "text-sm leading-relaxed relative",
+                                  theme === 'light'
+                                    ? "text-gray-700"
+                                    : "text-white/90"
+                                )}>
                                   {bet.reason || '理由なし'}
                                 </p>
                               </div>
@@ -1184,9 +1419,23 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           </Masonry>
 
           {/* モンテカルロシミュレーション結果を表示 */}
-          <div className="mt-6 pt-4 border-t border-border/30">
-            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-              <LineChart className="h-4 w-4 text-primary" />
+          <div className={cn(
+            "mt-6 pt-4 border-t",
+            theme === 'light'
+              ? "border-gray-200"
+              : "border-border/30"
+          )}>
+            <h3 className={cn(
+              "text-sm font-medium mb-3 flex items-center gap-2",
+              theme === 'light'
+                ? "text-gray-800"
+                : ""
+            )}>
+              <LineChart className={
+                theme === 'light'
+                  ? "h-4 w-4 text-indigo-600"
+                  : "h-4 w-4 text-primary"
+              } />
               収益分布シミュレーション
             </h3>
             <MonteCarloResults bets={sortedBets} />

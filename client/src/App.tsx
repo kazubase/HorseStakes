@@ -1,5 +1,6 @@
 import { Switch, Route } from "wouter";
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
+import { useThemeStore } from "@/stores/themeStore";
 
 // ローディングコンポーネント
 const Loading = () => (
@@ -33,8 +34,17 @@ const BettingStrategyLazy = lazy(() =>
 const PredictionSettings = lazy(() => import("@/pages/PredictionSettings"));
 
 function App() {
+  const { theme } = useThemeStore();
+
+  // テーマの変更を監視して、HTMLのclassを更新
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+  }, [theme]);
+
   return (
-    <div className="dark">
+    <div className={theme}>
       <div className="min-h-screen bg-background text-foreground">
         <Suspense fallback={<Loading />}>
           <Switch>

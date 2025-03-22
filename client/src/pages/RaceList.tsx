@@ -19,6 +19,7 @@ import {
 import { addDays, subDays, startOfWeek, isSameDay } from "date-fns";
 import { ja } from "date-fns/locale";
 import { Helmet } from "react-helmet-async";
+import { useThemeStore } from "@/stores/themeStore";
 
 interface RaceVenue {
   id: string;
@@ -44,6 +45,8 @@ const MemoizedTabsTrigger = memo(TabsTrigger);
 
 // RaceCardをメモ化してレースカードの不要な再レンダリングを防止
 const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) => {
+  const { theme } = useThemeStore();
+  
   // 日付のフォーマットを事前に計算してメモ化
   const formattedDate = useMemo(() => 
     format(new Date(race.startTime), 'MM/dd(E)', { locale: ja }), 
@@ -55,30 +58,54 @@ const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) =
     [race.startTime]
   );
 
+  // ライトモード用のカードスタイル
+  const cardStyle = theme === 'light' 
+    ? "cursor-pointer group relative overflow-hidden bg-card border-secondary/20 hover:border-primary/30 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-md rounded-lg sm:rounded-lg md:rounded-xl"
+    : "cursor-pointer group relative overflow-hidden bg-background/70 backdrop-blur-sm border-primary/20 hover:bg-primary/5 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-md rounded-lg sm:rounded-lg md:rounded-xl";
+
+  // ライトモード用のレース名スタイル
+  const titleStyle = theme === 'light'
+    ? "font-bold text-base sm:text-lg md:text-lg text-foreground group-hover:text-primary transition-colors duration-300"
+    : "font-bold text-base sm:text-lg md:text-lg text-foreground/90 group-hover:text-primary transition-colors duration-300";
+
+  // 発走時間ラベルのスタイル
+  const timeStyle = theme === 'light'
+    ? "inline-flex items-center justify-center bg-secondary px-2 py-0.5 rounded-full text-secondary-foreground text-xs font-medium"
+    : "inline-flex items-center justify-center bg-primary/20 px-2 py-0.5 rounded-full text-primary text-xs font-medium";
+
+  // 発走済みラベルのスタイル
+  const statusStyle = theme === 'light'
+    ? "text-xs sm:text-sm md:text-sm font-medium text-foreground/80 bg-accent px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-0.5 md:py-1 rounded-full"
+    : "text-xs sm:text-sm md:text-sm font-medium text-foreground/80 bg-primary/10 px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-0.5 md:py-1 rounded-full";
+
   return (
     <Card 
-      className="cursor-pointer group relative overflow-hidden bg-background/70 backdrop-blur-sm border-primary/20 hover:bg-primary/5 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-md rounded-lg sm:rounded-lg md:rounded-xl"
+      className={cardStyle}
       onClick={onClick}
     >
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className={
+        theme === 'light' 
+          ? "absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+          : "absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+      } />
       <CardContent className="relative p-3 sm:p-4 md:p-5">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="font-bold text-base sm:text-lg md:text-lg text-foreground/90 group-hover:text-primary transition-colors duration-300">
+            <h3 className={titleStyle}>
               {race.name}
             </h3>
             <p className="text-xs sm:text-sm md:text-sm text-muted-foreground flex items-center gap-2 mt-1">
               <span className="text-muted-foreground">
                 {formattedDate}
               </span>
-              <span className="inline-flex items-center justify-center bg-primary/20 px-2 py-0.5 rounded-full text-primary text-xs font-medium">
+              <span className={timeStyle}>
                 {formattedTime}
               </span>
             </p>
           </div>
           <div className="text-right">
             {race.status === 'done' && (
-              <p className="text-xs sm:text-sm md:text-sm font-medium text-foreground/80 bg-primary/10 px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-0.5 md:py-1 rounded-full">
+              <p className={statusStyle}>
                 発走済
               </p>
             )}
@@ -93,26 +120,42 @@ const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) =
 });
 
 // EmptyStateコンポーネントをメモ化
-const EmptyState = memo(({ searchQuery }: { searchQuery: string }) => (
-  <div className="text-center text-muted-foreground py-8 sm:py-10 md:py-12 bg-background/70 backdrop-blur-sm rounded-xl border border-primary/20 shadow-sm">
-    <div className="flex flex-col items-center gap-2 sm:gap-2.5 md:gap-3">
-      <Search className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 text-primary/30" />
-      <p className="text-base sm:text-base md:text-lg font-medium">
-        {searchQuery ? "検索結果が見つかりません" : "レースがありません"}
-      </p>
+const EmptyState = memo(({ searchQuery }: { searchQuery: string }) => {
+  const { theme } = useThemeStore();
+  
+  const emptyStateStyle = theme === 'light'
+    ? "text-center text-muted-foreground py-8 sm:py-10 md:py-12 bg-card rounded-xl border border-secondary/30 shadow-sm"
+    : "text-center text-muted-foreground py-8 sm:py-10 md:py-12 bg-background/70 backdrop-blur-sm rounded-xl border border-primary/20 shadow-sm";
+  
+  return (
+    <div className={emptyStateStyle}>
+      <div className="flex flex-col items-center gap-2 sm:gap-2.5 md:gap-3">
+        <Search className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 text-primary/30" />
+        <p className="text-base sm:text-base md:text-lg font-medium">
+          {searchQuery ? "検索結果が見つかりません" : "レースがありません"}
+        </p>
+      </div>
     </div>
-  </div>
-));
+  );
+});
 
 // NoRacesコンポーネントをメモ化
-const NoRaces = memo(() => (
-  <div className="text-center text-muted-foreground py-12 sm:py-14 md:py-16 bg-background/70 backdrop-blur-sm rounded-xl border border-primary/20 shadow-sm">
-    <div className="flex flex-col items-center gap-3 sm:gap-3.5 md:gap-4">
-      <CalendarIcon className="h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 text-primary/30" />
-      <p className="text-lg sm:text-lg md:text-xl font-medium">開催中のレースはありません</p>
+const NoRaces = memo(() => {
+  const { theme } = useThemeStore();
+  
+  const noRacesStyle = theme === 'light'
+    ? "text-center text-muted-foreground py-12 sm:py-14 md:py-16 bg-card rounded-xl border border-secondary/30 shadow-sm"
+    : "text-center text-muted-foreground py-12 sm:py-14 md:py-16 bg-background/70 backdrop-blur-sm rounded-xl border border-primary/20 shadow-sm";
+  
+  return (
+    <div className={noRacesStyle}>
+      <div className="flex flex-col items-center gap-3 sm:gap-3.5 md:gap-4">
+        <CalendarIcon className="h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 text-primary/30" />
+        <p className="text-lg sm:text-lg md:text-xl font-medium">開催中のレースはありません</p>
+      </div>
     </div>
-  </div>
-));
+  );
+});
 
 // ヘッダーセクションコンポーネントをメモ化
 const HeaderSection = memo(({ 
@@ -127,80 +170,100 @@ const HeaderSection = memo(({
   searchQuery: string, 
   setSearchQuery: (query: string) => void, 
   setShowAllVenues: (show: boolean) => void 
-}) => (
-  <div className="relative overflow-hidden rounded-xl bg-gradient-to-t from-background to-primary/10 p-3 sm:p-5 md:p-6 mb-3 sm:mb-6 md:mb-8 shadow-sm">
-    <div className="absolute inset-0 bg-grid-primary/5 [mask-image:linear-gradient(to_bottom,transparent_20%,black_70%)]" />
-    <div className="relative flex justify-between items-start gap-2 sm:gap-4 md:gap-5">
-      {/* タイトルセクション - モバイルでは非表示 */}
-      <div className="hidden sm:flex flex-col gap-1 md:gap-2">
-        <div className="flex items-center gap-2 md:gap-3">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent whitespace-nowrap">
-            レース一覧
-          </h1>
-          <span className="text-xs sm:text-sm text-muted-foreground bg-primary/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full whitespace-nowrap">
-            競馬予想・回収率アップ
-          </span>
-        </div>
-        <p className="text-xs sm:text-sm text-muted-foreground max-w-md">
-          AIで的中率と期待値を最適化
-        </p>
-      </div>
-      
-      {/* カレンダーと検索フィールド - フレキシブルレイアウト */}
-      <div className="flex w-full sm:w-auto justify-between sm:justify-end items-center gap-2 sm:gap-3">
-        {/* カレンダー - モバイルでは左側 */}
-        <div className="order-1">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex items-center gap-1 sm:gap-1.5 md:gap-2 bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all duration-300 text-[14px] sm:text-xs md:text-sm h-8 sm:h-8 md:h-9 px-2.5 sm:px-3"
-              >
-                <CalendarIcon className="h-3.5 w-3.5 sm:h-3.5 md:h-4 sm:w-3.5 md:w-4 text-primary" />
-                {format(selectedDate, 'yyyy/MM/dd')}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 border-primary/20 shadow-lg">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                locale={ja}
-                disabled={(date) => date > new Date()}
-                className="rounded-lg border border-primary/10"
-              />
-            </PopoverContent>
-          </Popover>
+}) => {
+  const { theme } = useThemeStore();
+  
+  const headerStyle = theme === 'light'
+    ? "relative overflow-hidden rounded-xl bg-gradient-to-b from-secondary/50 to-background p-3 sm:p-5 md:p-6 mb-3 sm:mb-6 md:mb-8 shadow-sm border border-secondary/30"
+    : "relative overflow-hidden rounded-xl bg-gradient-to-t from-background to-primary/10 p-3 sm:p-5 md:p-6 mb-3 sm:mb-6 md:mb-8 shadow-sm";
+
+  const headerTitleStyle = theme === 'light'
+    ? "text-xl sm:text-2xl md:text-3xl font-bold text-foreground"
+    : "text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent whitespace-nowrap";
+
+  const headerSubtitleStyle = theme === 'light'
+    ? "text-xs sm:text-sm text-secondary-foreground bg-secondary/80 px-2 md:px-3 py-0.5 md:py-1 rounded-full whitespace-nowrap"
+    : "text-xs sm:text-sm text-muted-foreground bg-primary/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full whitespace-nowrap";
+
+  return (
+    <div className={headerStyle}>
+      {theme === 'dark' && <div className="absolute inset-0 bg-grid-primary/5 [mask-image:linear-gradient(to_bottom,transparent_20%,black_70%)]" />}
+      <div className="relative flex justify-between items-start gap-2 sm:gap-4 md:gap-5">
+        {/* タイトルセクション - モバイルでは非表示 */}
+        <div className="hidden sm:flex flex-col gap-1 md:gap-2">
+          <div className="flex items-center gap-2 md:gap-3">
+            <h1 className={headerTitleStyle}>
+              レース一覧
+            </h1>
+            <span className={headerSubtitleStyle}>
+              競馬予想・回収率アップ
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-md">
+            AIで的中率と期待値を最適化
+          </p>
         </div>
         
-        {/* 検索フィールド - モバイルでは右側 */}
-        <div className="relative w-1/2 sm:w-48 md:w-54 order-2">
-          <Search className="absolute left-2.5 sm:left-2.5 md:left-3 top-1/2 -translate-y-1/2 text-primary h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 z-10" />
-          <Input
-            type="text"
-            placeholder="レース名で検索..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setShowAllVenues(e.target.value !== "");
-            }}
-            className="pl-8 sm:pl-9 md:pl-10 py-1 h-8 sm:h-9 md:h-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-1 sm:focus:ring-1 md:focus:ring-2 focus:ring-primary/20 text-[14px] sm:text-xs md:text-base"
-          />
+        {/* カレンダーと検索フィールド - フレキシブルレイアウト */}
+        <div className="flex w-full sm:w-auto justify-between sm:justify-end items-center gap-2 sm:gap-3">
+          {/* カレンダー - モバイルでは左側 */}
+          <div className="order-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex items-center gap-1 sm:gap-1.5 md:gap-2 bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all duration-300 text-[14px] sm:text-xs md:text-sm h-8 sm:h-8 md:h-9 px-2.5 sm:px-3"
+                >
+                  <CalendarIcon className="h-3.5 w-3.5 sm:h-3.5 md:h-4 sm:w-3.5 md:w-4 text-primary" />
+                  {format(selectedDate, 'yyyy/MM/dd')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 border-primary/20 shadow-lg">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  locale={ja}
+                  disabled={(date) => date > new Date()}
+                  className="rounded-lg border border-primary/10"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          
+          {/* 検索フィールド - モバイルでは右側 */}
+          <div className="relative w-1/2 sm:w-48 md:w-54 order-2">
+            <Search className="absolute left-2.5 sm:left-2.5 md:left-3 top-1/2 -translate-y-1/2 text-primary h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 z-10" />
+            <Input
+              type="text"
+              placeholder="レース名で検索..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowAllVenues(e.target.value !== "");
+              }}
+              className="pl-8 sm:pl-9 md:pl-10 py-1 h-8 sm:h-9 md:h-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-1 sm:focus:ring-1 md:focus:ring-2 focus:ring-primary/20 text-[14px] sm:text-xs md:text-base"
+            />
+          </div>
         </div>
       </div>
+      
+      {/* 平日表示の注釈 - モバイルでは非表示 */}
+      {selectedDate.getDay() >= 1 && selectedDate.getDay() <= 5 && (
+        <div className="hidden sm:block mt-2 sm:mt-3">
+          <span className={
+            theme === 'light'
+              ? "text-xs text-secondary-foreground bg-secondary/60 px-2 py-0.5 rounded-full whitespace-nowrap"
+              : "text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full whitespace-nowrap"
+          }>
+            ※平日は直前の週末のレースを表示
+          </span>
+        </div>
+      )}
     </div>
-    
-    {/* 平日表示の注釈 - モバイルでは非表示 */}
-    {selectedDate.getDay() >= 1 && selectedDate.getDay() <= 5 && (
-      <div className="hidden sm:block mt-2 sm:mt-3">
-        <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full whitespace-nowrap">
-          ※平日は直前の週末のレースを表示
-        </span>
-      </div>
-    )}
-  </div>
-));
+  );
+});
 
 export default function RaceList() {
   // すべてのhooksをコンポーネントのトップに移動
@@ -209,6 +272,7 @@ export default function RaceList() {
   const [showAllVenues, setShowAllVenues] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const { theme } = useThemeStore();
 
   // デバウンス関数
   const debounce = useCallback((func: Function, wait: number) => {
@@ -507,14 +571,22 @@ export default function RaceList() {
             <div className="overflow-x-auto scrollbar-hide will-change-transform">
               <div className="px-4 sm:px-0">
                 <TabsList 
-                  className="bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/70 rounded-lg sm:rounded-lg md:rounded-xl p-1 sm:p-1.5 md:p-1.5 flex mx-auto border border-primary/20 shadow-sm will-change-transform"
+                  className={
+                    theme === 'light'
+                      ? "bg-card rounded-lg sm:rounded-lg md:rounded-xl p-1 sm:p-1.5 md:p-1.5 flex mx-auto border border-secondary/30 shadow-sm will-change-transform"
+                      : "bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/70 rounded-lg sm:rounded-lg md:rounded-xl p-1 sm:p-1.5 md:p-1.5 flex mx-auto border border-primary/20 shadow-sm will-change-transform"
+                  }
                   style={{ minWidth: 'min-content' }}
                 >
                   {venues.map(venue => (
                     <MemoizedTabsTrigger 
                       key={venue.id} 
                       value={venue.id}
-                      className="flex-shrink-0 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md sm:rounded-md md:rounded-lg transition-all duration-300 hover:bg-primary/10"
+                      className={
+                        theme === 'light'
+                          ? "flex-shrink-0 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md sm:rounded-md md:rounded-lg transition-all duration-300 hover:bg-secondary/80"
+                          : "flex-shrink-0 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md sm:rounded-md md:rounded-lg transition-all duration-300 hover:bg-primary/10"
+                      }
                     >
                       {venue.name}
                     </MemoizedTabsTrigger>
@@ -522,15 +594,22 @@ export default function RaceList() {
                 </TabsList>
               </div>
             </div>
-            <div className="absolute left-0 top-0 bottom-0 w-6 sm:w-3 md:w-3 bg-gradient-to-r from-background via-background/100 to-background pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-6 sm:w-3 md:w-3 bg-gradient-to-l from-background via-background/100 to-background pointer-events-none" />
+            <div className={
+              theme === 'light'
+                ? "absolute left-0 top-0 bottom-0 w-6 sm:w-3 md:w-3 bg-gradient-to-r from-background to-transparent pointer-events-none"
+                : "absolute left-0 top-0 bottom-0 w-6 sm:w-3 md:w-3 bg-gradient-to-r from-background via-background/100 to-background pointer-events-none"
+            } />
+            <div className={
+              theme === 'light'
+                ? "absolute right-0 top-0 bottom-0 w-6 sm:w-3 md:w-3 bg-gradient-to-l from-background to-transparent pointer-events-none"
+                : "absolute right-0 top-0 bottom-0 w-6 sm:w-3 md:w-3 bg-gradient-to-l from-background via-background/100 to-background pointer-events-none"
+            } />
           </div>
 
           {venues.map(venue => (
             <TabsContent 
               key={venue.id} 
               value={venue.id}
-              lazyMount={false}
               className="transition-opacity duration-300 ease-in-out"
             >
               <div className="grid gap-3 sm:gap-3 md:gap-4 pb-16 md:pb-0">

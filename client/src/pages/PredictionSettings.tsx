@@ -12,9 +12,11 @@ import { Input } from "@/components/ui/input";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useThemeStore } from "@/stores/themeStore";
 
 export default function PredictionSettings() {
   const { id } = useParams();
+  const { theme } = useThemeStore();
   const [activeTab, setActiveTab] = useState("win");
   
   // 単勝確率の状態
@@ -644,10 +646,18 @@ export default function PredictionSettings() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full" aria-label="予想設定タブ">
-          <TabsList className="grid grid-cols-3 w-full bg-background/50 backdrop-blur-sm border border-primary/10 p-0 rounded-xl shadow-sm overflow-hidden" aria-label="予想設定タブリスト">
+          <TabsList className={
+            theme === 'light'
+              ? "grid grid-cols-3 w-full bg-background backdrop-blur-sm border border-secondary/30 p-0 rounded-xl shadow-sm overflow-hidden"
+              : "grid grid-cols-3 w-full bg-background/50 backdrop-blur-sm border border-primary/10 p-0 rounded-xl shadow-sm overflow-hidden"
+          } aria-label="予想設定タブリスト">
             <TabsTrigger 
               value="win" 
-              className="flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+              className={
+                theme === 'light'
+                  ? "flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-secondary/30 data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary/70 data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+                  : "flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+              }
               aria-controls="win-tab"
               aria-selected={activeTab === "win"}
             >
@@ -656,7 +666,11 @@ export default function PredictionSettings() {
             </TabsTrigger>
             <TabsTrigger 
               value="place" 
-              className="flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+              className={
+                theme === 'light'
+                  ? "flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-secondary/30 data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary/70 data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+                  : "flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+              }
               aria-controls="place-tab"
               aria-selected={activeTab === "place"}
             >
@@ -665,7 +679,11 @@ export default function PredictionSettings() {
             </TabsTrigger>
             <TabsTrigger 
               value="budget" 
-              className="flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+              className={
+                theme === 'light'
+                  ? "flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-secondary/30 data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary/70 data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+                  : "flex items-center justify-center gap-2 py-2.5 h-10 rounded-none data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:backdrop-blur-sm data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:border-t-0 data-[state=active]:border-x-0 transition-all duration-200"
+              }
               aria-controls="budget-tab"
               aria-selected={activeTab === "budget"}
             >
@@ -686,13 +704,29 @@ export default function PredictionSettings() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <Alert variant="default" className="border border-emerald-500/30 bg-emerald-500/10 shadow-lg backdrop-blur-sm">
-                      <AlertCircle className="h-4 w-4 text-emerald-500" />
-                      <AlertDescription className="flex items-center justify-between text-emerald-50">
+                    <Alert variant="default" className={
+                      theme === 'light'
+                        ? "border border-emerald-500/40 bg-emerald-50 shadow-sm"
+                        : "border border-emerald-500/30 bg-emerald-500/10 shadow-lg backdrop-blur-sm"
+                    }>
+                      <AlertCircle className={
+                        theme === 'light' 
+                          ? "h-4 w-4 text-emerald-600" 
+                          : "h-4 w-4 text-emerald-500"
+                      } />
+                      <AlertDescription className={
+                        theme === 'light'
+                          ? "flex items-center justify-between text-emerald-800"
+                          : "flex items-center justify-between text-emerald-50"
+                      }>
                         <span>
                           全ての確率の合計が100%になるように調整してください
                           <br />
-                          <span className="text-sm text-emerald-400">
+                          <span className={
+                            theme === 'light'
+                              ? "text-sm text-emerald-600"
+                              : "text-sm text-emerald-400"
+                          }>
                             現在の合計: {winTotalProbability.toFixed(1)}%
                           </span>
                         </span>
@@ -700,7 +734,11 @@ export default function PredictionSettings() {
                           variant="outline" 
                           size="sm"
                           onClick={normalizeWinProbabilities}
-                          className="border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap"
+                          className={
+                            theme === 'light'
+                              ? "border-emerald-300 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 whitespace-nowrap"
+                              : "border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap"
+                          }
                           aria-label="確率を一括調整する"
                         >
                           一括調整
@@ -712,11 +750,19 @@ export default function PredictionSettings() {
               </AnimatePresence>
             </div>
 
-            <Card className="overflow-hidden bg-gradient-to-br from-background to-primary/5">
+            <Card className={
+              theme === 'light'
+                ? "overflow-hidden bg-gradient-to-br from-background to-secondary/20 border border-secondary/30 shadow-sm"
+                : "overflow-hidden bg-gradient-to-br from-background to-primary/5"
+            }>
               <CardContent className="p-2 sm:p-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 sm:gap-3">
                   {sortedHorses.map((horse) => (
-                    <div key={horse.id} className="p-1.5 sm:p-2 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors">
+                    <div key={horse.id} className={
+                      theme === 'light'
+                        ? "p-1.5 sm:p-2 border border-secondary/40 rounded-lg bg-background/90 hover:bg-background transition-colors shadow-sm"
+                        : "p-1.5 sm:p-2 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
+                    }>
                       <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-1.5">
                         <div className={`
                           w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg font-bold shadow-sm text-xs
@@ -736,7 +782,11 @@ export default function PredictionSettings() {
                         <div className="flex items-center justify-between gap-0.5">
                           <Button
                             variant="outline"
-                            className="h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                            className={
+                              theme === 'light'
+                                ? "h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-secondary/60"
+                                : "h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                            }
                             onClick={() => handleWinProbabilityIncrement(horse.id, -5)}
                             aria-label={`${horse.name}の確率を5%減らす`}
                           >
@@ -769,7 +819,11 @@ export default function PredictionSettings() {
                           
                           <Button
                             variant="outline"
-                            className="h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                            className={
+                              theme === 'light'
+                                ? "h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-secondary/60"
+                                : "h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                            }
                             onClick={() => handleWinProbabilityIncrement(horse.id, 5)}
                             aria-label={`${horse.name}の確率を5%増やす`}
                           >
@@ -809,13 +863,29 @@ export default function PredictionSettings() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <Alert variant="default" className="border border-emerald-500/30 bg-emerald-500/10 shadow-lg backdrop-blur-sm">
-                      <AlertCircle className="h-4 w-4 text-emerald-500" />
-                      <AlertDescription className="flex items-center justify-between text-emerald-50">
+                    <Alert variant="default" className={
+                      theme === 'light'
+                        ? "border border-emerald-500/40 bg-emerald-50 shadow-sm"
+                        : "border border-emerald-500/30 bg-emerald-500/10 shadow-lg backdrop-blur-sm"
+                    }>
+                      <AlertCircle className={
+                        theme === 'light' 
+                          ? "h-4 w-4 text-emerald-600" 
+                          : "h-4 w-4 text-emerald-500"
+                      } />
+                      <AlertDescription className={
+                        theme === 'light'
+                          ? "flex items-center justify-between text-emerald-800"
+                          : "flex items-center justify-between text-emerald-50"
+                      }>
                         <span>
                           全ての確率の合計が{getRequiredTotalProbability(horses.length)}%になるように調整してください
                           <br />
-                          <span className="text-sm text-emerald-400">
+                          <span className={
+                            theme === 'light'
+                              ? "text-sm text-emerald-600"
+                              : "text-sm text-emerald-400"
+                          }>
                             現在の合計: {placeTotalProbability.toFixed(1)}%
                           </span>
                         </span>
@@ -823,7 +893,11 @@ export default function PredictionSettings() {
                           variant="outline" 
                           size="sm"
                           onClick={normalizePlaceProbabilities}
-                          className="border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap"
+                          className={
+                            theme === 'light'
+                              ? "border-emerald-300 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 whitespace-nowrap"
+                              : "border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap"
+                          }
                           aria-label="複勝確率を一括調整する"
                         >
                           一括調整
@@ -835,11 +909,19 @@ export default function PredictionSettings() {
               </AnimatePresence>
             </div>
 
-            <Card className="overflow-hidden bg-gradient-to-br from-background to-primary/5">
+            <Card className={
+              theme === 'light'
+                ? "overflow-hidden bg-gradient-to-br from-background to-secondary/20 border border-secondary/30 shadow-sm"
+                : "overflow-hidden bg-gradient-to-br from-background to-primary/5"
+            }>
               <CardContent className="p-2 sm:p-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 sm:gap-3">
                   {sortedHorses.map((horse) => (
-                    <div key={horse.id} className="p-1.5 sm:p-2 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors">
+                    <div key={horse.id} className={
+                      theme === 'light'
+                        ? "p-1.5 sm:p-2 border border-secondary/40 rounded-lg bg-background/90 hover:bg-background transition-colors shadow-sm"
+                        : "p-1.5 sm:p-2 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
+                    }>
                       <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-1.5">
                         <div className={`
                           w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg font-bold shadow-sm text-xs
@@ -859,7 +941,11 @@ export default function PredictionSettings() {
                         <div className="flex items-center justify-between gap-0.5">
                           <Button
                             variant="outline"
-                            className="h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                            className={
+                              theme === 'light'
+                                ? "h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-secondary/60"
+                                : "h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                            }
                             onClick={() => handlePlaceProbabilityIncrement(horse.id, -5)}
                             aria-label={`${horse.name}の複勝確率を5%減らす`}
                           >
@@ -892,7 +978,11 @@ export default function PredictionSettings() {
                           
                           <Button
                             variant="outline"
-                            className="h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                            className={
+                              theme === 'light'
+                                ? "h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-secondary/60"
+                                : "h-5 w-9 sm:h-6 sm:w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                            }
                             onClick={() => handlePlaceProbabilityIncrement(horse.id, 5)}
                             aria-label={`${horse.name}の複勝確率を5%増やす`}
                           >
@@ -929,7 +1019,11 @@ export default function PredictionSettings() {
               </Alert>
             )}
 
-            <Card className="overflow-hidden bg-gradient-to-br from-background to-primary/5">
+            <Card className={
+              theme === 'light'
+                ? "overflow-hidden bg-gradient-to-br from-background to-secondary/20 border border-secondary/30 shadow-sm"
+                : "overflow-hidden bg-gradient-to-br from-background to-primary/5"
+            }>
               <CardContent className="p-6 space-y-8">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
@@ -973,7 +1067,11 @@ export default function PredictionSettings() {
                     <div className="flex items-center justify-between gap-0.5">
                       <Button
                         variant="outline"
-                        className="h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        className={
+                          theme === 'light'
+                            ? "h-6 w-12 rounded-md flex-shrink-0 p-0 border-secondary/60"
+                            : "h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        }
                         onClick={() => handleBudgetIncrement(-1000)}
                         aria-label="予算を1000円減らす"
                       >
@@ -1001,7 +1099,11 @@ export default function PredictionSettings() {
                       
                       <Button
                         variant="outline"
-                        className="h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        className={
+                          theme === 'light'
+                            ? "h-6 w-12 rounded-md flex-shrink-0 p-0 border-secondary/60"
+                            : "h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        }
                         onClick={() => handleBudgetIncrement(1000)}
                         aria-label="予算を1000円増やす"
                       >
@@ -1024,7 +1126,11 @@ export default function PredictionSettings() {
                   />
                 </div>
 
-                <div className="pt-6 border-t border-primary/10">
+                <div className={
+                  theme === 'light'
+                    ? "pt-6 border-t border-secondary/30"
+                    : "pt-6 border-t border-primary/10"
+                }>
                   <div className="flex items-center gap-2 mb-4">
                     <label className="text-sm font-medium">リスクリワード</label>
                     <TooltipProvider>
@@ -1062,7 +1168,11 @@ export default function PredictionSettings() {
                     <div className="flex items-center justify-between gap-0.5">
                       <Button
                         variant="outline"
-                        className="h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        className={
+                          theme === 'light'
+                            ? "h-6 w-12 rounded-md flex-shrink-0 p-0 border-secondary/60"
+                            : "h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        }
                         onClick={() => handleRiskRatioIncrement(-5)}
                         aria-label="リスクリワードを5減らす"
                       >
@@ -1090,7 +1200,11 @@ export default function PredictionSettings() {
                       
                       <Button
                         variant="outline"
-                        className="h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        className={
+                          theme === 'light'
+                            ? "h-6 w-12 rounded-md flex-shrink-0 p-0 border-secondary/60"
+                            : "h-6 w-12 rounded-md flex-shrink-0 p-0 border-primary/40"
+                        }
                         onClick={() => handleRiskRatioIncrement(5)}
                         aria-label="リスクリワードを5増やす"
                       >
