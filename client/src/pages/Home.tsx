@@ -1197,13 +1197,13 @@ export default function Home() {
                           className={`px-3 py-1.5 ${timeZoom === 'all' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'}`}
                           onClick={() => handleTimeZoomChange('all')}
                         >
-                          全体表示
+                          全体
                         </button>
                         <button 
                           className={`px-3 py-1.5 border-l border-border ${timeZoom === 'normal' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'}`}
                           onClick={() => handleTimeZoomChange('normal')}
                         >
-                          標準表示
+                          最新
                         </button>
                       </div>
                     </div>

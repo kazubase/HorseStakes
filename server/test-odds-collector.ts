@@ -31,8 +31,8 @@ async function testPastRaceOddsCollection() {
     await collector.initialize();
 
     // 過去のレースID、URL入力
-    const raceId = 202406050811;
-    const pastRaceUrl = 'https://www.jra.go.jp/JRADB/accessS.html?CNAME=pw01sde1006202405081120241222/AF';
+    const raceId = 202405040811;
+    const pastRaceUrl = 'https://www.jra.go.jp/JRADB/accessS.html?CNAME=pw01sde1005202404081120241027/EF';
     
     await collectOddsForRace(collector, raceId, pastRaceUrl);
 
@@ -54,10 +54,10 @@ async function collectOddsForRace(collector: OddsCollector, raceId: number, past
     console.log('Registering new race...');
     await db.insert(races).values({
       id: raceId,
-      name: `小倉牝馬ステークス`,
-      venue: "小倉",
-      startTime: new Date('2025-01-25T15:25:00'),
-      status: "upcoming"
+      name: `天皇賞(秋)`,
+      venue: "東京",
+      startTime: new Date('2024-10-27T15:40:00'),
+      status: "done"
     });
     console.log('Race registered successfully');
   }
@@ -136,5 +136,5 @@ async function collectOddsForRace(collector: OddsCollector, raceId: number, past
 }
 
 // 実行したい方のコメントアウトを外して使用
-testCurrentRaceOddsCollection();
-// testPastRaceOddsCollection();
+// testCurrentRaceOddsCollection();
+testPastRaceOddsCollection();
