@@ -97,6 +97,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [lastScrollY, setLastScrollY] = useState(0);
   const [location] = useLocation();
   const isRaceListPage = useMemo(() => location === "/", [location]);
+  const isBettingStrategyPage = useMemo(() => location.includes("/races/") && location.includes("/betting-strategy"), [location]);
   const { theme } = useThemeStore();
 
   // スクロールイベントをデバウンス（制御）するための関数
@@ -122,6 +123,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       setIsNavVisible(currentScrollY === 0);
     }
 
+    // 馬券戦略ページの場合は、最上部でのみヘッダーを表示
+    if (isBettingStrategyPage) {
+      setIsHeaderVisible(currentScrollY === 0);
+      return;
+    }
+
     // コンテンツが短い場合は常にヘッダーを表示
     if (isContentShort) {
       setIsHeaderVisible(true);
@@ -140,7 +147,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
     
     setLastScrollY(currentScrollY);
-  }, [lastScrollY, isRaceListPage]);
+  }, [lastScrollY, isRaceListPage, isBettingStrategyPage]);
 
   // デバウンスされたスクロールハンドラー
   const debouncedScrollHandler = useMemo(

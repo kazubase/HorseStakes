@@ -436,11 +436,7 @@ export function BettingSelection() {
       </div>
 
       {/* 馬券候補 */}
-      <div className={
-        theme === 'light'
-          ? "bg-gradient-to-b from-gray-50/80 to-white/90 p-4 rounded-lg border border-gray-200 shadow-sm"
-          : ""
-      }>
+      <div>
         <BettingOptionsTable 
           bettingOptions={bettingOptions}
           selectedBets={selectionState.selectedBets}

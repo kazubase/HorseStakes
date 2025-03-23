@@ -515,21 +515,7 @@ export function BettingOptionsTable({
 
   return (
     <div className={`space-y-2 ${className || ''}`}>
-      {/* 凡例を追加 */}
-      <div className={
-        theme === 'light'
-          ? "bg-gray-100 p-2 rounded-lg text-xs text-gray-600"
-          : "bg-secondary/30 p-2 rounded-lg text-xs text-muted-foreground"
-      }>
-        <div className="grid grid-cols-2 gap-2 mb-1">
-          <div>買い目</div>
-          <div className="text-right">オッズ</div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>的中率</div>
-          <div className="text-right">期待値</div>
-        </div>
-      </div>
+      {/* 凡例を削除し、各カードの中に取り込む */}
 
       <div className={`grid gap-2 ${gridColumnsClass}`}>
         {[...simpleTypes, ...complexTypes].map(betType => {
@@ -622,6 +608,23 @@ export function BettingOptionsTable({
                 </div>
               </CardHeader>
               <CardContent className="p-2">
+                {/* 凡例をカードの最初のコンテンツとして組み込む */}
+                <div className={`
+                  mb-2 text-xs rounded p-1.5
+                  ${theme === 'light'
+                    ? "bg-gray-50 text-gray-600 border border-gray-200"
+                    : "bg-background/60 text-muted-foreground border border-border/50"}
+                `}>
+                  <div className="grid grid-cols-2 gap-1 mb-0.5">
+                    <div>買い目</div>
+                    <div className="text-right">オッズ</div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    <div>的中率</div>
+                    <div className="text-right">期待値</div>
+                  </div>
+                </div>
+                
                 <div className="space-y-1.5">
                   {options.map((option, index) => {
                     const evClass = getEvBackgroundClass(option.ev, optionsWithStats.stats.ev);

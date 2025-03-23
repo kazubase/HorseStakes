@@ -135,8 +135,8 @@ const PredictionSettingsSection = memo(({
         } />
         <CardTitle className={
           theme === 'light'
-            ? "relative text-lg font-bold text-gray-800"
-            : "relative text-lg font-bold"
+            ? "relative text-xl font-bold text-gray-800"
+            : "relative text-xl font-bold"
         }>予想設定</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -320,8 +320,8 @@ const GeminiAnalysisSection = memo(({
         } />
         <CardTitle className={
           theme === 'light'
-            ? "relative text-lg font-bold text-gray-800"
-            : "relative text-lg font-bold"
+            ? "relative text-xl font-bold text-gray-800"
+            : "relative text-xl font-bold"
         }>AI分析</CardTitle>
       </CardHeader>
       <CardContent className={
