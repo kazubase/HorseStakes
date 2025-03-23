@@ -13,7 +13,8 @@ import {
   canProceedAtom,
   conditionalProbabilitiesAtom,
   winProbsAtom,
-  placeProbsAtom
+  placeProbsAtom,
+  latestOddsAtom
 } from '@/stores/bettingStrategy';
 import type { Horse, TanOddsHistory, FukuOdds, WakurenOdds, UmarenOdds, WideOdds, UmatanOdds, Fuku3Odds, Tan3Odds } from "@db/schema";
 import { BettingOptionsTable } from "@/components/BettingOptionsTable";
@@ -26,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/themeStore";
+import { HorseMarquee } from "@/components/HorseMarquee";
 
 // Geminiオプションの型定義
 interface GeminiOptions {
@@ -439,6 +441,7 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
   const [isCalculated, setIsCalculated] = useState(false);
   const [, setWinProbs] = useAtom(winProbsAtom);
   const [, setPlaceProbs] = useAtom(placeProbsAtom);
+  const [, setLatestOdds] = useAtom(latestOddsAtom);
   
   // サイドバーの状態管理 - 初期値をpropsから取得
   const [isSidebarOpen, setIsSidebarOpen] = useState(initialSidebarOpen);
@@ -703,6 +706,46 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
     }
   }, [calculatedBettingOptions, setWinProbs, setPlaceProbs]);
 
+  // 取得したオッズをatomに保存（型変換を行う）
+  useEffect(() => {
+    if (latestOdds) {
+      // TanOddsHistory[]からlatestOddsAtomの型に変換
+      const formattedOdds = latestOdds.map(odd => ({
+        horseId: String(odd.horseId),
+        odds: Number(odd.odds)
+      }));
+      setLatestOdds(formattedOdds);
+      
+
+    }
+  }, [latestOdds, setLatestOdds]);
+
+  // 初期表示時のデータ読み込みを最適化
+  const queryClient = useQueryClient();
+  
+  // 初期表示時にオッズデータを取得するための処理を修正
+  useEffect(() => {
+    // すでにlatestOddsAtomが設定されているか確認
+    const currentOdds = queryClient.getQueryData([`/api/tan-odds-history/latest/${id}`]);
+    
+    // データがすでに存在する場合
+    if (currentOdds && Array.isArray(currentOdds) && currentOdds.length > 0) {
+      // キャッシュからオッズデータを設定
+      const formattedOdds = currentOdds.map((odd: any) => ({
+        horseId: String(odd.horseId),
+        odds: Number(odd.odds)
+      }));
+      setLatestOdds(formattedOdds);
+    } else if (horses && horses.length > 0 && id) {
+      // データがなければクエリを明示的に実行
+      queryClient.prefetchQuery({
+        queryKey: [`/api/tan-odds-history/latest/${id}`],
+        queryFn: () => 
+          fetch(`/api/tan-odds-history/latest/${id}`).then(res => res.json())
+      });
+    }
+  }, [horses, id, queryClient, setLatestOdds]);
+
   // サイドバータブの定義 - メモを削除
   const sidebarTabs = useMemo<SidebarTab[]>(() => [
     {
@@ -731,6 +774,44 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
       )
     }
   ], [budget, riskRatio, horses, winProbs, placeProbs, geminiAnalysis.isLoading, geminiAnalysis.data]);
+
+  // 馬データと単勝オッズをマージ
+  const horseMarqueeData = useMemo(() => {
+    if (!horses || !horses.length || !latestOdds || !latestOdds.length) return [];
+    
+    const result = horses.map(horse => ({
+      number: horse.number,
+      name: horse.name,
+      frame: horse.frame,
+      odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0)
+    }));
+    
+    return result;
+  }, [horses, latestOdds]);
+
+  // HorseMarqueeを表示すべきかどうか
+  const shouldShowMarquee = useMemo(() => {
+    return horseMarqueeData.length > 0;
+  }, [horseMarqueeData]);
+  
+  // コンポーネントがマウントされたときにサイズ再計算のイベントを発火
+  useEffect(() => {
+    if (shouldShowMarquee) {
+      // 少し遅延を入れてからサイズ計算を確実に行う
+      const timer = setTimeout(() => {
+        // HorseMarqueeコンポーネントのサイズ計算を強制的に再実行するイベントを発火
+        const resizeEvent = new Event('resize');
+        window.dispatchEvent(resizeEvent);
+        
+        // 2回目のリサイズイベントを追加で発火して確実に反映させる
+        setTimeout(() => {
+          window.dispatchEvent(resizeEvent);
+        }, 500);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [shouldShowMarquee]);
 
   if (isHorsesError) {
     return (
@@ -851,6 +932,19 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
           </div>
         </div>
       </div>
+
+      {/* 電光掲示板をフッターに固定表示 */}
+      {shouldShowMarquee && (
+        <div className="fixed bottom-0 left-0 right-0 z-10 shadow-lg pointer-events-none">
+          <div className="container mx-auto px-4">
+            <HorseMarquee 
+              horses={horseMarqueeData} 
+              className={theme === 'light' ? 'shadow-sm mb-0' : 'shadow-lg mb-0'}
+              speed={60}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

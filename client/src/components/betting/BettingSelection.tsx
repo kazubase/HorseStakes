@@ -5,20 +5,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BetProposal } from '@/lib/betEvaluation';
 import { Button } from "@/components/ui/button";
 import { calculateBetProposalsWithGemini, optimizeBetAllocation } from "@/lib/betOptimizer";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { Sparkles, MousePointer } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getDefaultStore } from 'jotai';
 import { Spinner } from "@/components/ui/spinner";
 import { useThemeStore } from "@/stores/themeStore";
 import { cn } from "@/lib/utils";
+import { HorseMarquee } from "@/components/HorseMarquee";
+import { useQuery } from "@tanstack/react-query";
+import type { TanOddsHistory } from "@db/schema";
 
 export function BettingSelection() {
+  const { id } = useParams();
   const [, setLocation] = useLocation();
   const [selectionState, setSelectionState] = useAtom(selectionStateAtom);
   const [bettingOptions] = useAtom(bettingOptionsAtom);
   const [horses] = useAtom(horsesAtom);
-  const [latestOdds] = useAtom(latestOddsAtom);
+  const [latestOdds, setLatestOdds] = useAtom(latestOddsAtom);
   const [winProbs, setWinProbs] = useAtom(winProbsAtom);
   const [placeProbs, setPlaceProbs] = useAtom(placeProbsAtom);
   const conditionalProbabilities = useAtomValue(conditionalProbabilitiesAtom);
@@ -27,6 +31,62 @@ export function BettingSelection() {
   const [currentStep, setCurrentStep] = useAtom(currentStepAtom);
   const { theme } = useThemeStore();
   
+  // 最新オッズをAPIから取得
+  const { data: fetchedLatestOdds } = useQuery<TanOddsHistory[]>({
+    queryKey: [`/api/tan-odds-history/latest/${id}`],
+    enabled: !!id,
+  });
+
+  // 取得したオッズをatomに保存（型変換を行う）
+  useEffect(() => {
+    if (fetchedLatestOdds) {
+      // TanOddsHistory[]からlatestOddsAtomの型に変換
+      const formattedOdds = fetchedLatestOdds.map(odd => ({
+        horseId: String(odd.horseId),
+        odds: Number(odd.odds)
+      }));
+      setLatestOdds(formattedOdds);
+    }
+  }, [fetchedLatestOdds, setLatestOdds]);
+  
+  // 馬データと単勝オッズをマージ
+  const horseMarqueeData = useMemo(() => {
+    if (!horses || !horses.length || !latestOdds || !latestOdds.length) return [];
+    
+    const result = horses.map(horse => ({
+      number: horse.number,
+      name: horse.name,
+      frame: horse.frame,
+      odds: Number(latestOdds.find(odd => Number(odd.horseId) === horse.number)?.odds || 0)
+    }));
+    
+    return result;
+  }, [horses, latestOdds]);
+
+  // HorseMarqueeを表示すべきかどうか
+  const shouldShowMarquee = useMemo(() => {
+    return horseMarqueeData.length > 0;
+  }, [horseMarqueeData]);
+  
+  // コンポーネントがマウントされたときにサイズ再計算のイベントを発火
+  useEffect(() => {
+    if (shouldShowMarquee) {
+      // 少し遅延を入れてからサイズ計算を確実に行う
+      const timer = setTimeout(() => {
+        // HorseMarqueeコンポーネントのサイズ計算を強制的に再実行するイベントを発火
+        const resizeEvent = new Event('resize');
+        window.dispatchEvent(resizeEvent);
+        
+        // 2回目のリサイズイベントを追加で発火して確実に反映させる
+        setTimeout(() => {
+          window.dispatchEvent(resizeEvent);
+        }, 500);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [shouldShowMarquee]);
+
   // 次へボタンが押されたときに呼び出される関数を追加
   useEffect(() => {
     
@@ -420,6 +480,19 @@ export function BettingSelection() {
           columnsCount={4}
         />
       </div>
+
+      {/* 電光掲示板をフッターに固定表示 */}
+      {shouldShowMarquee && (
+        <div className="fixed bottom-0 left-0 right-0 z-10 shadow-lg pointer-events-none">
+          <div className="container mx-auto px-4">
+            <HorseMarquee 
+              horses={horseMarqueeData} 
+              className={theme === 'light' ? 'shadow-sm mb-0' : 'shadow-lg mb-0'}
+              speed={60}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

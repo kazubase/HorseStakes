@@ -3,6 +3,14 @@ module.exports = {
   darkMode: ["class"],
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
+    screens: {
+      'xs': '480px',
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+    },
     extend: {
       fontFamily: {
         'yuji': ['"Yuji Syuku"', '"Yuji Syuku Fallback"', 'serif'],
@@ -91,11 +99,31 @@ module.exports = {
             height: "0",
           },
         },
+        "marquee": {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-100%)' }
+        },
+        "led-blink": {
+          '0%, 100%': { opacity: 0.9 },
+          '50%': { opacity: 1 }
+        },
+        "marquee-slide": {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' }
+        },
+        "blink": {
+          '0%, 100%': { opacity: 1 },
+          '50%': { opacity: 0.8 }
+        }
       },
       animation: {
         "accordion-down": "accordion-down 1s ease-out",
         "accordion-up": "accordion-up 1s ease-out",
         ripple: 'ripple 3s ease-out infinite',
+        "marquee": "marquee 25s linear infinite",
+        "led-blink": "led-blink 2s ease-in-out infinite",
+        "marquee-slide": "marquee-slide 30s linear infinite",
+        "blink": "blink 2s ease-in-out infinite"
       },
     },
   },
