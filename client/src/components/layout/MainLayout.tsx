@@ -16,7 +16,7 @@ const Logo = memo(() => {
           <img 
             src="/images/horseshoe-icon-light.webp" 
             alt="馬券戦略アプリロゴ" 
-            className="h-9 w-9 rounded-lg shadow-sm"
+            className="h-9 w-9 rounded-lg"
             width="36"
             height="36"
             decoding="async"
