@@ -35,7 +35,7 @@ export function BettingStepProgress({ onBackToPrediction }: BettingStepProgressP
   };
 
   return (
-    <div className="w-full space-y-4 sm:space-y-6 px-2 sm:px-4 py-3 sm:py-5">
+    <div className="w-full space-y-2 sm:space-y-3 px-1 sm:px-2 py-1 sm:py-3">
       {/* ステップインジケーター */}
       <div className="relative">
         <div className="absolute top-1/2 left-2 right-2 sm:left-4 sm:right-4 h-0.5 bg-gradient-to-r from-border/50 via-border to-border/50 -translate-y-1/2" />
@@ -49,7 +49,7 @@ export function BettingStepProgress({ onBackToPrediction }: BettingStepProgressP
                 {/* ステップの丸印 */}
                 <div
                   className={`
-                    w-7 h-7 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center relative z-10
+                    w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center relative z-10
                     transition-all duration-300 ease-out
                     ${isActive ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground scale-110 shadow-lg shadow-primary/20' : 
                       isCompleted ? 'bg-gradient-to-br from-primary/80 to-primary/60 text-primary-foreground' : 
@@ -98,7 +98,7 @@ export function BettingStepProgress({ onBackToPrediction }: BettingStepProgressP
           >
             <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
             <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5" />
-            <span className="font-medium text-xs sm:text-sm">{isMobile ? '予想設定' : '予想設定に戻る'}</span>
+            <span className="font-medium text-xs sm:text-sm">予想設定に戻る</span>
           </Button>
         )}
         

@@ -54,14 +54,14 @@ export function BettingStrategy() {
 
   return (
     <MainLayout>
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-1 sm:space-y-2">
       {/* レース情報ヘッダー */}
       <div className="relative overflow-hidden rounded-xl border border-border/50 bg-gradient-to-br from-card/50 via-card/30 to-card/20 backdrop-blur-sm shadow-sm">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent" />
         <div className="relative p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h2 className="text-base sm:text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+              <h2 className="text-xl sm:text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
                 {race?.name || 'レース名を読み込み中...'}
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2">

@@ -322,7 +322,7 @@ const GeminiAnalysisSection = memo(({
           theme === 'light'
             ? "relative text-lg font-bold text-gray-800"
             : "relative text-lg font-bold"
-        }>分析結果</CardTitle>
+        }>AI分析</CardTitle>
       </CardHeader>
       <CardContent className={
         theme === 'light'
@@ -845,7 +845,7 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
     },
     {
       id: "analysis",
-      title: "分析結果",
+      title: "AI分析",
       icon: <Lightbulb className="h-5 w-5" />,
       component: (
         <GeminiAnalysisSection
@@ -891,7 +891,7 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
                 ) : (
                   <>
                     <ChevronLeft className="h-4 w-4" />
-                    <span className="inline">予想設定とAI分析</span>
+                    <span className="inline">設定確認とAI分析</span>
                   </>
                 )}
               </Button>
