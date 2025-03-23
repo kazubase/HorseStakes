@@ -23,7 +23,6 @@ preloadReactDependencies();
 // 遅延ロード用にimportを変更（依存関係が解決された後に実行）
 const Home = lazy(() => import("@/pages/Home"));
 const RaceList = lazy(() => import("@/pages/RaceList"));
-const Strategy = lazy(() => import("@/pages/Strategy"));
 const Guide = lazy(() => import("@/pages/Guide"));
 // BettingStrategyコンポーネントは名前付きエクスポートのため修正
 const BettingStrategyLazy = lazy(() => 
@@ -56,7 +55,6 @@ function App() {
             {/* <Route path="/predict/place/:id" component={PlaceProbability} /> */}
             {/* <Route path="/predict/budget/:id" component={Budget} /> */}
             <Route path="/predict/:id" component={PredictionSettings} />
-            <Route path="/strategy/:id" component={Strategy} />
             <Route path="/races/:id/betting-strategy" component={BettingStrategyLazy} />
           </Switch>
         </Suspense>
