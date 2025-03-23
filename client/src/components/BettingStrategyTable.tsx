@@ -1076,12 +1076,12 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             <div className={cn(
               "text-xs",
               chartColors.statsMutedText
-            )}>平均収益</div>
+            )}>平均収益率</div>
             <div className={cn(
               "text-lg font-bold",
-              chartColors.profitTextColor
+              chartColors.returnRateTextColor
             )}>
-              {stats.mean >= 0 ? '+' : ''}{(Math.round(stats.mean / 10) * 10).toLocaleString()}円
+              {returnRate >= 0 ? '+' : ''}{returnRate.toFixed(1)}%
             </div>
           </div>
           <div className={cn(
@@ -1091,12 +1091,12 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             <div className={cn(
               "text-xs",
               chartColors.statsMutedText
-            )}>収益率</div>
+            )}>買い目期待値</div>
             <div className={cn(
               "text-lg font-bold",
-              chartColors.returnRateTextColor
+              chartColors.profitTextColor
             )}>
-              {returnRate >= 0 ? '+' : ''}{returnRate.toFixed(1)}%
+              {((stats.winRate * (returnRate + 100)) / 100).toFixed(2)}
             </div>
           </div>
         </div>
