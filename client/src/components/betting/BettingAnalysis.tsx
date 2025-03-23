@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, memo, useCallback } from "react";
+import { useEffect, useState, useMemo, memo, useCallback, lazy, Suspense } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAtom, useAtomValue } from 'jotai';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,7 +27,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/themeStore";
-import { HorseMarquee } from "@/components/HorseMarquee";
+
+// Lazy load HorseMarquee component
+const HorseMarquee = lazy(() => import('@/components/HorseMarquee'));
 
 // Geminiオプションの型定義
 interface GeminiOptions {
@@ -641,9 +643,123 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
     }
   }, [correlations]);
 
-  // Gemini分析のクエリは条件付き確率の計算が完了してから実行
-  const geminiAnalysis = useQuery({
-    queryKey: ['gemini-analysis', id, budget, riskRatio, calculatedBettingOptions?.length, correlations?.length],
+  // オッズフェッチ処理とatomの更新を最適化
+  useEffect(() => {
+    if (!latestOdds || latestOdds.length === 0) return;
+    
+    // TanOddsHistory[]からlatestOddsAtomの型に変換
+    const formattedOdds = latestOdds.map(odd => ({
+      horseId: String(odd.horseId),
+      odds: Number(odd.odds)
+    }));
+    
+    // 前回と同じデータでなければ更新
+    setLatestOdds(prev => {
+      if (!prev || prev.length !== formattedOdds.length) return formattedOdds;
+      
+      // 変更があるか確認
+      const hasChanges = formattedOdds.some((odd, index) => 
+        !prev[index] || prev[index].odds !== odd.odds || prev[index].horseId !== odd.horseId
+      );
+      
+      return hasChanges ? formattedOdds : prev;
+    });
+  }, [latestOdds, setLatestOdds]);
+
+  // 初期表示時のデータ読み込みを最適化
+  const queryClient = useQueryClient();
+
+  // 初期表示時にオッズデータを取得するための処理を修正
+  useEffect(() => {
+    // すでにlatestOddsAtomが設定されているか確認
+    const currentOdds = queryClient.getQueryData([`/api/tan-odds-history/latest/${id}`]);
+    
+    // データがすでに存在する場合
+    if (currentOdds && Array.isArray(currentOdds) && currentOdds.length > 0) {
+      // キャッシュからオッズデータを設定
+      const formattedOdds = currentOdds.map((odd: any) => ({
+        horseId: String(odd.horseId),
+        odds: Number(odd.odds)
+      }));
+      
+      setLatestOdds(prev => {
+        if (!prev || prev.length === 0) return formattedOdds;
+        if (prev.length !== formattedOdds.length) return formattedOdds;
+        
+        // 変更があるか確認
+        const hasChanges = formattedOdds.some((odd, index) => 
+          !prev[index] || prev[index].odds !== odd.odds || prev[index].horseId !== odd.horseId
+        );
+        
+        return hasChanges ? formattedOdds : prev;
+      });
+    } else if (horses && horses.length > 0 && id) {
+      // データがなければクエリを明示的に実行（遅延ロード）
+      queryClient.prefetchQuery({
+        queryKey: [`/api/tan-odds-history/latest/${id}`],
+        queryFn: () => 
+          fetch(`/api/tan-odds-history/latest/${id}`).then(res => res.json()),
+        staleTime: 300000, // 5分キャッシュを有効に
+      });
+    }
+  }, [id, horses?.length, queryClient, setLatestOdds]);
+
+  // 馬データと単勝オッズをマージ - 計算コストを削減
+  const horseMarqueeData = useMemo(() => {
+    if (!horses || !horses.length) return [];
+    if (!latestOdds || !latestOdds.length) return [];
+    
+    // 以前の計算結果と入力データが同じなら再計算しない
+    return horses.map(horse => ({
+      number: horse.number,
+      name: horse.name,
+      frame: horse.frame,
+      odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0)
+    }));
+    // 依存配列を最適化
+  }, [horses, latestOdds]);
+
+  // 遅延マーキー表示のためのコードを修正
+  // shouldShowMarqueeの計算を最適化
+  const shouldShowMarquee = useMemo(() => {
+    return !!horseMarqueeData && horseMarqueeData.length > 0;
+  }, [horseMarqueeData]);
+
+  // コンポーネントがマウントされたときにサイズ再計算のイベントを発火
+  useEffect(() => {
+    if (!shouldShowMarquee) return;
+    
+    // 少し遅延を入れてからサイズ計算を確実に行う
+    let timer1: number | null = null;
+    let timer2: number | null = null;
+    
+    // リサイズイベントを一度だけ発火する関数
+    const fireResizeEvent = () => {
+      const resizeEvent = new Event('resize');
+      window.dispatchEvent(resizeEvent);
+    };
+    
+    // マウント後の初期化処理
+    timer1 = window.setTimeout(() => {
+      fireResizeEvent();
+      // 2回目のリサイズイベントを追加で発火して確実に反映させる
+      timer2 = window.setTimeout(() => {
+        fireResizeEvent();
+      }, 500);
+    }, 100);
+    
+    return () => {
+      if (timer1) window.clearTimeout(timer1);
+      if (timer2) window.clearTimeout(timer2);
+    };
+  }, [shouldShowMarquee]);
+
+  // geminiAnalysisの最適化されたクエリオプション
+  const geminiAnalysisOptions = useMemo(() => ({
+    queryKey: ['gemini-analysis', id, budget, riskRatio, 
+      calculatedBettingOptions?.length, 
+      correlations?.length
+    ],
     queryFn: () => analyzeWithGemini({
       horses: horses?.map(horse => ({
         name: horse.name,
@@ -659,8 +775,13 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
       correlations: correlations || [],
       raceId: id || ''
     }),
-    enabled: !!horses && !!calculatedBettingOptions?.length && !!correlations?.length
-  });
+    enabled: !!horses && !!calculatedBettingOptions?.length && !!correlations?.length,
+    staleTime: 900000, // 15分キャッシュを有効に
+    gcTime: 1800000, // 30分キャッシュを保持
+  }), [id, budget, riskRatio, calculatedBettingOptions, correlations, horses, latestOdds, winProbs, placeProbs]);
+
+  // Gemini分析のクエリは条件付き確率の計算が完了してから実行
+  const geminiAnalysis = useQuery(geminiAnalysisOptions);
 
   // 副作用の最適化
   useEffect(() => {
@@ -706,46 +827,6 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
     }
   }, [calculatedBettingOptions, setWinProbs, setPlaceProbs]);
 
-  // 取得したオッズをatomに保存（型変換を行う）
-  useEffect(() => {
-    if (latestOdds) {
-      // TanOddsHistory[]からlatestOddsAtomの型に変換
-      const formattedOdds = latestOdds.map(odd => ({
-        horseId: String(odd.horseId),
-        odds: Number(odd.odds)
-      }));
-      setLatestOdds(formattedOdds);
-      
-
-    }
-  }, [latestOdds, setLatestOdds]);
-
-  // 初期表示時のデータ読み込みを最適化
-  const queryClient = useQueryClient();
-  
-  // 初期表示時にオッズデータを取得するための処理を修正
-  useEffect(() => {
-    // すでにlatestOddsAtomが設定されているか確認
-    const currentOdds = queryClient.getQueryData([`/api/tan-odds-history/latest/${id}`]);
-    
-    // データがすでに存在する場合
-    if (currentOdds && Array.isArray(currentOdds) && currentOdds.length > 0) {
-      // キャッシュからオッズデータを設定
-      const formattedOdds = currentOdds.map((odd: any) => ({
-        horseId: String(odd.horseId),
-        odds: Number(odd.odds)
-      }));
-      setLatestOdds(formattedOdds);
-    } else if (horses && horses.length > 0 && id) {
-      // データがなければクエリを明示的に実行
-      queryClient.prefetchQuery({
-        queryKey: [`/api/tan-odds-history/latest/${id}`],
-        queryFn: () => 
-          fetch(`/api/tan-odds-history/latest/${id}`).then(res => res.json())
-      });
-    }
-  }, [horses, id, queryClient, setLatestOdds]);
-
   // サイドバータブの定義 - メモを削除
   const sidebarTabs = useMemo<SidebarTab[]>(() => [
     {
@@ -774,44 +855,6 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
       )
     }
   ], [budget, riskRatio, horses, winProbs, placeProbs, geminiAnalysis.isLoading, geminiAnalysis.data]);
-
-  // 馬データと単勝オッズをマージ
-  const horseMarqueeData = useMemo(() => {
-    if (!horses || !horses.length || !latestOdds || !latestOdds.length) return [];
-    
-    const result = horses.map(horse => ({
-      number: horse.number,
-      name: horse.name,
-      frame: horse.frame,
-      odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0)
-    }));
-    
-    return result;
-  }, [horses, latestOdds]);
-
-  // HorseMarqueeを表示すべきかどうか
-  const shouldShowMarquee = useMemo(() => {
-    return horseMarqueeData.length > 0;
-  }, [horseMarqueeData]);
-  
-  // コンポーネントがマウントされたときにサイズ再計算のイベントを発火
-  useEffect(() => {
-    if (shouldShowMarquee) {
-      // 少し遅延を入れてからサイズ計算を確実に行う
-      const timer = setTimeout(() => {
-        // HorseMarqueeコンポーネントのサイズ計算を強制的に再実行するイベントを発火
-        const resizeEvent = new Event('resize');
-        window.dispatchEvent(resizeEvent);
-        
-        // 2回目のリサイズイベントを追加で発火して確実に反映させる
-        setTimeout(() => {
-          window.dispatchEvent(resizeEvent);
-        }, 500);
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [shouldShowMarquee]);
 
   if (isHorsesError) {
     return (
@@ -933,15 +976,19 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
         </div>
       </div>
 
-      {/* 電光掲示板をフッターに固定表示 */}
+      {/* 電光掲示板をフッターに固定表示 - 遅延ロード対応 */}
       {shouldShowMarquee && (
         <div className="fixed bottom-0 left-0 right-0 z-10 shadow-lg pointer-events-none">
           <div className="container mx-auto px-4">
-            <HorseMarquee 
-              horses={horseMarqueeData} 
-              className={theme === 'light' ? 'shadow-sm mb-0' : 'shadow-lg mb-0'}
-              speed={60}
-            />
+            <Suspense fallback={
+              <div className={`h-12 rounded-lg ${theme === 'light' ? 'bg-indigo-50' : 'bg-black/40'} animate-pulse`}></div>
+            }>
+              <HorseMarquee 
+                horses={horseMarqueeData} 
+                className={theme === 'light' ? 'shadow-sm mb-0' : 'shadow-lg mb-0'}
+                speed={60}
+              />
+            </Suspense>
           </div>
         </div>
       )}

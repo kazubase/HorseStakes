@@ -1,7 +1,6 @@
-import { useEffect, useState, useRef, useMemo, useLayoutEffect } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useThemeStore } from '@/stores/themeStore';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
 
 interface HorseData {
   number: number;
@@ -23,35 +22,9 @@ export function HorseMarquee({ horses = [], className, speed = 25 }: HorseMarque
   const [contentWidth, setContentWidth] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [animationKey, setAnimationKey] = useState(0); // アニメーションをリセットするためのキー
-  const [calculatedSpeed, setCalculatedSpeed] = useState(speed); // 計算された実際のスピード
+  const [animationDuration, setAnimationDuration] = useState(speed);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
   
-  // マウント/アンマウント時の処理を一元化
-  useEffect(() => {
-    // 固有のIDを生成してアニメーションをリセット
-    setAnimationKey(Date.now());
-    
-    // サイズ計測を実行
-    measureSizes();
-    
-    // 少し遅延を入れて再計測
-    const timer1 = setTimeout(() => {
-      measureSizes();
-    }, 50);
-    
-    // さらに遅延を入れて確実に計測
-    const timer2 = setTimeout(() => {
-      measureSizes();
-    }, 200);
-    
-    // クリーンアップ関数
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, [horses]); // horsesが変更されたときだけ実行
-
   // 枠番の色を取得する関数
   const getFrameColor = (frame: number) => {
     const colors = {
@@ -88,23 +61,40 @@ export function HorseMarquee({ horses = [], className, speed = 25 }: HorseMarque
       const baseSpeed = 60; // 基準速度を60秒に設定（より遅く）
       const baseContentWidth = 1000; // 基準コンテンツ幅
       
-      // コンテンツの幅に応じて速度を調整（係数を小さくして変化を緩やかに）
-      // コンテンツが長いほど速度を上げる（時間を短くする）が、変化を緩やかにする
+      // コンテンツの幅に応じて速度を調整
       const widthRatio = Math.max(0.1, Math.min(0.6, contentSize / baseContentWidth));
       
       // 最終的な速度を計算（コンテンツが長いほど短い時間で動く）
       const finalDuration = baseSpeed / widthRatio;
       
       // 速度を設定
-      setCalculatedSpeed(finalDuration);
+      setAnimationDuration(finalDuration);
     }
   };
 
-  // 要素のサイズを計測 - useLayoutEffectを使用
-  useLayoutEffect(() => {
+  // マウント時と馬データ変更時にサイズを計測
+  useEffect(() => {
     // 初回マウント時に即座に計測
     measureSizes();
     
+    // 少し遅延を入れて再計測（レンダリング完了後）
+    const timer1 = setTimeout(() => {
+      measureSizes();
+    }, 50);
+    
+    // さらに遅延を入れて確実に計測
+    const timer2 = setTimeout(() => {
+      measureSizes();
+    }, 200);
+    
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [horses]); // horsesが変更されたときだけ実行
+
+  // 要素のサイズを継続的に監視
+  useEffect(() => {
     // ResizeObserverを設定
     const observer = new ResizeObserver(() => {
       measureSizes();
@@ -126,18 +116,12 @@ export function HorseMarquee({ horses = [], className, speed = 25 }: HorseMarque
   // ウィンドウリサイズ時にも再計測
   useEffect(() => {
     const handleResize = () => {
-      // アニメーションキーを更新してリセット
-      setAnimationKey(Date.now());
-      // サイズを再計測
       measureSizes();
     };
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // コンテンツが表示領域より長いかどうか
-  const shouldAnimate = contentWidth > containerWidth;
 
   // 表示する馬情報がない場合は何も表示しない
   if (!sortedHorses || !sortedHorses.length) {
@@ -149,7 +133,6 @@ export function HorseMarquee({ horses = [], className, speed = 25 }: HorseMarque
     if (!sortedHorses.length) return [];
     
     // より多くの複製を作成して途切れのないシームレスなループを実現
-    // 先頭に末尾の要素を追加し、末尾に先頭の要素を追加して完全な循環を作る
     const minMultiplier = 6; // 最低6セット分のデータを用意
     const calculatedMultiplier = Math.ceil(containerWidth > 0 ? (8 * containerWidth / (contentWidth || 1)) : 8);
     const multiplier = Math.max(minMultiplier, calculatedMultiplier);
@@ -182,6 +165,21 @@ export function HorseMarquee({ horses = [], className, speed = 25 }: HorseMarque
     }
   };
 
+  // コンテンツが表示領域より長いかどうか
+  const shouldAnimate = contentWidth > containerWidth;
+
+  // インラインスタイル - アニメーション
+  const animationStyle = shouldAnimate && !isHovered && contentWidth > 0
+    ? {
+        animation: `marquee ${animationDuration}s linear infinite`,
+        width: 'fit-content',
+        willChange: 'transform'
+      }
+    : {
+        width: 'fit-content',
+        transform: 'translateX(0)'
+      };
+  
   return (
     <div 
       ref={containerRef}
@@ -195,6 +193,13 @@ export function HorseMarquee({ horses = [], className, speed = 25 }: HorseMarque
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-${contentWidth / 2}px); }
+        }
+      `}} />
+      
       {/* グラデーション装飾（左右両端） */}
       <div className={
         theme === 'light'
@@ -211,33 +216,15 @@ export function HorseMarquee({ horses = [], className, speed = 25 }: HorseMarque
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-led-blink"></div>
       <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-led-blink"></div>
 
-      {/* 馬情報のスクロール - シームレスアニメーション用に修正 */}
+      {/* 馬情報のスクロール - 簡略化したアニメーション実装 */}
       <div className="relative whitespace-nowrap overflow-hidden">
-        <motion.div
-          key={`horse-marquee-${animationKey}`}
+        <div
           ref={contentRef}
           className={cn(
             "inline-flex items-center gap-1 px-4 whitespace-nowrap",
             getResponsiveTextClasses()
           )}
-          initial={{ x: 0 }}
-          animate={shouldAnimate && !isHovered ? {
-            // contentWidth / 2だけ移動させることで、ちょうど半分地点でループ
-            x: `-${contentWidth / 2}px`,
-          } : { x: 0 }}
-          transition={shouldAnimate && !isHovered ? {
-            x: {
-              repeat: Infinity,
-              repeatType: "loop",
-              duration: calculatedSpeed,
-              ease: "linear",
-              repeatDelay: 0,
-            },
-          } : {}}
-          style={{
-            width: 'fit-content',
-            willChange: 'transform'
-          }}
+          style={animationStyle}
         >
           {/* 表示する馬データ（シームレスループ用に複数セット分表示） */}
           {duplicatedHorses.map((horse, index) => (
@@ -270,8 +257,10 @@ export function HorseMarquee({ horses = [], className, speed = 25 }: HorseMarque
               )}
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </div>
   );
-} 
+}
+
+export default HorseMarquee; 
