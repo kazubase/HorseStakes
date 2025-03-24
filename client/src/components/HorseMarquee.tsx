@@ -249,7 +249,7 @@ export function HorseMarquee({ horses = [], className, speed = 25 }: HorseMarque
                 <span className={cn(
                   "font-bold",
                   theme === 'light' 
-                    ? horse.odds >= 10 ? 'text-black' : 'text-red-600' 
+                    ? horse.odds >= 10 ? 'text-black' : 'text-red-500' 
                     : horse.odds >= 10 ? 'text-white' : 'text-red-400'
                 )}>
                   {horse.odds.toFixed(1)}

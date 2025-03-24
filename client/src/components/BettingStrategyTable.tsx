@@ -187,11 +187,14 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 
   // オッズの色分けロジック - 統計情報があれば使用
   const getOddsColorClass = (odds: number) => {
-    // オッズの色分けをせず、テーマに合わせた標準色を返す
-    if (theme === 'light') {
-      return 'text-gray-800';
+    if (odds < 10) {
+      return theme === 'light' ? 'text-red-500 font-medium' : 'text-red-400 font-medium';
+    } else if (odds < 100) {
+      return theme === 'light' ? 'text-blue-500 font-medium' : 'text-blue-400 font-medium';
+    } else if (odds >= 1000) {
+      return theme === 'light' ? 'text-gray-800 text-[0.9em]' : 'text-foreground text-[0.9em]';
     } else {
-      return 'text-foreground';
+      return theme === 'light' ? 'text-gray-800' : 'text-foreground';
     }
   };
 
@@ -1052,7 +1055,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             chartColors.statsBgColor
           )}>
             <div className={cn(
-              "text-xs max-sm:text-[10px]",
+              "text-xs max-sm:text-[11px]",
               chartColors.statsMutedText
             )}>勝率</div>
             <div className={cn(
@@ -1065,7 +1068,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             chartColors.statsBgColor
           )}>
             <div className={cn(
-              "text-xs max-sm:text-[10px]",
+              "text-xs max-sm:text-[11px]",
               chartColors.statsMutedText
             )}>平均収益率</div>
             <div className={cn(
@@ -1080,7 +1083,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             chartColors.statsBgColor
           )}>
             <div className={cn(
-              "text-xs max-sm:text-[10px]",
+              "text-xs max-sm:text-[11px]",
               chartColors.statsMutedText
             )}>買い目期待値</div>
             <div className={cn(
@@ -1097,7 +1100,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           chartColors.statsBgColor
         )}>
           <div className={cn(
-            "text-xs mb-2 max-sm:text-[10px] max-sm:mb-1.5",
+            "text-xs mb-2 max-sm:text-[11px] max-sm:mb-1.5",
             chartColors.statsMutedText
           )}>95%信頼区間</div>
           <div className="relative h-6 max-sm:h-5 overflow-hidden rounded-full"
@@ -1105,7 +1108,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               background: chartColors.statsConfidenceBackground
             }}
           >
-            <div className="absolute inset-0 flex items-center justify-between px-2 text-xs max-sm:text-[10px]">
+            <div className="absolute inset-0 flex items-center justify-between px-2 text-xs max-sm:text-[11px]">
               <span className={chartColors.confidenceTextColorMin}>{Math.round(stats.confidenceInterval[0]).toLocaleString()}円</span>
               <span className={chartColors.confidenceTextColorMax}>{Math.round(stats.confidenceInterval[1]).toLocaleString()}円</span>
             </div>
@@ -1236,7 +1239,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                     </CardTitle>
                     
                     <div className="flex items-center gap-2 flex-shrink">
-                      <div className="flex items-center flex-wrap justify-end gap-1.5 text-xs max-sm:text-[10px]">
+                      <div className="flex items-center flex-wrap justify-end gap-1.5 text-xs max-sm:text-[11px]">
                         <span className={cn(
                           "font-medium whitespace-nowrap",
                           theme === 'light'
@@ -1310,7 +1313,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                               <div className="relative">
                                 <div className="grid grid-cols-5 gap-2 max-sm:gap-1">
                                   <span className={cn(
-                                    "font-medium max-sm:text-[13px] max-sm:whitespace-nowrap max-sm:overflow-x-auto max-sm:scrollbar-hide col-span-3",
+                                    "font-medium max-sm:text-[14px] max-sm:whitespace-nowrap max-sm:overflow-x-auto max-sm:scrollbar-hide col-span-3",
                                     theme === 'light'
                                       ? "text-gray-800"
                                       : ""
@@ -1318,12 +1321,12 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                                     {formatHorseNumbers(bet.type, bet.horses)}
                                   </span>
                                   <div className="col-span-2 flex items-center justify-end gap-1">
-                                    <span className={`max-sm:text-[13px] ${getOddsColorClass(bet.odds || Number(bet.expectedReturn / bet.stake))}`}>
+                                    <span className={`max-sm:text-[14px] ${getOddsColorClass(bet.odds || Number(bet.expectedReturn / bet.stake))}`}>
                                       ×{bet.odds ? bet.odds.toFixed(1) : Number(bet.expectedReturn / bet.stake).toFixed(1)}
                                     </span>
                                   </div>
                                 </div>
-                                <div className="grid grid-cols-5 gap-2 max-sm:gap-1 text-xs max-sm:text-[10px] mt-1">
+                                <div className="grid grid-cols-5 gap-2 max-sm:gap-1 text-xs max-sm:text-[11px] mt-1">
                                   <span className={`${getProbabilityColorClass(bet.probability)} col-span-3`}>
                                     {(bet.probability * 100).toFixed(1)}%
                                   </span>
@@ -1337,7 +1340,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                                       {bet.stake.toLocaleString()}円
                                     </span>
                                     <span className={cn(
-                                      "block text-[10px] max-sm:text-[8px]",
+                                      "block text-[10px] max-sm:text-[9px]",
                                       theme === 'light'
                                         ? "text-gray-500"
                                         : "text-muted-foreground"
@@ -1400,7 +1403,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               : "border-border/30"
           )}>
             <h3 className={cn(
-              "text-sm font-medium mb-3 flex items-center gap-2 max-sm:text-xs max-sm:mb-2",
+              "text-sm font-medium mb-3 flex items-center gap-2 max-sm:text-[11px] max-sm:mb-2",
               theme === 'light'
                 ? "text-gray-800"
                 : ""

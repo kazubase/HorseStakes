@@ -229,11 +229,14 @@ export function BettingOptionsTable({
 
   // オッズの色分けロジック
   const getOddsColorClass = (odds: number) => {
-    // オッズの色分けを削除し、テーマに合わせた通常のテキスト色を返す
-    if (theme === 'light') {
-      return 'text-gray-800';
+    if (odds < 10) {
+      return theme === 'light' ? 'text-red-500 font-medium' : 'text-red-400 font-medium';
+    } else if (odds < 100) {
+      return theme === 'light' ? 'text-blue-500 font-medium' : 'text-blue-400 font-medium';
+    } else if (odds >= 1000) {
+      return theme === 'light' ? 'text-gray-800 text-[0.9em]' : 'text-foreground text-[0.9em]';
     } else {
-      return 'text-foreground';
+      return theme === 'light' ? 'text-gray-800' : 'text-foreground';
     }
   };
 
@@ -605,7 +608,7 @@ export function BettingOptionsTable({
               <CardContent className="p-2">
                 {/* 凡例をカードの最初のコンテンツとして組み込む */}
                 <div className={`
-                  mb-2 text-xs max-md:text-[10px] rounded p-1.5
+                  mb-2 text-xs max-md:text-[11px] rounded p-1.5
                   ${theme === 'light'
                     ? "bg-gray-50 text-gray-600 border border-gray-200"
                     : "bg-background/60 text-muted-foreground border border-border/50"}
@@ -670,7 +673,7 @@ export function BettingOptionsTable({
                         <div className="relative">
                           <div className="grid grid-cols-5 gap-2 max-md:gap-1 min-w-0">
                             <span className={`
-                              font-medium max-md:text-[13px] max-md:whitespace-nowrap max-md:overflow-x-auto max-md:scrollbar-hide col-span-3
+                              font-medium max-md:text-[14px] max-md:whitespace-nowrap max-md:overflow-x-auto max-md:scrollbar-hide col-span-3
                               transition-colors duration-300
                               relative z-10
                               ${
@@ -682,7 +685,7 @@ export function BettingOptionsTable({
                               {formatHorses(option.horses, option.type)}
                             </span>
                             <span className={`
-                              col-span-2 text-right max-md:text-[13px] max-md:whitespace-nowrap
+                              col-span-2 text-right max-md:text-[14px] max-md:whitespace-nowrap
                               transition-all duration-300
                               ${getOddsColorClass(option.odds)}
                               ${isSelected(option) ? 'scale-105' : ''}
@@ -690,7 +693,7 @@ export function BettingOptionsTable({
                               ×{option.odds.toFixed(1)}
                             </span>
                           </div>
-                          <div className="grid grid-cols-5 gap-2 max-md:gap-1 text-xs max-md:text-[10px] mt-1 min-w-0">
+                          <div className="grid grid-cols-5 gap-2 max-md:gap-1 text-xs max-md:text-[11px] mt-1 min-w-0">
                             <span className={`
                               transition-colors duration-300 max-md:whitespace-nowrap col-span-3
                               ${getColorClass(option.probability, optionsWithStats.stats.probability)}
