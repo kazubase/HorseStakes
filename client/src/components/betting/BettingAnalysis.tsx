@@ -770,56 +770,6 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
     }
   }, [id, horses?.length, queryClient, setLatestOdds]);
 
-  // 馬データと単勝オッズをマージ - 計算コストを削減
-  const horseMarqueeData = useMemo(() => {
-    if (!horses || !horses.length) return [];
-    if (!latestOdds || !latestOdds.length) return [];
-    
-    // 以前の計算結果と入力データが同じなら再計算しない
-    return horses.map(horse => ({
-      number: horse.number,
-      name: horse.name,
-      frame: horse.frame,
-      odds: Number(latestOdds?.find(odd => Number(odd.horseId) === horse.number)?.odds || 0)
-    }));
-    // 依存配列を最適化
-  }, [horses, latestOdds]);
-
-  // 遅延マーキー表示のためのコードを修正
-  // shouldShowMarqueeの計算を最適化
-  const shouldShowMarquee = useMemo(() => {
-    return !!horseMarqueeData && horseMarqueeData.length > 0;
-  }, [horseMarqueeData]);
-
-  // コンポーネントがマウントされたときにサイズ再計算のイベントを発火
-  useEffect(() => {
-    if (!shouldShowMarquee) return;
-    
-    // 少し遅延を入れてからサイズ計算を確実に行う
-    let timer1: number | null = null;
-    let timer2: number | null = null;
-    
-    // リサイズイベントを一度だけ発火する関数
-    const fireResizeEvent = () => {
-      const resizeEvent = new Event('resize');
-      window.dispatchEvent(resizeEvent);
-    };
-    
-    // マウント後の初期化処理
-    timer1 = window.setTimeout(() => {
-      fireResizeEvent();
-      // 2回目のリサイズイベントを追加で発火して確実に反映させる
-      timer2 = window.setTimeout(() => {
-        fireResizeEvent();
-      }, 500);
-    }, 100);
-    
-    return () => {
-      if (timer1) window.clearTimeout(timer1);
-      if (timer2) window.clearTimeout(timer2);
-    };
-  }, [shouldShowMarquee]);
-
   // geminiAnalysisの最適化されたクエリオプション
   const geminiAnalysisOptions = useMemo(() => ({
     queryKey: ['gemini-analysis', id, budget, riskRatio, 
@@ -867,31 +817,6 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
       setAnalysisResult(geminiAnalysis.data);
     }
   }, [geminiAnalysis.data, setAnalysisResult]);
-
-  // 確率計算が完了したら、atomに保存する
-  useEffect(() => {
-    if (calculatedBettingOptions && calculatedBettingOptions.length > 0) {
-      // 単勝・複勝の確率をatomに保存
-      const newWinProbs: Record<string, number> = {};
-      const newPlaceProbs: Record<string, number> = {};
-      
-      // 馬券データから確率を抽出
-      calculatedBettingOptions.forEach(bet => {
-        if (bet.type === '単勝' && bet.horse1) {
-          // 馬番号をキーとして使用
-          newWinProbs[bet.horse1] = bet.probability * 100;
-        }
-        if (bet.type === '複勝' && bet.horse1) {
-          // 馬番号をキーとして使用
-          newPlaceProbs[bet.horse1] = bet.probability * 100;
-        }
-      });
-      
-      // atomに保存
-      setWinProbs(newWinProbs);
-      setPlaceProbs(newPlaceProbs);
-    }
-  }, [calculatedBettingOptions, setWinProbs, setPlaceProbs]);
 
   // サイドバータブの定義 - メモを削除
   const sidebarTabs = useMemo<SidebarTab[]>(() => [
@@ -1040,26 +965,8 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
         </div>
       </div>
 
-      {/* 電光掲示板をフッターに固定表示 - 遅延ロード対応 */}
-      {shouldShowMarquee && (
-        <div className="fixed bottom-0 left-0 right-0 z-10 shadow-lg pointer-events-none">
-          <div className="container mx-auto px-4 pb-0">
-            <Suspense fallback={
-              <div className={`h-12 rounded-lg ${theme === 'light' ? 'bg-indigo-50' : 'bg-black/40'} animate-pulse`}></div>
-            }>
-              <HorseMarquee 
-                horses={horseMarqueeData} 
-                className={
-                  theme === 'light' 
-                    ? 'shadow-sm mb-0 rounded-t-xl' 
-                    : 'shadow-lg mb-0 rounded-t-xl'
-                }
-                speed={60}
-              />
-            </Suspense>
-          </div>
-        </div>
-      )}
+      {/* 電光掲示板のためのスペース追加 */}
+      <div className="pb-24 md:pb-28"></div>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { useAtom } from 'jotai';
 import { useQuery } from "@tanstack/react-query";
 import { Race } from "@db/schema";
-import { currentStepAtom } from '@/stores/bettingStrategy';
+import { currentStepAtom, horsesAtom, latestOddsAtom } from '@/stores/bettingStrategy';
 import { BettingAnalysis } from "@/components/betting/BettingAnalysis";
 import { BettingSelection } from "@/components/betting/BettingSelection";
 import { BettingPortfolio } from "@/components/betting/BettingPortfolio";
@@ -11,17 +11,62 @@ import { BettingStepProgress } from "@/components/betting/BettingStepProgress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { format } from "date-fns";
+import { HorseMarquee } from "@/components/HorseMarquee";
+import { useThemeStore } from "@/stores/themeStore";
+import { cn } from "@/lib/utils";
+import { useEffect, useMemo } from "react";
 
 export function BettingStrategy() {
   const { id } = useParams();
   const [currentStep] = useAtom(currentStepAtom);
   const [, setLocation] = useLocation();
+  const [horses] = useAtom(horsesAtom);
+  const [latestOdds] = useAtom(latestOddsAtom);
+  const { theme } = useThemeStore();
 
   // レース情報を取得
   const { data: race } = useQuery<Race>({
     queryKey: [`/api/races/${id}`],
     enabled: !!id,
   });
+  
+  // 馬データと単勝オッズをマージ
+  const horseMarqueeData = useMemo(() => {
+    if (!horses || !horses.length || !latestOdds || !latestOdds.length) return [];
+    
+    const result = horses.map(horse => ({
+      number: horse.number,
+      name: horse.name,
+      frame: horse.frame,
+      odds: Number(latestOdds.find(odd => Number(odd.horseId) === horse.number)?.odds || 0)
+    }));
+    
+    return result;
+  }, [horses, latestOdds]);
+
+  // HorseMarqueeを表示すべきかどうか
+  const shouldShowMarquee = useMemo(() => {
+    return horseMarqueeData.length > 0;
+  }, [horseMarqueeData]);
+  
+  // コンポーネントがマウントされたときにサイズ再計算のイベントを発火
+  useEffect(() => {
+    if (shouldShowMarquee) {
+      // 少し遅延を入れてからサイズ計算を確実に行う
+      const timer = setTimeout(() => {
+        // HorseMarqueeコンポーネントのサイズ計算を強制的に再実行するイベントを発火
+        const resizeEvent = new Event('resize');
+        window.dispatchEvent(resizeEvent);
+        
+        // 2回目のリサイズイベントを追加で発火して確実に反映させる
+        setTimeout(() => {
+          window.dispatchEvent(resizeEvent);
+        }, 500);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [shouldShowMarquee]);
   
   // 予想設定画面に戻る処理
   const handleBackToPredictionSettings = () => {
@@ -97,6 +142,19 @@ export function BettingStrategy() {
         </div>
       </div>
     </div>
+    
+    {/* 電光掲示板をフッターに固定表示 */}
+    {shouldShowMarquee && (
+      <div className="fixed bottom-0 left-0 right-0 z-20 shadow-lg pointer-events-none">
+        <div className="container mx-auto px-4">
+          <HorseMarquee 
+            horses={horseMarqueeData} 
+            className={theme === 'light' ? 'shadow-sm mb-0 rounded-t-lg' : 'shadow-lg mb-0 rounded-t-lg'}
+            speed={60}
+          />
+        </div>
+      </div>
+    )}
   </MainLayout>
   );
 } 

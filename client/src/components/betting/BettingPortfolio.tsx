@@ -162,6 +162,9 @@ export function BettingPortfolio() {
         strategy={strategy}
         totalBudget={budget}
       />
+
+      {/* 電光掲示板のためのスペース追加 */}
+      <div className="pb-24 md:pb-28"></div>
     </div>
   );
 }
