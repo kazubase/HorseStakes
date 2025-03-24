@@ -25,7 +25,45 @@ export default function Guide() {
         <meta name="twitter:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
       </Helmet>
 
-      {/* 構造化データの追加 */}
+      {/* WebSite構造化データ */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "馬券戦略",
+          "alternateName": ["期待値計算ツール", "馬券作成アシスタント", "horse-stakes.com"],
+          "url": "https://horse-stakes.com"
+        })}
+      </script>
+
+      {/* WebApplication構造化データ */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "name": "馬券戦略",
+          "description": "競馬予想と馬券作成をサポートするAIアシスタント。回収率アップのための馬券戦略を立て、的中率と期待値を計算。",
+          "applicationCategory": "UtilityApplication",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "JPY"
+          },
+          "operatingSystem": "Web",
+          "url": "https://horse-stakes.com",
+          "featureList": [
+            "最新レース情報の表示",
+            "AIによる馬券戦略の提案",
+            "期待値計算",
+            "回収率最適化",
+            "初心者向けガイド"
+          ],
+          "screenshot": "https://horse-stakes.com/images/horseshoe-icon2.webp",
+          "browserRequirements": "JavaScriptを有効にしてください"
+        })}
+      </script>
+
+      {/* Article構造化データ */}
       <script type="application/ld+json">
         {JSON.stringify({
           "@context": "https://schema.org",

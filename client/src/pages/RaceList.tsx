@@ -489,17 +489,17 @@ export default function RaceList() {
   return (
     <MainLayout>
       <Helmet>
-        <title>馬券戦略 | 競馬レース一覧と期待値計算ツール</title>
+        <title>馬券戦略 | 競馬予想と期待値計算ツール</title>
         <meta name="description" content="競馬予想と期待値計算をサポートする馬券戦略アプリ。最新レース情報を確認し、的中率と期待値を計算して回収率アップを目指せます。確率計算で競馬予想の精度を向上。" />
         <meta name="keywords" content="馬券戦略,競馬,期待値,期待値計算,期待値計算ツール,確率計算" />
         <link rel="canonical" href="https://horse-stakes.com" />
-        <meta property="og:title" content="馬券戦略 | 競馬レース一覧と期待値計算ツール" />
+        <meta property="og:title" content="馬券戦略 | 競馬予想と期待値計算ツール" />
         <meta property="og:description" content="競馬予想と期待値計算をサポートする馬券戦略アプリ。最新レース情報を確認し、的中率と期待値を計算して回収率アップを目指せます。確率計算で勝率向上。" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://horse-stakes.com" />
         <meta property="og:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="馬券戦略 | 競馬レース一覧と期待値計算ツール" />
+        <meta name="twitter:title" content="馬券戦略 | 競馬予想と期待値計算ツール" />
         <meta name="twitter:description" content="競馬予想と期待値計算をサポートする馬券戦略アプリ。最新レース情報を確認し、的中率と期待値を計算して回収率アップを目指せます。確率計算で競馬の勝率を向上。" />
         <meta name="twitter:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
       </Helmet>
@@ -508,9 +508,20 @@ export default function RaceList() {
       <script type="application/ld+json">
         {JSON.stringify({
           "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "馬券戦略",
+          "alternateName": ["期待値計算ツール", "馬券作成アシスタント", "horse-stakes.com"],
+          "url": "https://horse-stakes.com"
+        })}
+      </script>
+
+      {/* WebApplication構造化データ */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
           "@type": "WebApplication",
           "name": "馬券戦略",
-          "description": "競馬予想と期待値計算をサポートするツール。最新レース情報から的中率と期待値を計算し、確率計算で最適な馬券戦略を提案します。",
+          "description": "競馬予想と馬券作成をサポートするAIアシスタント。回収率アップのための馬券戦略を立て、的中率と期待値を計算。",
           "applicationCategory": "UtilityApplication",
           "offers": {
             "@type": "Offer",
@@ -521,10 +532,10 @@ export default function RaceList() {
           "url": "https://horse-stakes.com",
           "featureList": [
             "最新レース情報の表示",
+            "AIによる馬券戦略の提案",
             "期待値計算",
-            "確率計算",
-            "的中率分析",
-            "回収率最適化"
+            "回収率最適化",
+            "初心者向けガイド"
           ],
           "screenshot": "https://horse-stakes.com/images/horseshoe-icon2.webp",
           "browserRequirements": "JavaScriptを有効にしてください"
