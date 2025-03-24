@@ -229,24 +229,11 @@ export function BettingOptionsTable({
 
   // オッズの色分けロジック
   const getOddsColorClass = (odds: number) => {
-    // オッズ値に対するパーセンタイルを計算
-    const percentile = optionsWithStats.options
-      .map(o => o.odds)
-      .filter(v => v <= odds)
-      .length / optionsWithStats.options.length;
-    
+    // オッズの色分けを削除し、テーマに合わせた通常のテキスト色を返す
     if (theme === 'light') {
-      if (percentile > 0.8) return 'text-orange-600';
-      if (percentile > 0.6) return 'text-orange-700';
-      if (percentile > 0.4) return 'text-amber-600';
-      if (percentile > 0.2) return 'text-amber-700';
-      return 'text-amber-700';
+      return 'text-gray-800';
     } else {
-      if (percentile > 0.8) return 'text-green-500';
-      if (percentile > 0.6) return 'text-green-600';
-      if (percentile > 0.4) return 'text-yellow-500';
-      if (percentile > 0.2) return 'text-yellow-600';
-      return 'text-yellow-600';
+      return 'text-foreground';
     }
   };
 
@@ -259,17 +246,15 @@ export function BettingOptionsTable({
       .length / optionsWithStats.options.length;
     
     if (theme === 'light') {
-      if (percentile > 0.8) return 'text-indigo-600';
-      if (percentile > 0.6) return 'text-indigo-700';
-      if (percentile > 0.4) return 'text-blue-600';
-      if (percentile > 0.2) return 'text-blue-700';
-      return 'text-gray-500';
+      if (percentile > 0.75) return 'text-emerald-600';
+      if (percentile > 0.5) return 'text-lime-600';
+      if (percentile > 0.25) return 'text-amber-600';
+      return 'text-gray-600';
     } else {
-      if (percentile > 0.8) return 'text-green-500';
-      if (percentile > 0.6) return 'text-green-600';
-      if (percentile > 0.4) return 'text-yellow-500';
-      if (percentile > 0.2) return 'text-yellow-600';
-      return 'text-muted-foreground';
+      if (percentile > 0.75) return 'text-green-500';
+      if (percentile > 0.5) return 'text-lime-500';
+      if (percentile > 0.25) return 'text-yellow-500';
+      return 'text-yellow-500/80';
     }
   };
 
@@ -318,6 +303,16 @@ export function BettingOptionsTable({
     if (betType === '単勝' || betType === '複勝') {
       return horses[0].split(' ')[0]; 
     }
+    
+    // スマホサイズ（md未満）の場合、3連複・3連単は数字だけを抽出
+    if ((betType === '３連複' || betType === '３連単') && typeof window !== 'undefined' && window.innerWidth < 768) {
+      // 区切り文字を調整（スマホ表示時は少し短く）
+      const separator = betType.includes('単') ? '→' : '-';
+      // 馬番だけを取り出して結合
+      const formattedHorses = horses.map(h => h.split(' ')[0]).join(separator);
+      return formattedHorses;
+    }
+    
     // それ以外は従来通り
     return horses.join(betType.includes('単') ? '→' : '-');
   };
@@ -610,7 +605,7 @@ export function BettingOptionsTable({
               <CardContent className="p-2">
                 {/* 凡例をカードの最初のコンテンツとして組み込む */}
                 <div className={`
-                  mb-2 text-xs rounded p-1.5
+                  mb-2 text-xs max-md:text-[10px] rounded p-1.5
                   ${theme === 'light'
                     ? "bg-gray-50 text-gray-600 border border-gray-200"
                     : "bg-background/60 text-muted-foreground border border-border/50"}
@@ -625,7 +620,7 @@ export function BettingOptionsTable({
                   </div>
                 </div>
                 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 max-md:space-y-1">
                   {options.map((option, index) => {
                     const evClass = getEvBackgroundClass(option.ev, optionsWithStats.stats.ev);
                     const relatedCorrelations = showAnalysis ? getRelatedCorrelations(option) : [];
@@ -636,7 +631,7 @@ export function BettingOptionsTable({
                         onClick={() => onBetSelect?.(option)}
                         className={`
                           relative overflow-hidden
-                          p-2 rounded-md 
+                          p-2 max-md:p-1.5 rounded-md 
                           transition-all duration-300 ease-out
                           cursor-pointer
                           ${evClass}
@@ -673,10 +668,11 @@ export function BettingOptionsTable({
 
                         {/* コンテンツレイヤー */}
                         <div className="relative">
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-2 gap-2 max-md:gap-1 min-w-0">
                             <span className={`
-                              font-medium
+                              font-medium max-md:text-[13px] max-md:whitespace-nowrap max-md:overflow-x-auto max-md:scrollbar-hide
                               transition-colors duration-300
+                              relative z-10
                               ${
                                 theme === 'light'
                                   ? isSelected(option) ? 'text-indigo-700' : 'text-gray-700'
@@ -686,7 +682,7 @@ export function BettingOptionsTable({
                               {formatHorses(option.horses, option.type)}
                             </span>
                             <span className={`
-                              text-right font-bold
+                              text-right max-md:text-[13px] max-md:whitespace-nowrap
                               transition-all duration-300
                               ${getOddsColorClass(option.odds)}
                               ${isSelected(option) ? 'scale-105' : ''}
@@ -694,15 +690,15 @@ export function BettingOptionsTable({
                               ×{option.odds.toFixed(1)}
                             </span>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                          <div className="grid grid-cols-2 gap-2 max-md:gap-1 text-xs max-md:text-[10px] mt-1 min-w-0">
                             <span className={`
-                              transition-colors duration-300
+                              transition-colors duration-300 max-md:whitespace-nowrap
                               ${getColorClass(option.probability, optionsWithStats.stats.probability)}
                             `}>
                               {(option.probability * 100).toFixed(1)}%
                             </span>
                             <span className={`
-                              text-right font-medium
+                              text-right font-medium max-md:whitespace-nowrap
                               transition-all duration-300
                               ${getEvColorClass(option.ev)}
                               ${isSelected(option) ? 'scale-105' : ''}
