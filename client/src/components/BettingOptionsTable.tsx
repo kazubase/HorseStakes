@@ -610,13 +610,13 @@ export function BettingOptionsTable({
                     ? "bg-gray-50 text-gray-600 border border-gray-200"
                     : "bg-background/60 text-muted-foreground border border-border/50"}
                 `}>
-                  <div className="grid grid-cols-2 gap-1 mb-0.5">
-                    <div>買い目</div>
-                    <div className="text-right">オッズ</div>
+                  <div className="grid grid-cols-5 gap-1 mb-0.5">
+                    <div className="col-span-3">買い目</div>
+                    <div className="col-span-2 text-right">オッズ</div>
                   </div>
-                  <div className="grid grid-cols-2 gap-1">
-                    <div>的中率</div>
-                    <div className="text-right">期待値</div>
+                  <div className="grid grid-cols-5 gap-1">
+                    <div className="col-span-3">的中率</div>
+                    <div className="col-span-2 text-right">期待値</div>
                   </div>
                 </div>
                 
@@ -668,9 +668,9 @@ export function BettingOptionsTable({
 
                         {/* コンテンツレイヤー */}
                         <div className="relative">
-                          <div className="grid grid-cols-2 gap-2 max-md:gap-1 min-w-0">
+                          <div className="grid grid-cols-5 gap-2 max-md:gap-1 min-w-0">
                             <span className={`
-                              font-medium max-md:text-[13px] max-md:whitespace-nowrap max-md:overflow-x-auto max-md:scrollbar-hide
+                              font-medium max-md:text-[13px] max-md:whitespace-nowrap max-md:overflow-x-auto max-md:scrollbar-hide col-span-3
                               transition-colors duration-300
                               relative z-10
                               ${
@@ -682,7 +682,7 @@ export function BettingOptionsTable({
                               {formatHorses(option.horses, option.type)}
                             </span>
                             <span className={`
-                              text-right max-md:text-[13px] max-md:whitespace-nowrap
+                              col-span-2 text-right max-md:text-[13px] max-md:whitespace-nowrap
                               transition-all duration-300
                               ${getOddsColorClass(option.odds)}
                               ${isSelected(option) ? 'scale-105' : ''}
@@ -690,15 +690,15 @@ export function BettingOptionsTable({
                               ×{option.odds.toFixed(1)}
                             </span>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 max-md:gap-1 text-xs max-md:text-[10px] mt-1 min-w-0">
+                          <div className="grid grid-cols-5 gap-2 max-md:gap-1 text-xs max-md:text-[10px] mt-1 min-w-0">
                             <span className={`
-                              transition-colors duration-300 max-md:whitespace-nowrap
+                              transition-colors duration-300 max-md:whitespace-nowrap col-span-3
                               ${getColorClass(option.probability, optionsWithStats.stats.probability)}
                             `}>
                               {(option.probability * 100).toFixed(1)}%
                             </span>
                             <span className={`
-                              text-right font-medium max-md:whitespace-nowrap
+                              col-span-2 text-right font-medium max-md:whitespace-nowrap
                               transition-all duration-300
                               ${getEvColorClass(option.ev)}
                               ${isSelected(option) ? 'scale-105' : ''}
