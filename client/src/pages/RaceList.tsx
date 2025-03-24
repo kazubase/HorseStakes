@@ -243,7 +243,7 @@ const HeaderSection = memo(({
                 setSearchQuery(e.target.value);
                 setShowAllVenues(e.target.value !== "");
               }}
-              className="pl-8 sm:pl-9 md:pl-10 py-1 h-8 sm:h-9 md:h-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-1 sm:focus:ring-1 md:focus:ring-2 focus:ring-primary/20 text-[14px] sm:text-xs md:text-base"
+              className="pl-8 sm:pl-9 md:pl-10 py-1 h-8 sm:h-9 md:h-10 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/50 w-full rounded-lg transition-all duration-300 focus:ring-1 sm:focus:ring-1 md:focus:ring-2 focus:ring-primary/20 text-base sm:text-xs md:text-base"
             />
           </div>
         </div>
