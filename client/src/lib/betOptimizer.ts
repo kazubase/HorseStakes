@@ -14,6 +14,29 @@ export const optimizeBetAllocation = async (
     probability: normalizeStringProbability(rec.probability)
   }));
   
+  // 選択された馬券が1つの場合は、全予算をその馬券に配分
+  if (processedRecs.length === 1) {
+    const singleBet = processedRecs[0];
+    return [{
+      type: singleBet.type,
+      horses: singleBet.horses,
+      horseName: ["馬単", "３連単"].includes(singleBet.type) 
+        ? singleBet.horses.join('→')
+        : singleBet.horses.join('-'),
+      stake: totalBudget,
+      odds: singleBet.odds,
+      expectedReturn: singleBet.odds * totalBudget,
+      probability: singleBet.probability,
+      reason: singleBet.reason,
+      frame1: singleBet.frame1,
+      frame2: singleBet.frame2,
+      frame3: singleBet.frame3,
+      horse1: singleBet.horse1,
+      horse2: singleBet.horse2,
+      horse3: singleBet.horse3
+    }];
+  }
+  
   // 条件付き確率をマップに変換して検索を効率化
   const condProbMap = new Map<string, number>();
   conditionalProbabilities.forEach(corr => {
@@ -145,7 +168,7 @@ export const optimizeBetAllocation = async (
   };
   
   // 並列探索の数（CPUコア数や券種数に応じて調整可能）
-  const numParallelSearches = Math.min(4, Math.ceil(processedRecs.length / 5));
+  const numParallelSearches = Math.min(4, Math.max(1, Math.floor(processedRecs.length / 10)));
   
   // 並列探索を実行
   const searchPromises = Array(numParallelSearches).fill(0).map(async (_, searchIndex) => {
@@ -164,8 +187,8 @@ export const optimizeBetAllocation = async (
     let bestWeights: number[] = [];
     let bestMetrics = { sharpeRatio: -Infinity, expectedReturn: 0, risk: 0, condProbUsedCount: 0 };
     
-    // 複数の初期値から開始
-    const numStartPoints = Math.min(5 + Math.floor(processedRecs.length / 3), 10);
+    // 初期値の数を調整（馬券数が多い場合は減らす）
+    const numStartPoints = Math.min(3 + Math.floor(processedRecs.length / 5), 5);
     
     for (let startPoint = 0; startPoint < numStartPoints; startPoint++) {
       // 初期値の生成（既存のコードと同様）
@@ -218,8 +241,9 @@ export const optimizeBetAllocation = async (
           }
         }
         
-        // 一定間隔で多様化のための摂動を加える
-        if (Math.random() < 0.05) { // 5%の確率で摂動を加える
+        // 摂動の確率を調整（馬券数が多い場合は減らす）
+        const perturbationProbability = Math.min(0.05, 0.05 * (10 / processedRecs.length));
+        if (Math.random() < perturbationProbability) {
           const perturbationType = Math.random();
           
           if (perturbationType < 0.33) {
@@ -230,7 +254,7 @@ export const optimizeBetAllocation = async (
               .map(item => item.index);
             
             const newWeights = [...currentWeights].map(() => 0);
-            const topN = Math.max(2, Math.floor(currentWeights.length * 0.3)); // 上位30%
+            const topN = Math.max(2, Math.floor(currentWeights.length * 0.2)); // 上位20%に調整
             
             // 上位N個の馬券に均等配分
             for (let i = 0; i < topN; i++) {
