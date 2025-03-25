@@ -47,6 +47,7 @@ const SidebarNavigation = memo(() => {
   const [isOpen, setIsOpen] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
   const [location] = useLocation();
+  const [isClosing, setIsClosing] = useState(false);
   
   const menuItemClass = "flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer";
   const activeMenuItemClass = "flex items-center gap-3 px-4 py-3 bg-accent/50 transition-colors cursor-pointer";
@@ -56,6 +57,14 @@ const SidebarNavigation = memo(() => {
     : 'fixed inset-y-0 right-0 z-[9999] w-64 bg-card/95 backdrop-blur-sm shadow-xl transform transition-all duration-300 ease-out';
   
   const overlayClass = "fixed inset-0 bg-black/50 z-[9998] transition-opacity duration-300";
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+    }, 300); // アニメーションの時間と同じ
+  };
 
   // bodyのスクロールを制御
   useEffect(() => {
@@ -85,20 +94,26 @@ const SidebarNavigation = memo(() => {
         <>
           {/* オーバーレイ */}
           <div 
-            className={`${overlayClass} ${isOpen ? 'opacity-100' : 'opacity-0'}`}
-            onClick={() => setIsOpen(false)}
+            className={`${overlayClass} ${isClosing ? 'opacity-0' : 'opacity-100'}`}
+            onClick={handleClose}
             aria-hidden="true"
           />
           
           {/* サイドバー */}
           <div 
-            className={`${sidebarClass} ${isOpen ? 'translate-x-0 opacity-100 shadow-2xl' : 'translate-x-full opacity-80 shadow-none'}`}
+            className={`${sidebarClass} ${isClosing ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100'}`}
           >
             <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between px-4 border-b h-12">
+              <div 
+                className="flex items-center justify-between px-4 border-b h-12"
+                style={{
+                  animationDelay: '0.05s',
+                  animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
+                }}
+              >
                 <h2 className="text-lg font-semibold">メニュー</h2>
                 <button
-                  onClick={() => setIsOpen(false)}
+                  onClick={handleClose}
                   className="flex items-center justify-center w-9 h-9 rounded-md hover:bg-muted/70 transition-colors"
                   aria-label="メニューを閉じる"
                 >
@@ -114,7 +129,7 @@ const SidebarNavigation = memo(() => {
                     <div 
                       className={location === "/" ? activeMenuItemClass : menuItemClass}
                       style={{
-                        animationDelay: '0.05s',
+                        animationDelay: '0.1s',
                         animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
                       }}
                     >
@@ -128,7 +143,7 @@ const SidebarNavigation = memo(() => {
                     <div 
                       className={location === "/guide" ? activeMenuItemClass : menuItemClass}
                       style={{
-                        animationDelay: '0.1s',
+                        animationDelay: '0.15s',
                         animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
                       }}
                     >
@@ -137,55 +152,12 @@ const SidebarNavigation = memo(() => {
                     </div>
                   </Link>
 
-                  {/* 利用規約 - 3番目 */}
-                  <Link href="/terms">
-                    <div 
-                      className={location === "/terms" ? activeMenuItemClass : menuItemClass}
-                      style={{
-                        animationDelay: '0.15s',
-                        animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
-                      }}
-                    >
-                      <FileText className="h-5 w-5 text-primary" />
-                      <span>利用規約</span>
-                    </div>
-                  </Link>
-
-                  {/* プライバシーポリシー - 4番目 */}
-                  <Link href="/privacy">
-                    <div 
-                      className={location === "/privacy" ? activeMenuItemClass : menuItemClass}
-                      style={{
-                        animationDelay: '0.2s',
-                        animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
-                      }}
-                    >
-                      <Shield className="h-5 w-5 text-primary" />
-                      <span>プライバシーポリシー</span>
-                    </div>
-                  </Link>
-
-                  {/* X（Twitter）アカウント */}
-                  <a 
-                    href="https://x.com/horse_stakes" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className={menuItemClass}
-                    style={{
-                      animationDelay: '0.25s',
-                      animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
-                    }}
-                  >
-                    <FaXTwitter className="h-5 w-5 text-primary" />
-                    <span>公式 X</span>
-                  </a>
-
                   {/* テーマ切り替え - 最後 */}
                   <div 
                     className={menuItemClass}
                     onClick={toggleTheme}
                     style={{
-                      animationDelay: '0.3s',
+                      animationDelay: '0.2s',
                       animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
                     }}
                   >
@@ -199,9 +171,36 @@ const SidebarNavigation = memo(() => {
                 </div>
               </div>
 
-              {/* コピーライト表示を追加 */}
-              <div className="px-4 py-2 text-xs text-muted-foreground border-t text-right">
-                © {new Date().getFullYear()} 馬券戦略
+              {/* フッター部分 */}
+              <div 
+                className="px-4 py-3 border-t"
+                style={{
+                  animationDelay: '0.25s',
+                  animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
+                }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <a 
+                    href="https://x.com/horse_stakes" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="公式X（Twitter）"
+                  >
+                    <FaXTwitter className="h-4 w-4" />
+                  </a>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <Link href="/terms" className="hover:text-primary transition-colors">
+                      利用規約
+                    </Link>
+                    <Link href="/privacy" className="hover:text-primary transition-colors">
+                      プライバシーポリシー
+                    </Link>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground text-right">
+                  © {new Date().getFullYear()} 馬券戦略
+                </div>
               </div>
             </div>
           </div>
@@ -287,7 +286,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   );
 
   const mainContentClass = useMemo(() => 
-    `flex-1 container mx-auto px-4 py-6 ${isRaceListPage ? '' : 'mt-8'}`,
+    `flex-1 container mx-auto px-4 py-6 ${isRaceListPage ? '' : ''}`,
     [isRaceListPage]
   );
 

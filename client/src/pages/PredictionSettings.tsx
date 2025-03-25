@@ -33,6 +33,7 @@ export default function PredictionSettings() {
   const [budget, setBudget] = useState<number>(1000);
   const [budgetInputValue, setBudgetInputValue] = useState<string>("1000");
   const [riskRatio, setRiskRatio] = useState<number>(2);
+  const [riskRatioInputValue, setRiskRatioInputValue] = useState<string>("2");
   const [error, setError] = useState<string>("");
   
   const [isInitialized, setIsInitialized] = useState(false);
@@ -192,12 +193,6 @@ export default function PredictionSettings() {
     }));
 
     if (value === "") {
-      const newProbabilities = { ...winProbabilities };
-      newProbabilities[horseId] = 0;
-      setWinProbabilities(newProbabilities);
-      setWinTotalProbability(
-        Object.values(newProbabilities).reduce((sum, value) => sum + value, 0)
-      );
       return;
     }
 
@@ -326,13 +321,6 @@ export default function PredictionSettings() {
     }));
 
     if (value === "") {
-      const winProb = winProbabilities[horseId] || 0;
-      const newProbabilities = { ...placeProbabilities };
-      newProbabilities[horseId] = winProb;
-      setPlaceProbabilities(newProbabilities);
-      setPlaceTotalProbability(
-        Object.values(newProbabilities).reduce((sum, value) => sum + value, 0)
-      );
       return;
     }
 
@@ -341,10 +329,8 @@ export default function PredictionSettings() {
     });
 
     const numValue = parseFloat(normalizedValue);
-    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-      if (numValue < (winProbabilities[horseId] || 0)) {
-        return;
-      }
+    const winProb = winProbabilities[horseId] || 0;
+    if (!isNaN(numValue) && numValue >= winProb && numValue <= 100) {
       handlePlaceProbabilityChange(horseId, numValue);
     }
   };
@@ -459,9 +445,14 @@ export default function PredictionSettings() {
     setBudgetInputValue(String(numValue));
   };
 
-  const handleRiskRatioChange = (value: number[]) => {
-    setRiskRatio(value[0]);
+  const handleRiskRatioChange = (value: number) => {
+    setRiskRatio(value);
+    setRiskRatioInputValue(value.toString());
     setError("");
+  };
+
+  const handleRiskRatioSliderChange = (value: number[]) => {
+    handleRiskRatioChange(value[0]);
   };
 
   const handleBudgetChange = (newValue: number) => {
@@ -498,11 +489,12 @@ export default function PredictionSettings() {
   const handleRiskRatioIncrement = (increment: number) => {
     const currentValue = riskRatio || 2;
     const newValue = Math.min(Math.max(currentValue + increment, 1), 20);
-    setRiskRatio(newValue);
-    setError("");
+    handleRiskRatioChange(newValue);
   };
 
   const handleRiskRatioDirectInput = (value: string) => {
+    setRiskRatioInputValue(value);
+
     if (value === "") {
       return;
     }
@@ -512,11 +504,39 @@ export default function PredictionSettings() {
     });
 
     const numValue = parseFloat(normalizedValue);
-    if (!isNaN(numValue)) {
-      const clampedValue = Math.min(Math.max(numValue, 1), 20);
-      setRiskRatio(clampedValue);
-      setError("");
+    if (!isNaN(numValue) && numValue >= 1 && numValue <= 20) {
+      handleRiskRatioChange(numValue);
     }
+  };
+
+  const handleRiskRatioBlur = (value: string) => {
+    if (value === "") {
+      handleRiskRatioChange(2);
+      setRiskRatioInputValue("2");
+      return;
+    }
+
+    const normalizedValue = value.replace(/[０-９．]/g, (s) => {
+      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    });
+
+    const numValue = parseFloat(normalizedValue);
+    if (isNaN(numValue)) {
+      handleRiskRatioChange(2);
+      setRiskRatioInputValue("2");
+      return;
+    }
+    if (numValue < 1) {
+      handleRiskRatioChange(1);
+      setRiskRatioInputValue("1");
+      return;
+    }
+    if (numValue > 20) {
+      handleRiskRatioChange(20);
+      setRiskRatioInputValue("20");
+      return;
+    }
+    handleRiskRatioChange(numValue);
   };
 
   // タブ切り替え時の処理
@@ -1187,7 +1207,7 @@ export default function PredictionSettings() {
                           step="1"
                           id="risk-ratio-input"
                           name="risk-ratio-input"
-                          value={riskRatio.toString()}
+                          value={riskRatioInputValue}
                           onChange={(e) => handleRiskRatioDirectInput(e.target.value)}
                           className={`w-24 text-right text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-10 ${
                             riskRatio >= 10 ? 'text-primary font-extrabold' : 
@@ -1215,7 +1235,7 @@ export default function PredictionSettings() {
                   
                   <Slider
                     value={[riskRatio]}
-                    onValueChange={handleRiskRatioChange}
+                    onValueChange={handleRiskRatioSliderChange}
                     min={1.0}
                     max={20.0}
                     step={1.0}
