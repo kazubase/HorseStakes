@@ -182,6 +182,11 @@ const SidebarNavigation = memo(() => {
                   </div>
                 </div>
               </div>
+
+              {/* コピーライト表示を追加 */}
+              <div className="px-4 py-2 text-xs text-muted-foreground border-t text-right">
+                © {new Date().getFullYear()} 馬券戦略
+              </div>
             </div>
           </div>
         </>,
