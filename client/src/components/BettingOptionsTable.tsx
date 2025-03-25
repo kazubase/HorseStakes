@@ -719,76 +719,78 @@ export function BettingOptionsTable({
                         </PopoverTrigger>
                         <PopoverContent className={
                           theme === 'light'
-                            ? "sm:w-[40rem] md:w-[40rem] lg:w-[64rem] w-[calc(100vw-1rem)] max-w-screen-md bg-background border border-secondary/40 shadow-sm max-h-[40vh] overflow-y-auto"
-                            : "sm:w-[40rem] md:w-[40rem] lg:w-[64rem] w-[calc(100vw-1rem)] max-w-screen-md bg-slate-900/95 backdrop-blur-sm border border-slate-800 max-h-[40vh] overflow-y-auto"
+                            ? "sm:w-[40rem] md:w-[40rem] lg:w-[64rem] w-[calc(100vw-1rem)] max-w-screen-md bg-background border border-secondary/40 shadow-sm"
+                            : "sm:w-[40rem] md:w-[40rem] lg:w-[64rem] w-[calc(100vw-1rem)] max-w-screen-md bg-slate-900/95 backdrop-blur-sm border border-slate-800"
                         }>
                           <div className="space-y-4">
                             <div>
                               <h4 className={
                                 theme === 'light'
-                                  ? "font-medium text-foreground mb-2 px-1 text-base md:text-lg"
-                                  : "font-medium text-slate-300 mb-2 px-1 text-base md:text-lg"
+                                  ? "font-medium text-foreground mb-2 px-1 text-base md:text-lg sticky top-0 bg-background py-2 border-b border-border/40"
+                                  : "font-medium text-slate-300 mb-2 px-1 text-base md:text-lg sticky top-0 bg-slate-900/95 py-2 border-b border-slate-800/40"
                               }>
                                 {getCorrelationTitle(option)}
                               </h4>
-                              <div className={
-                                theme === 'light'
-                                  ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 rounded-lg bg-secondary/10 p-1.5"
-                                  : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 rounded-lg bg-slate-950/50 p-1.5"
-                              }>
-                                {formatCorrelations(option, relatedCorrelations).map((corr, i) => (
-                                  <div key={i} 
-                                    className={`
-                                      flex justify-between items-center px-2.5 py-1.5 rounded-md
-                                      ${
-                                        theme === 'light'
-                                          ? corr.probability >= 0.75 
-                                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
-                                            : corr.probability >= 0.5 
-                                              ? 'bg-emerald-50/80 text-emerald-700' 
-                                              : corr.probability >= 0.25 
-                                                ? 'bg-amber-50/80 text-amber-700' 
-                                                : 'bg-slate-100 text-slate-600'
-                                          : corr.probability >= 0.75 
-                                            ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-800/20' 
-                                            : corr.probability >= 0.5 
-                                              ? 'bg-emerald-950/30 text-emerald-400' 
-                                              : corr.probability >= 0.25 
-                                                ? 'bg-amber-950/30 text-amber-400' 
-                                                : 'bg-slate-800/30 text-slate-400'
-                                      }
-                                      backdrop-blur-sm hover:bg-opacity-60 transition-all duration-200
-                                    `}
-                                  >
-                                    <span className="text-sm sm:text-base font-medium tracking-tight">
-                                      {corr.target.type === '単勝' || corr.target.type === '複勝' 
-                                        ? `${corr.target.type} ${corr.target.horses.split(' ')[0]}` 
-                                        : `${corr.target.type} ${corr.target.horses}`}
-                                    </span>
-                                    <span className={`
-                                      text-xs sm:text-sm tabular-nums font-semibold
-                                      ${
-                                        theme === 'light'
-                                          ? corr.probability >= 0.75 
-                                            ? 'text-emerald-600' 
-                                            : corr.probability >= 0.5 
+                              <div className="max-h-[calc(40vh-4rem)] overflow-y-auto">
+                                <div className={
+                                  theme === 'light'
+                                    ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 rounded-lg bg-secondary/10 p-1.5"
+                                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 rounded-lg bg-slate-950/50 p-1.5"
+                                }>
+                                  {formatCorrelations(option, relatedCorrelations).map((corr, i) => (
+                                    <div key={i} 
+                                      className={`
+                                        flex justify-between items-center px-2.5 py-1.5 rounded-md
+                                        ${
+                                          theme === 'light'
+                                            ? corr.probability >= 0.75 
+                                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                                              : corr.probability >= 0.5 
+                                                ? 'bg-emerald-50/80 text-emerald-700' 
+                                                : corr.probability >= 0.25 
+                                                  ? 'bg-amber-50/80 text-amber-700' 
+                                                  : 'bg-slate-100 text-slate-600'
+                                            : corr.probability >= 0.75 
+                                              ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-800/20' 
+                                              : corr.probability >= 0.5 
+                                                ? 'bg-emerald-950/30 text-emerald-400' 
+                                                : corr.probability >= 0.25 
+                                                  ? 'bg-amber-950/30 text-amber-400' 
+                                                  : 'bg-slate-800/30 text-slate-400'
+                                        }
+                                        backdrop-blur-sm hover:bg-opacity-60 transition-all duration-200
+                                      `}
+                                    >
+                                      <span className="text-sm sm:text-base font-medium tracking-tight">
+                                        {corr.target.type === '単勝' || corr.target.type === '複勝' 
+                                          ? `${corr.target.type} ${corr.target.horses.split(' ')[0]}` 
+                                          : `${corr.target.type} ${corr.target.horses}`}
+                                      </span>
+                                      <span className={`
+                                        text-xs sm:text-sm tabular-nums font-semibold
+                                        ${
+                                          theme === 'light'
+                                            ? corr.probability >= 0.75 
                                               ? 'text-emerald-600' 
-                                              : corr.probability >= 0.25 
-                                                ? 'text-amber-600' 
-                                                : 'text-slate-500'
-                                          : corr.probability >= 0.75 
-                                            ? 'text-emerald-200' 
-                                            : corr.probability >= 0.5 
-                                              ? 'text-emerald-400' 
-                                              : corr.probability >= 0.25 
-                                                ? 'text-amber-400' 
-                                                : 'text-slate-400'
-                                      }
-                                    `}>
-                                      {(corr.probability * 100).toFixed(1)}%
-                                    </span>
-                                  </div>
-                                ))}
+                                              : corr.probability >= 0.5 
+                                                ? 'text-emerald-600' 
+                                                : corr.probability >= 0.25 
+                                                  ? 'text-amber-600' 
+                                                  : 'text-slate-500'
+                                            : corr.probability >= 0.75 
+                                              ? 'text-emerald-200' 
+                                              : corr.probability >= 0.5 
+                                                ? 'text-emerald-400' 
+                                                : corr.probability >= 0.25 
+                                                  ? 'text-amber-400' 
+                                                  : 'text-slate-400'
+                                        }
+                                      `}>
+                                        {(corr.probability * 100).toFixed(1)}%
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           </div>
