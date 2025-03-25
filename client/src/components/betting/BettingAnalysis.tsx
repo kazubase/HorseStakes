@@ -444,6 +444,7 @@ const FloatingControlButton = ({
         variant={theme === 'light' ? "default" : "secondary"}
         size="icon"
         onClick={onClick}
+        aria-label={isSidebarOpen ? "サイドバーを閉じる" : "分析パネルを開く"}
         className={cn(
           "flex items-center justify-center shadow-lg transition-all duration-200",
           "hover:shadow-xl hover:translate-y-[-2px]",

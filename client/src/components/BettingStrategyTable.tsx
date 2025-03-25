@@ -189,8 +189,6 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
   const getOddsColorClass = (odds: number) => {
     if (odds < 10) {
       return theme === 'light' ? 'text-red-500 font-medium' : 'text-red-400 font-medium';
-    } else if (odds < 100) {
-      return theme === 'light' ? 'text-blue-500 font-medium' : 'text-blue-400 font-medium';
     } else if (odds >= 1000) {
       return theme === 'light' ? 'text-gray-800 text-[0.9em]' : 'text-foreground text-[0.9em]';
     } else {
@@ -215,10 +213,10 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         .filter(v => v <= probability)
         .length / optionsStats.options.length;
       
-      if (percentile > 0.8) return 'text-green-500';
-      if (percentile > 0.6) return 'text-green-600';
-      if (percentile > 0.4) return 'text-yellow-500';
-      if (percentile > 0.2) return 'text-yellow-600';
+      if (percentile > 0.9) return 'text-green-400';
+      if (percentile > 0.7) return 'text-green-500';
+      if (percentile > 0.4) return 'text-lime-500';
+      if (percentile > 0.1) return 'text-amber-500';
       return 'text-muted-foreground';
     } else {
       // 統計情報がない場合は固定値で判断

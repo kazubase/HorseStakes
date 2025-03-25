@@ -212,18 +212,18 @@ export function BettingOptionsTable({
       .filter(v => v <= value)
       .length / optionsWithStats.options.length;
     
-    if (theme === 'light') {
-      if (percentile > 0.8) return 'text-green-600';
-      if (percentile > 0.6) return 'text-green-700';
-      if (percentile > 0.4) return 'text-amber-600';
-      if (percentile > 0.2) return 'text-amber-700';
-      return 'text-gray-500';
-    } else {
-      if (percentile > 0.8) return 'text-green-500';
-      if (percentile > 0.6) return 'text-green-600';
-      if (percentile > 0.4) return 'text-yellow-500';
-      if (percentile > 0.2) return 'text-yellow-600';
-      return 'text-muted-foreground';
+      if (theme === 'light') {
+        if (percentile > 0.9) return 'text-emerald-400';
+        if (percentile > 0.7) return 'text-emerald-500';
+        if (percentile > 0.4) return 'text-lime-500';
+        if (percentile > 0.1) return 'text-amber-500';
+        return 'text-gray-500';
+      } else {
+        if (percentile > 0.9) return 'text-green-400';
+        if (percentile > 0.7) return 'text-green-500';
+        if (percentile > 0.4) return 'text-lime-500';
+        if (percentile > 0.1) return 'text-yellow-500';
+        return 'text-muted-foreground';
     }
   };
 
@@ -231,8 +231,6 @@ export function BettingOptionsTable({
   const getOddsColorClass = (odds: number) => {
     if (odds < 10) {
       return theme === 'light' ? 'text-red-500 font-medium' : 'text-red-400 font-medium';
-    } else if (odds < 100) {
-      return theme === 'light' ? 'text-blue-500 font-medium' : 'text-blue-400 font-medium';
     } else if (odds >= 1000) {
       return theme === 'light' ? 'text-gray-800 text-[0.9em]' : 'text-foreground text-[0.9em]';
     } else {
