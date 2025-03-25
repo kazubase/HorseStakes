@@ -1088,7 +1088,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               "text-lg font-bold max-sm:text-base",
               chartColors.profitTextColor
             )}>
-              {((stats.winRate * (returnRate + 100)) / 100).toFixed(2)}
+              {(bets.reduce((sum, bet) => sum + (bet.probability * (bet.odds || Number(bet.expectedReturn / bet.stake)) * bet.stake), 0) / bets.reduce((sum, bet) => sum + bet.stake, 0)).toFixed(2)}
             </div>
           </div>
         </div>
