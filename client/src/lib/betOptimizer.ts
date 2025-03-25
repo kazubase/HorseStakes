@@ -310,7 +310,7 @@ export const optimizeBetAllocation = async (
       horseName: ["馬単", "３連単"].includes(rec.type) 
         ? rec.horses.join('→')
         : rec.horses.join('-'),
-      stake: Math.floor(totalBudget * bestWeights[i] / 100) * 100,
+      stake: Math.max(100, Math.floor(totalBudget * bestWeights[i] / 100) * 100),  // 最低100円を保証
       odds: odds,
       expectedReturn: odds * Math.floor(totalBudget * bestWeights[i] / 100) * 100,
       probability: rec.probability,
@@ -323,7 +323,6 @@ export const optimizeBetAllocation = async (
       horse3: rec.horse3
     };
   })
-  .filter(bet => bet.stake >= 100)
   .sort((a, b) => {
     const typeOrder: Record<string, number> = {
       "単勝": 1,
@@ -347,6 +346,16 @@ export const optimizeBetAllocation = async (
   // 総投資額を計算
   const totalInvestment = proposals.reduce((sum, bet) => sum + bet.stake, 0);
   
+  // 予算を超過している場合は、比例配分で調整
+  if (totalInvestment > totalBudget) {
+    const ratio = totalBudget / totalInvestment;
+    proposals = proposals.map(bet => ({
+      ...bet,
+      stake: Math.max(100, Math.floor(bet.stake * ratio / 100) * 100),
+      expectedReturn: bet.odds * Math.floor(bet.stake * ratio / 100) * 100
+    }));
+  }
+  
   // 予算に満たない場合、余った予算を100円単位で配分
   if (totalInvestment < totalBudget) {
     const remainingBudget = totalBudget - totalInvestment;
@@ -366,18 +375,6 @@ export const optimizeBetAllocation = async (
       proposals[targetIndex].stake += 100;
       // オッズを使って期待収益を正確に再計算
       proposals[targetIndex].expectedReturn = proposals[targetIndex].odds * proposals[targetIndex].stake;
-    }
-  
-    // 最終的なオッズを再計算
-    proposals.forEach(bet => {
-      bet.odds = bet.expectedReturn / bet.stake;
-    });
-  
-    if (process.env.NODE_ENV === 'development') {
-      console.log('予算調整完了:', {
-        総予算: totalBudget,
-        調整後総投資額: proposals.reduce((sum, bet) => sum + bet.stake, 0)
-      });
     }
   }
   
