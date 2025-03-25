@@ -376,7 +376,7 @@ export function BettingSelection() {
           )}
         >
           <Sparkles className="h-4 w-4" />
-          AI自動最適化
+          AI自動最適化（β版）
         </Button>
 
         {/* 手動最適化ボタン */}

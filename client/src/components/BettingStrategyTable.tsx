@@ -1108,7 +1108,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           >
             <div className="absolute inset-0 flex items-center justify-between px-2 text-xs max-sm:text-[11px]">
               <span className={chartColors.confidenceTextColorMin}>{Math.round(stats.confidenceInterval[0]).toLocaleString()}円</span>
-              <span className={chartColors.confidenceTextColorMax}>{Math.round(stats.confidenceInterval[1]).toLocaleString()}円</span>
+              <span className={chartColors.confidenceTextColorMax}>+{Math.round(stats.confidenceInterval[1]).toLocaleString()}円</span>
             </div>
           </div>
         </div>
