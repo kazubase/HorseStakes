@@ -85,7 +85,7 @@ export const optimizeBetAllocation = async (
           const key1 = `${otherBet.type}:${otherBet.horses.join('-')}|${bet.type}:${bet.horses.join('-')}`;
           const key2 = `${bet.type}:${bet.horses.join('-')}|${otherBet.type}:${otherBet.horses.join('-')}`;
           
-          // 条件付き確率が存在する場合はそれを使用、なければ排反度から近似
+          // 条件付き確率が存在する場合のみ使用
           let condProb = condProbMap.get(key1);
           if (condProb === undefined) {
             condProb = condProbMap.get(key2);
@@ -93,17 +93,12 @@ export const optimizeBetAllocation = async (
           
           if (condProb !== undefined) {
             condProbUsed = true;
-            // 条件付き確率に基づいて調整（他の馬券が的中した場合の影響）
+            // 条件付き確率に基づいて調整
             adjustmentFactor *= (1 - otherBet.probability * (1 - condProb));
-          } else {
-            const exclusivity = calculateMutualExclusivity(bet, otherBet);
-            const approxCondProb = 1 - exclusivity;
-            adjustmentFactor *= (1 - otherBet.probability * exclusivity);
           }
         }
       });
       
-      // 期待値を重視した計算（期待値の影響を強める）
       return {
         return: w * baseEV * adjustmentFactor * 3.0,
         condProbUsed
@@ -120,6 +115,7 @@ export const optimizeBetAllocation = async (
       
       // 条件付き確率を考慮した調整確率
       let adjustedProb = bet.probability;
+      
       weights.forEach((otherW, j) => {
         if (i !== j && otherW > 0) {
           const otherBet = processedRecs[j];
@@ -127,19 +123,15 @@ export const optimizeBetAllocation = async (
           // 条件付き確率を検索
           const key = `${otherBet.type}:${otherBet.horses.join('-')}|${bet.type}:${bet.horses.join('-')}`;
           
-          // 条件付き確率が存在する場合はそれを使用、なければ排反度から近似
+          // 条件付き確率が存在する場合のみ使用
           let condProb = condProbMap.get(key);
-          if (condProb === undefined) {
-            const exclusivity = calculateMutualExclusivity(bet, otherBet);
-            condProb = 1 - exclusivity;
+          if (condProb !== undefined) {
+            // 条件付き確率に基づいて調整
+            adjustedProb *= (1 - otherBet.probability * (1 - condProb));
           }
-          
-          // 条件付き確率に基づいて調整
-          adjustedProb *= (1 - otherBet.probability * (1 - condProb));
         }
       });
       
-      // リスク計算（分散を小さく見積もって期待値重視に）
       return adjustedProb * (1 - adjustedProb) * r * r * 0.5;
     }).reduce((a, b) => a + b, 0);
     
@@ -148,7 +140,7 @@ export const optimizeBetAllocation = async (
       sharpeRatio: risk > 0 ? expectedReturn / risk : 0, 
       expectedReturn, 
       risk,
-      condProbUsedCount 
+      condProbUsedCount
     };
   };
   
@@ -223,16 +215,6 @@ export const optimizeBetAllocation = async (
           if (currentMetrics.sharpeRatio > bestMetrics.sharpeRatio) {
             bestMetrics = currentMetrics;
             bestWeights = [...currentWeights];
-            
-            if (process.env.NODE_ENV === 'development') {
-              console.log('改善:', {
-                startPoint,
-                temperature: temperature.toFixed(4),
-                sharpeRatio: currentMetrics.sharpeRatio.toFixed(3),
-                expectedReturn: currentMetrics.expectedReturn.toFixed(3),
-                risk: currentMetrics.risk.toFixed(3)
-              });
-            }
           }
         }
         
@@ -292,16 +274,6 @@ export const optimizeBetAllocation = async (
   let bestWeights = bestResult.bestWeights;
   let bestMetrics = bestResult.bestMetrics;
   
-  if (process.env.NODE_ENV === 'development') {
-    console.log('最適化完了:', {
-      sharpeRatio: bestMetrics.sharpeRatio.toFixed(3),
-      expectedReturn: bestMetrics.expectedReturn.toFixed(3),
-      risk: bestMetrics.risk.toFixed(3),
-      condProbUsed: bestMetrics.condProbUsedCount > 0 ? `使用 (${bestMetrics.condProbUsedCount}件)` : '未使用'
-    });
-    console.groupEnd();
-  }
-  
   let proposals = processedRecs.map((rec, i) => {
     const odds = rec.odds;
     return {
@@ -322,25 +294,6 @@ export const optimizeBetAllocation = async (
       horse2: rec.horse2,
       horse3: rec.horse3
     };
-  })
-  .sort((a, b) => {
-    const typeOrder: Record<string, number> = {
-      "単勝": 1,
-      "複勝": 2,
-      "枠連": 3,
-      "ワイド": 4,
-      "馬連": 5,
-      "馬単": 6,
-      "３連複": 7,
-      "３連単": 8
-    };
-    
-    // 馬券種別でソート
-    const typeCompare = typeOrder[a.type] - typeOrder[b.type];
-    if (typeCompare !== 0) return typeCompare;
-    
-    // 同じ馬券種別なら投資額の大きい順
-    return b.stake - a.stake;
   });
   
   // 総投資額を計算
@@ -377,6 +330,27 @@ export const optimizeBetAllocation = async (
       proposals[targetIndex].expectedReturn = proposals[targetIndex].odds * proposals[targetIndex].stake;
     }
   }
+
+  // 予算調整後にソートを実行
+  proposals = proposals.sort((a, b) => {
+    const typeOrder: Record<string, number> = {
+      "単勝": 1,
+      "複勝": 2,
+      "枠連": 3,
+      "ワイド": 4,
+      "馬連": 5,
+      "馬単": 6,
+      "３連複": 7,
+      "３連単": 8
+    };
+    
+    // 馬券種別でソート
+    const typeCompare = typeOrder[a.type] - typeOrder[b.type];
+    if (typeCompare !== 0) return typeCompare;
+    
+    // 同じ馬券種別なら投資額の大きい順
+    return b.stake - a.stake;
+  });
   
   // デバッグ出力にもオッズを含める
   if (process.env.NODE_ENV === 'development') {
