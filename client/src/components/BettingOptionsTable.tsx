@@ -726,8 +726,8 @@ export function BettingOptionsTable({
                             <div>
                               <h4 className={
                                 theme === 'light'
-                                  ? "font-medium text-foreground mb-2 px-1 text-base md:text-lg sticky top-0 bg-background py-2 border-b border-border/40"
-                                  : "font-medium text-slate-300 mb-2 px-1 text-base md:text-lg sticky top-0 bg-slate-900/95 py-2 border-b border-slate-800/40"
+                                  ? "font-medium text-foreground mb-2 px-1 text-sm md:text-base sticky top-0 bg-background py-2 border-b border-border/40"
+                                  : "font-medium text-slate-300 mb-2 px-1 text-sm md:text-base sticky top-0 bg-slate-900/95 py-2 border-b border-slate-800/40"
                               }>
                                 {getCorrelationTitle(option)}
                               </h4>
@@ -761,7 +761,7 @@ export function BettingOptionsTable({
                                         backdrop-blur-sm hover:bg-opacity-60 transition-all duration-200
                                       `}
                                     >
-                                      <span className="text-sm sm:text-base font-medium tracking-tight">
+                                      <span className="text-xs sm:text-sm font-medium tracking-tight">
                                         {corr.target.type === '単勝' || corr.target.type === '複勝' 
                                           ? `${corr.target.type} ${corr.target.horses.split(' ')[0]}` 
                                           : `${corr.target.type} ${corr.target.horses}`}
