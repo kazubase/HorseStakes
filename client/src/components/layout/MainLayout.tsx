@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { Menu, X, Sun, Moon, Home, FileText, Shield, HelpCircle } from "lucide-react";
+import { FaXTwitter } from "react-icons/fa6";
 import { useLocation } from "wouter";
 import { useThemeStore } from "@/stores/themeStore";
 import { createPortal } from "react-dom";
@@ -132,7 +133,7 @@ const SidebarNavigation = memo(() => {
                       }}
                     >
                       <HelpCircle className="h-5 w-5 text-primary" />
-                      <span>使い方ガイド</span>
+                      <span>使い方</span>
                     </div>
                   </Link>
 
@@ -164,6 +165,21 @@ const SidebarNavigation = memo(() => {
                     </div>
                   </Link>
 
+                  {/* X（Twitter）アカウント */}
+                  <a 
+                    href="https://x.com/horse_stakes" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className={menuItemClass}
+                    style={{
+                      animationDelay: '0.25s',
+                      animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
+                    }}
+                  >
+                    <FaXTwitter className="h-5 w-5 text-primary" />
+                    <span>公式 X</span>
+                  </a>
+
                   {/* テーマ切り替え - 最後 */}
                   <div 
                     className={menuItemClass}
@@ -178,7 +194,7 @@ const SidebarNavigation = memo(() => {
                     ) : (
                       <Moon className="h-5 w-5 text-primary" />
                     )}
-                    <span>{theme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}</span>
+                    <span>テーマ</span>
                   </div>
                 </div>
               </div>

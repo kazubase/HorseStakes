@@ -149,7 +149,7 @@ export default function Guide() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">競馬予想ツール</span>
             <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            <span className="text-sm font-medium">使い方ガイド</span>
+            <span className="text-sm font-medium">使い方</span>
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
             馬券戦略の使い方
