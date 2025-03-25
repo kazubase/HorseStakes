@@ -1,9 +1,9 @@
 import { Link } from "wouter";
 import { useEffect, useState, useCallback, useMemo, memo } from "react";
-import { FaList } from "react-icons/fa";
-import { HelpCircle, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon, Home, FileText, Shield, HelpCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useThemeStore } from "@/stores/themeStore";
+import { createPortal } from "react-dom";
 
 // ロゴコンポーネントをメモ化して不要な再レンダリングを防止
 const Logo = memo(() => {
@@ -21,8 +21,7 @@ const Logo = memo(() => {
             height="36"
             decoding="async"
             loading="eager"
-            // @ts-ignore - fetchpriorityはHTML標準属性だがReact TypesにはまだないのでTSエラーを抑制
-            fetchpriority="high"
+            {...{ fetchpriority: "high" } as any}
           />
         ) : (
           <img 
@@ -33,8 +32,7 @@ const Logo = memo(() => {
             height="36"
             decoding="async"
             loading="eager"
-            // @ts-ignore - fetchpriorityはHTML標準属性だがReact TypesにはまだないのでTSエラーを抑制
-            fetchpriority="high"
+            {...{ fetchpriority: "high" } as any}
           />
         )}
         <span className="font-bold text-2xl font-yuji yuji-syuku">馬券戦略</span>
@@ -43,57 +41,158 @@ const Logo = memo(() => {
   );
 });
 
-// ナビゲーションをメモ化
-const Navigation = memo(() => {
-  const { theme } = useThemeStore();
-  const navItemClass = theme === 'light' 
-    ? 'flex items-center justify-center px-4 h-full hover:text-primary hover:bg-secondary/60 transition-colors'
-    : 'flex items-center justify-center px-4 h-full hover:text-primary hover:bg-muted/50 transition-colors';
-    
-  return (
-    <div className="flex justify-around h-10">
-      <Link href="/" aria-label="レース選択ページへ移動">
-        <div className={navItemClass}>
-          <FaList className="h-4 w-4 mr-1.5" aria-hidden="true" />
-          <span className="text-sm font-medium">レース選択</span>
-        </div>
-      </Link>
-      <Link href="/guide" aria-label="使い方ガイドページへ移動">
-        <div className={navItemClass}>
-          <HelpCircle className="h-4 w-4 mr-1.5" aria-hidden="true" />
-          <span className="text-sm font-medium">使い方</span>
-        </div>
-      </Link>
-    </div>
-  );
-});
-
-// テーマ切り替えボタンをメモ化
-const ThemeToggle = memo(() => {
+// サイドバーナビゲーションをメモ化
+const SidebarNavigation = memo(() => {
+  const [isOpen, setIsOpen] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
+  const [location] = useLocation();
   
-  const btnClass = theme === 'light'
-    ? 'flex items-center justify-center w-8 h-8 rounded-md hover:bg-secondary/70 transition-colors'
-    : 'flex items-center justify-center w-8 h-8 rounded-md hover:bg-muted/70 transition-colors';
+  const menuItemClass = "flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer";
+  const activeMenuItemClass = "flex items-center gap-3 px-4 py-3 bg-accent/50 transition-colors cursor-pointer";
   
+  const sidebarClass = theme === 'light'
+    ? 'fixed inset-y-0 right-0 z-[9999] w-64 bg-card shadow-xl transform transition-all duration-300 ease-out'
+    : 'fixed inset-y-0 right-0 z-[9999] w-64 bg-card/95 backdrop-blur-sm shadow-xl transform transition-all duration-300 ease-out';
+  
+  const overlayClass = "fixed inset-0 bg-black/50 z-[9998] transition-opacity duration-300";
+
+  // bodyのスクロールを制御
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   return (
-    <button
-      onClick={toggleTheme}
-      className={btnClass}
-      aria-label={theme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
-    >
-      {theme === 'dark' ? (
-        <Sun className="h-5 w-5" aria-hidden="true" />
-      ) : (
-        <Moon className="h-5 w-5" aria-hidden="true" />
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="flex items-center justify-center w-9 h-9 rounded-md hover:bg-accent/30 transition-colors fixed right-4"
+        aria-label="メニューを開く"
+      >
+        <Menu className="h-5 w-5" aria-hidden="true" />
+      </button>
+      
+      {/* ReactPortalを使用してオーバーレイとサイドバーをbody直下にレンダリング */}
+      {isOpen && createPortal(
+        <>
+          {/* オーバーレイ */}
+          <div 
+            className={`${overlayClass} ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+          
+          {/* サイドバー */}
+          <div 
+            className={`${sidebarClass} ${isOpen ? 'translate-x-0 opacity-100 shadow-2xl' : 'translate-x-full opacity-80 shadow-none'}`}
+          >
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between px-4 border-b h-12">
+                <h2 className="text-lg font-semibold">メニュー</h2>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-center w-9 h-9 rounded-md hover:bg-muted/70 transition-colors"
+                  aria-label="メニューを閉じる"
+                >
+                  <X className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto py-2">
+                {/* メニュー項目をマップして少しずつディレイをつける */}
+                <div className="space-y-0.5">
+                  {/* レース選択 - 1番目 */}
+                  <Link href="/">
+                    <div 
+                      className={location === "/" ? activeMenuItemClass : menuItemClass}
+                      style={{
+                        animationDelay: '0.05s',
+                        animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
+                      }}
+                    >
+                      <Home className="h-5 w-5 text-primary" />
+                      <span>レース選択</span>
+                    </div>
+                  </Link>
+                  
+                  {/* 使い方ガイド - 2番目 */}
+                  <Link href="/guide">
+                    <div 
+                      className={location === "/guide" ? activeMenuItemClass : menuItemClass}
+                      style={{
+                        animationDelay: '0.1s',
+                        animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
+                      }}
+                    >
+                      <HelpCircle className="h-5 w-5 text-primary" />
+                      <span>使い方ガイド</span>
+                    </div>
+                  </Link>
+
+                  {/* 利用規約 - 3番目 */}
+                  <Link href="/terms">
+                    <div 
+                      className={location === "/terms" ? activeMenuItemClass : menuItemClass}
+                      style={{
+                        animationDelay: '0.15s',
+                        animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
+                      }}
+                    >
+                      <FileText className="h-5 w-5 text-primary" />
+                      <span>利用規約</span>
+                    </div>
+                  </Link>
+
+                  {/* プライバシーポリシー - 4番目 */}
+                  <Link href="/privacy">
+                    <div 
+                      className={location === "/privacy" ? activeMenuItemClass : menuItemClass}
+                      style={{
+                        animationDelay: '0.2s',
+                        animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
+                      }}
+                    >
+                      <Shield className="h-5 w-5 text-primary" />
+                      <span>プライバシーポリシー</span>
+                    </div>
+                  </Link>
+
+                  {/* テーマ切り替え - 最後 */}
+                  <div 
+                    className={menuItemClass}
+                    onClick={toggleTheme}
+                    style={{
+                      animationDelay: '0.3s',
+                      animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
+                    }}
+                  >
+                    {theme === 'dark' ? (
+                      <Sun className="h-5 w-5 text-primary" />
+                    ) : (
+                      <Moon className="h-5 w-5 text-primary" />
+                    )}
+                    <span>{theme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
       )}
-    </button>
+    </>
   );
 });
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-  const [isNavVisible, setIsNavVisible] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [location] = useLocation();
   const isRaceListPage = useMemo(() => location === "/", [location]);
@@ -117,11 +216,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     
     // コンテンツが短い場合はスクロールバーが表示されないため、常にヘッダーを表示
     const isContentShort = document.documentElement.scrollHeight <= window.innerHeight;
-
-    // レース一覧画面以外の場合のみ最上部でナビゲーションを表示
-    if (!isRaceListPage) {
-      setIsNavVisible(currentScrollY === 0);
-    }
 
     // 馬券戦略ページの場合は、最上部でのみヘッダーを表示
     if (isBettingStrategyPage) {
@@ -147,50 +241,35 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
     
     setLastScrollY(currentScrollY);
-  }, [lastScrollY, isRaceListPage, isBettingStrategyPage]);
+  }, [lastScrollY, isBettingStrategyPage]);
 
   // デバウンスされたスクロールハンドラー
   const debouncedScrollHandler = useMemo(
-    () => debounce(controlHeader, 50), // デバウンス時間を増加
+    () => debounce(controlHeader, 50),
     [debounce, controlHeader]
   );
 
   useEffect(() => {
-    // スクロールイベントリスナーの登録（パフォーマンス最適化のためにpassiveオプションを使用）
     window.addEventListener('scroll', debouncedScrollHandler, { passive: true });
-    
-    // 初期状態の設定
     controlHeader();
-
-    // リサイズ時にもヘッダー表示を制御（パフォーマンス最適化のためにpassiveオプションを使用）
     window.addEventListener('resize', debouncedScrollHandler, { passive: true });
 
-    // クリーンアップ
     return () => {
       window.removeEventListener('scroll', debouncedScrollHandler);
       window.removeEventListener('resize', debouncedScrollHandler);
     };
   }, [controlHeader, debouncedScrollHandler]);
 
-  // ヘッダーがトップにあるときのみCSSトランジションを有効にする（パフォーマンス向上）
   const headerTransitionClass = useMemo(() => 
     isHeaderVisible ? 'translate-y-0' : '-translate-y-full',
     [isHeaderVisible]
   );
 
-  // ナビゲーションの可視性クラス
-  const navVisibilityClass = useMemo(() => 
-    isNavVisible ? 'opacity-100' : 'opacity-0 pointer-events-none',
-    [isNavVisible]
-  );
-
-  // メインコンテンツのクラス
   const mainContentClass = useMemo(() => 
     `flex-1 container mx-auto px-4 py-6 ${isRaceListPage ? '' : 'mt-8'}`,
     [isRaceListPage]
   );
 
-  // ヘッダーの背景スタイルを条件付きで設定
   const headerBgClass = useMemo(() => 
     theme === 'light' 
       ? 'border-b bg-card/95 backdrop-blur-sm shadow-sm'
@@ -198,70 +277,56 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     [theme]
   );
 
-  // ナビゲーションの背景スタイルを条件付きで設定
-  const navBgClass = useMemo(() => 
-    theme === 'light' 
-      ? 'border-b bg-card/95 backdrop-blur-sm shadow-sm'
-      : 'border-b bg-card/80 backdrop-blur-sm',
-    [theme]
-  );
-
-  // フッターナビゲーションの背景スタイルを条件付きで設定
-  const footerNavBgClass = useMemo(() => 
-    theme === 'light' 
-      ? 'fixed bottom-0 left-0 right-0 z-20 border-t bg-card/95 backdrop-blur-md shadow-lg'
-      : 'fixed bottom-0 left-0 right-0 z-20 border-t bg-card/95 backdrop-blur-md shadow-lg',
-    [theme]
-  );
+  // アニメーション用のスタイルを追加
+  useEffect(() => {
+    // 既存のstyleタグをチェック
+    let styleTag = document.getElementById('sidebar-animation-styles');
+    
+    // なければ作成
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = 'sidebar-animation-styles';
+      styleTag.innerHTML = `
+        @keyframes slideInRight {
+          from {
+            transform: translateX(20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `;
+      document.head.appendChild(styleTag);
+    }
+    
+    // クリーンアップ関数（コンポーネントのアンマウント時に実行）
+    return () => {
+      // styleTag?.remove(); // スタイルを残す場合はコメントアウト
+    };
+  }, []);
 
   return (
     <div className={`min-h-screen flex flex-col bg-background ${theme}`}>
       {/* ヘッダー */}
       <div 
-        className={`fixed top-0 left-0 right-0 z-20 transition-transform duration-300 will-change-transform ${headerTransitionClass}`}
+        className={`fixed top-0 left-0 right-0 z-30 transition-transform duration-300 will-change-transform ${headerTransitionClass}`}
         role="banner"
       >
         <header className={headerBgClass}>
           <div className="container mx-auto px-4 h-12 flex items-center justify-between">
             <Logo />
-            <ThemeToggle />
+            <SidebarNavigation />
           </div>
         </header>
       </div>
-      
-      {/* レース一覧画面以外の場合のみ上部ナビゲーションを表示 */}
-      {!isRaceListPage && (
-        <div 
-          className={`fixed top-12 left-0 right-0 z-20 transition-opacity duration-300 will-change-opacity ${navVisibilityClass}`}
-          role="navigation" 
-          aria-label="サイトナビゲーション"
-        >
-          <nav className={navBgClass}>
-            <div className="container mx-auto">
-              <Navigation />
-            </div>
-          </nav>
-        </div>
-      )}
 
       {/* メインコンテンツ */}
       <div className="h-12"></div>
-      <main className={mainContentClass} role="main">
+      <main className={`${mainContentClass} relative z-10`} role="main">
         {children}
       </main>
-
-      {/* レース一覧画面の場合のみフッターナビゲーションを表示 */}
-      {isRaceListPage && (
-        <div 
-          className={footerNavBgClass}
-          role="navigation" 
-          aria-label="フッターナビゲーション"
-        >
-          <div className="container mx-auto">
-            <Navigation />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

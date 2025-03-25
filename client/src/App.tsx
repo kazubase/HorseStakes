@@ -1,6 +1,8 @@
 import { Switch, Route } from "wouter";
 import React, { Suspense, lazy, useEffect } from "react";
 import { useThemeStore } from "@/stores/themeStore";
+import Terms from "@/pages/Terms";
+import Privacy from "@/pages/Privacy";
 
 // ローディングコンポーネント
 const Loading = () => (
@@ -56,6 +58,8 @@ function App() {
             {/* <Route path="/predict/budget/:id" component={Budget} /> */}
             <Route path="/predict/:id" component={PredictionSettings} />
             <Route path="/races/:id/betting-strategy" component={BettingStrategyLazy} />
+            <Route path="/terms" component={Terms} />
+            <Route path="/privacy" component={Privacy} />
           </Switch>
         </Suspense>
       </div>
