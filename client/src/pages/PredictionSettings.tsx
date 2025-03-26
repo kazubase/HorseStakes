@@ -101,6 +101,7 @@ export default function PredictionSettings() {
         const riskValue = Number(riskParam);
         if (!isNaN(riskValue) && riskValue >= 2.0) {
           setRiskRatio(riskValue);
+          setRiskRatioInputValue(riskValue.toString());
           hasRestoredData = true;
         }
       }
@@ -1285,6 +1286,7 @@ export default function PredictionSettings() {
                           name="risk-ratio-input"
                           value={riskRatioInputValue}
                           onChange={(e) => handleRiskRatioDirectInput(e.target.value)}
+                          onBlur={(e) => handleRiskRatioBlur(e.target.value)}
                           className={`w-24 text-right text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-10 ${
                             riskRatio >= 10 ? 'text-primary font-extrabold' : 
                             riskRatio >= 5 ? 'text-primary/80 font-bold' : 'text-foreground'
