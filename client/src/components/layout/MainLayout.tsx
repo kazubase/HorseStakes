@@ -49,12 +49,23 @@ const SidebarNavigation = memo(() => {
   const [location] = useLocation();
   const [isClosing, setIsClosing] = useState(false);
   
-  const menuItemClass = "flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer";
-  const activeMenuItemClass = "flex items-center gap-3 px-4 py-3 bg-accent/50 transition-colors cursor-pointer";
+  const menuItemClass = useMemo(() => 
+    theme === 'light'
+      ? "flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer"
+      : "flex items-center gap-3 px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer",
+    [theme]
+  );
+
+  const activeMenuItemClass = useMemo(() => 
+    theme === 'light'
+      ? "flex items-center gap-3 px-4 py-3 bg-accent/50 transition-colors cursor-pointer"
+      : "flex items-center gap-3 px-4 py-3 bg-primary/20 text-primary font-medium transition-colors cursor-pointer",
+    [theme]
+  );
   
   const sidebarClass = theme === 'light'
     ? 'fixed inset-y-0 right-0 z-[9999] w-64 bg-card shadow-xl transform transition-all duration-300 ease-out'
-    : 'fixed inset-y-0 right-0 z-[9999] w-64 bg-card/95 backdrop-blur-sm shadow-xl transform transition-all duration-300 ease-out';
+    : 'fixed inset-y-0 right-0 z-[9999] w-64 bg-card/95 backdrop-blur-sm shadow-xl transform transition-all duration-300 ease-out border-l border-border/50';
   
   const overlayClass = "fixed inset-0 bg-black/50 z-[9998] transition-opacity duration-300";
 
@@ -179,27 +190,30 @@ const SidebarNavigation = memo(() => {
                   animation: isOpen ? 'slideInRight 0.3s forwards' : 'none'
                 }}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <a 
-                    href="https://x.com/horse_stakes" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="公式X（Twitter）"
-                  >
-                    <FaXTwitter className="h-4 w-4" />
-                  </a>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-center">
+                    <a 
+                      href="https://x.com/horse_stakes" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                      aria-label="公式X（Twitter）"
+                    >
+                      <FaXTwitter className="h-4 w-4" />
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
                     <Link href="/terms" className="hover:text-primary transition-colors">
                       利用規約
                     </Link>
+                    <span className="text-muted-foreground/50">|</span>
                     <Link href="/privacy" className="hover:text-primary transition-colors">
                       プライバシーポリシー
                     </Link>
                   </div>
-                </div>
-                <div className="text-xs text-muted-foreground text-right">
-                  © {new Date().getFullYear()} 馬券戦略
+                  <div className="text-xs text-muted-foreground text-center">
+                    © {new Date().getFullYear()} 馬券戦略
+                  </div>
                 </div>
               </div>
             </div>
