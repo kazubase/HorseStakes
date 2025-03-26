@@ -1045,21 +1045,6 @@ export default function Home() {
                   <div className="relative">
                     <div className="flex justify-between items-center pt-4 pl-4 sm:p-0 sm:mb-4">
                       <h2 className="text-lg sm:text-xl font-semibold">出馬表</h2>
-                      <Button
-                        size="sm"
-                        variant={theme === 'light' ? "outline" : "secondary"}
-                        onClick={refreshOddsData}
-                        disabled={isRefreshing}
-                        aria-label={isRefreshing ? "オッズを更新中" : "オッズを更新"}
-                        className={
-                          theme === 'light' 
-                            ? "text-xs flex items-center gap-1 mr-6" 
-                            : "text-xs flex items-center gap-1 mr-6 bg-primary/10 hover:bg-primary/20 text-foreground border-primary/30"
-                        }
-                      >
-                        <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-                        <span>{isRefreshing ? '更新中...' : '更新'}</span>
-                      </Button>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -1087,10 +1072,10 @@ export default function Home() {
                             </TableHead>
                             <TableHead></TableHead>
                             <TableHead className="text-right pr-4">
-                              <div className="flex items-center justify-start pl-4">
+                              <div className="flex items-center justify-end gap-2">
                                 <button 
                                   onClick={() => handleSortClick('odds')}
-                                  className="flex items-center justify-center p-1 hover:bg-muted/30 rounded transition-colors"
+                                  className="flex items-center justify-center p-1.5 hover:bg-muted/30 rounded transition-colors"
                                   aria-label="オッズでソート"
                                   aria-pressed={sortOrder === 'odds-asc' || sortOrder === 'odds-desc'}
                                   aria-sort={sortOrder === 'odds-asc' ? 'ascending' : sortOrder === 'odds-desc' ? 'descending' : 'none'}
@@ -1103,6 +1088,20 @@ export default function Home() {
                                     <ChevronUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                                   )}
                                 </button>
+                                <Button
+                                  size="sm"
+                                  variant={theme === 'light' ? "outline" : "secondary"}
+                                  onClick={refreshOddsData}
+                                  disabled={isRefreshing}
+                                  aria-label={isRefreshing ? "オッズを更新中" : "オッズを更新"}
+                                  className={
+                                    theme === 'light' 
+                                      ? "h-7 w-7 p-1.5" 
+                                      : "h-7 w-7 p-1.5 bg-primary/10 hover:bg-primary/20 text-foreground border-primary/30"
+                                  }
+                                >
+                                  <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+                                </Button>
                               </div>
                             </TableHead>
                           </TableRow>
