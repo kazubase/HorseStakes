@@ -1045,6 +1045,21 @@ export default function Home() {
                   <div className="relative">
                     <div className="flex justify-between items-center pt-4 pl-4 sm:p-0 sm:mb-4">
                       <h2 className="text-lg sm:text-xl font-semibold">出馬表</h2>
+                      <Button
+                        size="sm"
+                        variant={theme === 'light' ? "outline" : "secondary"}
+                        onClick={refreshOddsData}
+                        disabled={isRefreshing}
+                        aria-label={isRefreshing ? "オッズを更新中" : "オッズを更新"}
+                        className={
+                          theme === 'light' 
+                            ? "text-xs flex items-center gap-1 mr-6" 
+                            : "text-xs flex items-center gap-1 mr-6 bg-primary/10 hover:bg-primary/20 text-foreground border-primary/30"
+                        }
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+                        <span>{isRefreshing ? '更新中...' : '更新'}</span>
+                      </Button>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -1232,25 +1247,6 @@ export default function Home() {
                       })}
                     </div>
                   )}
-                  
-                  {/* オッズ更新ボタン - グラフ上部 */}
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-sm font-medium">オッズ推移</h3>
-                    <Button
-                      size="sm"
-                      variant={theme === 'light' ? "outline" : "secondary"}
-                      onClick={refreshOddsData}
-                      disabled={isRefreshing}
-                      className={
-                        theme === 'light' 
-                          ? "text-xs flex items-center gap-1" 
-                          : "text-xs flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-foreground border-primary/30"
-                      }
-                    >
-                      <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                      <span>{isRefreshing ? 'オッズ更新中...' : 'オッズを更新'}</span>
-                    </Button>
-                  </div>
                   
                   {/* グラフコンテナ - 相対位置指定 */}
                   <div className="h-[300px] sm:h-[400px] relative">
