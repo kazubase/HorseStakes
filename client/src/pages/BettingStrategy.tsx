@@ -1,7 +1,7 @@
 import { useParams, useLocation } from "wouter";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAtom } from 'jotai';
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Race } from "@db/schema";
 import { currentStepAtom, horsesAtom, latestOddsAtom } from '@/stores/bettingStrategy';
 import { BettingAnalysis } from "@/components/betting/BettingAnalysis";
@@ -9,12 +9,13 @@ import { BettingSelection } from "@/components/betting/BettingSelection";
 import { BettingPortfolio } from "@/components/betting/BettingPortfolio";
 import { BettingStepProgress } from "@/components/betting/BettingStepProgress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { HorseMarquee } from "@/components/HorseMarquee";
 import { useThemeStore } from "@/stores/themeStore";
 import { cn } from "@/lib/utils";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
 
 export function BettingStrategy() {
   const { id } = useParams();
@@ -23,11 +24,14 @@ export function BettingStrategy() {
   const [horses] = useAtom(horsesAtom);
   const [latestOdds] = useAtom(latestOddsAtom);
   const { theme } = useThemeStore();
-
-  // レース情報を取得
+  const queryClient = useQueryClient();
+  
+  // レース情報を取得（無限キャッシュ）
   const { data: race } = useQuery<Race>({
     queryKey: [`/api/races/${id}`],
     enabled: !!id,
+    staleTime: Infinity, // レース情報は永続的にキャッシュ
+    gcTime: Infinity, // キャッシュを永続的に保持
   });
   
   // 馬データと単勝オッズをマージ

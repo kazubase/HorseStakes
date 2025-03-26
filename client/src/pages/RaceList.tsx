@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Race } from "@db/schema";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -44,7 +44,7 @@ const allVenues: RaceVenue[] = [
 const MemoizedTabsTrigger = memo(TabsTrigger);
 
 // RaceCardをメモ化してレースカードの不要な再レンダリングを防止
-const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) => {
+const RaceCard = memo(({ race, onClick, onMouseEnter }: { race: Race; onClick: () => void; onMouseEnter: () => void }) => {
   const { theme } = useThemeStore();
   
   // 日付のフォーマットを事前に計算してメモ化
@@ -82,6 +82,7 @@ const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) =
     <Card 
       className={cardStyle}
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
     >
       <div className={
         theme === 'light' 
@@ -273,6 +274,7 @@ export default function RaceList() {
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { theme } = useThemeStore();
+  const queryClient = useQueryClient(); // クエリクライアントを取得
 
   // デバウンス関数
   const debounce = useCallback((func: Function, wait: number) => {
@@ -333,10 +335,115 @@ export default function RaceList() {
     refetchOnWindowFocus: true,
   });
 
+  // レース情報とオッズデータを先読みする関数
+  const prefetchRaceData = useCallback((raceId: string) => {
+    // レース情報をプリフェッチ
+    queryClient.prefetchQuery({
+      queryKey: [`/api/races/${raceId}`],
+      staleTime: Infinity,
+      gcTime: Infinity,
+    });
+
+    // 馬データをプリフェッチ
+    queryClient.prefetchQuery({
+      queryKey: [`/api/horses/${raceId}`],
+      staleTime: Infinity, 
+      gcTime: Infinity,
+    });
+
+    // オッズデータを全て先読み
+    // 単勝オッズデータをプリフェッチ
+    queryClient.prefetchQuery({
+      queryKey: [`/api/tan-odds-history/latest/${raceId}`],
+      staleTime: 60000, // 1分間キャッシュを有効に
+    });
+    
+    // オッズ履歴もプリフェッチ（グラフ用）
+    queryClient.prefetchQuery({
+      queryKey: [`/api/tan-odds-history/${raceId}`],
+      staleTime: 300000, // 5分間キャッシュを有効に
+    });
+    
+    // その他関連オッズデータも先読み
+    queryClient.prefetchQuery({
+      queryKey: [`/api/fuku-odds/latest/${raceId}`],
+      staleTime: 60000, // 1分間キャッシュを有効に
+    });
+  }, [queryClient]);
+
   // レースカードをクリックしたときのハンドラー
   const handleRaceClick = useCallback((raceId: string) => {
+    // クリック時に他のレースも先読みしておく
+    prefetchRaceData(raceId);
+    
+    // 同じ会場の他のレースも先読み
+    if (races) {
+      const clickedRace = races.find(race => race.id.toString() === raceId);
+      if (clickedRace) {
+        const sameVenueRaces = races
+          .filter(race => race.venue === clickedRace.venue && race.id.toString() !== raceId)
+          .slice(0, 3); // 同じ会場の他の3レースまで
+          
+        // 非同期でバックグラウンドで先読み
+        setTimeout(() => {
+          sameVenueRaces.forEach(race => {
+            prefetchRaceData(race.id.toString());
+          });
+        }, 1000); // 1秒遅延させて優先度を下げる
+      }
+    }
+    
     setLocation(`/race/${raceId}`);
-  }, [setLocation]);
+  }, [setLocation, prefetchRaceData, races]);
+
+  // マウスオーバー時にデータを先読みする処理
+  const handleRaceHover = useCallback((raceId: string) => {
+    prefetchRaceData(raceId);
+  }, [prefetchRaceData]);
+
+  // 現在表示中のレースデータを先読み
+  useEffect(() => {
+    if (!races || races.length === 0) return;
+
+    // 現在表示されている日付のレースを取得
+    const targetDate = getTargetDate(selectedDate);
+    const targetRaces = races.filter(race => {
+      const raceDate = new Date(race.startTime);
+      return (
+        isSameDay(raceDate, targetDate) ||
+        isSameDay(raceDate, subDays(targetDate, 1))
+      );
+    });
+
+    // 最大5レースまで先読み（負荷を考慮）
+    const racesToPrefetch = targetRaces.slice(0, 5);
+    
+    // 各レースのデータを先読み
+    racesToPrefetch.forEach(race => {
+      prefetchRaceData(race.id.toString());
+    });
+  }, [races, selectedDate, getTargetDate, prefetchRaceData]);
+
+  // 日付変更時にも先読みを実行
+  useEffect(() => {
+    if (races && races.length > 0) {
+      // 選択された日付のレースを取得して先読み
+      const targetDate = getTargetDate(selectedDate);
+      const targetRaces = races.filter(race => {
+        const raceDate = new Date(race.startTime);
+        return (
+          isSameDay(raceDate, targetDate) ||
+          isSameDay(raceDate, subDays(targetDate, 1))
+        );
+      });
+
+      // 最大3レースまで先読み
+      const racesToPrefetch = targetRaces.slice(0, 3);
+      racesToPrefetch.forEach(race => {
+        prefetchRaceData(race.id.toString());
+      });
+    }
+  }, [selectedDate, races, getTargetDate, prefetchRaceData]);
 
   // 表示対象の日付のレースを取得
   const todayVenues = useMemo(() => {
@@ -632,6 +739,7 @@ export default function RaceList() {
                       key={race.id} 
                       race={race} 
                       onClick={() => handleRaceClick(race.id.toString())}
+                      onMouseEnter={() => handleRaceHover(race.id.toString())}
                     />
                   ))
                 )}

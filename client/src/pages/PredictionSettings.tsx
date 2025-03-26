@@ -1,21 +1,24 @@
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Horse } from "@db/schema";
-import { useState, useEffect } from "react";
+import { Horse, Race, TanOddsHistory } from "@db/schema";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { AlertCircle, ArrowRight, Award, Wallet, Plus, Minus, Activity, Info, BarChart4, Trophy, ChevronUp, ChevronDown } from "lucide-react";
+import { AlertCircle, ArrowRight, Award, Wallet, Plus, Minus, Activity, Info, BarChart4, Trophy, ChevronUp, ChevronDown, ChevronRight } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useThemeStore } from "@/stores/themeStore";
+import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PredictionSettings() {
   const { id } = useParams();
+  const [_, setLocation] = useLocation();
   const { theme } = useThemeStore();
   const [activeTab, setActiveTab] = useState("win");
   
@@ -38,9 +41,30 @@ export default function PredictionSettings() {
   
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const { data: horses } = useQuery<Horse[]>({
+  const { data: race, isLoading: raceLoading } = useQuery<Race>({
+    queryKey: [`/api/races/${id}`],
+    enabled: !!id,
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+
+  const { data: horses = [], isLoading: horsesLoading } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
     enabled: !!id,
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+
+  const { data: latestOdds = [], isLoading: oddsLoading } = useQuery<TanOddsHistory[]>({
+    queryKey: [`/api/tan-odds-history/latest/${id}`],
+    enabled: !!id,
+    staleTime: 60 * 1000,
+  });
+
+  const { data: fukuOdds = [], isLoading: fukuOddsLoading } = useQuery<any[]>({
+    queryKey: [`/api/fuku-odds/latest/${id}`],
+    enabled: !!id,
+    staleTime: 60 * 1000,
   });
 
   // 馬番でソートした馬リストを作成
@@ -87,19 +111,23 @@ export default function PredictionSettings() {
           const parsedWinProbs = JSON.parse(decodeURIComponent(winProbsParam)) as Record<string, number>;
           
           if (Object.keys(parsedWinProbs).length > 0) {
-            setWinProbabilities(parsedWinProbs as unknown as { [key: number]: number });
+            // 全ての馬に対して確率を設定（存在しない場合は0を設定）
+            const updatedWinProbs = horses.reduce((acc, horse) => {
+              acc[horse.id] = parsedWinProbs[horse.id] || 0;
+              return acc;
+            }, {} as { [key: number]: number });
+            
+            setWinProbabilities(updatedWinProbs);
             
             // 入力値も更新
-            const updatedInputValues = Object.fromEntries(
-              Object.entries(parsedWinProbs).map(([id, prob]) => [
-                id,
-                String(prob)
-              ])
-            );
-            setWinInputValues(updatedInputValues as unknown as { [key: number]: string });
+            const updatedInputValues = horses.reduce((acc, horse) => {
+              acc[horse.id] = String(updatedWinProbs[horse.id] || 0);
+              return acc;
+            }, {} as { [key: number]: string });
+            setWinInputValues(updatedInputValues);
             
             // 合計確率を計算
-            const totalWinProb = Object.values(parsedWinProbs).reduce((sum, value) => sum + value, 0);
+            const totalWinProb = Object.values(updatedWinProbs).reduce((sum, value) => sum + value, 0);
             setWinTotalProbability(totalWinProb);
             
             hasRestoredData = true;
@@ -115,19 +143,23 @@ export default function PredictionSettings() {
           const parsedPlaceProbs = JSON.parse(decodeURIComponent(placeProbsParam)) as Record<string, number>;
           
           if (Object.keys(parsedPlaceProbs).length > 0) {
-            setPlaceProbabilities(parsedPlaceProbs as unknown as { [key: number]: number });
+            // 全ての馬に対して確率を設定（存在しない場合は0を設定）
+            const updatedPlaceProbs = horses.reduce((acc, horse) => {
+              acc[horse.id] = parsedPlaceProbs[horse.id] || 0;
+              return acc;
+            }, {} as { [key: number]: number });
+            
+            setPlaceProbabilities(updatedPlaceProbs);
             
             // 入力値も更新
-            const updatedInputValues = Object.fromEntries(
-              Object.entries(parsedPlaceProbs).map(([id, prob]) => [
-                id,
-                String(prob)
-              ])
-            );
-            setPlaceInputValues(updatedInputValues as unknown as { [key: number]: string });
+            const updatedInputValues = horses.reduce((acc, horse) => {
+              acc[horse.id] = String(updatedPlaceProbs[horse.id] || 0);
+              return acc;
+            }, {} as { [key: number]: string });
+            setPlaceInputValues(updatedInputValues);
             
             // 合計確率を計算
-            const totalPlaceProb = Object.values(parsedPlaceProbs).reduce((sum, value) => sum + value, 0);
+            const totalPlaceProb = Object.values(updatedPlaceProbs).reduce((sum, value) => sum + value, 0);
             setPlaceTotalProbability(totalPlaceProb);
             
             hasRestoredData = true;
@@ -631,39 +663,83 @@ export default function PredictionSettings() {
       });
       setPlaceInputValues(updatedPlaceInputs);
     }
-  }, [isInitialized, horses, winProbabilities, placeProbabilities]);
+  }, [isInitialized, horses]);
 
   if (!horses) return null;
 
   return (
     <MainLayout>
-      <div className="space-y-6 pb-20">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-            予想設定
-          </h1>
-          <Button
-            size="lg"
-            onClick={handleSubmit}
-            disabled={
-              Math.abs(winTotalProbability - 100) > 0.1 ||
-              Math.abs(placeTotalProbability - getRequiredTotalProbability(horses?.length || 0)) > 0.1 ||
-              budget <= 0 ||
-              riskRatio < 2.0 ||
-              !!error
-            }
-            className="relative overflow-hidden group sm:size-lg size-xs sm:px-4 px-2"
-            aria-label="馬券分析画面へ進む"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <span className="relative flex items-center gap-1">
-              <Activity className="sm:h-5 sm:w-5 h-3.5 w-3.5" />
-              <span className="hidden sm:inline">馬券分析画面へ</span>
-              <span className="sm:hidden text-sm">分析へ</span>
-              <ArrowRight className="sm:h-4 sm:w-4 h-3 w-3 sm:ml-1" />
-            </span>
-          </Button>
-        </div>
+      <div className="space-y-4 pb-16 md:pb-0">
+        <Card className={
+          theme === 'light'
+            ? "overflow-hidden bg-gradient-to-br from-secondary/50 to-background relative z-10 border border-secondary/30 shadow-sm"
+            : "overflow-hidden bg-gradient-to-br from-black/40 to-primary/5 relative z-10"
+        }>
+          <CardContent className="p-3 sm:p-5">
+            <div className={
+              theme === 'light'
+                ? "absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent opacity-50"
+                : "absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30"
+            } />
+            <div className="flex justify-between items-start relative">
+              <div>
+                {raceLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                ) : (
+                  <>
+                    <h1 className={
+                      theme === 'light'
+                        ? "text-base sm:text-2xl font-bold mb-2 tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
+                        : "text-base sm:text-2xl font-bold mb-2 bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent"
+                    }>
+                      {race?.name}
+                    </h1>
+                    <p className="text-sm sm:text-base text-muted-foreground">
+                      {format(new Date(race?.startTime!), 'yyyy年M月d日')} {race?.venue} {format(new Date(race?.startTime!), 'HH:mm')}発走
+                    </p>
+                  </>
+                )}
+              </div>
+              {!raceLoading && (
+                <div className="text-right flex flex-col items-end gap-2">
+                  <Button 
+                    onClick={handleSubmit}
+                    size="sm"
+                    className={`
+                      relative overflow-hidden group text-xs sm:text-sm 
+                      ${theme === 'light' 
+                        ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                        : 'bg-primary hover:bg-primary/90 text-black'
+                      }
+                      px-2 py-1 h-auto sm:h-9 sm:px-3 sm:py-2
+                    `}
+                    disabled={
+                      Math.abs(winTotalProbability - 100) > 0.1 || 
+                      Math.abs(placeTotalProbability - getRequiredTotalProbability(horses.length)) > 0.1 ||
+                      budget <= 0 ||
+                      riskRatio < 2.0
+                    }
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="relative flex items-center gap-1">
+                      <Activity className="sm:h-5 sm:w-5 h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">馬券分析画面へ</span>
+                      <span className="sm:hidden text-sm">分析へ</span>
+                      <ArrowRight className="sm:h-4 sm:w-4 h-3 w-3 sm:ml-1" />
+                    </span>
+                  </Button>
+                  <p className="text-sm sm:text-base font-semibold">
+                    {race?.status === 'done' ? '発走済' : null}
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full" aria-label="予想設定タブ">
           <TabsList className={
@@ -980,7 +1056,7 @@ export default function PredictionSettings() {
                               step="1"
                               id={`horse-place-prob-${horse.id}`}
                               name={`horse-place-prob-${horse.id}`}
-                              value={placeInputValues[horse.id] || ""}
+                              value={placeInputValues[horse.id] || "0"}
                               onChange={(e) => handlePlaceDirectInput(horse.id, e.target.value)}
                               onBlur={(e) => handlePlaceInputBlur(horse.id, e.target.value)}
                               className={`w-12 sm:w-20 text-right text-base sm:text-lg font-bold px-1 [&::-webkit-inner-spin-button]:ml-0.5 h-8 ${

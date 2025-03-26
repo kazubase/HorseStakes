@@ -1,12 +1,12 @@
 import { useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Horse, Race, TanOddsHistory } from "@db/schema";
 import { format } from "date-fns";
 import MainLayout from "@/components/layout/MainLayout";
-import { ChartBar, Trophy, ArrowRight, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
+import { ChartBar, Trophy, ArrowRight, ChevronRight, ChevronUp, ChevronDown, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import RaceList from "@/pages/RaceList";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
@@ -17,6 +17,8 @@ import { useThemeStore } from "@/stores/themeStore";
 export default function Home() {
   const { id } = useParams();
   const { theme } = useThemeStore();
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // idがない場合はRaceListを表示
   if (!id) {
@@ -26,8 +28,8 @@ export default function Home() {
   // レースデータの取得を最適化
   const { data: race, isLoading: raceLoading } = useQuery<Race>({
     queryKey: [`/api/races/${id}`],
-    staleTime: 300000, // 5分間キャッシュを有効に
-    gcTime: 600000, // 10分間キャッシュを保持
+    staleTime: Infinity, // レースデータは永続的にキャッシュ
+    gcTime: Infinity, // キャッシュを永続的に保持
     retry: 1,
   });
 
@@ -38,27 +40,50 @@ export default function Home() {
   } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
     enabled: !!id,
-    staleTime: 300000, // 5分間キャッシュを有効に
-    gcTime: 600000, // 10分間キャッシュを保持
+    staleTime: Infinity, // 馬データは永続的にキャッシュ
+    gcTime: Infinity, // キャッシュを永続的に保持
     retry: 1,
   });
-
-  // 馬番でソートした馬リストを作成
-  const sortedHorses = [...horses].sort((a, b) => a.number - b.number);
 
   // ソート順の状態を追加
   const [sortOrder, setSortOrder] = useState<'number-asc' | 'number-desc' | 'odds-asc' | 'odds-desc'>('odds-asc');
 
-  // オッズデータを取得する新しいクエリを追加
+  // オッズデータを取得する新しいクエリを追加（キャッシュタイムを30秒に設定）
   const { 
     data: latestOdds = [], 
-    isLoading: latestOddsLoading 
+    isLoading: latestOddsLoading,
+    refetch: refetchOdds
   } = useQuery<TanOddsHistory[]>({
     queryKey: [`/api/tan-odds-history/latest/${id}`],
     enabled: !!id,
-    staleTime: 30000,
+    staleTime: 30000, // 30秒間はキャッシュを使用
     retry: 1,
   });
+
+  // オッズデータを手動で更新する関数
+  const refreshOddsData = useCallback(async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      await refetchOdds();
+      // 関連するオッズデータも更新
+      if (id) {
+        // 複勝オッズ等の他のオッズデータも無効化して再取得
+        queryClient.invalidateQueries({ queryKey: [`/api/fuku-odds/latest/${id}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/wakuren-odds/latest/${id}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/umatan-odds/latest/${id}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/wide-odds/latest/${id}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/sanrenpuku-odds/latest/${id}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/sanrentan-odds/latest/${id}`] });
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [id, refetchOdds, queryClient, isRefreshing]);
+
+  // 馬番でソートした馬リストを作成
+  const sortedHorses = [...horses].sort((a, b) => a.number - b.number);
 
   // オッズでソートされた上位5頭を計算するメモ化関数
   const topFiveHorses = useMemo(() => {
@@ -1160,6 +1185,25 @@ export default function Home() {
                       })}
                     </div>
                   )}
+                  
+                  {/* オッズ更新ボタン - グラフ上部 */}
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-sm font-medium">オッズ推移</h3>
+                    <Button
+                      size="sm"
+                      variant={theme === 'light' ? "outline" : "secondary"}
+                      onClick={refreshOddsData}
+                      disabled={isRefreshing}
+                      className={
+                        theme === 'light' 
+                          ? "text-xs flex items-center gap-1" 
+                          : "text-xs flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-foreground border-primary/30"
+                      }
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                      <span>{isRefreshing ? 'オッズ更新中...' : 'オッズを更新'}</span>
+                    </Button>
+                  </div>
                   
                   {/* グラフコンテナ - 相対位置指定 */}
                   <div className="h-[300px] sm:h-[400px] relative">

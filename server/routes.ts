@@ -113,7 +113,10 @@ export function registerRoutes(app: Express): Server {
       const cacheKey = "all-races";
       const cachedRaces = cache.get<any[]>(cacheKey);
       
-      if (cachedRaces) {
+      // キャッシュを強制的に無効化するヘッダーがある場合はキャッシュをスキップ
+      const forceRefresh = _req.headers['x-force-refresh'] === 'true' || _req.headers['cache-control'] === 'no-cache';
+      
+      if (cachedRaces && !forceRefresh) {
         console.log('Returning cached races');
         return res.json(cachedRaces);
       }
@@ -125,8 +128,8 @@ export function registerRoutes(app: Express): Server {
         console.log('No races found in database');
       }
       
-      // データをキャッシュに保存（5分間有効）
-      cache.set(cacheKey, allRaces, 5 * 60 * 1000);
+      // データをキャッシュに保存（10分間有効）
+      cache.set(cacheKey, allRaces, 10 * 60 * 1000);
       
       // 自動更新コールバックを登録
       cache.registerRefreshCallback(cacheKey, async () => {
@@ -154,7 +157,10 @@ export function registerRoutes(app: Express): Server {
       
       // キャッシュからデータを取得
       const cacheKey = `race-${raceId}`;
-      const cachedRace = cache.get(cacheKey);
+      
+      // キャッシュを強制的に無効化するヘッダーがある場合はキャッシュをスキップ
+      const forceRefresh = req.headers['x-force-refresh'] === 'true' || req.headers['cache-control'] === 'no-cache';
+      const cachedRace = forceRefresh ? null : cache.get(cacheKey);
       
       if (cachedRace) {
         console.log('Returning cached race data');
@@ -172,8 +178,8 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Race not found" });
       }
 
-      // データをキャッシュに保存（5分間有効）
-      cache.set(cacheKey, race, 5 * 60 * 1000);
+      // データをキャッシュに保存（10分間有効）
+      cache.set(cacheKey, race, 10 * 60 * 1000);
       
       res.json(race);
     } catch (error) {
@@ -188,7 +194,10 @@ export function registerRoutes(app: Express): Server {
     
     // キャッシュからデータを取得
     const cacheKey = `horses-${raceId}`;
-    const cachedHorses = cache.get(cacheKey);
+    
+    // キャッシュを強制的に無効化するヘッダーがある場合はキャッシュをスキップ
+    const forceRefresh = req.headers['x-force-refresh'] === 'true' || req.headers['cache-control'] === 'no-cache';
+    const cachedHorses = forceRefresh ? null : cache.get(cacheKey);
     
     if (cachedHorses) {
       console.log(`Returning cached horses for race ${raceId}`);
@@ -200,8 +209,8 @@ export function registerRoutes(app: Express): Server {
       .from(horses)
       .where(eq(horses.raceId, raceId));
 
-    // データをキャッシュに保存（5分間有効）
-    cache.set(cacheKey, raceHorses, 5 * 60 * 1000);
+    // データをキャッシュに保存（10分間有効）
+    cache.set(cacheKey, raceHorses, 10 * 60 * 1000);
     
     res.json(raceHorses);
   });
@@ -506,7 +515,10 @@ export function registerRoutes(app: Express): Server {
       
       // キャッシュからデータを取得
       const cacheKey = `tan-odds-latest-${raceId}`;
-      const cachedLatestOdds = cache.get(cacheKey);
+      
+      // キャッシュを強制的に無効化するヘッダーがある場合はキャッシュをスキップ
+      const forceRefresh = req.headers['x-force-refresh'] === 'true' || req.headers['cache-control'] === 'no-cache';
+      const cachedLatestOdds = forceRefresh ? null : cache.get(cacheKey);
       
       if (cachedLatestOdds) {
         console.log(`Returning cached latest tan odds for race ${raceId}`);
@@ -538,36 +550,11 @@ export function registerRoutes(app: Express): Server {
       
       // データをキャッシュに保存（1分間有効）
       cache.set(cacheKey, result, 60 * 1000);
-      
-      // 自動更新コールバックを登録
-      cache.registerRefreshCallback(cacheKey, async () => {
-        try {
-          const refreshedOdds = await db.select()
-            .from(tanOddsHistory)
-            .where(eq(tanOddsHistory.raceId, raceId))
-            .orderBy(sql`${tanOddsHistory.timestamp} desc`);
-            
-          if (refreshedOdds.length === 0) return null;
-          
-          const refreshedOddsByHorse = refreshedOdds.reduce((acc, curr) => {
-            if (!acc[curr.horseId] || 
-                new Date(acc[curr.horseId].timestamp) < new Date(curr.timestamp)) {
-              acc[curr.horseId] = curr;
-            }
-            return acc;
-          }, {} as Record<number, typeof refreshedOdds[0]>);
-          
-          return Object.values(refreshedOddsByHorse);
-        } catch (error) {
-          console.error(`Error refreshing tan odds cache for race ${raceId}:`, error);
-          return null;
-        }
-      });
 
       res.json(result);
     } catch (error) {
       console.error('Error:', error);
-      res.status(500).json({ error: "Failed to fetch latest odds" });
+      res.status(500).json({ error: "Failed to fetch latest tan odds" });
     }
   });
 
