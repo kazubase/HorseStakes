@@ -6,7 +6,7 @@ import './index.css'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
 import { HelmetProvider } from 'react-helmet-async'
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "@/components/ui/toaster";
 
 // React関連のグローバル設定
 // Reactとその依存関係をグローバルに公開
@@ -39,63 +39,72 @@ const setCsrfToken = () => {
   }
 };
 
-// パフォーマンス最適化：非クリティカルリソースの遅延読み込み
+// パフォーマンス最適化：ロード後に非クリティカルリソースを読み込む
 const loadNonCriticalResources = () => {
-  // Intersection Observerを使用して、要素が視界に入った時にリソースを読み込む
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        observer.unobserve(entry.target);
-        const el = entry.target as HTMLElement;
-        const src = el.dataset.src;
-        
-        if (src) {
-          if (src.endsWith('.js')) {
-            import(/* @vite-ignore */ src).catch(console.error);
-          } else if (src.endsWith('.css')) {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = src;
-            document.head.appendChild(link);
+  // Intersection Observerを使用して、リソースが視界に入った時に読み込む
+  const lazyLoadResources = () => {
+    // 遅延読み込み対象の要素を監視
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // 要素が表示領域に入った場合の処理
+          observer.unobserve(entry.target);
+          
+          // 非クリティカルなCSS/JSを読み込む
+          const targetElement = entry.target as HTMLElement;
+          if (targetElement.dataset.src) {
+            const src = targetElement.dataset.src;
+            if (src.endsWith('.js')) {
+              const script = document.createElement('script');
+              script.src = src;
+              script.async = true;
+              document.body.appendChild(script);
+            } else if (src.endsWith('.css')) {
+              const link = document.createElement('link');
+              link.rel = 'stylesheet';
+              link.href = src;
+              document.head.appendChild(link);
+            }
           }
         }
-      }
+      });
+    }, { rootMargin: '200px' });
+    
+    // LazyLoad対象の要素を監視
+    document.querySelectorAll('[data-lazy]').forEach(el => {
+      observer.observe(el);
     });
-  }, { rootMargin: '200px' });
+  };
 
-  // LazyLoad対象の要素を監視
-  document.querySelectorAll('[data-lazy]').forEach(el => observer.observe(el));
-};
-
-// アプリケーション初期化
-const initApp = () => {
-  // CSRFトークンを設定
-  setCsrfToken();
-
-  // 非クリティカルリソースの遅延読み込みを設定
+  // 画面が表示された後に実行
   if ('requestIdleCallback' in window) {
     // @ts-ignore
-    requestIdleCallback(loadNonCriticalResources, { timeout: 2000 });
+    window.requestIdleCallback(() => {
+      lazyLoadResources();
+    }, { timeout: 2000 });
   } else {
-    setTimeout(loadNonCriticalResources, 1000);
+    // フォールバック
+    setTimeout(lazyLoadResources, 1000);
   }
-
-  // Reactアプリケーションをレンダリング
-  ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <HelmetProvider>
-          <App />
-          <Toaster />
-        </HelmetProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
-  );
 };
 
-// DOMContentLoadedイベント後にアプリケーションを初期化
+// アプリケーション初期化時にCSRFトークンを設定
+setCsrfToken();
+
+// DOMContentLoadedイベント後に非クリティカルリソースを読み込む
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
+  document.addEventListener('DOMContentLoaded', loadNonCriticalResources);
 } else {
-  initApp();
+  loadNonCriticalResources();
 }
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <HelmetProvider>
+        <App />
+        <Toaster />
+      </HelmetProvider>
+    </QueryClientProvider>
+  </React.StrictMode>,
+)
