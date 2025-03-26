@@ -191,7 +191,7 @@ const BreadcrumbComponent = () => {
         {/* ホームリンク - 常に表示 */}
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link href="/">
+            <Link href="/" className="transition-colors hover:text-foreground" aria-label="ホームページへ戻る">
               <Home className={homeIconStyle} />
             </Link>
           </BreadcrumbLink>
