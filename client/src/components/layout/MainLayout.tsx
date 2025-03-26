@@ -5,6 +5,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import { useLocation } from "wouter";
 import { useThemeStore } from "@/stores/themeStore";
 import { createPortal } from "react-dom";
+import BreadcrumbComponent from "./Breadcrumb";
 
 // ロゴコンポーネントをメモ化して不要な再レンダリングを防止
 const Logo = memo(() => {
@@ -358,6 +359,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       {/* メインコンテンツ */}
       <div className="h-12"></div>
+      
+      {/* パンくずリスト */}
+      <div className="container mx-auto mt-1 sm:mt-2 md:mt-3">
+        <BreadcrumbComponent />
+      </div>
+      
       <main className={`${mainContentClass} relative z-10`} role="main">
         {children}
       </main>
