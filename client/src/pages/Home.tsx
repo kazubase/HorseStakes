@@ -873,7 +873,7 @@ export default function Home() {
 
   return (
     <MainLayout>
-      <div className="space-y-4 sm:space-y-5 relative min-h-screen pb-8">
+      <div className="space-y-4 sm:space-y-5 relative min-h-screen pb-8 -mt-6 sm:-mt-6">
         <div className="absolute inset-0 from-primary/10 via-background/5 to-transparent opacity-30 h-full w-full" />
         
         {/* レース情報カード - 最初に表示する重要コンテンツ */}

@@ -56,43 +56,116 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap">
+    <!-- クリティカルなCSSをインライン化 -->
     <style>
-      /* フォントの直接インポート */
-      @import url('https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap');
-      
-      /* フォントフォールバック用のスタイル */
-      @font-face {
-        font-family: 'Yuji Syuku Fallback';
-        src: local('serif');
-        size-adjust: 105%;
-        ascent-override: 90%;
-        descent-override: 10%;
-        line-gap-override: 10%;
-      }
-      
-      /* フォントロード前のスタイル */
-      .yuji-syuku {
-        font-family: 'Yuji Syuku', 'Yuji Syuku Fallback', serif;
-      }
-      
-      /* フォントロード後のスタイル */
-      .fonts-loaded .yuji-syuku {
-        font-family: 'Yuji Syuku', serif !important;
+      /* ベースとなるクリティカルなスタイル */
+      :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 221.2 83.2% 53.3%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 221.2 83.2% 53.3%;
+        --radius: 0.5rem;
       }
 
-      /* 既存のfont-yujiクラスにも適用 */
-      .font-yuji {
-        font-family: 'Yuji Syuku', 'Yuji Syuku Fallback', serif;
+      .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 217.2 91.2% 59.8%;
+        --primary-foreground: 222.2 47.4% 11.2%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 224.3 76.3% 48%;
       }
-      
-      /* フォントロード後のスタイル */
-      .fonts-loaded .font-yuji {
-        font-family: 'Yuji Syuku', serif !important;
+
+      * {
+        border-color: hsl(var(--border));
+      }
+
+      body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-feature-settings: "rlig" 1, "calt" 1;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* フォントの最適化 */
+      @font-face {
+        font-family: 'Yuji Syuku';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/yujisyuku/v5/BngNUXdTV3vO6Lw5ApOPqPfmxA.woff2) format('woff2');
+        unicode-range: U+4E00-9FFF;
+      }
+
+      .yuji-syuku {
+        font-family: 'Yuji Syuku', serif;
+      }
+
+      /* レイアウトの基本スタイル */
+      .container {
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      @media (min-width: 640px) {
+        .container {
+          max-width: 640px;
+        }
+      }
+
+      @media (min-width: 768px) {
+        .container {
+          max-width: 768px;
+        }
+      }
+
+      @media (min-width: 1024px) {
+        .container {
+          max-width: 1024px;
+        }
       }
     </style>
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap">
-    </noscript>
+
+    <!-- 非クリティカルなCSSを遅延読み込み -->
+    <link rel="preload" href="/src/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/src/index.css"></noscript>
+
+    <!-- フォントの最適化 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/yujisyuku/v5/BngNUXdTV3vO6Lw5ApOPqPfmxA.woff2" crossorigin>
     <script>
       // フォントのフォールバック処理 - シンプルかつ確実に
       (function() {
@@ -136,7 +209,7 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx" async></script>
     
     <!-- WebApplication構造化データ -->
     <script type="application/ld+json">
