@@ -15,12 +15,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useThemeStore } from "@/stores/themeStore";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAtom } from 'jotai';
+import { horsesAtom, raceAtom } from '@/stores/bettingStrategy';
 
 export default function PredictionSettings() {
   const { id } = useParams();
   const [_, setLocation] = useLocation();
   const { theme } = useThemeStore();
   const [activeTab, setActiveTab] = useState("win");
+  
+  // Get data from Jotai atoms if available
+  const [storedHorses] = useAtom(horsesAtom);
+  const [storedRace] = useAtom(raceAtom);
   
   // 単勝確率の状態
   const [winProbabilities, setWinProbabilities] = useState<{ [key: number]: number }>({});
@@ -41,29 +47,33 @@ export default function PredictionSettings() {
   
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Use stored race data if available, otherwise fetch from API
   const { data: race, isLoading: raceLoading } = useQuery<Race>({
     queryKey: [`/api/races/${id}`],
-    enabled: !!id,
+    enabled: !!id && !storedRace,
     staleTime: Infinity,
     gcTime: Infinity,
+    initialData: storedRace || undefined
   });
 
+  // Use stored horses data if available, otherwise fetch from API
   const { data: horses = [], isLoading: horsesLoading } = useQuery<Horse[]>({
     queryKey: [`/api/horses/${id}`],
-    enabled: !!id,
+    enabled: !!id && (!storedHorses || storedHorses.length === 0),
     staleTime: Infinity,
     gcTime: Infinity,
+    initialData: storedHorses && storedHorses.length > 0 ? storedHorses : undefined
   });
 
   const { data: latestOdds = [], isLoading: oddsLoading } = useQuery<TanOddsHistory[]>({
     queryKey: [`/api/tan-odds-history/latest/${id}`],
-    enabled: !!id,
+    enabled: !!id && activeTab === "win",
     staleTime: 60 * 1000,
   });
 
   const { data: fukuOdds = [], isLoading: fukuOddsLoading } = useQuery<any[]>({
     queryKey: [`/api/fuku-odds/latest/${id}`],
-    enabled: !!id,
+    enabled: !!id && activeTab === "place",
     staleTime: 60 * 1000,
   });
 

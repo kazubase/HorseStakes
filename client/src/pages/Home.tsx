@@ -1,4 +1,4 @@
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,12 +13,19 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import { groupBy } from 'lodash';
 import { useThemeStore } from "@/stores/themeStore";
+import { useAtom } from 'jotai';
+import { horsesAtom, raceAtom } from '@/stores/bettingStrategy';
 
 export default function Home() {
   const { id } = useParams();
   const { theme } = useThemeStore();
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [_, navigate] = useLocation();
+  
+  // Store race and horses in Jotai atoms for sharing with other components
+  const [_storedHorses, setStoredHorses] = useAtom(horsesAtom);
+  const [_storedRace, setStoredRace] = useAtom(raceAtom);
 
   // idがない場合はRaceListを表示
   if (!id) {
@@ -894,6 +901,46 @@ export default function Home() {
     });
   }, []);
 
+  const handleNavigateToPrediction = useCallback(() => {
+    // Make sure race and horses data is already in the cache before navigating
+    // This way PredictionSettings.tsx won't need to fetch them again
+    if (id) {
+      if (race && horses) {
+        // Data is already in cache, just navigate
+        navigate(`/predict/${id}`);
+      } else {
+        // Prefetch data if not already loaded
+        Promise.all([
+          !race && queryClient.prefetchQuery({
+            queryKey: [`/api/races/${id}`],
+            staleTime: Infinity,
+            gcTime: Infinity,
+          }),
+          !horses.length && queryClient.prefetchQuery({
+            queryKey: [`/api/horses/${id}`],
+            staleTime: Infinity,
+            gcTime: Infinity,
+          })
+        ]).then(() => {
+          navigate(`/predict/${id}`);
+        });
+      }
+    }
+  }, [id, race, horses, navigate, queryClient]);
+
+  // Update the Jotai atoms when race and horses data is loaded
+  useEffect(() => {
+    if (race) {
+      setStoredRace(race);
+    }
+  }, [race, setStoredRace]);
+  
+  useEffect(() => {
+    if (horses && horses.length > 0) {
+      setStoredHorses(horses);
+    }
+  }, [horses, setStoredHorses]);
+
   if (!race && !raceLoading) return null;
 
   return (
@@ -939,7 +986,7 @@ export default function Home() {
               {!raceLoading && (
                 <div className="text-right flex flex-col items-end gap-2">
                   <Button 
-                    onClick={() => window.location.href = `/predict/${id}`}
+                    onClick={handleNavigateToPrediction}
                     size="sm"
                     className="relative overflow-hidden group text-xs sm:text-sm px-2 py-1 h-auto sm:h-9 sm:px-3 sm:py-2"
                   >
@@ -1285,7 +1332,7 @@ export default function Home() {
           <Button 
             size="lg" 
             className="w-full max-w-md h-16 relative overflow-hidden group"
-            onClick={() => window.location.href = `/predict/${id}`}
+            onClick={handleNavigateToPrediction}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative flex items-center justify-center">

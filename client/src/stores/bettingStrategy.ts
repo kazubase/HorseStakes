@@ -5,6 +5,7 @@ import type { GeminiAnalysisResult } from '@/lib/geminiAnalysis';
 import type { HorseData } from '@/lib/betEvaluation';
 import type { BettingOption } from '@/lib/betEvaluation';
 import type { BetCorrelation } from '@/lib/geminiApi';
+import type { Race } from '@db/schema';
 
 // ステップ管理
 export type BettingStep = 'ANALYSIS' | 'SELECTION' | 'PORTFOLIO';
@@ -12,6 +13,7 @@ export const currentStepAtom = atom<BettingStep>('ANALYSIS');
 
 // 基本データ
 export const horsesAtom = atom<Horse[] | null>(null);
+export const raceAtom = atom<Race | null>(null);
 export const winProbsAtom = atom<Record<string, number>>({});
 export const placeProbsAtom = atom<Record<string, number>>({});
 
