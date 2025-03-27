@@ -349,13 +349,63 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     }
   };
 
+  // 券種に基づいて必要なシミュレーション回数を決定する関数
+  const determineOptimalIterations = (bets: BetProposal[]): number => {
+    // 選択された馬券の中で、最も的中確率の低い券種を特定
+    let lowestPriorityType = "";
+
+    // 優先度の高い券種を探す（複数種類ある場合は最も回数が多いものを採用）
+    bets.forEach(bet => {
+      const normalizedType = normalizeTicketType(bet.type);
+      
+      // 3連単がある場合は最優先
+      if (normalizedType === "3連単") {
+        lowestPriorityType = "3連単";
+      } 
+      // 3連単がなく、かつまだ馬連/馬単/3連複が見つかっておらず、現在のベットが馬連/馬単/3連複の場合
+      else if (lowestPriorityType !== "3連単" && 
+          lowestPriorityType !== "馬連" && lowestPriorityType !== "馬単" && lowestPriorityType !== "3連複" &&
+          (normalizedType === "馬連" || normalizedType === "馬単" || normalizedType === "3連複")) {
+        lowestPriorityType = normalizedType;
+      }
+      // ここまで優先度の高い券種がなく、現在のベットが枠連/ワイドの場合
+      else if (lowestPriorityType !== "3連単" && 
+          lowestPriorityType !== "馬連" && lowestPriorityType !== "馬単" && lowestPriorityType !== "3連複" &&
+          lowestPriorityType !== "枠連" && lowestPriorityType !== "ワイド" &&
+          (normalizedType === "枠連" || normalizedType === "ワイド")) {
+        lowestPriorityType = normalizedType;
+      }
+      // 他に何も見つかっておらず、現在のベットが単勝/複勝の場合
+      else if (lowestPriorityType === "" && (normalizedType === "単勝" || normalizedType === "複勝")) {
+        lowestPriorityType = normalizedType;
+      }
+    });
+
+    // 券種に基づいて固定のシミュレーション回数を返す
+    if (lowestPriorityType === "3連単") {
+      return 100000;
+    } else if (lowestPriorityType === "馬連" || lowestPriorityType === "馬単" || lowestPriorityType === "3連複") {
+      return 50000;
+    } else {
+      // 単勝、複勝、またはその他の券種
+      return 30000;
+    }
+  };
+
   // モンテカルロシミュレーション関数を修正
-  const runMonteCarloSimulation = (bets: BetProposal[], iterations: number = 10000) => {
+  const runMonteCarloSimulation = (bets: BetProposal[], iterations?: number) => {
+    // 最適なシミュレーション回数を決定（引数で指定された場合はそれを優先）
+    const optimalIterations = iterations || determineOptimalIterations(bets);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`モンテカルロシミュレーション - 最適化されたシミュレーション回数: ${optimalIterations}回`);
+    }
+    
     // 最初の1回だけログを出力するフラグ
     let loggedFirstSimulation = false;
     const results: number[] = [];
     
-    for (let i = 0; i < iterations; i++) {
+    for (let i = 0; i < optimalIterations; i++) {
       // 最初の1回目だけログを出力（開発環境でのみ）
       const shouldLog = process.env.NODE_ENV === 'development' && i === 0 && !loggedFirstSimulation;
       
@@ -443,7 +493,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     // 最小値と最大値から適切なバケット幅を計算
     const range = stats.confidenceInterval[1] - stats.confidenceInterval[0];
     const bucketCount = 20; // バケット数を固定
-    const bucketWidth = Math.ceil(range / bucketCount / 1000) * 1000; // 1000円単位に丸める
+    const bucketWidth = Math.max(1000, Math.ceil(range / bucketCount / 1000) * 1000); // 1000円単位に丸める、最小値は1000円
     
     if (process.env.NODE_ENV === 'development') {
       console.log(`分布データ生成: 範囲=${range.toLocaleString()}円, バケット数=${bucketCount}, バケット幅=${bucketWidth.toLocaleString()}円`);
@@ -460,7 +510,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     
     let currentValue = minBucketValue; // 投資額を考慮した下限から開始
     
-    while (currentValue <= stats.confidenceInterval[1]) {
+    while (currentValue <= stats.confidenceInterval[1] && bucketRanges.length < 100) { // 無限ループ防止の上限を追加
       bucketRanges.push(currentValue);
       currentValue += bucketWidth;
     }
@@ -504,7 +554,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     // 開発環境でのみ統計情報をログ出力
     if (process.env.NODE_ENV === 'development') {
       console.group('モンテカルロシミュレーション - 統計情報');
-      console.log(`シミュレーション回数: ${iterations}回`);
+      console.log(`シミュレーション回数: ${optimalIterations}回`);
       console.log(`平均収益: ${mean.toLocaleString()}円`);
       console.log(`中央値: ${median.toLocaleString()}円`);
       console.log(`最小値: ${min.toLocaleString()}円`);
@@ -581,7 +631,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       const firstHorseSecondProb = (placeProbs[first] - winProbs[first]) / 2;
       
       // 全体の2着確率の合計（100%から1着馬の2着確率を引く）
-      const totalSecondProb = 100 - firstHorseSecondProb;
+      const totalSecondProb = Math.max(0.1, 100 - firstHorseSecondProb);
       
       // 2着の乱数値を生成（0～totalSecondProb）
       const secondPlaceRand = Math.random() * totalSecondProb;
@@ -627,7 +677,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       const secondHorseThirdProb = (placeProbs[second] - winProbs[second]) / 2;
       
       // 全体の3着確率の合計（100%から1着馬と2着馬の3着確率を引く）
-      const totalThirdProb = 100 - firstHorseThirdProb - secondHorseThirdProb;
+      const totalThirdProb = Math.max(0.1, 100 - firstHorseThirdProb - secondHorseThirdProb);
       
       // 3着の乱数値を生成（0～totalThirdProb）
       const thirdPlaceRand = Math.random() * totalThirdProb;
