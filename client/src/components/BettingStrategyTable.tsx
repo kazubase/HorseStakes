@@ -571,25 +571,45 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       const remainingHorses = horseNumbers.filter(h => h !== first);
       const adjustedPlaceProbs: Record<number, number> = {};
       
-      // 複勝率を正規化（1着を除いた馬で100%になるように）
-      let totalPlaceProb = 0;
+      // 1着の馬の複勝確率を取得
+      const firstHorsePlaceProb = placeProbs[first] || 0;
+      
+      // 残りの確率パイを計算（300% - 1着馬の複勝確率）
+      const remainingProbPie = 300 - firstHorsePlaceProb;
+      
+      // 残りの馬の複勝確率を正規化（残りの確率パイを分配）
+      let totalRemainingProb = 0;
       remainingHorses.forEach(horse => {
-        totalPlaceProb += placeProbs[horse] || 0;
+        totalRemainingProb += placeProbs[horse] || 0;
       });
       
       remainingHorses.forEach(horse => {
-        adjustedPlaceProbs[horse] = ((placeProbs[horse] || 0) / totalPlaceProb) * 100;
+        adjustedPlaceProbs[horse] = ((placeProbs[horse] || 0) / totalRemainingProb) * remainingProbPie;
       });
+      
+      if (devShouldLog) {
+        console.log('確率再定義:');
+        console.log(`  1着馬(${first})の複勝確率: ${firstHorsePlaceProb}%`);
+        console.log(`  残りの確率パイ: ${remainingProbPie}%`);
+        console.log('2着決定用の正規化確率:', adjustedPlaceProbs);
+      }
       
       // 2着のシミュレート
-      const secondPlaceRand = Math.random() * 100;
+      const secondPlaceRand = Math.random() * remainingProbPie;
       let accumPlaceProb = 0;
       let second = remainingHorses[0];
+      
+      if (devShouldLog) {
+        console.log(`2着決定の乱数値: ${secondPlaceRand.toFixed(2)} / ${remainingProbPie.toFixed(2)}`);
+      }
       
       for (const horseNumber of remainingHorses) {
         accumPlaceProb += adjustedPlaceProbs[horseNumber];
         if (secondPlaceRand <= accumPlaceProb) {
           second = horseNumber;
+          if (devShouldLog) {
+            console.log(`→ 2着決定: 馬番${horseNumber}`);
+          }
           break;
         }
       }
@@ -598,23 +618,45 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       const finalHorses = remainingHorses.filter(h => h !== second);
       const finalPlaceProbs: Record<number, number> = {};
       
-      let finalTotalProb = 0;
+      // 2着の馬の複勝確率を取得
+      const secondHorsePlaceProb = placeProbs[second] || 0;
+      
+      // 残りの確率パイを計算（300% - 1着馬の複勝確率 - 2着馬の複勝確率）
+      const finalProbPie = 300 - firstHorsePlaceProb - secondHorsePlaceProb;
+      
+      // 残りの馬の複勝確率を正規化（残りの確率パイを分配）
+      let totalFinalProb = 0;
       finalHorses.forEach(horse => {
-        finalTotalProb += placeProbs[horse] || 0;
+        totalFinalProb += placeProbs[horse] || 0;
       });
       
       finalHorses.forEach(horse => {
-        finalPlaceProbs[horse] = ((placeProbs[horse] || 0) / finalTotalProb) * 100;
+        finalPlaceProbs[horse] = ((placeProbs[horse] || 0) / totalFinalProb) * finalProbPie;
       });
       
-      const thirdPlaceRand = Math.random() * 100;
+      if (devShouldLog) {
+        console.log('3着決定用の確率再定義:');
+        console.log(`  2着馬(${second})の複勝確率: ${secondHorsePlaceProb}%`);
+        console.log(`  残りの確率パイ: ${finalProbPie}%`);
+        console.log('3着決定用の正規化確率:', finalPlaceProbs);
+      }
+      
+      // 3着のシミュレート
+      const thirdPlaceRand = Math.random() * finalProbPie;
       let accumFinalProb = 0;
       let third = finalHorses[0];
+      
+      if (devShouldLog) {
+        console.log(`3着決定の乱数値: ${thirdPlaceRand.toFixed(2)} / ${finalProbPie.toFixed(2)}`);
+      }
       
       for (const horseNumber of finalHorses) {
         accumFinalProb += finalPlaceProbs[horseNumber];
         if (thirdPlaceRand <= accumFinalProb) {
           third = horseNumber;
+          if (devShouldLog) {
+            console.log(`→ 3着決定: 馬番${horseNumber}`);
+          }
           break;
         }
       }
@@ -833,8 +875,10 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         break;
       
       case '枠連':
-        if (devShouldLog) console.log(`馬券判定: ${bet.type} (正規化: ${normalizedType})`);
-        if (devShouldLog) console.log(`買い目: ${JSON.stringify(bet.horses)}`);
+        if (devShouldLog) {
+          console.group(`枠連判定: ${bet.type}`);
+          console.log('買い目:', bet.horses);
+        }
         
         // 枠番を直接抽出（"1-7" → [1,7] のような変換）
         const frameNumbers = bet.horses.flatMap(h => {
@@ -845,8 +889,10 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           return h.split('-').map(num => parseInt(num.trim()));
         });
         
-        if (devShouldLog) console.log(`枠番抽出: "${bet.horses.join('-')}" → ${JSON.stringify(frameNumbers)}`);
-        if (devShouldLog) console.log(`抽出された枠番: ${frameNumbers}`);
+        if (devShouldLog) {
+          console.log('抽出された枠番:', frameNumbers);
+          console.log('馬番→枠番マッピング:', horseToFrameMap);
+        }
         
         // レース結果から1着と2着の馬番を取得（変換済みの馬番を使用）
         const firstHorse = actualFirst;
@@ -856,19 +902,26 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         const firstFrame = getFrameNumber(firstHorse);
         const secondFrame = getFrameNumber(secondHorse);
         
-        if (devShouldLog) console.log(`レース結果の枠番: 1着=${firstHorse}→${firstFrame}, 2着=${secondHorse}→${secondFrame}`);
+        if (devShouldLog) {
+          console.log('レース結果:');
+          console.log(`  1着: 馬番${firstHorse} → 枠番${firstFrame}`);
+          console.log(`  2着: 馬番${secondHorse} → 枠番${secondFrame}`);
+          console.log('買い目枠番:', frameNumbers);
+        }
         
         // 枠連の的中判定（順序は関係ない）
-        const isWinning = (
-          // 同枠の場合
-          (frameNumbers[0] === frameNumbers[1] && firstFrame === secondFrame && firstFrame === frameNumbers[0]) ||
-          // 異なる枠の場合（順序不問）
-          (frameNumbers.includes(firstFrame) && frameNumbers.includes(secondFrame))
-        );
+        // 枠番の組み合わせが一致するかどうかのみを判定
+        const resultFrames = [firstFrame, secondFrame].sort();
+        const betFrames = [...frameNumbers].sort();
+        const isWinning = resultFrames[0] === betFrames[0] && resultFrames[1] === betFrames[1];
         
-        if (devShouldLog) console.log(`枠連判定: 買い目枠番=(${frameNumbers.join(', ')}), 結果枠番=(${firstFrame}, ${secondFrame}) → ${isWinning}`);
-        
-        if (devShouldLog) console.groupEnd(); // 枠連判定のグループを閉じる
+        if (devShouldLog) {
+          console.log('的中判定:');
+          console.log(`  レース結果枠番: ${resultFrames.join('-')}`);
+          console.log(`  買い目枠番: ${betFrames.join('-')}`);
+          console.log(`  最終結果: ${isWinning ? '的中' : '不的中'}`);
+          console.groupEnd();
+        }
         
         return isWinning;
       
