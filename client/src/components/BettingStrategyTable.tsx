@@ -32,7 +32,7 @@ interface DistributionDataPoint {
 export const BettingStrategyTable = memo(function BettingStrategyTable({ 
   strategy, 
   totalBudget 
-}: BettingStrategyTableProps) {
+}: BettingStrategyTableProps): JSX.Element {
   // レンダリング回数の追跡
   const renderCount = useRef(0);
   // テーマの取得
@@ -405,14 +405,24 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     let loggedFirstSimulation = false;
     const results: number[] = [];
     
+    // 的中時の収益率を記録する配列を追加
+    const winningRates: number[] = [];
+    
+    // 的中したシミュレーション回数を追跡
+    let winCount = 0;
+    
+    // 投資額を先に計算しておく（ループ外で一度だけ計算）
+    const totalInvestment = bets.reduce((sum, bet) => sum + bet.stake, 0);
+    
     for (let i = 0; i < optimalIterations; i++) {
       // 最初の1回目だけログを出力（開発環境でのみ）
       const shouldLog = process.env.NODE_ENV === 'development' && i === 0 && !loggedFirstSimulation;
       
       let totalReturn = 0;
+      let anyBetWon = false; // 的中したかどうかのフラグ
       
-      // 各シミュレーションでレース結果を生成
-      const raceResult = simulateRaceResult(shouldLog);
+      // レース結果をシミュレート
+      const raceResult = simulateRaceResult(shouldLog && !loggedFirstSimulation);
       
       if (shouldLog && process.env.NODE_ENV === 'development') {
         console.group('モンテカルロシミュレーション - 1回目の実行');
@@ -439,12 +449,23 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
           if (shouldLog && process.env.NODE_ENV === 'development') {
             console.log(`  払戻金: ${returnAmount.toLocaleString()}円 (${roundedOdds.toFixed(1)} × ${bet.stake.toLocaleString()}円)`);
           }
+          anyBetWon = true; // 的中したことを記録
+          // 個別の馬券ごとの収益率は記録しない（後で全体の収益率を記録する）
         }
       });
       
       // 投資額を引いて純利益を計算
-      const totalInvestment = bets.reduce((sum, bet) => sum + bet.stake, 0);
       const netProfit = totalReturn - totalInvestment;
+      
+      // 的中があった場合は、総払戻金÷総投資額を収益率として記録
+      if (anyBetWon) {
+        winCount++; // 的中カウントを増やす
+        winningRates.push(totalReturn / totalInvestment);
+        
+        if (shouldLog && process.env.NODE_ENV === 'development') {
+          console.log(`的中時の収益率: ${(totalReturn / totalInvestment).toFixed(2)} (${totalReturn.toLocaleString()}円 ÷ ${totalInvestment.toLocaleString()}円)`);
+        }
+      }
       
       if (shouldLog && process.env.NODE_ENV === 'development') {
         console.log(`総投資額: ${totalInvestment.toLocaleString()}円`);
@@ -466,8 +487,25 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
     const min = results[0];
     const max = results[results.length - 1];
     
-    // 勝率を計算（利益が0より大きい割合に修正）
-    const winRate = results.filter(r => r > 0).length / results.length;
+    // 勝率を正確に計算（的中があったシミュレーション回数 ÷ 総シミュレーション回数）
+    const winRate = winCount / optimalIterations;
+    
+    // 不的中率を計算（投資額のマイナス値の結果の数 ÷ 総結果数）
+    const nonWinCount = results.filter(r => r === -totalInvestment).length;
+    const nonWinRate = (nonWinCount / results.length) * 100; // パーセンテージ形式に変更
+    
+    // 不的中率と的中率（1 - 不的中率）が勝率と一致するかチェック
+    const calculatedWinRate = 1 - (nonWinRate / 100); // パーセンテージから割合に戻す
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`的中回数: ${winCount}/${optimalIterations} (${(winRate * 100).toFixed(2)}%)`);
+      console.log(`不的中率から計算した的中率: ${(calculatedWinRate * 100).toFixed(2)}%`);
+      
+      // 差異があれば警告を表示
+      if (Math.abs(winRate - calculatedWinRate) > 0.01) {
+        console.warn(`警告: 勝率と不的中率からの計算に差異があります: ${(Math.abs(winRate - calculatedWinRate) * 100).toFixed(2)}%`);
+      }
+    }
     
     // 95%信頼区間
     const lowerBound = results[Math.floor(results.length * 0.025)];
@@ -482,74 +520,128 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       confidenceInterval: [lowerBound, upperBound]
     };
 
-    // 95%信頼区間内のデータのみをフィルタリング
-    const filteredResults = results.filter(
-      r => r >= stats.confidenceInterval[0] && r <= stats.confidenceInterval[1]
-    );
-
     // 分布データの生成を改善
     const distributionData: DistributionDataPoint[] = [];
     
     // 最小値と最大値から適切なバケット幅を計算
-    const range = stats.confidenceInterval[1] - stats.confidenceInterval[0];
-    const bucketCount = 20; // バケット数を固定
-    const bucketWidth = Math.max(1000, Math.ceil(range / bucketCount / 1000) * 1000); // 1000円単位に丸める、最小値は1000円
+    // 横軸の最小値を0円に設定
+    const minDisplayValue = 0; // 表示上の最小値を0円に設定
+    // 最大表示値は常に最大値を使用（95%信頼区間に依存しない）
+    const maxDisplayValue = stats.max > 0 ? stats.max : 100000;
+    
+    // バケット幅を調整（プラス領域の分布をより詳細に）
+    const bucketCount = 40; // より細かく表示するためバケット数を増やす
+    // バケット幅を計算する際、最大値が必ず含まれるようにする
+    const bucketWidth = Math.max(1000, Math.ceil(maxDisplayValue / bucketCount / 1000) * 1000);
+    const displayRange = maxDisplayValue - minDisplayValue;
+    
+    // 余白として最大値の後に追加するバケットの数
+    const paddingBuckets = 3; // 追加する余白バケット数
     
     if (process.env.NODE_ENV === 'development') {
-      console.log(`分布データ生成: 範囲=${range.toLocaleString()}円, バケット数=${bucketCount}, バケット幅=${bucketWidth.toLocaleString()}円`);
+      console.log(`分布データ生成: 表示範囲=${displayRange.toLocaleString()}円, バケット数=${bucketCount}, バケット幅=${bucketWidth.toLocaleString()}円, 余白バケット数=${paddingBuckets}`);
     }
     
-    // バケットの範囲を設定（より自然な区切りに修正）
+    // バケットの範囲を設定（0円から始める）
     const bucketRanges: number[] = [];
+    let currentValue = minDisplayValue; // 0円から開始
     
-    // 投資額を考慮して下限を設定（最小値は投資額のマイナス値を下回らないようにする）
-    const totalInvestment = bets.reduce((sum, bet) => sum + bet.stake, 0);
-    let minBucketValue = Math.max(stats.confidenceInterval[0], -totalInvestment);
-    // 1000円単位に切り捨て
-    minBucketValue = Math.floor(minBucketValue / 1000) * 1000;
-    
-    let currentValue = minBucketValue; // 投資額を考慮した下限から開始
-    
-    while (currentValue <= stats.confidenceInterval[1] && bucketRanges.length < 100) { // 無限ループ防止の上限を追加
+    // 十分な数のバケットを生成（最大値を必ず含むように）
+    while (currentValue <= maxDisplayValue && bucketRanges.length < 100) {
       bucketRanges.push(currentValue);
       currentValue += bucketWidth;
     }
     
-    // 最後のバケットが信頼区間の上限を超えていない場合は追加
-    if (bucketRanges[bucketRanges.length - 1] < stats.confidenceInterval[1]) {
-      bucketRanges.push(stats.confidenceInterval[1]);
+    // 最後のバケットが最大値を含むことを確認
+    if (bucketRanges[bucketRanges.length - 1] < maxDisplayValue) {
+      bucketRanges.push(maxDisplayValue);
+    }
+    
+    // 余白バケットを追加
+    currentValue = bucketRanges[bucketRanges.length - 1];
+    for (let i = 0; i < paddingBuckets; i++) {
+      currentValue += bucketWidth;
+      bucketRanges.push(currentValue);
     }
     
     if (process.env.NODE_ENV === 'development') {
       console.log('投資額:', totalInvestment.toLocaleString());
       console.log('理論上の最小値:', (-totalInvestment).toLocaleString());
-      console.log('バケット範囲:', bucketRanges.map(v => v.toLocaleString()).join(', '));
+      console.log('表示用バケット範囲:', bucketRanges.map(v => v.toLocaleString()).join(', '));
+      console.log('最大値:', maxDisplayValue.toLocaleString(), '最終バケット:', bucketRanges[bucketRanges.length - 1].toLocaleString());
+      console.log('余白バケット数:', paddingBuckets, '余白バケット最終値:', bucketRanges[bucketRanges.length - 1].toLocaleString());
     }
     
-    // 各バケットのカウントを計算
+    // プラス領域（0円以上）のみの結果データを用意
+    const positiveResults = results.filter(r => r >= 0);
+    
+    // 実際のデータがない場合の警告を追加
+    if (positiveResults.length === 0 && process.env.NODE_ENV === 'development') {
+      console.warn('プラス領域のデータが見つかりません。全て負の値の可能性があります。');
+    }
+    
+    // 最大値が含まれるデータが存在するか確認
+    const maxValueCount = positiveResults.filter(r => r === maxDisplayValue).length;
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`最大値(${maxDisplayValue.toLocaleString()}円)のデータ数: ${maxValueCount}件`);
+    }
+    
+    // 各バケットのカウントを計算 - 実際のデータのみを使用
     bucketRanges.forEach((bucketStart, i) => {
       if (i === bucketRanges.length - 1) return; // 最後の要素はスキップ（終点としてのみ使用）
       
       const bucketEnd = bucketRanges[i + 1];
-      const count = filteredResults.filter(r => r >= bucketStart && r < bucketEnd).length;
+      let count;
       
-      if (count > 0) { // カウントが0のバケットは除外
-        // 最初のバケットは下限値を使用し、それ以外は平均値を使用
-        const displayValue = i === 0 
-          ? bucketStart 
-          : Math.round((bucketStart + bucketEnd) / 2);
-        
-        distributionData.push({
-          value: displayValue,
-          count,
-          percentage: (count / filteredResults.length) * 100
-        });
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`バケット[${bucketStart.toLocaleString()}円～${bucketEnd.toLocaleString()}円]: ${count}件 (${((count / filteredResults.length) * 100).toFixed(2)}%), 表示値: ${displayValue.toLocaleString()}円`);
-        }
+      // 最後のバケットは最大値を含める（<=を使用）
+      if (i === bucketRanges.length - 2) {
+        count = positiveResults.filter(r => r >= bucketStart && r <= bucketEnd).length;
+      } else {
+        count = positiveResults.filter(r => r >= bucketStart && r < bucketEnd).length;
+      }
+      
+      // 実際のカウントデータからパーセンテージを計算（全シミュレーション結果に対する割合）
+      const percentage = (count / results.length) * 100;
+      
+      // すべてのバケットを含める（0%のバケットも含めて正確なグラフを描画）
+      const displayValue = Math.round((bucketStart + bucketEnd) / 2);
+      
+      distributionData.push({
+        value: displayValue,
+        count,
+        percentage
+      });
+      
+      if (process.env.NODE_ENV === 'development' && count > 0) {
+        const rangeText = i === bucketRanges.length - 2 
+          ? `${bucketStart.toLocaleString()}円～${bucketEnd.toLocaleString()}円（最大値含む）` 
+          : `${bucketStart.toLocaleString()}円～${bucketEnd.toLocaleString()}円`;
+        console.log(`バケット[${rangeText}]: ${count}件 (${percentage.toFixed(2)}%), 表示値: ${displayValue.toLocaleString()}円`);
       }
     });
+    
+    // 実際のバケットと95%信頼区間の比較をログに出力
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`最大データ値: ${stats.max.toLocaleString()}円, 95%信頼区間上限: ${upperBound.toLocaleString()}円`);
+      console.log(`データポイント数: ${positiveResults.length}件 (${(positiveResults.length / results.length * 100).toFixed(2)}%)`);
+    }
+    
+    // 不的中率（-20,000円）は別途計算して表示しない（0円以上だけ表示）
+    if (process.env.NODE_ENV === 'development') {
+      // 既に計算済みの変数を使用
+      console.log(`不的中: ${nonWinCount}件 (${nonWinRate.toFixed(2)}%), 表示しない`);
+      console.log(`的中率: ${(100 - nonWinRate).toFixed(2)}%`);
+      console.log(`実際の勝率: ${(winRate * 100).toFixed(2)}%`);
+      
+      // 実際のバケットと95%信頼区間の比較をログに出力
+      console.log(`最大データ値: ${stats.max.toLocaleString()}円, 95%信頼区間上限: ${upperBound.toLocaleString()}円`);
+      console.log(`データポイント数: ${positiveResults.length}件 (${(positiveResults.length / results.length * 100).toFixed(2)}%)`);
+    }
+    
+    // バケット処理のみ行い、嘘データや補間は一切行わない
+    if (process.env.NODE_ENV === 'development') {
+      console.log('実際のデータに基づくバケット処理を適用:', distributionData.length === 0 ? '有効なプラスデータなし' : distributionData);
+    }
 
     // 開発環境でのみ統計情報をログ出力
     if (process.env.NODE_ENV === 'development') {
@@ -566,7 +658,8 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
 
     return {
       distributionData,
-      stats
+      stats,
+      winningRates
     };
   };
 
@@ -1085,13 +1178,18 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
       return runMonteCarloSimulation(bets);
     }, [bets]);
     
-    const { distributionData, stats } = simulationResults;
+    const { distributionData, stats, winningRates } = simulationResults;
     
     // 総投資額を計算
-    const totalInvestment = bets.reduce((sum, bet) => sum + bet.stake, 0);
+    const totalInvestment = bets.reduce((sum: number, bet: BetProposal) => sum + bet.stake, 0);
     
     // 収益率を計算（平均収益÷総投資額×100）
     const returnRate = (stats.mean / totalInvestment) * 100;
+    
+    // 的中時の平均収益率を計算
+    const avgWinningRate = winningRates.length > 0
+      ? winningRates.reduce((sum: number, rate: number) => sum + rate, 0) / winningRates.length
+      : 0;
     
     // テーマに依存しない色の設定をメモ化
     const chartColors = useMemo(() => {
@@ -1169,18 +1267,20 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               </defs>
               <XAxis 
                 dataKey="value" 
-                tickFormatter={(value) => `${value >= 0 ? '+' : ''}${value.toLocaleString()}円`}
+                tickFormatter={(value) => `+${value.toLocaleString()}円`}
                 tick={{ fontSize: 10, fill: chartColors.tickColor }}
                 axisLine={{ stroke: chartColors.axisColor }}
                 tickLine={{ stroke: chartColors.axisColor }}
                 interval="preserveStartEnd" // 最初と最後のティックを必ず表示
+                domain={[0, 'auto']} // 0円から始まるように固定
               />
               <YAxis
                 tickFormatter={(value) => `${value.toFixed(1)}%`}
                 tick={{ fontSize: 10, fill: chartColors.tickColor }}
                 axisLine={{ stroke: chartColors.axisColor }}
                 tickLine={{ stroke: chartColors.axisColor }}
-                domain={[0, 'auto']}
+                domain={[0, 'auto']} 
+                allowDataOverflow={false}
               />
               <Tooltip 
                 formatter={(value: any, name: string) => {
@@ -1191,7 +1291,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                     const color = getValueColor(value);
                     return [
                       <span style={{ color }}>
-                        {`${value >= 0 ? '+' : ''}${value.toLocaleString()}円`}
+                        {`+${value.toLocaleString()}円`}
                       </span>, 
                       '収益'
                     ];
@@ -1201,7 +1301,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                   // 収益値に基づいて色を設定（数字部分のみ）
                   const color = getValueColor(value);
                   return <span>
-                    収益: <span style={{ color }}>{`${value >= 0 ? '+' : ''}${value.toLocaleString()}円`}</span>
+                    収益: <span style={{ color }}>{`+${value.toLocaleString()}円`}</span>
                   </span>;
                 }}
                 contentStyle={{
@@ -1229,6 +1329,11 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
                 stroke={chartColors.strokeColor}
                 fillOpacity={1} 
                 fill={`url(#colorProfit)`} 
+                isAnimationActive={true}
+                animationDuration={600}
+                animationEasing="ease-out"
+                connectNulls={false} // 0%の点はつながないように
+                baseValue={0} // ベース値を0に設定
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -1255,12 +1360,12 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             <div className={cn(
               "text-xs max-sm:text-[11px]",
               chartColors.statsMutedText
-            )}>平均収益率</div>
+            )}>買い目オッズ</div>
             <div className={cn(
               "text-lg font-bold max-sm:text-base",
               chartColors.returnRateTextColor
             )}>
-              {returnRate >= 0 ? '+' : ''}{returnRate.toFixed(1)}%
+              ×{avgWinningRate.toFixed(1)}
             </div>
           </div>
           <div className={cn(
@@ -1275,27 +1380,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               "text-lg font-bold max-sm:text-base",
               chartColors.profitTextColor
             )}>
-              {(bets.reduce((sum, bet) => sum + (bet.probability * (bet.odds || Number(bet.expectedReturn / bet.stake)) * bet.stake), 0) / bets.reduce((sum, bet) => sum + bet.stake, 0)).toFixed(2)}
-            </div>
-          </div>
-        </div>
-        
-        <div className={cn(
-          "p-3 rounded-lg max-sm:p-2",
-          chartColors.statsBgColor
-        )}>
-          <div className={cn(
-            "text-xs mb-2 max-sm:text-[11px] max-sm:mb-1.5",
-            chartColors.statsMutedText
-          )}>95%信頼区間</div>
-          <div className="relative h-6 max-sm:h-5 overflow-hidden rounded-full"
-            style={{
-              background: chartColors.statsConfidenceBackground
-            }}
-          >
-            <div className="absolute inset-0 flex items-center justify-between px-2 text-xs max-sm:text-[11px]">
-              <span className={chartColors.confidenceTextColorMin}>{Math.round(stats.confidenceInterval[0]).toLocaleString()}円</span>
-              <span className={chartColors.confidenceTextColorMax}>+{Math.round(stats.confidenceInterval[1]).toLocaleString()}円</span>
+              {(stats.winRate * avgWinningRate).toFixed(2)}
             </div>
           </div>
         </div>
