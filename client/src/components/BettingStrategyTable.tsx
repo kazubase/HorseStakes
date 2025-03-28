@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useEffect, useCallback } from "react";
+import { memo, useMemo, useRef, useEffect, useCallback, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { GeminiStrategy } from "@/lib/geminiApi";
@@ -16,6 +16,8 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import Masonry from 'react-masonry-css';
 import { useThemeStore } from "@/stores/themeStore";
 import { cn } from "@/lib/utils";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 interface BettingStrategyTableProps {
   strategy: GeminiStrategy;
@@ -1358,9 +1360,15 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             chartColors.statsBgColor
           )}>
             <div className={cn(
-              "text-xs max-sm:text-[11px]",
+              "text-xs max-sm:text-[11px] flex items-center justify-center gap-1",
               chartColors.statsMutedText
-            )}>買い目オッズ</div>
+            )}>
+              買い目オッズ
+              <InfoTooltip 
+                content="買い目が的中したときの平均配当率です。的中した場合の払戻金を投資額で割った値の平均です。"
+                iconSize="sm"
+              />
+            </div>
             <div className={cn(
               "text-lg font-bold max-sm:text-base",
               chartColors.returnRateTextColor
@@ -1373,9 +1381,15 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             chartColors.statsBgColor
           )}>
             <div className={cn(
-              "text-xs max-sm:text-[11px]",
+              "text-xs max-sm:text-[11px] flex items-center justify-center gap-1",
               chartColors.statsMutedText
-            )}>買い目期待値</div>
+            )}>
+              買い目期待値
+              <InfoTooltip 
+                content="買い目の勝率と平均配当率を掛け合わせた値です。1.0以上であれば長期的に利益が期待できます。"
+                iconSize="sm"
+              />
+            </div>
             <div className={cn(
               "text-lg font-bold max-sm:text-base",
               chartColors.profitTextColor
@@ -1435,260 +1449,262 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
         </div>
       </CardHeader>
 
-      <CardContent className="p-2">
-        <div className="space-y-2" ref={tableRef}>
-          {/* Masonryレイアウトを適用 - 券種数に応じて列数を調整 */}
-          <Masonry
-            breakpointCols={{
-              default: Math.min(
-                Object.keys(sortedBets.reduce((acc, bet) => {
-                  const type = normalizeTicketType(bet.type);
-                  if (!acc[type]) acc[type] = [];
-                  acc[type].push(bet);
-                  return acc;
-                }, {} as Record<string, typeof sortedBets>)).length, 
-                4
-              ),    // 券種数と4の小さい方（最大4列）
-              1100: Math.min(
-                Object.keys(sortedBets.reduce((acc, bet) => {
-                  const type = normalizeTicketType(bet.type);
-                  if (!acc[type]) acc[type] = [];
-                  acc[type].push(bet);
-                  return acc;
-                }, {} as Record<string, typeof sortedBets>)).length, 
-                3
-              ),    // 1100px以下でも同様
-              768: Math.min(
-                Object.keys(sortedBets.reduce((acc, bet) => {
-                  const type = normalizeTicketType(bet.type);
-                  if (!acc[type]) acc[type] = [];
-                  acc[type].push(bet);
-                  return acc;
-                }, {} as Record<string, typeof sortedBets>)).length, 
-                2
-              ),    // タブレット以下では最大2列
-              400: Math.min(
-                Object.keys(sortedBets.reduce((acc, bet) => {
-                  const type = normalizeTicketType(bet.type);
-                  if (!acc[type]) acc[type] = [];
-                  acc[type].push(bet);
-                  return acc;
-                }, {} as Record<string, typeof sortedBets>)).length, 
-                2
-              )     // モバイルでも最低2列
-            }}
-            className="flex -ml-3 w-auto"
-            columnClassName="pl-3 bg-clip-padding"
-          >
-            {Object.entries(sortedBets.reduce((acc, bet) => {
-              const type = normalizeTicketType(bet.type);
-              if (!acc[type]) acc[type] = [];
-              acc[type].push(bet);
-              return acc;
-            }, {} as Record<string, typeof sortedBets>)).map(([betType, bets]) => (
-              <Card key={betType} className={cn(
-                "mb-3",
-                theme === 'light'
-                  ? "bg-white border border-gray-200 shadow-sm"
-                  : "bg-background/50 backdrop-blur-sm"
-              )}>
-                <CardHeader className={cn(
-                  "py-2 px-3 border-b max-sm:py-1.5 max-sm:px-2",
+      <TooltipProvider>
+        <CardContent className="p-2">
+          <div className="space-y-2" ref={tableRef}>
+            {/* Masonryレイアウトを適用 - 券種数に応じて列数を調整 */}
+            <Masonry
+              breakpointCols={{
+                default: Math.min(
+                  Object.keys(sortedBets.reduce((acc, bet) => {
+                    const type = normalizeTicketType(bet.type);
+                    if (!acc[type]) acc[type] = [];
+                    acc[type].push(bet);
+                    return acc;
+                  }, {} as Record<string, typeof sortedBets>)).length, 
+                  4
+                ),    // 券種数と4の小さい方（最大4列）
+                1100: Math.min(
+                  Object.keys(sortedBets.reduce((acc, bet) => {
+                    const type = normalizeTicketType(bet.type);
+                    if (!acc[type]) acc[type] = [];
+                    acc[type].push(bet);
+                    return acc;
+                  }, {} as Record<string, typeof sortedBets>)).length, 
+                  3
+                ),    // 1100px以下でも同様
+                768: Math.min(
+                  Object.keys(sortedBets.reduce((acc, bet) => {
+                    const type = normalizeTicketType(bet.type);
+                    if (!acc[type]) acc[type] = [];
+                    acc[type].push(bet);
+                    return acc;
+                  }, {} as Record<string, typeof sortedBets>)).length, 
+                  2
+                ),    // タブレット以下では最大2列
+                400: Math.min(
+                  Object.keys(sortedBets.reduce((acc, bet) => {
+                    const type = normalizeTicketType(bet.type);
+                    if (!acc[type]) acc[type] = [];
+                    acc[type].push(bet);
+                    return acc;
+                  }, {} as Record<string, typeof sortedBets>)).length, 
+                  2
+                )     // モバイルでも最低2列
+              }}
+              className="flex -ml-3 w-auto"
+              columnClassName="pl-3 bg-clip-padding"
+            >
+              {Object.entries(sortedBets.reduce((acc, bet) => {
+                const type = normalizeTicketType(bet.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push(bet);
+                return acc;
+              }, {} as Record<string, typeof sortedBets>)).map(([betType, bets]) => (
+                <Card key={betType} className={cn(
+                  "mb-3",
                   theme === 'light'
-                    ? "border-gray-100 bg-gradient-to-r from-gray-50 to-white"
-                    : ""
+                    ? "bg-white border border-gray-200 shadow-sm"
+                    : "bg-background/50 backdrop-blur-sm"
                 )}>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className={cn(
-                      "text-base min-w-[4rem] max-sm:text-sm",
-                      theme === 'light'
-                        ? "font-bold text-gray-800"
-                        : "font-medium"
-                    )}>
-                      {betType}
-                    </CardTitle>
-                    
-                    <div className="flex items-center gap-2 flex-shrink">
-                      <div className="flex items-center flex-wrap justify-end gap-1.5 text-xs max-sm:text-[11px]">
-                        <span className={cn(
-                          "font-medium whitespace-nowrap",
-                          theme === 'light'
-                            ? "text-gray-600"
-                            : ""
-                        )}>
-                          {bets.length}点
-                        </span>
-                        <span className={cn(
-                          "font-medium whitespace-nowrap",
-                          theme === 'light'
-                            ? "text-indigo-600"
-                            : ""
-                        )}>
-                          {bets.reduce((sum, bet) => sum + bet.stake, 0).toLocaleString()}円
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className={cn(
-                  "p-2 max-sm:p-1.5",
-                  theme === 'light'
-                    ? "bg-white"
-                    : ""
-                )}>
-                  <div className={cn(
-                    "space-y-1.5 max-sm:space-y-1",
+                  <CardHeader className={cn(
+                    "py-2 px-3 border-b max-sm:py-1.5 max-sm:px-2",
                     theme === 'light'
-                      ? "divide-y divide-gray-50"
+                      ? "border-gray-100 bg-gradient-to-r from-gray-50 to-white"
                       : ""
                   )}>
-                    {bets.map((bet, index) => (
-                      <div key={index} className={
+                    <div className="flex justify-between items-center">
+                      <CardTitle className={cn(
+                        "text-base min-w-[4rem] max-sm:text-sm",
                         theme === 'light'
-                          ? "pt-1 first:pt-0"
-                          : ""
-                      }>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <div className={cn(
-                              "relative overflow-hidden p-2 max-sm:p-1.5 rounded-md transition-all duration-300 ease-out cursor-pointer",
-                              theme === 'light'
-                                ? "border border-gray-100 hover:border-indigo-200 hover:shadow-sm hover:bg-indigo-50/30"
-                                : "border border-transparent hover:border-primary/20 hover:shadow-sm"
-                            )}>
-                              {/* EVに基づく背景色 */}
-                              <div className={`
-                                absolute inset-0 
-                                ${theme === 'light'
-                                  ? (() => {
-                                    const ev = (bet.odds || Number(bet.expectedReturn / bet.stake)) * bet.probability;
-                                    if (ev > 1.5) return 'bg-emerald-50 hover:bg-emerald-100';
-                                    if (ev > 1.2) return 'bg-lime-50 hover:bg-lime-100';
-                                    if (ev > 1.0) return 'bg-amber-50 hover:bg-amber-100';
-                                    return 'bg-gray-50 hover:bg-gray-100';
-                                  })()
-                                  : getEvBackgroundClass(bet.odds || Number(bet.expectedReturn / bet.stake), bet.probability)
-                                }
-                              `} />
-
-                              {/* グラデーション背景レイヤー - ライトモードではより控えめに */}
+                          ? "font-bold text-gray-800"
+                          : "font-medium"
+                      )}>
+                        {betType}
+                      </CardTitle>
+                      
+                      <div className="flex items-center gap-2 flex-shrink">
+                        <div className="flex items-center flex-wrap justify-end gap-1.5 text-xs max-sm:text-[11px]">
+                          <span className={cn(
+                            "font-medium whitespace-nowrap",
+                            theme === 'light'
+                              ? "text-gray-600"
+                              : ""
+                          )}>
+                            {bets.length}点
+                          </span>
+                          <span className={cn(
+                            "font-medium whitespace-nowrap",
+                            theme === 'light'
+                              ? "text-indigo-600"
+                              : ""
+                          )}>
+                            {bets.reduce((sum, bet) => sum + bet.stake, 0).toLocaleString()}円
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className={cn(
+                    "p-2 max-sm:p-1.5",
+                    theme === 'light'
+                      ? "bg-white"
+                      : ""
+                  )}>
+                    <div className={cn(
+                      "space-y-1.5 max-sm:space-y-1",
+                      theme === 'light'
+                        ? "divide-y divide-gray-50"
+                        : ""
+                    )}>
+                      {bets.map((bet, index) => (
+                        <div key={index} className={
+                          theme === 'light'
+                            ? "pt-1 first:pt-0"
+                            : ""
+                        }>
+                          <Popover>
+                            <PopoverTrigger asChild>
                               <div className={cn(
-                                "absolute inset-0 transition-opacity duration-300",
+                                "relative overflow-hidden p-2 max-sm:p-1.5 rounded-md transition-all duration-300 ease-out cursor-pointer",
                                 theme === 'light'
-                                  ? "bg-gradient-to-r from-gray-50/50 via-white/80 to-transparent"
-                                  : "bg-gradient-to-r from-primary/10 via-background/5 to-transparent"
-                              )} />
-                              
-                              {/* コンテンツレイヤー */}
-                              <div className="relative">
-                                <div className="grid grid-cols-5 gap-2 max-sm:gap-1">
-                                  <span className={cn(
-                                    "font-medium max-sm:text-[14px] max-sm:whitespace-nowrap max-sm:overflow-x-auto max-sm:scrollbar-hide col-span-3",
-                                    theme === 'light'
-                                      ? "text-gray-800"
-                                      : ""
-                                  )}>
-                                    {formatHorseNumbers(bet.type, bet.horses)}
-                                  </span>
-                                  <div className="col-span-2 flex items-center justify-end gap-1">
-                                    <span className={`max-sm:text-[14px] ${getOddsColorClass(bet.odds || Number(bet.expectedReturn / bet.stake))}`}>
-                                      ×{bet.odds ? bet.odds.toFixed(1) : Number(bet.expectedReturn / bet.stake).toFixed(1)}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-5 gap-2 max-sm:gap-1 text-xs max-sm:text-[11px] mt-1">
-                                  <span className={`${getProbabilityColorClass(bet.probability)} col-span-3`}>
-                                    {(bet.probability * 100).toFixed(1)}%
-                                  </span>
-                                  <div className="col-span-2 text-right space-y-0.5">
+                                  ? "border border-gray-100 hover:border-indigo-200 hover:shadow-sm hover:bg-indigo-50/30"
+                                  : "border border-transparent hover:border-primary/20 hover:shadow-sm"
+                              )}>
+                                {/* EVに基づく背景色 */}
+                                <div className={`
+                                  absolute inset-0 
+                                  ${theme === 'light'
+                                    ? (() => {
+                                      const ev = (bet.odds || Number(bet.expectedReturn / bet.stake)) * bet.probability;
+                                      if (ev > 1.5) return 'bg-emerald-50 hover:bg-emerald-100';
+                                      if (ev > 1.2) return 'bg-lime-50 hover:bg-lime-100';
+                                      if (ev > 1.0) return 'bg-amber-50 hover:bg-amber-100';
+                                      return 'bg-gray-50 hover:bg-gray-100';
+                                    })()
+                                    : getEvBackgroundClass(bet.odds || Number(bet.expectedReturn / bet.stake), bet.probability)
+                                  }
+                                `} />
+
+                                {/* グラデーション背景レイヤー - ライトモードではより控えめに */}
+                                <div className={cn(
+                                  "absolute inset-0 transition-opacity duration-300",
+                                  theme === 'light'
+                                    ? "bg-gradient-to-r from-gray-50/50 via-white/80 to-transparent"
+                                    : "bg-gradient-to-r from-primary/10 via-background/5 to-transparent"
+                                )} />
+                                
+                                {/* コンテンツレイヤー */}
+                                <div className="relative">
+                                  <div className="grid grid-cols-5 gap-2 max-sm:gap-1">
                                     <span className={cn(
-                                      "font-medium",
+                                      "font-medium max-sm:text-[14px] max-sm:whitespace-nowrap max-sm:overflow-x-auto max-sm:scrollbar-hide col-span-3",
                                       theme === 'light'
-                                        ? "text-indigo-600"
+                                        ? "text-gray-800"
                                         : ""
                                     )}>
-                                      {bet.stake.toLocaleString()}円
+                                      {formatHorseNumbers(bet.type, bet.horses)}
                                     </span>
-                                    <span className={cn(
-                                      "block text-[10px] max-sm:text-[9px]",
-                                      theme === 'light'
-                                        ? "text-gray-500"
-                                        : "text-muted-foreground"
-                                    )}>
-                                      {(Math.round(bet.expectedReturn / 10) * 10).toLocaleString()}円
+                                    <div className="col-span-2 flex items-center justify-end gap-1">
+                                      <span className={`max-sm:text-[14px] ${getOddsColorClass(bet.odds || Number(bet.expectedReturn / bet.stake))}`}>
+                                        ×{bet.odds ? bet.odds.toFixed(1) : Number(bet.expectedReturn / bet.stake).toFixed(1)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-5 gap-2 max-sm:gap-1 text-xs max-sm:text-[11px] mt-1">
+                                    <span className={`${getProbabilityColorClass(bet.probability)} col-span-3`}>
+                                      {(bet.probability * 100).toFixed(1)}%
                                     </span>
+                                    <div className="col-span-2 text-right space-y-0.5">
+                                      <span className={cn(
+                                        "font-medium",
+                                        theme === 'light'
+                                          ? "text-indigo-600"
+                                          : ""
+                                      )}>
+                                        {bet.stake.toLocaleString()}円
+                                      </span>
+                                      <span className={cn(
+                                        "block text-[10px] max-sm:text-[9px]",
+                                        theme === 'light'
+                                          ? "text-gray-500"
+                                          : "text-muted-foreground"
+                                      )}>
+                                        {(Math.round(bet.expectedReturn / 10) * 10).toLocaleString()}円
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          </PopoverTrigger>
-                          <PopoverContent 
-                            className={cn(
-                              "w-[280px] sm:w-80 rounded-lg shadow-lg p-4",
-                              theme === 'light'
-                                ? "bg-white/95 backdrop-blur-sm border border-gray-200"
-                                : "border border-primary/20 bg-black/70 backdrop-blur-sm"
-                            )} 
-                            sideOffset={5}
-                          >
-                            <div className="space-y-2">
-                              <h4 className={cn(
-                                "text-sm font-medium",
+                            </PopoverTrigger>
+                            <PopoverContent 
+                              className={cn(
+                                "w-[280px] sm:w-80 rounded-lg shadow-lg p-4",
                                 theme === 'light'
-                                  ? "text-indigo-700"
-                                  : "text-primary/90"
-                              )}>選択理由</h4>
-                              <div className="relative overflow-hidden">
-                                <div className={cn(
-                                  "absolute inset-0 pointer-events-none",
+                                  ? "bg-white/95 backdrop-blur-sm border border-gray-200"
+                                  : "border border-primary/20 bg-black/70 backdrop-blur-sm"
+                              )} 
+                              sideOffset={5}
+                            >
+                              <div className="space-y-2">
+                                <h4 className={cn(
+                                  "text-sm font-medium",
                                   theme === 'light'
-                                    ? "bg-gradient-to-r from-indigo-50/50 to-transparent opacity-30"
-                                    : "bg-gradient-to-r from-primary/5 to-transparent opacity-30"
-                                )} />
-                                <p className={cn(
-                                  "text-sm leading-relaxed relative",
-                                  theme === 'light'
-                                    ? "text-gray-700"
-                                    : "text-white/90"
-                                )}>
-                                  {bet.reason || '理由なし'}
-                                </p>
+                                    ? "text-indigo-700"
+                                    : "text-primary/90"
+                                )}>選択理由</h4>
+                                <div className="relative overflow-hidden">
+                                  <div className={cn(
+                                    "absolute inset-0 pointer-events-none",
+                                    theme === 'light'
+                                      ? "bg-gradient-to-r from-indigo-50/50 to-transparent opacity-30"
+                                      : "bg-gradient-to-r from-primary/5 to-transparent opacity-30"
+                                  )} />
+                                  <p className={cn(
+                                    "text-sm leading-relaxed relative",
+                                    theme === 'light'
+                                      ? "text-gray-700"
+                                      : "text-white/90"
+                                  )}>
+                                    {bet.reason || '理由なし'}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </Masonry>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </Masonry>
 
-          {/* モンテカルロシミュレーション結果を表示 */}
-          <div className={cn(
-            "mt-6 pt-4 border-t max-sm:mt-4 max-sm:pt-3",
-            theme === 'light'
-              ? "border-gray-200"
-              : "border-border/30"
-          )}>
-            <h3 className={cn(
-              "text-sm font-medium mb-3 flex items-center gap-2 max-sm:text-[11px] max-sm:mb-2",
+            {/* モンテカルロシミュレーション結果を表示 */}
+            <div className={cn(
+              "mt-6 pt-4 border-t max-sm:mt-4 max-sm:pt-3",
               theme === 'light'
-                ? "text-gray-800"
-                : ""
+                ? "border-gray-200"
+                : "border-border/30"
             )}>
-              <LineChart className={
+              <h3 className={cn(
+                "text-sm font-medium mb-3 flex items-center gap-2 max-sm:text-[11px] max-sm:mb-2",
                 theme === 'light'
-                  ? "h-4 w-4 text-indigo-600 max-sm:h-3 max-sm:w-3"
-                  : "h-4 w-4 text-primary max-sm:h-3 max-sm:w-3"
-              } />
-              収益分布シミュレーション
-            </h3>
-            <MonteCarloResults bets={sortedBets} />
+                  ? "text-gray-800"
+                  : ""
+              )}>
+                <LineChart className={
+                  theme === 'light'
+                    ? "h-4 w-4 text-indigo-600 max-sm:h-3 max-sm:w-3"
+                    : "h-4 w-4 text-primary max-sm:h-3 max-sm:w-3"
+                } />
+                収益分布シミュレーション
+              </h3>
+              <MonteCarloResults bets={sortedBets} />
+            </div>
           </div>
-        </div>
-      </CardContent>
+        </CardContent>
+      </TooltipProvider>
     </Card>
   );
 }); 

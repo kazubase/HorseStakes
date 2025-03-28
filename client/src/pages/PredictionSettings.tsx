@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAtom } from 'jotai';
 import { horsesAtom, raceAtom } from '@/stores/bettingStrategy';
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 export default function PredictionSettings() {
   const { id } = useParams();
@@ -1135,39 +1136,10 @@ export default function PredictionSettings() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <label className="text-sm font-medium">購入予算 (円)</label>
-                    <TooltipProvider delayDuration={0}>
-                      <Tooltip>
-                        <TooltipTrigger 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }} 
-                          onPointerDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                          className="cursor-pointer touch-none"
-                          asChild
-                        >
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-4 w-4 p-0 hover:bg-transparent"
-                            style={{ touchAction: 'none' }}
-                            aria-label="購入予算についての情報"
-                          >
-                            <Info className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent 
-                          side="right" 
-                          sideOffset={5}
-                          className="max-w-[calc(100vw-12rem)] sm:max-w-sm break-words touch-none"
-                        >
-                          予算に応じて最適な馬券購入プランを提案します
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <InfoTooltip 
+                      content="予算に応じて最適な馬券購入プランを提案します"
+                      iconSize="sm"
+                    />
                   </div>
                   
                   <div className="flex flex-col gap-1 mb-1">
@@ -1240,35 +1212,16 @@ export default function PredictionSettings() {
                 }>
                   <div className="flex items-center gap-2 mb-4">
                     <label className="text-sm font-medium">リスクリワード</label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }} 
-                          onPointerDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                          className="cursor-pointer touch-none"
-                          asChild
-                        >
-                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-transparent" aria-label="リスクリワードについての情報">
-                            <Info className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent 
-                          side="right" 
-                          sideOffset={5}
-                          className="max-w-[calc(100vw-12rem)] sm:max-w-sm break-words touch-none"
-                        >
+                    <InfoTooltip 
+                      content={
+                        <>
                           <p>購入予算に対する希望払戻金の倍率</p>
                           <p className="text-emerald-600 mt-1">高い値：より大きな利益を狙える</p>
                           <p className="text-amber-600 mt-1">低い値：的中率が高くなる傾向</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                        </>
+                      }
+                      iconSize="sm"
+                    />
                   </div>
                   
                   <div className="flex flex-col gap-1 mb-1">
