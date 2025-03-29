@@ -640,7 +640,7 @@ export default function Home() {
             allowDataOverflow={true}
             type="category"
             scale="point"
-            padding={{ left: 10, right: 10 }}
+            padding={{ left: 10, right: 30 }}
             width={2000}
             xAxisId={0}
           />
@@ -1270,19 +1270,19 @@ export default function Home() {
                           </div>
                         </div>
                         
-                        {/* スマホでスクロールが不要な場合はフェードエフェクトを非表示に */}
-                        {windowWidth >= 640 && (
+                        {/* スマホ・タブレットでスクロールが必要な場合のみフェードエフェクトを表示 */}
+                        {windowWidth >= 1024 && (
                           <>
                             <div className="absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-r from-background/80 to-transparent" />
-                            <div className="absolute right-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-l from-background/80 to-transparent" />
+                            <div className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none bg-gradient-to-l from-background/80 to-transparent" />
                           </>
                         )}
                       </>
                     )}
                   </div>
                   
-                  {/* 時間軸切り替えボタン - グラフの下に移動 */}
-                  {formattedOddsData.length > 4 && (
+                  {/* 時間軸切り替えボタン - スマホ・タブレットのみ表示 */}
+                  {formattedOddsData.length > 4 && windowWidth <= 1366 && (
                     <div className="flex flex-wrap gap-2 mt-4 justify-center">
                       <div className="flex text-xs border border-border rounded-md overflow-hidden">
                         <button 
@@ -1301,10 +1301,10 @@ export default function Home() {
                     </div>
                   )}
                   
-                  {/* グラフ操作ガイド - スマホサイズでスクロールが不要な場合は非表示 */}
+                  {/* グラフ操作ガイド - スマホ・タブレットサイズでのみ表示 */}
                   <div className="mt-2 text-xs text-muted-foreground text-center">
-                    {windowWidth >= 640 && <p>左右にスクロールして時間推移を確認できます</p>}
-                    <p className={windowWidth >= 640 ? "mt-1" : ""}>馬名をタップすると表示/非表示を切り替えられます</p>
+                    {windowWidth <= 1366 && <p>左右にスクロールして時間推移を確認できます</p>}
+                    <p>馬名をタップすると表示/非表示を切り替えられます</p>
                   </div>
                 </CardContent>
               </Card>
