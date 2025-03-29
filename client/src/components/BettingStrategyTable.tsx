@@ -1365,7 +1365,7 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
             )}>
               買い目オッズ
               <InfoTooltip 
-                content="買い目が的中したときの平均配当率です。的中した場合の払戻金を投資額で割った値の平均です。"
+                content="買い目が的中したときの平均配当率です。払戻金を投資額で割った値の平均です。"
                 iconSize="sm"
               />
             </div>

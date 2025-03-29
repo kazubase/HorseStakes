@@ -24,6 +24,19 @@ export function InfoTooltip({
 
   const iconSizeClass = iconSize === "sm" ? "h-3 w-3" : "h-4 w-4";
 
+  // 文字列の場合、「。」で改行を挿入
+  const formattedContent = React.useMemo(() => {
+    if (typeof content === 'string') {
+      return content.replace(/。/g, '。\n').split('\n').map((text, index) => (
+        <React.Fragment key={index}>
+          {index > 0 && <br />}
+          {text}
+        </React.Fragment>
+      ));
+    }
+    return content;
+  }, [content]);
+
   return (
     <TooltipProvider>
       <Tooltip open={open}>
@@ -48,7 +61,7 @@ export function InfoTooltip({
           className="max-w-xs text-xs"
           onPointerDownOutside={() => setOpen(false)}
         >
-          {content}
+          {formattedContent}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -170,8 +170,8 @@ const BreadcrumbComponent = () => {
 
   // テーマに応じたスタイル
   const breadcrumbStyle = theme === 'light' 
-    ? "py-2 px-4 sm:px-0 text-xs sm:text-sm md:text-sm transition-colors"
-    : "py-2 px-4 sm:px-0 text-xs sm:text-sm md:text-sm transition-colors";
+    ? "py-2 text-xs sm:text-sm md:text-sm transition-colors"
+    : "py-2 text-xs sm:text-sm md:text-sm transition-colors";
 
   const homeIconStyle = theme === 'light'
     ? "h-3 w-3 sm:h-3.5 sm:w-3.5 text-foreground/70 hover:text-primary transition-colors"

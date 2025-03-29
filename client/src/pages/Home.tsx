@@ -74,6 +74,8 @@ export default function Home() {
     setIsRefreshing(true);
     try {
       await refetchOdds();
+      // オッズ履歴データも同時に更新
+      queryClient.invalidateQueries({ queryKey: [`/api/tan-odds-history/${id}`] });
       // 関連するオッズデータも更新
       if (id) {
         // 複勝オッズ等の他のオッズデータも無効化して再取得
@@ -316,14 +318,9 @@ export default function Home() {
   const filteredOddsData = useMemo(() => {
     if (!formattedOddsData.length) return [];
     
-    // まず初期値の除外を適用
-    let data = formattedOddsData;
-    if (excludeInitialData && formattedOddsData.length > 2) {
-      data = formattedOddsData.filter(data => !data.isFirst);
-    }
-    
-    return data;
-  }, [formattedOddsData, excludeInitialData]);
+    // 初期値は常に表示
+    return formattedOddsData;
+  }, [formattedOddsData]);
 
   // selectedHorsesの状態管理
   const [selectedHorses, setSelectedHorses] = useState<number[]>([]);
@@ -694,7 +691,8 @@ export default function Home() {
                 const actualMin = Math.min(...visibleOddsValues);
                 const actualMax = Math.max(...visibleOddsValues);
                 const range = actualMax - actualMin;
-                const margin = range * 0.15; // マージンを増加
+                // 変動が小さい場合は適切な範囲を設定
+                const margin = Math.max(range * 0.15, 0.1);
                 return [Math.max(0, actualMin - margin), actualMax + margin];
               }
               
@@ -702,9 +700,15 @@ export default function Home() {
               const actualMin = filteredValues[0];
               const actualMax = filteredValues[filteredValues.length - 1];
               
-              // 適切なマージンを追加（マージンを増加）
-              const range = actualMax - actualMin;
-              const margin = range * 0.15;
+              // 変動が小さい場合でも適切な範囲を確保
+              const range = Math.max(actualMax - actualMin, 0.2); // 最小範囲を0.2に設定
+              const margin = Math.max(range * 0.15, 0.1); // 最小マージンを0.1に設定
+              
+              // データポイントが単一の値に近い場合、強制的に範囲を広げる
+              if (range < 0.1) {
+                const baseValue = (actualMin + actualMax) / 2;
+                return [Math.max(0, baseValue - 0.3), baseValue + 0.3];
+              }
               
               return [Math.max(0, actualMin - margin), actualMax + margin];
             }}
@@ -716,6 +720,8 @@ export default function Home() {
             allowDecimals={true}
             tickCount={6}
             padding={{ top: 10, bottom: 10 }}
+            scale="linear"
+            allowDataOverflow={true}
           />
           
           {/* ツールチップをカスタマイズ - 馬番のみを枠番の色で表示 */}
@@ -815,6 +821,8 @@ export default function Home() {
                 opacity={isSelected ? 1 : 0.6}
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                isAnimationActive={false}
+                animationDuration={0}
                 activeDot={{
                   r: 4,
                   strokeWidth: 1,
@@ -1191,30 +1199,12 @@ export default function Home() {
                   <div className="flex items-center justify-between p-2 sm:p-0 sm:mb-4">
                     <h2 className="text-lg sm:text-xl font-semibold whitespace-nowrap">オッズ推移</h2>
                     <div className="flex items-center gap-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={`text-xs ${excludeInitialData ? 'bg-primary/10' : ''} min-w-[80px]`}
-                        onClick={() => setExcludeInitialData(!excludeInitialData)}
-                      >
-                        <span className="sm:block hidden">{excludeInitialData ? '初期値を除外中' : '初期値を除外'}</span>
-                        <span className="sm:hidden block text-center leading-tight">
-                          {excludeInitialData ? '初期値\n除外中' : '初期値\n除外'}
-                        </span>
-                      </Button>
-                      <div className="text-xs text-muted-foreground hidden sm:block">
+                      <div className="text-xs text-muted-foreground">
                         {filteredOddsData.length > 0 && 
                           `${filteredOddsData[0].timestamp} - ${filteredOddsData[filteredOddsData.length - 1].timestamp}`
                         }
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* スマホサイズのみのタイムスタンプ表示 */}
-                  <div className="text-xs text-muted-foreground text-center sm:hidden mb-2">
-                    {filteredOddsData.length > 0 && 
-                      `${filteredOddsData[0].timestamp} - ${filteredOddsData[filteredOddsData.length - 1].timestamp}`
-                    }
                   </div>
                   
                   {/* グループ切り替えボタン */}

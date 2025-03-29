@@ -361,7 +361,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <div className="h-12"></div>
       
       {/* パンくずリスト */}
-      <div className="container mx-auto mt-1 sm:mt-2 md:mt-3">
+      <div className="container mx-auto px-4 mt-1 sm:mt-2 md:mt-3">
         <BreadcrumbComponent />
       </div>
       
