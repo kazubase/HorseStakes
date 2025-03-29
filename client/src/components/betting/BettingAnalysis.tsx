@@ -417,49 +417,113 @@ const GeminiAnalysisSection = memo(({
   );
 });
 
-// フローティングボタンコンポーネント追加
-const FloatingControlButton = ({ 
+// フローティングボタンコンポーネント削除
+
+// 代わりにタブインジケーターを追加
+const SidebarTabIndicator = ({ 
   isSidebarOpen, 
   onClick, 
   theme,
-  isScrolled
+  tabs,
+  activeTab,
+  onChangeTab
 }: { 
   isSidebarOpen: boolean; 
   onClick: () => void; 
   theme: string;
-  isScrolled: boolean;
+  tabs: SidebarTab[];
+  activeTab: string;
+  onChangeTab: (id: string) => void;
 }) => {
   return (
     <div className={cn(
-      "fixed z-20 transition-all duration-300",
-      // モバイル/タブレット/デスクトップでの位置調整
-      "left-4 sm:left-5 md:left-6 lg:left-auto lg:left-10 xl:left-20", 
-      // より上部に移動 - デバイスごとに調整
-      isScrolled 
-        ? "bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-[calc(4.8rem+env(safe-area-inset-bottom,0px))]" 
-        : "bottom-[calc(6.5rem+env(safe-area-inset-bottom,0px))] sm:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]",
-      isSidebarOpen ? "opacity-90 translate-y-1" : "opacity-95"
+      "fixed z-[10000] transition-all duration-300 flex flex-col gap-1",
+      // 右側に配置して、サイドバーの表示/非表示で位置を調整
+      isSidebarOpen
+        ? "right-[calc(32%-1px)] sm:right-[calc(32%-1px)] xl:right-[calc(24%-1px)]" // サイドバーが開いているとき
+        : "right-0", // サイドバーが閉じているとき
+      "top-1/2 -translate-y-1/2",
     )}>
-      <Button
-        variant={theme === 'light' ? "default" : "secondary"}
-        size="icon"
+      {/* バックグラウンドの装飾バー */}
+      <div className={cn(
+        "absolute top-0 right-0 w-1 sm:w-1.5 h-full rounded-l-full",
+        theme === 'light'
+          ? "bg-gray-200"
+          : "bg-border/50"
+      )} />
+
+      {/* サイドバーを開くためのメインインジケーター */}
+      <div 
         onClick={onClick}
-        aria-label={isSidebarOpen ? "サイドバーを閉じる" : "分析パネルを開く"}
         className={cn(
-          "flex items-center justify-center shadow-lg transition-all duration-200",
-          "hover:shadow-xl hover:translate-y-[-2px]",
-          theme === 'light' 
-            ? "bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-400" 
-            : "bg-primary hover:bg-primary/90 border border-primary/30",
-          "rounded-full w-12 h-12 sm:w-14 sm:h-14"
+          "relative cursor-pointer transition-all group flex flex-col items-center justify-center gap-1",
+          // より細長くする (モバイルは細め、PCは太め)
+          "py-5 px-1.5 sm:px-2.5 rounded-l-lg sm:rounded-l-xl",
+          theme === 'light'
+            ? "hover:bg-indigo-50"
+            : "hover:bg-primary/10",
+          isSidebarOpen
+            ? theme === 'light'
+              ? "bg-white border-t border-b border-l border-gray-200 shadow-sm"
+              : "bg-background border-t border-b border-l border-border/50"
+            : theme === 'light'
+              ? "bg-indigo-50"
+              : "bg-primary/5"
         )}
       >
-        {isSidebarOpen ? (
-          <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" />
-        ) : (
-          <Lightbulb className="h-6 w-6 sm:h-7 sm:w-7" />
-        )}
-      </Button>
+        {/* アイコンを縦に並べる */}
+        <div className={cn(
+          "flex flex-col gap-2 items-center",
+          theme === 'light'
+            ? "text-indigo-700"
+            : "text-primary"
+        )}>
+          {!isSidebarOpen && (
+            <>
+              <div className={cn(
+                "w-0.5 sm:w-1 h-16 rounded-full transition-all",
+                theme === 'light'
+                  ? "bg-indigo-500"
+                  : "bg-primary"
+              )} />
+              
+              {/* 「分析」を縦書きで表示 */}
+              <div className="flex flex-col items-center mt-1 text-center">
+                <span className={cn(
+                  "text-xs sm:text-sm font-medium tracking-widest flex flex-col",
+                  theme === 'light' 
+                    ? "text-indigo-700"
+                    : "text-primary"
+                )}>
+                  <span>分</span>
+                  <span>析</span>
+                </span>
+              </div>
+            </>
+          )}
+          
+          {isSidebarOpen && tabs.map(tab => (
+            <div 
+              key={tab.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChangeTab(tab.id);
+              }}
+              className={cn(
+                "p-1.5 sm:p-2 rounded-full transition-all cursor-pointer",
+                activeTab === tab.id 
+                  ? theme === 'light'
+                    ? "bg-indigo-100 text-indigo-700"
+                    : "bg-primary/20 text-primary"
+                  : theme === 'light'
+                    ? "text-gray-500 hover:bg-gray-100"
+                    : "text-muted-foreground hover:bg-background/80"
+              )}
+            >
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
@@ -495,6 +559,48 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
   // サイドバーの状態管理 - 初期値をpropsから取得
   const [isSidebarOpen, setIsSidebarOpen] = useState(initialSidebarOpen);
   const [activeTab, setActiveTab] = useState<string>("settings");
+  
+  // 画面サイズを監視する
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  
+  // 画面サイズの変更を監視
+  useEffect(() => {
+    const checkScreenSize = () => {
+      // iPad Airの幅は834px - ここより小さい画面をスモールスクリーンとする
+      const isSmall = window.innerWidth <= 1024; // lgブレークポイント（1024px）まで
+      setIsSmallScreen(isSmall);
+    };
+    
+    // 初期チェック
+    checkScreenSize();
+    
+    // リサイズイベントのリスナーを追加
+    window.addEventListener('resize', checkScreenSize);
+    
+    // クリーンアップ
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+    };
+  }, []);
+
+  // サイドバー状態変更時にヘッダー非表示イベントを発火
+  const toggleSidebar = useCallback((isOpen: boolean) => {
+    setIsSidebarOpen(isOpen);
+    
+    // 小さい画面サイズの場合のみヘッダーの表示/非表示を制御
+    if (isSmallScreen) {
+      // サイドバーの表示/非表示に応じてカスタムイベントを発火
+      if (isOpen) {
+        // ヘッダーを非表示にするイベントを発火
+        const hideHeaderEvent = new CustomEvent('hideAppHeader');
+        window.dispatchEvent(hideHeaderEvent);
+      } else {
+        // ヘッダーを再表示するイベントを発火
+        const showHeaderEvent = new CustomEvent('showAppHeader');
+        window.dispatchEvent(showHeaderEvent);
+      }
+    }
+  }, [isSmallScreen]);
 
   // スクロール関連の状態を追加
   const [isScrolled, setIsScrolled] = useState(false);
@@ -520,12 +626,12 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
   useEffect(() => {
     // サイドバーを開くイベントリスナー
     const handleOpenSidebar = () => {
-      setIsSidebarOpen(true);
+      toggleSidebar(true);
     };
 
     // 分析画面に移動してサイドバーを開くイベントリスナー
     const handleNavigateWithSidebar = () => {
-      setIsSidebarOpen(true);
+      toggleSidebar(true);
     };
 
     // イベントリスナーを登録
@@ -537,12 +643,12 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
       window.removeEventListener('openAnalysisSidebar', handleOpenSidebar);
       window.removeEventListener('navigateToAnalysisWithSidebar', handleNavigateWithSidebar);
     };
-  }, []);
+  }, [toggleSidebar]);
 
   // initialSidebarOpenプロパティが変更されたときにサイドバーの状態を更新
   useEffect(() => {
-    setIsSidebarOpen(initialSidebarOpen);
-  }, [initialSidebarOpen]);
+    toggleSidebar(initialSidebarOpen);
+  }, [initialSidebarOpen, toggleSidebar]);
 
   const budget = Number(new URLSearchParams(window.location.search).get("budget")) || 10000;
   const riskRatio = Number(new URLSearchParams(window.location.search).get("risk")) || 1.0;
@@ -861,12 +967,14 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
 
   return (
     <div className="relative">
-      {/* フローティングボタンを追加 */}
-      <FloatingControlButton
+      {/* フローティングボタンを削除してタブインジケーターに変更 */}
+      <SidebarTabIndicator
         isSidebarOpen={isSidebarOpen}
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        onClick={() => toggleSidebar(!isSidebarOpen)}
         theme={theme}
-        isScrolled={isScrolled}
+        tabs={sidebarTabs}
+        activeTab={activeTab}
+        onChangeTab={setActiveTab}
       />
       
       <div className="flex">
@@ -889,12 +997,14 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
               showAnalysis={true}
               columnsCount={4} // 4列表示を指定
             />
+            
+            {/* モバイル用の下部ボタンを削除 */}
           </div>
         </div>
 
-        {/* サイドバー - レスポンシブ対応を強化 + スクロール追従 */}
+        {/* サイドバー - z-indexを増やして他の要素よりも前面に */}
         <div className={cn(
-          "fixed right-0 top-0 h-full lg:h-auto z-50 transition-all duration-300 ease-in-out overflow-hidden",
+          "fixed right-0 top-0 h-full lg:h-auto z-[10000] transition-all duration-300 ease-in-out overflow-hidden",
           // スクロール追従のための設定を修正
           "lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]",
           theme === 'light'
@@ -942,7 +1052,7 @@ export function BettingAnalysis({ initialSidebarOpen = false }: BettingAnalysisP
             <Button
               variant={theme === 'light' ? "outline" : "ghost"}
               size="icon"
-              onClick={() => setIsSidebarOpen(false)}
+              onClick={() => toggleSidebar(false)}
               className={
                 theme === 'light'
                   ? "text-gray-500 hover:text-gray-800 border border-gray-200"

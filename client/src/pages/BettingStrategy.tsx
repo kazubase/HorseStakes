@@ -9,7 +9,7 @@ import { BettingSelection } from "@/components/betting/BettingSelection";
 import { BettingPortfolio } from "@/components/betting/BettingPortfolio";
 import { BettingStepProgress } from "@/components/betting/BettingStepProgress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw, ChevronDown, ChevronUp, EyeOff, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { HorseMarquee } from "@/components/HorseMarquee";
 import { useThemeStore } from "@/stores/themeStore";
@@ -25,6 +25,7 @@ export function BettingStrategy() {
   const [latestOdds] = useAtom(latestOddsAtom);
   const { theme } = useThemeStore();
   const queryClient = useQueryClient();
+  const [showMarquee, setShowMarquee] = useState(true);
   
   // レース情報を取得（無限キャッシュ）
   const { data: race } = useQuery<Race>({
@@ -88,6 +89,11 @@ export function BettingStrategy() {
     setLocation(`/predict/${id}?budget=${budget || ''}&risk=${risk || ''}&winProbs=${encodedWinProbs}&placeProbs=${encodedPlaceProbs}`);
   };
   
+  // 電光掲示板の表示/非表示を切り替える
+  const toggleMarquee = () => {
+    setShowMarquee(prev => !prev);
+  };
+  
   if (!id) {
     return (
       <MainLayout>
@@ -147,15 +153,46 @@ export function BettingStrategy() {
       </div>
     </div>
     
-    {/* 電光掲示板をフッターに固定表示 */}
+    {/* 電光掲示板の引き出しボタン */}
     {shouldShowMarquee && (
-      <div className="fixed bottom-0 left-0 right-0 z-20 shadow-lg pointer-events-none">
-        <div className="container mx-auto px-4">
-          <HorseMarquee 
-            horses={horseMarqueeData} 
-            className={theme === 'light' ? 'shadow-sm mb-0 rounded-t-lg' : 'shadow-lg mb-0 rounded-t-lg'}
-            speed={60}
-          />
+      <div 
+        className={cn(
+          "fixed bottom-0 left-0 right-0 z-30 transition-transform duration-300 ease-in-out",
+          !showMarquee && "translate-y-12"
+        )}
+      >
+        <div className="container mx-auto px-4 relative">
+          <Button
+            variant="secondary"
+            onClick={toggleMarquee}
+            className={cn(
+              "absolute -top-8 left-4 rounded-t-lg rounded-b-none border-b-0 shadow-md h-8",
+              "transition-all duration-200 flex items-center gap-1 px-3",
+              theme === 'light' 
+                ? 'bg-indigo-100 hover:bg-indigo-200 border-indigo-200' 
+                : 'bg-black/70 hover:bg-black/90 border-primary/20',
+              showMarquee ? "opacity-70 hover:opacity-100" : "opacity-100"
+            )}
+            aria-label={showMarquee ? "電光掲示板を非表示" : "電光掲示板を表示"}
+          >
+            {showMarquee ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+          </Button>
+          
+          <div 
+            className={cn(
+              "transition-transform duration-300 ease-in-out",
+              !showMarquee && "transform translate-y-full"
+            )}
+          >
+            <HorseMarquee 
+              horses={horseMarqueeData} 
+              className={cn(
+                theme === 'light' ? 'shadow-sm mb-0 rounded-t-lg' : 'shadow-lg mb-0 rounded-t-lg',
+                "pointer-events-none"
+              )}
+              speed={60}
+            />
+          </div>
         </div>
       </div>
     )}

@@ -233,6 +233,30 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const isRaceListPage = useMemo(() => location === "/", [location]);
   const isBettingStrategyPage = useMemo(() => location.includes("/races/") && location.includes("/betting-strategy"), [location]);
   const { theme } = useThemeStore();
+  
+  // 強制的にヘッダーを非表示にするための状態を追加
+  const [isHeaderForcedHidden, setIsHeaderForcedHidden] = useState(false);
+
+  // ヘッダーの表示/非表示を制御するカスタムイベントリスナーを追加
+  useEffect(() => {
+    const hideHeader = () => {
+      setIsHeaderForcedHidden(true);
+    };
+
+    const showHeader = () => {
+      setIsHeaderForcedHidden(false);
+    };
+
+    // イベントリスナーを登録
+    window.addEventListener('hideAppHeader', hideHeader);
+    window.addEventListener('showAppHeader', showHeader);
+
+    // クリーンアップ
+    return () => {
+      window.removeEventListener('hideAppHeader', hideHeader);
+      window.removeEventListener('showAppHeader', showHeader);
+    };
+  }, []);
 
   // スクロールイベントをデバウンス（制御）するための関数
   const debounce = useCallback((func: Function, wait: number) => {
@@ -245,6 +269,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   // ヘッダーの表示/非表示を制御する最適化された関数
   const controlHeader = useCallback(() => {
+    // 強制非表示が有効な場合は、スクロール状態に関わらずヘッダーを非表示
+    if (isHeaderForcedHidden) {
+      setIsHeaderVisible(false);
+      return;
+    }
+
     const currentScrollY = window.scrollY;
     const isScrolledToBottom = 
       window.innerHeight + currentScrollY >= document.documentElement.scrollHeight - 10;
@@ -276,7 +306,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
     
     setLastScrollY(currentScrollY);
-  }, [lastScrollY, isBettingStrategyPage]);
+  }, [lastScrollY, isBettingStrategyPage, isHeaderForcedHidden]);
 
   // デバウンスされたスクロールハンドラー
   const debouncedScrollHandler = useMemo(
