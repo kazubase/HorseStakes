@@ -86,6 +86,8 @@ export default function Home() {
         queryClient.invalidateQueries({ queryKey: [`/api/sanrenpuku-odds/latest/${id}`] });
         queryClient.invalidateQueries({ queryKey: [`/api/sanrentan-odds/latest/${id}`] });
       }
+      
+      // オッズ更新時に「人気」グループに戻す処理を削除
     } finally {
       setIsRefreshing(false);
     }
@@ -230,6 +232,28 @@ export default function Home() {
   // 現在表示中のグループインデックス
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
 
+  // 最新のオッズデータが更新され、リフレッシュが終了した後の処理
+  useEffect(() => {
+    if (!latestOddsLoading && horseGroups.length > 0) {
+      // 現在選択されているグループの馬を最新のグループ構成で更新
+      // 現在のグループインデックスが有効な範囲内にある場合は、そのグループの馬を選択
+      if (currentGroupIndex >= 0 && currentGroupIndex < horseGroups.length) {
+        setSelectedHorses(prev => {
+          // すでに選択されている馬がいれば、その馬を維持
+          if (prev.length > 0) {
+            return prev;
+          }
+          // 選択されている馬がいない場合は、現在のグループの馬を選択
+          return horseGroups[currentGroupIndex];
+        });
+      } else if (horseGroups.length > 0) {
+        // 現在のグループインデックスが範囲外の場合は、最初のグループの馬を選択
+        setCurrentGroupIndex(0);
+        setSelectedHorses(horseGroups[0]);
+      }
+    }
+  }, [latestOddsLoading, horseGroups, currentGroupIndex]);
+
   // オッズ履歴データを取得（遅延読み込み）
   const { data: oddsHistory = [], isLoading: oddsLoading, error: oddsError } = useQuery<TanOddsHistory[]>({
     queryKey: [`/api/tan-odds-history/${id}`],
@@ -327,16 +351,16 @@ export default function Home() {
 
   // 初期選択を設定するuseEffect - データ点が少ない場合は全体表示をデフォルトに
   useEffect(() => {
-    if (!latestOddsLoading && horseGroups.length > 0) {
-      // 最初のグループ（人気グループ）を選択
-      setSelectedHorses(horseGroups[0]);
-    }
-    
-    // データ点が少ない場合は全体表示をデフォルトに
+    // データ点が少ない場合は全体表示をデフォルトに設定（これは維持）
     if (formattedOddsData.length > 0 && formattedOddsData.length <= 10) {
       setTimeZoom('all');
     }
-  }, [latestOddsLoading, horseGroups, formattedOddsData.length]);
+    
+    // 最初のロード時のみ人気馬グループを選択
+    if (!latestOddsLoading && horseGroups.length > 0 && selectedHorses.length === 0) {
+      setSelectedHorses(horseGroups[0]);
+    }
+  }, [latestOddsLoading, horseGroups, formattedOddsData.length, selectedHorses.length]);
 
   // グループを切り替える関数
   const switchGroup = useCallback((index: number) => {
