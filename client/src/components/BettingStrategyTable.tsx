@@ -1363,9 +1363,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               "text-xs max-sm:text-[11px] flex items-center justify-center gap-1",
               chartColors.statsMutedText
             )}>
-              買い目オッズ
+              平準オッズ
               <InfoTooltip 
-                content="買い目が的中したときの平均配当倍率です。払戻金を投資額で割った値の平均です。"
+                content="買い目が的中したときの平均配当倍率です。的中時払戻金を投資額で割った値の平均です。"
                 iconSize="sm"
               />
             </div>
@@ -1384,9 +1384,9 @@ export const BettingStrategyTable = memo(function BettingStrategyTable({
               "text-xs max-sm:text-[11px] flex items-center justify-center gap-1",
               chartColors.statsMutedText
             )}>
-              買い目期待値
+              平準期待値
               <InfoTooltip 
-                content="勝率と買い目オッズを掛け合わせた値です。1.0以上であれば長期的に利益が期待できます。"
+                content="勝率と平準オッズを掛け合わせた値です。1.0以上であれば長期的に利益が期待できます。"
                 iconSize="sm"
               />
             </div>
