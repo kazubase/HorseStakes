@@ -227,7 +227,7 @@ const SidebarNavigation = memo(() => {
 });
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [headerTransform, setHeaderTransform] = useState(0); // スクロール量に合わせた変換値
   const [lastScrollY, setLastScrollY] = useState(0);
   const [location] = useLocation();
   const isRaceListPage = useMemo(() => location === "/", [location]);
@@ -258,77 +258,73 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     };
   }, []);
 
-  // スクロールイベントをデバウンス（制御）するための関数
-  const debounce = useCallback((func: Function, wait: number) => {
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-    return (...args: any[]) => {
-      if (timeout) clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
+  // スクロールハンドラの最適化（スロットリング）
+  const throttle = useCallback((func: Function, limit: number) => {
+    let inThrottle: boolean;
+    return function(this: any, ...args: any[]) {
+      if (!inThrottle) {
+        func.apply(this, args);
+        inThrottle = true;
+        setTimeout(() => inThrottle = false, limit);
+      }
     };
   }, []);
 
-  // ヘッダーの表示/非表示を制御する最適化された関数
+  // ヘッダーの表示/非表示を制御する関数
   const controlHeader = useCallback(() => {
-    // 強制非表示が有効な場合は、スクロール状態に関わらずヘッダーを非表示
+    // 強制非表示が有効な場合
     if (isHeaderForcedHidden) {
-      setIsHeaderVisible(false);
+      setHeaderTransform(-100);
       return;
     }
 
     const currentScrollY = window.scrollY;
-    const isScrolledToBottom = 
-      window.innerHeight + currentScrollY >= document.documentElement.scrollHeight - 10;
+    const headerHeight = 48; // ヘッダーの高さ（12 * 4px）
     
-    // コンテンツが短い場合はスクロールバーが表示されないため、常にヘッダーを表示
+    // コンテンツが短い場合
     const isContentShort = document.documentElement.scrollHeight <= window.innerHeight;
-
-    // 馬券戦略ページの場合は、最上部でのみヘッダーを表示
-    if (isBettingStrategyPage) {
-      setIsHeaderVisible(currentScrollY === 0);
+    if (isContentShort) {
+      setHeaderTransform(0);
       return;
     }
 
-    // コンテンツが短い場合は常にヘッダーを表示
-    if (isContentShort) {
-      setIsHeaderVisible(true);
-    }
-    // 一番下までスクロールした場合はヘッダーを非表示のままにする
-    else if (isScrolledToBottom) {
-      setIsHeaderVisible(false);
-    }
-    // 下スクロールで非表示（一番下でない場合）
-    else if (currentScrollY > lastScrollY && currentScrollY > 50) {
-      setIsHeaderVisible(false);
-    }
-    // 上スクロールで表示
-    else if (currentScrollY < lastScrollY) {
-      setIsHeaderVisible(true);
+    // スクロール位置に応じたヘッダーの表示割合を計算
+    if (currentScrollY <= 0) {
+      // 最上部ではヘッダーを完全表示
+      setHeaderTransform(0);
+    } else if (currentScrollY <= headerHeight) {
+      // ヘッダーの高さ以下のスクロール位置では、スクロール量に応じて段階的に隠す
+      const hidePercentage = (currentScrollY / headerHeight) * 100;
+      setHeaderTransform(-hidePercentage);
+    } else {
+      // ヘッダーの高さ以上スクロールしたら完全に隠す
+      setHeaderTransform(-100);
     }
     
     setLastScrollY(currentScrollY);
-  }, [lastScrollY, isBettingStrategyPage, isHeaderForcedHidden]);
+  }, [isHeaderForcedHidden]);
 
-  // デバウンスされたスクロールハンドラー
-  const debouncedScrollHandler = useMemo(
-    () => debounce(controlHeader, 50),
-    [debounce, controlHeader]
+  // スロットリングされたスクロールハンドラー
+  const throttledScrollHandler = useMemo(
+    () => throttle(controlHeader, 10), // 10msのスロットリングでスムーズな動きを実現
+    [throttle, controlHeader]
   );
 
   useEffect(() => {
-    window.addEventListener('scroll', debouncedScrollHandler, { passive: true });
-    controlHeader();
-    window.addEventListener('resize', debouncedScrollHandler, { passive: true });
+    window.addEventListener('scroll', throttledScrollHandler, { passive: true });
+    controlHeader(); // 初期表示時にも実行
+    window.addEventListener('resize', throttledScrollHandler, { passive: true });
 
     return () => {
-      window.removeEventListener('scroll', debouncedScrollHandler);
-      window.removeEventListener('resize', debouncedScrollHandler);
+      window.removeEventListener('scroll', throttledScrollHandler);
+      window.removeEventListener('resize', throttledScrollHandler);
     };
-  }, [controlHeader, debouncedScrollHandler]);
+  }, [controlHeader, throttledScrollHandler]);
 
-  const headerTransitionClass = useMemo(() => 
-    isHeaderVisible ? 'translate-y-0' : '-translate-y-full',
-    [isHeaderVisible]
-  );
+  // スタイルオブジェクトとしてのトランスフォーム
+  const headerStyle = useMemo(() => ({
+    transform: `translateY(${headerTransform}%)`,
+  }), [headerTransform]);
 
   const mainContentClass = useMemo(() => 
     `flex-1 container mx-auto px-4 py-6 ${isRaceListPage ? '' : ''}`,
@@ -376,7 +372,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <div className={`min-h-screen flex flex-col bg-background ${theme}`}>
       {/* ヘッダー */}
       <div 
-        className={`fixed top-0 left-0 right-0 z-30 transition-transform duration-300 will-change-transform ${headerTransitionClass}`}
+        className="fixed top-0 left-0 right-0 z-30 transition-transform duration-150 will-change-transform"
+        style={headerStyle}
         role="banner"
       >
         <header className={headerBgClass}>

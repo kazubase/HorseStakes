@@ -1305,8 +1305,8 @@ export default function Home() {
                     )}
                   </div>
                   
-                  {/* 時間軸切り替えボタン - スマホ・タブレットのみ表示 */}
-                  {formattedOddsData.length > 4 && windowWidth <= 1366 && (
+                  {/* 時間軸切り替えボタン - 条件なしで常に表示 */}
+                  {formattedOddsData.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-4 justify-center">
                       <div className="flex text-xs border border-border rounded-md overflow-hidden">
                         <button 
@@ -1325,9 +1325,9 @@ export default function Home() {
                     </div>
                   )}
                   
-                  {/* グラフ操作ガイド - スマホ・タブレットサイズでのみ表示 */}
+                  {/* グラフ操作ガイド - 条件なしで常に表示 */}
                   <div className="mt-2 text-xs text-muted-foreground text-center">
-                    {windowWidth <= 1366 && <p>左右にスクロールして時間推移を確認できます</p>}
+                    <p>左右にスクロールして時間推移を確認できます</p>
                     <p>馬名をタップすると表示/非表示を切り替えられます</p>
                   </div>
                 </CardContent>
