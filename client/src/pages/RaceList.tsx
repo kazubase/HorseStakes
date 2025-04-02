@@ -75,8 +75,8 @@ const RaceCard = memo(({ race, onClick, onMouseEnter }: { race: Race; onClick: (
 
   // 発走済みラベルのスタイル
   const statusStyle = theme === 'light'
-    ? "text-xs sm:text-sm md:text-sm font-medium text-foreground/80 bg-accent px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-0.5 md:py-1 rounded-full"
-    : "text-xs sm:text-sm md:text-sm font-medium text-foreground/80 bg-primary/10 px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-0.5 md:py-1 rounded-full";
+    ? "text-xs sm:text-sm md:text-sm font-medium text-foreground/80 bg-accent inline-flex items-center justify-center px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-0.5 md:py-1 rounded-full"
+    : "text-xs sm:text-sm md:text-sm font-medium text-foreground/80 bg-primary/10 inline-flex items-center justify-center px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-0.5 md:py-1 rounded-full";
 
   return (
     <Card 
