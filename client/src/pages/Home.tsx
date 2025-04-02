@@ -977,8 +977,7 @@ export default function Home() {
 
   return (
     <MainLayout>
-      <div className="space-y-4 sm:space-y-5 relative min-h-screen pb-8 -mt-6 sm:-mt-6">
-        <div className="absolute inset-0 from-primary/10 via-background/5 to-transparent opacity-30 h-full w-full" />
+      <div className="space-y-4 pb-16 md:pb-0 relative">
         
         {/* レース情報カード - 最初に表示する重要コンテンツ */}
         <Card className={
@@ -986,7 +985,7 @@ export default function Home() {
             ? "overflow-hidden bg-gradient-to-br from-secondary/50 to-background relative z-10 border border-secondary/30 shadow-sm"
             : "overflow-hidden bg-gradient-to-br from-black/40 to-primary/5 relative z-10"
         }>
-          <CardContent className="p-2 sm:p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className={
               theme === 'light'
                 ? "absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent opacity-50"
@@ -1004,32 +1003,40 @@ export default function Home() {
                   <>
                     <h1 className={
                       theme === 'light'
-                        ? "text-[18px] sm:text-2xl font-bold m-1 sm:mb-2 tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
-                        : "text-[18px] sm:text-2xl font-bold m-1 sm:mb-2 bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent"
+                        ? "text-base sm:text-2xl font-bold mb-2 tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
+                        : "text-base sm:text-2xl font-bold mb-2 bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent"
                     }>
                       {race?.name}
                     </h1>
-                    <p className="text-xs sm:text-base m-1 sm:mb-2 text-muted-foreground">
+                    <p className="text-sm sm:text-base text-muted-foreground">
                       {format(new Date(race?.startTime!), 'yyyy年M月d日')} {race?.venue} {format(new Date(race?.startTime!), 'HH:mm')}発走
                     </p>
                   </>
                 )}
               </div>
               {!raceLoading && (
-                <div className="text-right flex flex-col items-end gap-1 sm:gap-2">
+                <div className="text-right flex flex-col items-end gap-2">
                   <Button 
                     onClick={handleNavigateToPrediction}
                     size="sm"
-                    className="relative overflow-hidden group text-xs sm:text-sm px-1.5 py-0.5 sm:px-3 sm:py-2 h-6 sm:h-9"
+                    className={`
+                      relative overflow-hidden group text-xs sm:text-sm 
+                      ${theme === 'light' 
+                        ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                        : 'bg-primary hover:bg-primary/90 text-black'
+                      }
+                      px-2 py-1 h-auto sm:h-9 sm:px-3 sm:py-2
+                    `}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="relative flex items-center justify-center">
-                      <ChartBar className="mr-0.5 h-3 w-3 sm:h-4 sm:w-4 sm:mr-1.5 transition-transform duration-300 group-hover:scale-110" />
-                      <span className="relative">確率予想へ</span>
-                      <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 ml-0.5 sm:ml-1" />
-                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="relative flex items-center gap-1">
+                      <ChartBar className="sm:h-5 sm:w-5 h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">確率予想へ</span>
+                      <span className="sm:hidden text-sm">予想へ</span>
+                      <ArrowRight className="sm:h-4 sm:w-4 h-3 w-3 sm:ml-1" />
+                    </span>
                   </Button>
-                  <p className="text-xs sm:text-base font-semibold m-1 sm:mb-2">
+                  <p className="text-sm sm:text-base font-semibold">
                     {race?.status === 'done' ? '発走済' : null}
                   </p>
                 </div>
@@ -1463,7 +1470,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative flex items-center justify-center">
               <ChartBar className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 group-hover:scale-110" />
-              <span className="relative">確率予想へ</span>
+              <span className="sm:inline">確率予想へ</span>
               <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-0.5 sm:ml-1" />
             </div>
           </Button>

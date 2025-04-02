@@ -16,6 +16,7 @@ import { useThemeStore } from "@/stores/themeStore";
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function BettingStrategy() {
   const { id } = useParams();
@@ -111,26 +112,41 @@ export function BettingStrategy() {
     <MainLayout>
     <div className="space-y-1 sm:space-y-2">
       {/* レース情報ヘッダー */}
-      <div className="relative overflow-hidden rounded-xl border border-border/50 bg-gradient-to-br from-card/50 via-card/30 to-card/20 backdrop-blur-sm shadow-sm">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent" />
-        <div className="relative p-3 sm:p-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h2 className="text-xl sm:text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+      <Card className={
+        theme === 'light'
+          ? "overflow-hidden bg-gradient-to-br from-secondary/50 to-background relative z-10 border border-secondary/30 shadow-sm"
+          : "overflow-hidden bg-gradient-to-br from-black/40 to-primary/5 relative z-10"
+      }>
+        <CardContent className="p-3 sm:p-5">
+          <div className={
+            theme === 'light'
+              ? "absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent opacity-50"
+              : "absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-30"
+          } />
+          <div className="flex justify-between items-start relative">
+            <div>
+              <h1 className={
+                theme === 'light'
+                  ? "text-base sm:text-2xl font-bold mb-2 tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
+                  : "text-base sm:text-2xl font-bold mb-2 bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent"
+              }>
                 {race?.name || 'レース名を読み込み中...'}
-              </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-primary/80 animate-pulse" />
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 {race?.startTime ? (
-                  format(new Date(race.startTime), 'yyyy年M月d日 HH:mm')
+                  format(new Date(race.startTime), 'yyyy年M月d日')
                 ) : (
                   '読み込み中...'
-                )} 発走
+                )} {race?.venue} {race?.startTime ? (
+                  format(new Date(race.startTime), 'HH:mm')
+                ) : (
+                  ''
+                )}発走
               </p>
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <div className="container mx-auto py-2 sm:py-3 space-y-3 sm:space-y-4">
         {/* ステップ進行状況 */}

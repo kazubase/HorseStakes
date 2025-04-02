@@ -327,7 +327,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }), [headerTransform]);
 
   const mainContentClass = useMemo(() => 
-    `flex-1 container mx-auto px-4 py-6 ${isRaceListPage ? '' : ''}`,
+    `flex-1 container mx-auto px-4 py-2 ${isRaceListPage ? '' : ''}`,
     [isRaceListPage]
   );
 
