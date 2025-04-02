@@ -3,10 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Horse, Race, TanOddsHistory } from "@db/schema";
+import { Horse, Race } from "@db/schema";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { AlertCircle, ArrowRight, Award, Wallet, Plus, Minus, Activity, Info, BarChart4, Trophy, ChevronUp, ChevronDown, ChevronRight } from "lucide-react";
+import { AlertCircle, ArrowRight, Award, Wallet, Plus, Minus, Activity, Info, BarChart4, Trophy, ChevronUp, ChevronDown, ChevronRight, Share2, SplitSquareVertical, DivideCircle, CalculatorIcon, Percent } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { AnimatePresence, motion } from "framer-motion";
@@ -64,18 +64,6 @@ export default function PredictionSettings() {
     staleTime: Infinity,
     gcTime: Infinity,
     initialData: storedHorses && storedHorses.length > 0 ? storedHorses : undefined
-  });
-
-  const { data: latestOdds = [], isLoading: oddsLoading } = useQuery<TanOddsHistory[]>({
-    queryKey: [`/api/tan-odds-history/latest/${id}`],
-    enabled: !!id && activeTab === "win",
-    staleTime: 60 * 1000,
-  });
-
-  const { data: fukuOdds = [], isLoading: fukuOddsLoading } = useQuery<any[]>({
-    queryKey: [`/api/fuku-odds/latest/${id}`],
-    enabled: !!id && activeTab === "place",
-    staleTime: 60 * 1000,
   });
 
   // 馬番でソートした馬リストを作成
@@ -338,6 +326,49 @@ export default function PredictionSettings() {
     setWinInputValues(updatedInputValues);
   };
 
+  // 未入力馬に対して残りの単勝確率を均等に配分する関数
+  const distributeRemainingWinProbability = () => {
+    if (!horses || horses.length === 0) return;
+
+    // 確率が0の馬を特定
+    const zeroHorses = horses.filter(horse => (winProbabilities[horse.id] || 0) === 0);
+    
+    // 全ての馬が既に確率を持っている場合は通常の正規化を実行
+    if (zeroHorses.length === 0) {
+      normalizeWinProbabilities();
+      return;
+    }
+    
+    // 現在の確率合計を計算
+    const currentTotal = Object.values(winProbabilities).reduce((sum, value) => sum + value, 0);
+    
+    // 残りの確率
+    const remaining = 100 - currentTotal;
+    
+    // 残りがない（または負の値）なら正規化を実行
+    if (remaining <= 0) {
+      normalizeWinProbabilities();
+      return;
+    }
+    
+    // 残りの確率を0の馬に均等に配分
+    const distributionPerHorse = remaining / zeroHorses.length;
+    
+    const newProbabilities = { ...winProbabilities };
+    const newInputValues = { ...winInputValues };
+    
+    zeroHorses.forEach(horse => {
+      newProbabilities[horse.id] = Number(distributionPerHorse.toFixed(1));
+      newInputValues[horse.id] = distributionPerHorse.toFixed(1);
+    });
+    
+    setWinProbabilities(newProbabilities);
+    setWinInputValues(newInputValues);
+    setWinTotalProbability(
+      Object.values(newProbabilities).reduce((sum, value) => sum + value, 0)
+    );
+  };
+
   // 複勝確率の処理関数
   const handlePlaceProbabilityChange = (horseId: number, newValue: number) => {
     // 単勝確率より小さい値は設定できないようにする
@@ -471,6 +502,66 @@ export default function PredictionSettings() {
       ])
     );
     setPlaceInputValues(updatedInputValues);
+  };
+
+  // 未入力馬に対して残りの複勝確率を均等に配分する関数
+  const distributeRemainingPlaceProbability = () => {
+    if (!horses || horses.length === 0) return;
+    
+    const requiredTotal = getRequiredTotalProbability(horses.length);
+
+    // まず単勝確率を複勝確率の最小値として設定
+    const newPlaceProbabilities = { ...placeProbabilities };
+    horses.forEach(horse => {
+      const winProb = winProbabilities[horse.id] || 0;
+      if ((newPlaceProbabilities[horse.id] || 0) < winProb) {
+        newPlaceProbabilities[horse.id] = winProb;
+      }
+    });
+
+    // 確率が単勝確率と同じ（実質未入力）の馬を特定
+    const minimumHorses = horses.filter(horse => {
+      const winProb = winProbabilities[horse.id] || 0;
+      const placeProb = newPlaceProbabilities[horse.id] || 0;
+      return Math.abs(placeProb - winProb) < 0.01;
+    });
+    
+    // 全ての馬が単勝確率よりも高い複勝確率を持っている場合は通常の正規化を実行
+    if (minimumHorses.length === 0) {
+      normalizePlaceProbabilities();
+      return;
+    }
+    
+    // 現在の確率合計を計算
+    const currentTotal = Object.values(newPlaceProbabilities).reduce((sum, value) => sum + value, 0);
+    
+    // 残りの確率
+    const remaining = requiredTotal - currentTotal;
+    
+    // 残りがない（または負の値）なら正規化を実行
+    if (remaining <= 0) {
+      // この場合は現在の値で正規化
+      setPlaceProbabilities(newPlaceProbabilities);
+      normalizePlaceProbabilities();
+      return;
+    }
+    
+    // 残りの確率を単勝確率と同じ馬に均等に配分
+    const distributionPerHorse = remaining / minimumHorses.length;
+    
+    const newInputValues = { ...placeInputValues };
+    
+    minimumHorses.forEach(horse => {
+      const winProb = winProbabilities[horse.id] || 0;
+      newPlaceProbabilities[horse.id] = winProb + Number(distributionPerHorse.toFixed(1));
+      newInputValues[horse.id] = newPlaceProbabilities[horse.id].toString();
+    });
+    
+    setPlaceProbabilities(newPlaceProbabilities);
+    setPlaceInputValues(newInputValues);
+    setPlaceTotalProbability(
+      Object.values(newPlaceProbabilities).reduce((sum, value) => sum + value, 0)
+    );
   };
 
   // 予算設定の処理関数
@@ -621,13 +712,14 @@ export default function PredictionSettings() {
   };
 
   const handleSubmit = () => {
-    if (Math.abs(winTotalProbability - 100) > 0.1) {
+    // バリデーション許容誤差を0.1から1.0に緩和
+    if (Math.abs(winTotalProbability - 100) > 1.0) {
       setActiveTab("win");
       return;
     }
     
     const requiredPlaceTotal = getRequiredTotalProbability(horses?.length || 0);
-    if (Math.abs(placeTotalProbability - requiredPlaceTotal) > 0.1) {
+    if (Math.abs(placeTotalProbability - requiredPlaceTotal) > 1.0) {
       setActiveTab("place");
       return;
     }
@@ -652,30 +744,40 @@ export default function PredictionSettings() {
 
   // 初期化後にUIを更新するためのeffect
   useEffect(() => {
-    if (isInitialized && horses) {
-      // 単勝確率の合計を再計算
+    if (isInitialized && horses && horses.length > 0) {
+      // このuseEffectをリロード時に一度だけ実行するための条件チェック
+      // このuseEffectの依存配列には必要最小限の変数だけを含めます
       const totalWin = Object.values(winProbabilities).reduce((sum, value) => sum + value, 0);
-      setWinTotalProbability(totalWin);
-      
-      // 複勝確率の合計を再計算
       const totalPlace = Object.values(placeProbabilities).reduce((sum, value) => sum + value, 0);
-      setPlaceTotalProbability(totalPlace);
+
+      // 現在の値と異なる場合のみ更新（無限ループを防ぐ）
+      if (Math.abs(totalWin - winTotalProbability) > 0.01) {
+        setWinTotalProbability(totalWin);
+      }
       
-      // 単勝確率の入力値を更新
-      const updatedWinInputs = {} as { [key: number]: string };
-      horses.forEach(horse => {
-        updatedWinInputs[horse.id] = (winProbabilities[horse.id] || 0).toString();
-      });
-      setWinInputValues(updatedWinInputs);
+      if (Math.abs(totalPlace - placeTotalProbability) > 0.01) {
+        setPlaceTotalProbability(totalPlace);
+      }
+
+      // 入力値が未設定の場合のみ初期化する
+      if (Object.keys(winInputValues).length === 0 || Object.values(winInputValues).some(val => val === "")) {
+        const updatedWinInputs = {} as { [key: number]: string };
+        horses.forEach(horse => {
+          updatedWinInputs[horse.id] = (winProbabilities[horse.id] || 0).toString();
+        });
+        setWinInputValues(updatedWinInputs);
+      }
       
-      // 複勝確率の入力値を更新
-      const updatedPlaceInputs = {} as { [key: number]: string };
-      horses.forEach(horse => {
-        updatedPlaceInputs[horse.id] = (placeProbabilities[horse.id] || 0).toString();
-      });
-      setPlaceInputValues(updatedPlaceInputs);
+      if (Object.keys(placeInputValues).length === 0 || Object.values(placeInputValues).some(val => val === "")) {
+        const updatedPlaceInputs = {} as { [key: number]: string };
+        horses.forEach(horse => {
+          updatedPlaceInputs[horse.id] = (placeProbabilities[horse.id] || 0).toString();
+        });
+        setPlaceInputValues(updatedPlaceInputs);
+      }
     }
-  }, [isInitialized, horses]);
+    // isInitializedとhorsesの変更時のみ実行
+  }, [isInitialized, horses, winProbabilities, placeProbabilities, winTotalProbability, placeTotalProbability, winInputValues, placeInputValues]);
 
   if (!horses) return null;
 
@@ -730,8 +832,8 @@ export default function PredictionSettings() {
                       px-2 py-1 h-auto sm:h-9 sm:px-3 sm:py-2
                     `}
                     disabled={
-                      Math.abs(winTotalProbability - 100) > 0.1 || 
-                      Math.abs(placeTotalProbability - getRequiredTotalProbability(horses.length)) > 0.1 ||
+                      Math.abs(winTotalProbability - 100) > 1.0 || 
+                      Math.abs(placeTotalProbability - getRequiredTotalProbability(horses.length)) > 1.0 ||
                       budget <= 0 ||
                       riskRatio < 2.0
                     }
@@ -804,7 +906,7 @@ export default function PredictionSettings() {
           <TabsContent id="win-tab" value="win" className="space-y-4 mt-4" role="tabpanel" aria-labelledby="win-tab">
             <div className="sticky top-4 z-50 h-[72px]">
               <AnimatePresence>
-                {horses && Math.abs(winTotalProbability - 100) > 0.1 && (
+                {horses && Math.abs(winTotalProbability - 100) > 1.0 && (
                   <motion.div 
                     className="w-full"
                     initial={{ opacity: 0, y: -10 }}
@@ -824,10 +926,10 @@ export default function PredictionSettings() {
                       } />
                       <AlertDescription className={
                         theme === 'light'
-                          ? "flex items-center justify-between text-emerald-800"
-                          : "flex items-center justify-between text-emerald-50"
+                          ? "flex flex-row items-start justify-between text-emerald-800 gap-1 pb-0 sm:items-center sm:gap-2 sm:pb-0"
+                          : "flex flex-row items-start justify-between text-emerald-50 gap-1 pb-0 sm:items-center sm:gap-2 sm:pb-0"
                       }>
-                        <span>
+                        <div className="flex-1 pr-1 sm:pr-0">
                           全ての確率の合計が100%になるように調整してください
                           <br />
                           <span className={
@@ -837,20 +939,43 @@ export default function PredictionSettings() {
                           }>
                             現在の合計: {winTotalProbability.toFixed(1)}%
                           </span>
-                        </span>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={normalizeWinProbabilities}
-                          className={
-                            theme === 'light'
-                              ? "border-emerald-300 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 whitespace-nowrap"
-                              : "border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap"
-                          }
-                          aria-label="確率を一括調整する"
-                        >
-                          一括調整
-                        </Button>
+                        </div>
+                        <div className="flex flex-col gap-1 min-w-[90px] sm:flex-row sm:gap-2 sm:min-w-0">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={distributeRemainingWinProbability}
+                            className={
+                              theme === 'light'
+                                ? "border-emerald-300 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 whitespace-nowrap text-xs h-6 px-2 py-0 rounded-sm sm:text-sm sm:h-auto sm:px-3 sm:py-1"
+                                : "border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap text-xs h-6 px-2 py-0 rounded-sm sm:text-sm sm:h-auto sm:px-3 sm:py-1"
+                            }
+                            aria-label="未入力馬に残りの確率を均等配分"
+                          >
+                            <span className="hidden sm:inline-flex sm:items-center">
+                              <SplitSquareVertical className="h-3.5 w-3.5 mr-1" />
+                              未入力馬に配分
+                            </span>
+                            <span className="sm:hidden">未入力に配分</span>
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={normalizeWinProbabilities}
+                            className={
+                              theme === 'light'
+                                ? "border-emerald-300 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 whitespace-nowrap text-xs h-6 px-2 py-0 rounded-sm sm:text-sm sm:h-auto sm:px-3 sm:py-1"
+                                : "border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap text-xs h-6 px-2 py-0 rounded-sm sm:text-sm sm:h-auto sm:px-3 sm:py-1"
+                            }
+                            aria-label="全馬の確率を比率を維持して100%に調整"
+                          >
+                            <span className="hidden sm:inline-flex sm:items-center">
+                              <Percent className="h-3.5 w-3.5 mr-1" />
+                              比率維持で調整
+                            </span>
+                            <span className="sm:hidden">比率で調整</span>
+                          </Button>
+                        </div>
                       </AlertDescription>
                     </Alert>
                   </motion.div>
@@ -963,7 +1088,7 @@ export default function PredictionSettings() {
           <TabsContent id="place-tab" value="place" className="space-y-4 mt-4" role="tabpanel" aria-labelledby="place-tab">
             <div className="sticky top-4 z-50 h-[72px]">
               <AnimatePresence>
-                {horses && Math.abs(placeTotalProbability - getRequiredTotalProbability(horses.length)) > 0.1 && (
+                {horses && Math.abs(placeTotalProbability - getRequiredTotalProbability(horses.length)) > 1.0 && (
                   <motion.div 
                     className="w-full"
                     initial={{ opacity: 0, y: -10 }}
@@ -983,10 +1108,10 @@ export default function PredictionSettings() {
                       } />
                       <AlertDescription className={
                         theme === 'light'
-                          ? "flex items-center justify-between text-emerald-800"
-                          : "flex items-center justify-between text-emerald-50"
+                          ? "flex flex-row items-start justify-between text-emerald-800 gap-1 pb-0 sm:items-center sm:gap-2 sm:pb-0"
+                          : "flex flex-row items-start justify-between text-emerald-50 gap-1 pb-0 sm:items-center sm:gap-2 sm:pb-0"
                       }>
-                        <span>
+                        <div className="flex-1 pr-1 sm:pr-0">
                           全ての確率の合計が{getRequiredTotalProbability(horses.length)}%になるように調整してください
                           <br />
                           <span className={
@@ -996,20 +1121,43 @@ export default function PredictionSettings() {
                           }>
                             現在の合計: {placeTotalProbability.toFixed(1)}%
                           </span>
-                        </span>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={normalizePlaceProbabilities}
-                          className={
-                            theme === 'light'
-                              ? "border-emerald-300 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 whitespace-nowrap"
-                              : "border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap"
-                          }
-                          aria-label="複勝確率を一括調整する"
-                        >
-                          一括調整
-                        </Button>
+                        </div>
+                        <div className="flex flex-col gap-1 min-w-[90px] sm:flex-row sm:gap-2 sm:min-w-0">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={distributeRemainingPlaceProbability}
+                            className={
+                              theme === 'light'
+                                ? "border-emerald-300 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 whitespace-nowrap text-xs h-7 px-2 py-0 rounded-sm sm:text-sm sm:h-auto sm:px-3 sm:py-1"
+                                : "border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap text-xs h-7 px-2 py-0 rounded-sm sm:text-sm sm:h-auto sm:px-3 sm:py-1"
+                            }
+                            aria-label="未入力馬に残りの確率を均等配分"
+                          >
+                            <span className="hidden sm:inline-flex sm:items-center">
+                              <SplitSquareVertical className="h-3.5 w-3.5 mr-1" />
+                              未入力馬に配分
+                            </span>
+                            <span className="sm:hidden">未入力に配分</span>
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={normalizePlaceProbabilities}
+                            className={
+                              theme === 'light'
+                                ? "border-emerald-300 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 whitespace-nowrap text-xs h-7 px-2 py-0 rounded-sm sm:text-sm sm:h-auto sm:px-3 sm:py-1"
+                                : "border-emerald-500/30 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-50 whitespace-nowrap text-xs h-7 px-2 py-0 rounded-sm sm:text-sm sm:h-auto sm:px-3 sm:py-1"
+                            }
+                            aria-label="全馬の確率を比率を維持して目標値に調整"
+                          >
+                            <span className="hidden sm:inline-flex sm:items-center">
+                              <Percent className="h-3.5 w-3.5 mr-1" />
+                              比率維持で調整
+                            </span>
+                            <span className="sm:hidden">比率で調整</span>
+                          </Button>
+                        </div>
                       </AlertDescription>
                     </Alert>
                   </motion.div>
