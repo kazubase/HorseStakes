@@ -1004,12 +1004,12 @@ export default function Home() {
                   <>
                     <h1 className={
                       theme === 'light'
-                        ? "text-sm sm:text-2xl font-bold mb-1 sm:mb-2 tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
-                        : "text-sm sm:text-2xl font-bold mb-1 sm:mb-2 bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent"
+                        ? "text-[18px] sm:text-2xl font-bold m-1 sm:mb-2 tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
+                        : "text-[18px] sm:text-2xl font-bold m-1 sm:mb-2 bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent"
                     }>
                       {race?.name}
                     </h1>
-                    <p className="text-xs sm:text-base text-muted-foreground">
+                    <p className="text-xs sm:text-base m-1 sm:mb-2 text-muted-foreground">
                       {format(new Date(race?.startTime!), 'yyyy年M月d日')} {race?.venue} {format(new Date(race?.startTime!), 'HH:mm')}発走
                     </p>
                   </>
@@ -1029,7 +1029,7 @@ export default function Home() {
                       <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 ml-0.5 sm:ml-1" />
                     </div>
                   </Button>
-                  <p className="text-xs sm:text-base font-semibold">
+                  <p className="text-xs sm:text-base font-semibold m-1 sm:mb-2">
                     {race?.status === 'done' ? '発走済' : null}
                   </p>
                 </div>
@@ -1041,7 +1041,21 @@ export default function Home() {
         {/* スケルトンローダーを使用して、ユーザーに読み込み中であることを視覚的に示す */}
         {(horsesLoading || raceLoading) ? (
           <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 sm:gap-6 relative z-10">
-            <Card className="lg:col-span-4 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
+            {/* スマホサイズではオッズグラフのスケルトンを先に表示 */}
+            <div className="lg:order-2 lg:col-span-6">
+              <Card className="bg-background/50 backdrop-blur-sm">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                  <Skeleton className="h-[300px] w-full rounded-lg" />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 出馬表のスケルトン */}
+            <Card className="lg:order-1 lg:col-span-4 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
               <CardContent className="p-4 sm:p-6 space-y-4">
                 {Array(8).fill(0).map((_, i) => (
                   <div key={i} className="flex items-center space-x-4">
@@ -1054,29 +1068,153 @@ export default function Home() {
                 ))}
               </CardContent>
             </Card>
-            <Card className="lg:col-span-6 bg-background/50 backdrop-blur-sm">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-4 w-48" />
-                </div>
-                <Skeleton className="h-[300px] w-full rounded-lg" />
-              </CardContent>
-            </Card>
           </div>
         ) : (
           <>
             {/* 2カラムレイアウト */}
             <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 sm:gap-6 relative z-10">
+              {/* スマホサイズではオッズ推移を先に表示 */}
+              <div className="lg:order-2 lg:col-span-6">
+                <Card className="bg-background/50 backdrop-blur-sm overflow-hidden">
+                  <CardContent className="p-1 sm:p-6">
+                    <div className="flex items-center justify-between p-1 sm:p-0 sm:mb-4">
+                      <h2 className="text-base sm:text-xl font-semibold whitespace-nowrap">オッズ推移</h2>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant={theme === 'light' ? "outline" : "secondary"}
+                          onClick={refreshOddsData}
+                          disabled={isRefreshing}
+                          aria-label={isRefreshing ? "オッズを更新中" : "オッズを更新"}
+                          className={`
+                            h-7 w-7 p-1 sm:h-7 sm:w-7 sm:p-1.5 
+                            ${theme === 'light' 
+                              ? "" 
+                              : "bg-primary/10 hover:bg-primary/20 text-foreground border-primary/30"}
+                          `}
+                        >
+                          <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+                        </Button>
+                        <div className="text-[11px] sm:text-xs text-muted-foreground">
+                          {filteredOddsData.length > 0 && 
+                            `${filteredOddsData[0].timestamp} - ${filteredOddsData[filteredOddsData.length - 1].timestamp}`
+                          }
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* グループ切り替えボタン */}
+                    {horseGroups.length > 1 && (
+                      <div className="flex gap-1 sm:gap-2 mb-1 sm:mb-4 overflow-x-auto pb-1 sm:pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent justify-center">
+                        {horseGroups.slice(0, Math.min(3, horseGroups.length)).map((group, index) => {
+                          // グループ内の最小オッズと最大オッズを取得
+                          const groupOdds = group.map(horseId => {
+                            const odd = latestOdds?.find(o => Number(o.horseId) === horseId);
+                            return odd ? parseFloat(odd.odds) : 999;
+                          });
+                          const minOdds = Math.min(...groupOdds);
+                          const maxOdds = Math.max(...groupOdds);
+                          
+                          return (
+                            <Button
+                              key={index}
+                              size="sm"
+                              variant={currentGroupIndex === index ? "default" : "outline"}
+                              onClick={() => switchGroup(index)}
+                              className="whitespace-nowrap text-[10px] sm:text-xs text-center h-6 sm:h-9 px-1.5 sm:px-3"
+                            >
+                              {index === 0 ? "人気" : index === 1 ? "中人気" : "穴人気"}
+                              <span className="ml-0.5 sm:ml-1 opacity-80">
+                                {group.length}頭
+                              </span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {/* グラフコンテナ - 相対位置指定 */}
+                    <div className="h-[280px] sm:h-[400px] relative">
+                      {/* グラフデータのロード中はスケルトンを表示 */}
+                      {oddsLoading ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Skeleton className="h-full w-full rounded-lg" />
+                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                            オッズデータを読み込み中...
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* 背景グラデーション */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-30 pointer-events-none" />
+                          
+                          {/* スクロール可能なコンテナ */}
+                          <div 
+                            className={`absolute inset-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent`} 
+                            ref={chartContainerRef}
+                          >
+                            {/* グラフコンテンツ */}
+                            <div 
+                              className="h-full" 
+                              style={{ 
+                                minWidth: typeof calculateChartMinWidth === 'string' 
+                                  ? calculateChartMinWidth 
+                                  : `${calculateChartMinWidth}px` 
+                              }}
+                            >
+                              {OddsChart}
+                            </div>
+                          </div>
+                          
+                          {/* スマホ・タブレットでスクロールが必要な場合のみフェードエフェクトを表示 */}
+                          {windowWidth >= 1024 && (
+                            <>
+                              <div className="absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-r from-background/80 to-transparent" />
+                              <div className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none bg-gradient-to-l from-background/80 to-transparent" />
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* 時間軸切り替えボタン - 条件なしで常に表示 */}
+                    {formattedOddsData.length > 0 && (
+                      <div className="flex flex-wrap gap-1 sm:gap-2 mt-2 sm:mt-4 justify-center">
+                        <div className="flex text-[10px] sm:text-xs border border-border rounded-md overflow-hidden">
+                          <button 
+                            className={`px-2 sm:px-3 py-1 sm:py-1.5 ${timeZoom === 'all' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'}`}
+                            onClick={() => handleTimeZoomChange('all')}
+                          >
+                            全体
+                          </button>
+                          <button 
+                            className={`px-2 sm:px-3 py-1 sm:py-1.5 border-l border-border ${timeZoom === 'normal' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'}`}
+                            onClick={() => handleTimeZoomChange('normal')}
+                          >
+                            最新
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* グラフ操作ガイド - 条件なしで常に表示 */}
+                    <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground text-center">
+                      <p>左右にスクロールして時間推移を確認できます</p>
+                      <p>馬名をタップすると表示/非表示を切り替えられます</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
               {/* 左カラム: 出馬表 */}
-              <Card className="lg:col-span-4 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
-                <CardContent className="p-0 sm:p-6 relative">
+              <Card className="lg:order-1 lg:col-span-4 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
+                <CardContent className="p-0 sm:p-6 md:p-0 lg:p-6 relative">
                   {/* グラデーションオーバーレイ */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
                   
                   <div className="relative">
-                    <div className="flex justify-between items-center pt-1 sm:pt-4 px-3 sm:p-0 sm:mb-4">
-                      <h2 className="hidden sm:block text-xl font-semibold">出馬表</h2>
+                    <div className="flex justify-between items-center pt-1 px-3 sm:pt-4 md:pt-0 lg:pt-4 sm:p-0 sm:mb-4 md:mb-0 lg:mb-4">
+                      <h2 className="hidden lg:block text-xl font-semibold">出馬表</h2>
                     </div>
 
                     <div className="overflow-x-auto -mt-2 sm:mt-0">
@@ -1087,7 +1225,7 @@ export default function Home() {
                           <div className="flex items-center justify-start pl-1.5">
                             <button 
                               onClick={() => handleSortClick('number')}
-                              className="flex items-center justify-center pl-1 hover:bg-muted/30 rounded-sm transition-colors"
+                              className="flex items-center justify-center pl-0.5 pt-3 hover:bg-muted/30 rounded-sm transition-colors"
                               aria-label="馬番でソート"
                             >
                               {sortOrder === 'number-asc' ? (
@@ -1102,7 +1240,7 @@ export default function Home() {
                           <div className="flex items-center justify-end pr-1.5">
                             <button 
                               onClick={() => handleSortClick('odds')}
-                              className="flex items-center justify-center p-1.5 hover:bg-muted/30 rounded-sm transition-colors"
+                              className="flex items-center justify-center pr-3 pt-3 hover:bg-muted/30 rounded-sm transition-colors"
                               aria-label="オッズでソート"
                             >
                               {sortOrder === 'odds-asc' ? (
@@ -1159,7 +1297,7 @@ export default function Home() {
                                   `}>
                                     {horse.number}
                                   </span>
-                                  <span className="relative z-10 font-medium text-xs ml-1.5 line-clamp-1 min-w-0 flex-1">
+                                  <span className="relative z-10 font-medium text-xs ml-1.5 md:text-base line-clamp-1 min-w-0 flex-1">
                                     {horse.name}
                                   </span>
                                 </div>
@@ -1167,13 +1305,13 @@ export default function Home() {
                                 <div className="relative z-10 flex items-center justify-end flex-shrink-0 ml-1">
                                   <span className={`
                                     transition-all duration-300
-                                    text-sm tabular-nums
+                                    text-sm md:text-lg tabular-nums
                                     ${isSelected ? 'text-primary font-semibold' : 'text-foreground'}
                                   `}>
                                     {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
                                   </span>
                                   {filteredOddsData.length >= 3 && (
-                                    <span className={`text-[10px] ml-0.5 ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
+                                    <span className={`text-[10px] ml-0.5 md:text-xs ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
                                       {getOddsChangeArrow(calculateRecentOddsChange(horse.number))}
                                     </span>
                                   )}
@@ -1213,7 +1351,7 @@ export default function Home() {
                                 <div className="flex items-center justify-end gap-0.5 sm:gap-2">
                                   <button 
                                     onClick={() => handleSortClick('odds')}
-                                    className="flex items-center justify-center pr-8 hover:bg-muted/30 rounded transition-colors"
+                                    className="flex items-center justify-center pr-11 hover:bg-muted/30 rounded transition-colors"
                                     aria-label="オッズでソート"
                                     aria-pressed={sortOrder === 'odds-asc' || sortOrder === 'odds-desc'}
                                     aria-sort={sortOrder === 'odds-asc' ? 'ascending' : sortOrder === 'odds-desc' ? 'descending' : 'none'}
@@ -1259,12 +1397,12 @@ export default function Home() {
                                     }
                                   `}
                                 >
-                                  <TableCell className="relative border-0 w-10 sm:w-16 px-1 sm:px-3 py-0.5 sm:py-2.5">
+                                  <TableCell className="relative border-0 w-10 sm:w-16 px-1 sm:px-3 py-0.5 sm:py-2">
                                     <span className={`
                                       relative z-10
                                       inline-flex items-center justify-center
                                       w-5 h-5 sm:w-8 sm:h-8
-                                      rounded-md sm:rounded-lg text-xs sm:text-sm font-bold
+                                      rounded-md sm:rounded-lg text-xs sm:text-sm md:text-base font-bold
                                       ${getFrameColor(horse.frame)}
                                       transition-transform duration-300
                                       group-hover:scale-105
@@ -1273,23 +1411,23 @@ export default function Home() {
                                     </span>
                                   </TableCell>
                                   
-                                  <TableCell className="relative border-0 py-0.5 sm:py-2.5 pl-0 pr-0">
-                                    <span className="relative z-10 font-medium text-xs sm:text-base line-clamp-1 sm:line-clamp-none">
+                                  <TableCell className="relative border-0 py-0.5 sm:py-2 pl-0 pr-0">
+                                    <span className="relative z-10 font-medium text-xs sm:text-base md:text-lg line-clamp-1 sm:line-clamp-none">
                                       {horse.name}
                                     </span>
                                   </TableCell>
                                   
-                                  <TableCell className="relative border-0 text-right w-16 sm:w-24 px-1 sm:px-4 py-0.5 sm:py-2.5">
+                                  <TableCell className="relative border-0 text-right w-16 sm:w-24 px-1 sm:px-4 py-0.5 sm:py-2">
                                     <div className="relative z-10 flex items-center justify-end gap-0.5 sm:gap-2">
                                       <span className={`
                                         transition-all duration-300
-                                        text-sm sm:text-base tabular-nums
+                                        text-sm sm:text-base md:text-xl tabular-nums
                                         ${isSelected ? 'text-primary font-semibold' : 'text-foreground'}
                                       `}>
                                         {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
                                       </span>
                                       {filteredOddsData.length >= 3 && (
-                                        <span className={`text-[10px] sm:text-xs ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
+                                        <span className={`text-[10px] sm:text-xs md:text-sm ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
                                           {getOddsChangeArrow(calculateRecentOddsChange(horse.number))}
                                         </span>
                                       )}
@@ -1306,137 +1444,6 @@ export default function Home() {
                         </Table>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* 右カラム: オッズ推移グラフ */}
-              <Card className="lg:col-span-6 bg-background/50 backdrop-blur-sm overflow-hidden">
-                <CardContent className="p-1 sm:p-6">
-                  <div className="flex items-center justify-between p-1 sm:p-0 sm:mb-4">
-                    <h2 className="text-base sm:text-xl font-semibold whitespace-nowrap">オッズ推移</h2>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant={theme === 'light' ? "outline" : "secondary"}
-                        onClick={refreshOddsData}
-                        disabled={isRefreshing}
-                        aria-label={isRefreshing ? "オッズを更新中" : "オッズを更新"}
-                        className={`
-                          h-7 w-7 p-1 sm:h-7 sm:w-7 sm:p-1.5 
-                          ${theme === 'light' 
-                            ? "" 
-                            : "bg-primary/10 hover:bg-primary/20 text-foreground border-primary/30"}
-                        `}
-                      >
-                        <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-                      </Button>
-                      <div className="text-[11px] sm:text-xs text-muted-foreground">
-                        {filteredOddsData.length > 0 && 
-                          `${filteredOddsData[0].timestamp} - ${filteredOddsData[filteredOddsData.length - 1].timestamp}`
-                        }
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* グループ切り替えボタン */}
-                  {horseGroups.length > 1 && (
-                    <div className="flex gap-1 sm:gap-2 mb-1 sm:mb-4 overflow-x-auto pb-1 sm:pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent justify-center">
-                      {horseGroups.slice(0, Math.min(3, horseGroups.length)).map((group, index) => {
-                        // グループ内の最小オッズと最大オッズを取得
-                        const groupOdds = group.map(horseId => {
-                          const odd = latestOdds?.find(o => Number(o.horseId) === horseId);
-                          return odd ? parseFloat(odd.odds) : 999;
-                        });
-                        const minOdds = Math.min(...groupOdds);
-                        const maxOdds = Math.max(...groupOdds);
-                        
-                        return (
-                          <Button
-                            key={index}
-                            size="sm"
-                            variant={currentGroupIndex === index ? "default" : "outline"}
-                            onClick={() => switchGroup(index)}
-                            className="whitespace-nowrap text-[10px] sm:text-xs text-center h-6 sm:h-9 px-1.5 sm:px-3"
-                          >
-                            {index === 0 ? "人気" : index === 1 ? "中人気" : "穴人気"}
-                            <span className="ml-0.5 sm:ml-1 opacity-80">
-                              {group.length}頭
-                            </span>
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  )}
-                  
-                  {/* グラフコンテナ - 相対位置指定 */}
-                  <div className="h-[280px] sm:h-[400px] relative">
-                    {/* グラフデータのロード中はスケルトンを表示 */}
-                    {oddsLoading ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Skeleton className="h-full w-full rounded-lg" />
-                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                          オッズデータを読み込み中...
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {/* 背景グラデーション */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-30 pointer-events-none" />
-                        
-                        {/* スクロール可能なコンテナ */}
-                        <div 
-                          className={`absolute inset-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent`} 
-                          ref={chartContainerRef}
-                        >
-                          {/* グラフコンテンツ */}
-                          <div 
-                            className="h-full" 
-                            style={{ 
-                              minWidth: typeof calculateChartMinWidth === 'string' 
-                                ? calculateChartMinWidth 
-                                : `${calculateChartMinWidth}px` 
-                            }}
-                          >
-                            {OddsChart}
-                          </div>
-                        </div>
-                        
-                        {/* スマホ・タブレットでスクロールが必要な場合のみフェードエフェクトを表示 */}
-                        {windowWidth >= 1024 && (
-                          <>
-                            <div className="absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-r from-background/80 to-transparent" />
-                            <div className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none bg-gradient-to-l from-background/80 to-transparent" />
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* 時間軸切り替えボタン - 条件なしで常に表示 */}
-                  {formattedOddsData.length > 0 && (
-                    <div className="flex flex-wrap gap-1 sm:gap-2 mt-2 sm:mt-4 justify-center">
-                      <div className="flex text-[10px] sm:text-xs border border-border rounded-md overflow-hidden">
-                        <button 
-                          className={`px-2 sm:px-3 py-1 sm:py-1.5 ${timeZoom === 'all' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'}`}
-                          onClick={() => handleTimeZoomChange('all')}
-                        >
-                          全体
-                        </button>
-                        <button 
-                          className={`px-2 sm:px-3 py-1 sm:py-1.5 border-l border-border ${timeZoom === 'normal' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'}`}
-                          onClick={() => handleTimeZoomChange('normal')}
-                        >
-                          最新
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* グラフ操作ガイド - 条件なしで常に表示 */}
-                  <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground text-center">
-                    <p>左右にスクロールして時間推移を確認できます</p>
-                    <p>馬名をタップすると表示/非表示を切り替えられます</p>
                   </div>
                 </CardContent>
               </Card>
