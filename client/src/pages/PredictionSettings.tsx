@@ -916,8 +916,8 @@ export default function PredictionSettings() {
                   >
                     <Alert variant="default" className={
                       theme === 'light'
-                        ? "border border-emerald-500/40 bg-emerald-50 shadow-sm"
-                        : "border border-emerald-500/30 bg-emerald-500/10 shadow-lg backdrop-blur-sm"
+                        ? "border border-emerald-500/40 bg-emerald-50 shadow-sm p-2 sm:p-4"
+                        : "border border-emerald-500/30 bg-emerald-500/10 shadow-lg backdrop-blur-sm p-3 sm:p-4"
                     }>
                       <AlertCircle className={
                         theme === 'light' 
@@ -1098,8 +1098,8 @@ export default function PredictionSettings() {
                   >
                     <Alert variant="default" className={
                       theme === 'light'
-                        ? "border border-emerald-500/40 bg-emerald-50 shadow-sm"
-                        : "border border-emerald-500/30 bg-emerald-500/10 shadow-lg backdrop-blur-sm"
+                        ? "border border-emerald-500/40 bg-emerald-50 shadow-sm p-2 sm:p-4"
+                        : "border border-emerald-500/30 bg-emerald-500/10 shadow-lg backdrop-blur-sm p-3 sm:p-4"
                     }>
                       <AlertCircle className={
                         theme === 'light' 
