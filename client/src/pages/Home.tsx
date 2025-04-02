@@ -1077,7 +1077,7 @@ export default function Home() {
               <div className="lg:order-2 lg:col-span-6">
                 <Card className="bg-background/50 backdrop-blur-sm overflow-hidden">
                   <CardContent className="p-1 sm:p-6">
-                    <div className="flex items-center justify-between p-1 sm:p-0 sm:mb-4">
+                    <div className="flex items-center justify-between p-2 sm:p-0 sm:mb-4">
                       <h2 className="text-base sm:text-xl font-semibold whitespace-nowrap">オッズ推移</h2>
                       <div className="flex items-center gap-2">
                         <Button
@@ -1095,7 +1095,7 @@ export default function Home() {
                         >
                           <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
                         </Button>
-                        <div className="text-[11px] sm:text-xs text-muted-foreground">
+                        <div className="text-[12px] sm:text-xs text-muted-foreground">
                           {filteredOddsData.length > 0 && 
                             `${filteredOddsData[0].timestamp} - ${filteredOddsData[filteredOddsData.length - 1].timestamp}`
                           }
@@ -1121,7 +1121,7 @@ export default function Home() {
                               size="sm"
                               variant={currentGroupIndex === index ? "default" : "outline"}
                               onClick={() => switchGroup(index)}
-                              className="whitespace-nowrap text-[10px] sm:text-xs text-center h-6 sm:h-9 px-1.5 sm:px-3"
+                              className="whitespace-nowrap text-[12px] sm:text-xs text-center h-6 sm:h-9 px-1.5 sm:px-3"
                             >
                               {index === 0 ? "人気" : index === 1 ? "中人気" : "穴人気"}
                               <span className="ml-0.5 sm:ml-1 opacity-80">
@@ -1180,7 +1180,7 @@ export default function Home() {
                     {/* 時間軸切り替えボタン - 条件なしで常に表示 */}
                     {formattedOddsData.length > 0 && (
                       <div className="flex flex-wrap gap-1 sm:gap-2 mt-2 sm:mt-4 justify-center">
-                        <div className="flex text-[10px] sm:text-xs border border-border rounded-md overflow-hidden">
+                        <div className="flex text-[12px] sm:text-xs border border-border rounded-md overflow-hidden">
                           <button 
                             className={`px-2 sm:px-3 py-1 sm:py-1.5 ${timeZoom === 'all' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'}`}
                             onClick={() => handleTimeZoomChange('all')}
@@ -1198,7 +1198,7 @@ export default function Home() {
                     )}
                     
                     {/* グラフ操作ガイド - 条件なしで常に表示 */}
-                    <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground text-center">
+                    <div className="mt-1 sm:mt-2 text-[12px] sm:text-xs text-muted-foreground text-center">
                       <p>左右にスクロールして時間推移を確認できます</p>
                       <p>馬名をタップすると表示/非表示を切り替えられます</p>
                     </div>
@@ -1213,7 +1213,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
                   
                   <div className="relative">
-                    <div className="flex justify-between items-center pt-1 px-3 sm:pt-4 md:pt-0 lg:pt-4 sm:p-0 sm:mb-4 md:mb-0 lg:mb-4">
+                    <div className="flex justify-between items-center pt-1 px-3 sm:pt-4 md:pt-0 sm:p-0 sm:mb-4 md:mb-0">
                       <h2 className="hidden lg:block text-xl font-semibold">出馬表</h2>
                     </div>
 
@@ -1311,7 +1311,7 @@ export default function Home() {
                                     {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
                                   </span>
                                   {filteredOddsData.length >= 3 && (
-                                    <span className={`text-[10px] ml-0.5 md:text-xs ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
+                                    <span className={`text-[12px] ml-0.5 md:text-xs ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
                                       {getOddsChangeArrow(calculateRecentOddsChange(horse.number))}
                                     </span>
                                   )}
@@ -1427,7 +1427,7 @@ export default function Home() {
                                         {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
                                       </span>
                                       {filteredOddsData.length >= 3 && (
-                                        <span className={`text-[10px] sm:text-xs md:text-sm ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
+                                        <span className={`text-[12px] sm:text-xs md:text-sm ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
                                           {getOddsChangeArrow(calculateRecentOddsChange(horse.number))}
                                         </span>
                                       )}
