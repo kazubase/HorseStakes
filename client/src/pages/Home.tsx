@@ -1088,7 +1088,7 @@ export default function Home() {
                 <Card className="overflow-hidden border border-border/50 shadow-md dark:shadow-black/30 bg-gradient-to-br from-primary/5 via-background/80 to-background/95 backdrop-blur-md">
                   <CardContent className="p-0 relative">
                     {/* 全体的な装飾グラデーション */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-primary/5 opacity-30 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-primary/5 opacity-30 pointer-events-none rounded-lg dark:opacity-30" />
                     
                     <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border/30 bg-muted/30 relative z-10">
                       <h2 className="text-base sm:text-xl font-bold whitespace-nowrap bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">オッズ推移</h2>
@@ -1246,7 +1246,7 @@ export default function Home() {
                           <div className="flex items-center justify-start pl-1.5">
                             <button 
                               onClick={() => handleSortClick('number')}
-                              className="flex items-center justify-center pl-0.5 pt-3 hover:bg-muted/30 rounded-sm transition-colors"
+                              className="flex items-center justify-center pl-0.5 sm:pl-1 pt-3 hover:bg-muted/30 rounded-sm transition-colors"
                               aria-label="馬番でソート"
                             >
                               {sortOrder === 'number-asc' ? (
@@ -1261,7 +1261,7 @@ export default function Home() {
                           <div className="flex items-center justify-end pr-1.5">
                             <button 
                               onClick={() => handleSortClick('odds')}
-                              className="flex items-center justify-center pr-3 pt-3 hover:bg-muted/30 rounded-sm transition-colors"
+                              className="flex items-center justify-center pr-4 sm:pr-5 pt-3 hover:bg-muted/30 rounded-sm transition-colors"
                               aria-label="オッズでソート"
                             >
                               {sortOrder === 'odds-asc' ? (
@@ -1275,7 +1275,7 @@ export default function Home() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-x-0.5 gap-y-0.5 px-1">
+                        <div className="grid grid-cols-2 gap-x-2 sm:gap-x-24 gap-y-0.5 px-1">
                           {displayHorses.map((horse) => {
                             const latestOdd = latestOdds?.find(odd => 
                               Number(odd.horseId) === horse.number
@@ -1305,12 +1305,12 @@ export default function Home() {
                                   }
                                 `}
                               >
-                                <div className="flex items-center flex-1 min-w-0">
+                                <div className="flex items-center w-[68%] sm:w-[65%] min-w-0">
                                   <span className={`
                                     relative z-10
                                     inline-flex items-center justify-center
-                                    w-5 h-5
-                                    rounded-md text-xs font-bold
+                                    w-5 h-5 sm:w-6 sm:h-6
+                                    rounded-md text-xs sm:text-sm font-bold
                                     ${getFrameColor(horse.frame)}
                                     transition-transform duration-300
                                     group-hover:scale-105
@@ -1318,21 +1318,21 @@ export default function Home() {
                                   `}>
                                     {horse.number}
                                   </span>
-                                  <span className="relative z-10 font-medium text-xs ml-1.5 md:text-base line-clamp-1 min-w-0 flex-1">
+                                  <span className="relative z-10 font-medium text-xs sm:text-sm md:text-base line-clamp-1 min-w-0 flex-1 ml-1.5 sm:ml-2">
                                     {horse.name}
                                   </span>
                                 </div>
                                 
-                                <div className="relative z-10 flex items-center justify-end flex-shrink-0 ml-1">
+                                <div className="relative z-10 flex items-center justify-end flex-shrink-0 w-[32%] sm:w-[35%]">
                                   <span className={`
                                     transition-all duration-300
-                                    text-sm md:text-lg tabular-nums
+                                    text-sm sm:text-base md:text-lg tabular-nums
                                     ${isSelected ? 'text-primary font-semibold' : 'text-foreground'}
                                   `}>
                                     {latestOdd ? Number(latestOdd.odds).toFixed(1) : '-'}
                                   </span>
                                   {filteredOddsData.length >= 3 && (
-                                    <span className={`text-[12px] ml-0.5 md:text-xs ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
+                                    <span className={`text-[12px] ml-0.5 sm:text-sm sm:ml-1 ${getOddsChangeColor(calculateRecentOddsChange(horse.number))}`}>
                                       {getOddsChangeArrow(calculateRecentOddsChange(horse.number))}
                                     </span>
                                   )}
@@ -1470,27 +1470,24 @@ export default function Home() {
               </Card>
             </div>
 
-            {/* ソートボタンとリロードボタンをモバイル用に追加 - 削除（上部に統合済み） */}
+            {/* 予想確率入力ボタン */}
+            <div className="flex justify-center relative z-10">
+              <Button 
+                size="lg" 
+                className="w-full max-w-md h-12 sm:h-16 relative overflow-hidden group text-sm sm:text-base"
+                onClick={handleNavigateToPrediction}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative flex items-center justify-center">
+                  <ChartBar className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 group-hover:scale-110" />
+                  <span className="sm:inline">確率予想へ</span>
+                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-0.5 sm:ml-1" />
+                </div>
+              </Button>
+            </div>
           </>
         )}
-
-        {/* 予想確率入力ボタン */}
-        <div className="flex justify-center relative z-10">
-          <Button 
-            size="lg" 
-            className="w-full max-w-md h-12 sm:h-16 relative overflow-hidden group text-sm sm:text-base"
-            onClick={handleNavigateToPrediction}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="relative flex items-center justify-center">
-              <ChartBar className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 group-hover:scale-110" />
-              <span className="sm:inline">確率予想へ</span>
-              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-0.5 sm:ml-1" />
-            </div>
-          </Button>
-        </div>
       </div>
-
     </MainLayout>
   );
 }
