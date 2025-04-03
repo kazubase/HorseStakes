@@ -546,12 +546,12 @@ export default function Guide() {
     }
     
     .scroll-animate-left {
-      opacity: 0;
-      transform: translateX(-20px);
+      opacity: 1;
+      transform: translateX(0);
       transition: opacity var(--animation-duration) var(--animation-easing),
                   transform var(--animation-duration) var(--animation-easing),
                   filter var(--animation-duration) var(--animation-easing);
-      filter: blur(2px);
+      filter: blur(0);
     }
     
     .scroll-animate-left.animate {
@@ -561,12 +561,12 @@ export default function Guide() {
     }
     
     .scroll-animate-right {
-      opacity: 0;
-      transform: translateX(20px);
+      opacity: 1;
+      transform: translateX(0);
       transition: opacity var(--animation-duration) var(--animation-easing),
                   transform var(--animation-duration) var(--animation-easing),
                   filter var(--animation-duration) var(--animation-easing);
-      filter: blur(2px);
+      filter: blur(0);
     }
     
     .scroll-animate-right.animate {
@@ -1014,8 +1014,9 @@ export default function Guide() {
                   <CardTitle className="text-foreground text-xl">なぜ「印」ではなく「確率」で予想するのか</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
+                
                   <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 stagger-container">
-                    <div className="p-5 rounded-lg bg-red-500/10 space-y-3 border border-red-500/20 shadow-sm scroll-animate-left stagger-item">
+                    <div className="p-5 rounded-lg bg-red-500/10 space-y-3 border border-red-500/20 shadow-sm scroll-animate-left">
                       <p className="font-semibold text-red-500 flex items-center gap-2">
                         <X className="h-4 w-4" />
                         従来の印予想の限界
@@ -1035,7 +1036,7 @@ export default function Guide() {
                         </li>
                       </ul>
                     </div>
-                    <div className="p-5 rounded-lg bg-green-500/10 space-y-3 border border-green-500/20 shadow-sm scroll-animate-right stagger-item">
+                    <div className="p-5 rounded-lg bg-green-500/10 space-y-3 border border-green-500/20 shadow-sm scroll-animate-right">
                       <p className="font-semibold text-green-500 flex items-center gap-2">
                         <Check className="h-4 w-4" />
                         確率予想の優位性
@@ -1051,12 +1052,12 @@ export default function Guide() {
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center text-xs font-medium mt-0.5">○</span>
-                          <span>資金配分を科学的に最適化できる</span>
+                          <span>資金配分を数学的に最適化できる</span>
                         </li>
                       </ul>
                     </div>
                   </div>
-                  
+
                   <p className="mb-5 text-lg leading-relaxed">
                     競馬で長期的に勝ち続けている人たちは、「この馬が好き」「調子が良さそう」といった曖昧な印象ではなく、<strong className="text-primary">「この馬が勝つ確率は何%か」「このオッズは割安か割高か」</strong>という<strong className="text-primary">期待値思考</strong>で馬券を選んでいます。
                   </p>
@@ -1139,10 +1140,12 @@ export default function Guide() {
                       </div>
                       <h4 className="text-lg font-medium text-blue-500/90">実質期待値の考え方</h4>
                     </div>
-                    <p className="mb-3 text-sm leading-relaxed">予想には誤差がつきものなので、安全マージンを考慮した実質期待値が重要です。</p>
+                    <p className="mb-3 text-sm leading-relaxed">
+                      予想には必ず誤差がつきものなので、理論値だけを追い求めるのではなく、安全マージンを考慮して判断することが重要です。
+                    </p>
                     <div className="bg-background/50 backdrop-blur-sm p-4 rounded-lg border border-blue-500/10 text-center mb-2">
-                      <p className="text-xl font-bold text-foreground mb-1">「買うべき馬券の期待値は余裕を持って1.4以上」</p>
-                      <p className="text-sm text-foreground/80">プロの競馬予想家の多くが、この「期待値1.4の法則」を投資判断の目安としています</p>
+                      <p className="text-xl font-bold text-foreground mb-1">「期待値には余裕を持った判断を」</p>
+                      <p className="text-sm text-foreground/80">単なる期待値1.0を目安にするのではなく、予想の誤差を考慮し、より高い期待値の馬券を選ぶ習慣をつけると長期的な回収率向上につながります。</p>
                     </div>
                   </div>
                 </CardContent>
