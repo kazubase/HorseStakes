@@ -1050,13 +1050,16 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 sm:gap-6 relative z-10">
             {/* スマホサイズではオッズグラフのスケルトンを先に表示 */}
             <div className="lg:order-2 lg:col-span-6">
-              <Card className="bg-background/50 backdrop-blur-sm">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Skeleton className="h-6 w-32" />
-                    <Skeleton className="h-4 w-48" />
+              <Card className="bg-gradient-to-br from-primary/5 via-background/70 to-background/90 backdrop-blur-sm overflow-hidden border border-border/50 shadow-md dark:shadow-black/30">
+                <CardContent className="p-4 sm:p-6 relative">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-primary/5 opacity-20 pointer-events-none dark:opacity-10" />
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <Skeleton className="h-6 w-32" />
+                      <Skeleton className="h-4 w-48" />
+                    </div>
+                    <Skeleton className="h-[300px] w-full rounded-lg" />
                   </div>
-                  <Skeleton className="h-[300px] w-full rounded-lg" />
                 </CardContent>
               </Card>
             </div>
@@ -1082,27 +1085,25 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 sm:gap-6 relative z-10">
               {/* スマホサイズではオッズ推移を先に表示 */}
               <div className="lg:order-2 lg:col-span-6">
-                <Card className="bg-background/50 backdrop-blur-sm overflow-hidden">
-                  <CardContent className="p-1 sm:p-6">
-                    <div className="flex items-center justify-between p-2 sm:p-0 sm:mb-4">
-                      <h2 className="text-base sm:text-xl font-semibold whitespace-nowrap">オッズ推移</h2>
+                <Card className="overflow-hidden border border-border/50 shadow-md dark:shadow-black/30 bg-gradient-to-br from-primary/5 via-background/80 to-background/95 backdrop-blur-md">
+                  <CardContent className="p-0 relative">
+                    {/* 全体的な装飾グラデーション */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-primary/5 opacity-30 pointer-events-none" />
+                    
+                    <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border/30 bg-muted/30 relative z-10">
+                      <h2 className="text-base sm:text-xl font-bold whitespace-nowrap bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">オッズ推移</h2>
                       <div className="flex items-center gap-2">
                         <Button
                           size="sm"
-                          variant={theme === 'light' ? "outline" : "secondary"}
+                          variant="ghost"
                           onClick={refreshOddsData}
                           disabled={isRefreshing}
                           aria-label={isRefreshing ? "オッズを更新中" : "オッズを更新"}
-                          className={`
-                            h-7 w-7 p-1 sm:h-7 sm:w-7 sm:p-1.5 
-                            ${theme === 'light' 
-                              ? "" 
-                              : "bg-primary/10 hover:bg-primary/20 text-foreground border-primary/30"}
-                          `}
+                          className="h-7 w-7 p-1 sm:h-7 sm:w-7 sm:p-1.5 rounded-full hover:bg-primary/10 hover:text-primary"
                         >
-                          <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+                          <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin text-primary' : ''}`} aria-hidden="true" />
                         </Button>
-                        <div className="text-[12px] sm:text-xs text-muted-foreground">
+                        <div className="text-[11px] sm:text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-0.5 rounded-md">
                           {filteredOddsData.length > 0 && 
                             `${filteredOddsData[0].timestamp} - ${filteredOddsData[filteredOddsData.length - 1].timestamp}`
                           }
@@ -1110,38 +1111,28 @@ export default function Home() {
                       </div>
                     </div>
                     
-                    {/* グループ切り替えボタン */}
-                    {horseGroups.length > 1 && (
-                      <div className="flex gap-1 sm:gap-2 mb-1 sm:mb-4 overflow-x-auto pb-1 sm:pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent justify-center">
-                        {horseGroups.slice(0, Math.min(3, horseGroups.length)).map((group, index) => {
-                          // グループ内の最小オッズと最大オッズを取得
-                          const groupOdds = group.map(horseId => {
-                            const odd = latestOdds?.find(o => Number(o.horseId) === horseId);
-                            return odd ? parseFloat(odd.odds) : 999;
-                          });
-                          const minOdds = Math.min(...groupOdds);
-                          const maxOdds = Math.max(...groupOdds);
-                          
-                          return (
-                            <Button
-                              key={index}
-                              size="sm"
-                              variant={currentGroupIndex === index ? "default" : "outline"}
-                              onClick={() => switchGroup(index)}
-                              className="whitespace-nowrap text-[12px] sm:text-xs text-center h-6 sm:h-9 px-1.5 sm:px-3"
-                            >
-                              {index === 0 ? "人気" : index === 1 ? "中人気" : "穴人気"}
-                              <span className="ml-0.5 sm:ml-1 opacity-80">
-                                {group.length}頭
-                              </span>
-                            </Button>
-                          );
-                        })}
+                    {/* 時間軸切り替えボタン - 条件なしで常に表示 */}
+                    {formattedOddsData.length > 0 && (
+                      <div className="flex flex-wrap gap-1 sm:gap-2 p-2 sm:p-3 justify-center bg-muted/20 dark:bg-black/30 backdrop-blur-sm relative z-10 border-b border-border/20">
+                        <div className="flex text-[12px] sm:text-xs border border-border/40 rounded-full overflow-hidden shadow-sm dark:shadow-black/30">
+                          <button 
+                            className={`px-3 sm:px-4 py-1 sm:py-1.5 transition-all duration-200 ${timeZoom === 'all' ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted/70'}`}
+                            onClick={() => handleTimeZoomChange('all')}
+                          >
+                            全体
+                          </button>
+                          <button 
+                            className={`px-3 sm:px-4 py-1 sm:py-1.5 transition-all duration-200 ${timeZoom === 'normal' ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted/70'}`}
+                            onClick={() => handleTimeZoomChange('normal')}
+                          >
+                            最新
+                          </button>
+                        </div>
                       </div>
                     )}
                     
                     {/* グラフコンテナ - 相対位置指定 */}
-                    <div className="h-[280px] sm:h-[400px] relative">
+                    <div className="h-[280px] sm:h-[400px] relative p-1 sm:p-2">
                       {/* グラフデータのロード中はスケルトンを表示 */}
                       {oddsLoading ? (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -1153,11 +1144,11 @@ export default function Home() {
                       ) : (
                         <>
                           {/* 背景グラデーション */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-30 pointer-events-none" />
+                          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent opacity-20 pointer-events-none rounded-lg dark:opacity-30" />
                           
                           {/* スクロール可能なコンテナ */}
                           <div 
-                            className={`absolute inset-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent`} 
+                            className="absolute inset-0 overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent rounded-lg border border-border/30 dark:border-border/50 bg-background/30 backdrop-blur-sm dark:bg-black/20 shadow-inner dark:shadow-black/20"
                             ref={chartContainerRef}
                           >
                             {/* グラフコンテンツ */}
@@ -1173,39 +1164,62 @@ export default function Home() {
                             </div>
                           </div>
                           
-                          {/* スマホ・タブレットでスクロールが必要な場合のみフェードエフェクトを表示 */}
-                          {windowWidth >= 1024 && (
-                            <>
-                              <div className="absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-r from-background/80 to-transparent" />
-                              <div className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none bg-gradient-to-l from-background/80 to-transparent" />
-                            </>
-                          )}
+                          {/* スクロールが必要な場合のフェードエフェクト */}
+                          <div className="absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none bg-gradient-to-r from-background/90 to-transparent dark:from-black/70" />
+                          <div className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none bg-gradient-to-l from-background/90 to-transparent dark:from-black/70" />
                         </>
                       )}
                     </div>
                     
-                    {/* 時間軸切り替えボタン - 条件なしで常に表示 */}
-                    {formattedOddsData.length > 0 && (
-                      <div className="flex flex-wrap gap-1 sm:gap-2 mt-2 sm:mt-4 justify-center">
-                        <div className="flex text-[12px] sm:text-xs border border-border rounded-md overflow-hidden">
-                          <button 
-                            className={`px-2 sm:px-3 py-1 sm:py-1.5 ${timeZoom === 'all' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'}`}
-                            onClick={() => handleTimeZoomChange('all')}
-                          >
-                            全体
-                          </button>
-                          <button 
-                            className={`px-2 sm:px-3 py-1 sm:py-1.5 border-l border-border ${timeZoom === 'normal' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/50'}`}
-                            onClick={() => handleTimeZoomChange('normal')}
-                          >
-                            最新
-                          </button>
-                        </div>
+                    {/* グループ切り替えボタン */}
+                    {horseGroups.length > 1 && (
+                      <div className="flex gap-1 sm:gap-2 p-3 sm:p-4 overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent justify-center border-t border-border/30 bg-gradient-to-b from-muted/5 to-muted/20 dark:from-black/20 dark:to-black/40 backdrop-blur-sm relative z-10">
+                        {horseGroups.slice(0, Math.min(3, horseGroups.length)).map((group, groupIndex) => {
+                          // グループ内の最小オッズと最大オッズを取得
+                          const groupOdds = group.map(horseId => {
+                            const odd = latestOdds?.find(o => Number(o.horseId) === horseId);
+                            return odd ? parseFloat(odd.odds) : 999;
+                          });
+                          const minOdds = Math.min(...groupOdds);
+                          const maxOdds = Math.max(...groupOdds);
+                          
+                          return (
+                            <Button
+                              key={groupIndex}
+                              size="sm"
+                              variant={currentGroupIndex === groupIndex ? "default" : "outline"}
+                              onClick={() => switchGroup(groupIndex)}
+                              className={`
+                                whitespace-nowrap text-[12px] sm:text-xs text-center h-7 sm:h-9 px-2.5 sm:px-4 rounded-full
+                                ${currentGroupIndex === groupIndex 
+                                  ? 'shadow-md shadow-primary/10'
+                                  : 'border-border/50 hover:bg-primary/5 hover:border-primary/30'
+                                }
+                              `}
+                            >
+                              <div className="flex items-center gap-1 sm:gap-1.5">
+                                <span>{groupIndex === 0 ? "人気" : groupIndex === 1 ? "中人気" : "穴人気"}</span>
+                                <div className={`
+                                  relative flex items-center justify-center 
+                                  w-4 h-4 sm:w-5 sm:h-5 
+                                  ${currentGroupIndex === groupIndex 
+                                    ? 'bg-primary-foreground text-primary' 
+                                    : 'bg-muted/40 text-muted-foreground'
+                                  }
+                                  rounded-full text-[10px] sm:text-[11px] font-medium
+                                  transition-all duration-200 ease-in-out
+                                `}>
+                                  {group.length}
+                                </div>
+                              </div>
+                            </Button>
+                          );
+                        })}
                       </div>
                     )}
                     
                     {/* グラフ操作ガイド - 条件なしで常に表示 */}
-                    <div className="mt-1 sm:mt-2 text-[12px] sm:text-xs text-muted-foreground text-center">
+                    <div className="hidden lg:block p-2 sm:p-3 text-[11px] sm:text-xs text-muted-foreground text-center bg-gradient-to-b from-muted/10 to-background/60 dark:from-black/20 dark:to-black/40 backdrop-blur-sm border-t border-border/30 relative z-10">
                       <p>左右にスクロールして時間推移を確認できます</p>
                       <p>馬名をタップすると表示/非表示を切り替えられます</p>
                     </div>
