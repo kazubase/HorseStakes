@@ -4,11 +4,12 @@ import { Ticket, Calendar, Coins, Trophy, ChevronRight, Info, Award, BarChart3, 
 import { Helmet } from "react-helmet-async";
 import { useThemeStore } from "@/stores/themeStore";
 import { Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Race } from "@db/schema";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { memo, useCallback, useMemo } from "react";
+import { isSameDay, subDays } from "date-fns";
 
 // レースカードコンポーネント
 const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) => {
@@ -58,6 +59,7 @@ const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) =
 const ThisWeekRaces = () => {
   const [_, setLocation] = useLocation();
   const { theme } = useThemeStore();
+  const queryClient = useQueryClient();
 
   // レースデータの取得
   const { data: races = [], isLoading, error } = useQuery<Race[]>({
@@ -65,36 +67,81 @@ const ThisWeekRaces = () => {
     staleTime: 60000, // 1分間キャッシュを有効に
   });
 
+  // レース情報を先読みする関数
+  const prefetchRaceData = useCallback((raceId: string) => {
+    // レース情報をプリフェッチ
+    queryClient.prefetchQuery({
+      queryKey: [`/api/races/${raceId}`],
+      staleTime: 60000,
+    });
+
+    // 馬データをプリフェッチ
+    queryClient.prefetchQuery({
+      queryKey: [`/api/horses/${raceId}`],
+      staleTime: 60000,
+    });
+
+    // オッズデータをプリフェッチ
+    queryClient.prefetchQuery({
+      queryKey: [`/api/tan-odds-history/latest/${raceId}`],
+      staleTime: 60000,
+    });
+    
+    queryClient.prefetchQuery({
+      queryKey: [`/api/fuku-odds/latest/${raceId}`],
+      staleTime: 60000,
+    });
+  }, [queryClient]);
+
   // 直近のレースを取得する関数
   const getRecentRaces = useCallback((races: Race[]) => {
-    const today = new Date();
-    const dayOfWeek = today.getDay();
+    if (!races || races.length === 0) return [];
     
-    // 土日または開催中のレースを優先
+    const today = new Date();
+    
+    // 今日以降のレースを優先
     const upcomingRaces = races
-      .filter(race => race.status !== 'done')
+      .filter(race => {
+        const raceDate = new Date(race.startTime);
+        return raceDate >= today;
+      })
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     
     if (upcomingRaces.length > 0) {
       return upcomingRaces.slice(0, 5);
     }
     
-    // 平日の場合は直近の週末または次の週末のレースを表示
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-      // 直前または次の週末のレースを取得
-      const lastWeekendRaces = races
-        .filter(race => {
-          const raceDate = new Date(race.startTime);
-          const raceDayOfWeek = raceDate.getDay();
-          // 土日のレースを取得
-          return raceDayOfWeek === 0 || raceDayOfWeek === 6;
-        })
-        .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-      
-      return lastWeekendRaces.slice(0, 5);
+    // 選択された日付が週末でない場合、直前の週末を取得
+    const getTargetDate = (date: Date) => {
+      const dayOfWeek = date.getDay();
+      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+        // 月～金の場合、直前の日曜日を取得
+        const prevSunday = new Date(date);
+        prevSunday.setDate(date.getDate() - dayOfWeek);
+        return prevSunday;
+      }
+      return date;
+    };
+    
+    const targetDate = getTargetDate(today);
+    
+    // 直近の開催日のレースを取得（過去のレースも含む）
+    const recentRaces = races
+      .filter(race => {
+        const raceDate = new Date(race.startTime);
+        // 同じ日か前日のレースを取得
+        return (
+          isSameDay(raceDate, targetDate) ||
+          isSameDay(raceDate, subDays(targetDate, 1))
+        );
+      })
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    
+    if (recentRaces.length > 0) {
+      return recentRaces.slice(0, 5);
     }
     
-    // デフォルトでは最新のレースを表示
+    // 該当するレースがない場合は、最新のレースを最大5件取得
     return races
       .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
       .slice(0, 5);
@@ -107,8 +154,14 @@ const ThisWeekRaces = () => {
 
   // レースがクリックされたときのハンドラー
   const handleRaceClick = useCallback((raceId: string) => {
+    prefetchRaceData(raceId);
     setLocation(`/race/${raceId}`);
-  }, [setLocation]);
+  }, [setLocation, prefetchRaceData]);
+
+  // レースにマウスオーバーしたときのハンドラー
+  const handleRaceHover = useCallback((raceId: string) => {
+    prefetchRaceData(raceId);
+  }, [prefetchRaceData]);
 
   // ローディング中の表示
   if (isLoading) {
@@ -143,16 +196,44 @@ const ThisWeekRaces = () => {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       {recentRaces.map((race) => (
-        <RaceCard
+        <div
           key={race.id}
-          race={race}
           onClick={() => handleRaceClick(race.id.toString())}
-        />
+          onMouseEnter={() => handleRaceHover(race.id.toString())}
+          className="cursor-pointer group relative overflow-hidden bg-background/70 backdrop-blur-sm border border-primary/20 hover:bg-primary/5 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-md rounded-lg p-3"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-background/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-base text-foreground/90 group-hover:text-primary transition-colors duration-300">
+                {race.name}
+              </h3>
+              <p className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                <span>
+                  {format(new Date(race.startTime), 'MM/dd(E)', { locale: ja })}
+                </span>
+                <span className="inline-flex items-center justify-center bg-primary/20 px-2 py-0.5 rounded-full text-primary text-xs font-medium">
+                  {format(new Date(race.startTime), 'HH:mm')}
+                </span>
+              </p>
+            </div>
+            <div className="text-right">
+              {race.status === 'done' && (
+                <p className="text-xs font-medium text-foreground/80 bg-primary/10 inline-flex items-center justify-center px-2 py-0.5 rounded-full">
+                  発走済
+                </p>
+              )}
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {race.venue}
+              </p>
+            </div>
+          </div>
+        </div>
       ))}
       
-      <div className="pt-2 mt-2 border-t border-primary/10 text-center">
+      <div className="pt-3 mt-1 border-t border-primary/10 text-center">
         <Link
           to="/"
           className="text-sm text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-1"
@@ -351,9 +432,9 @@ export default function Guide() {
       <div className="mt-6 sm:mt-8 md:mt-10"></div>
 
       {/* コンテンツをメインとサイドバーの2カラムレイアウトに変更 */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 px-4 sm:px-6">
-        {/* メインコンテンツ - 最大幅を左側2/3に制限 */}
-        <div className="lg:col-span-2">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 px-4 sm:px-6">
+        {/* メインコンテンツ - 最大幅を左側3/4に制限 */}
+        <div className="lg:col-span-3">
           {/* ヘッダーセクション - 改善したデザイン */}
           <div className="relative overflow-hidden rounded-xl mb-10 shadow-md bg-gradient-to-br from-primary/5 to-primary/20 dark:from-primary/10 dark:to-primary/30">
             <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
@@ -1685,11 +1766,10 @@ export default function Guide() {
         <div className="lg:col-span-1">
           <div className="sticky top-16">
             <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-primary/10 shadow-sm mb-6">
-              <div className="flex items-center mb-4">
+              <div className="flex items-center mb-3">
                 <Calendar className="h-5 w-5 mr-2 text-primary" />
-                <h2 className="text-xl font-bold">今週のレース</h2>
-              </div>
-              
+                <h2 className="text-lg font-bold">今週のレース</h2>
+              </div>    
               <ThisWeekRaces />
             </div>
           </div>
