@@ -186,65 +186,130 @@ const BreadcrumbComponent = () => {
     : "font-medium text-primary";
 
   return (
-    <Breadcrumb className={breadcrumbStyle}>
-      <BreadcrumbList>
-        {/* ホームリンク - 常に表示 */}
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link href="/" className="transition-colors hover:text-foreground" aria-label="ホームページへ戻る">
-              <Home className={homeIconStyle} />
-            </Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        
-        {breadcrumbItems.length > 0 && (
-          <BreadcrumbSeparator className={cn(
-            theme === 'light' ? "text-foreground/30" : "text-foreground/30",
-            "[&>svg]:w-3 [&>svg]:h-3 sm:[&>svg]:w-3.5 sm:[&>svg]:h-3.5"
-          )} />
-        )}
-        
-        {/* 動的に生成されたパンくず項目 */}
-        {breadcrumbItems.map((item, index) => (
-          <React.Fragment key={item.url}>
+    // Guide.tsxページのみ中央寄せと最大幅を適用し、他のページでは通常のレイアウトを使用
+    location === "/guide" ? (
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <Breadcrumb className={breadcrumbStyle}>
+          <BreadcrumbList>
+            {/* ホームリンク - 常に表示 */}
             <BreadcrumbItem>
-              {item.isCurrentPage ? (
-                <BreadcrumbPage className={currentPageStyle}>{item.label}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink 
-                  asChild 
-                  className={linkStyle}
-                  onClick={item.customAction ? (e) => {
-                    e.preventDefault();
-                    item.customAction?.();
-                  } : undefined}
-                >
-                  {/* カスタムアクションがある場合はそれを使用し、なければ通常のリンク */}
-                  {item.customAction ? (
-                    <span 
-                      role="link" 
-                      tabIndex={0} 
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {item.label}
-                    </span>
-                  ) : (
-                    <Link href={item.url}>{item.label}</Link>
-                  )}
-                </BreadcrumbLink>
-              )}
+              <BreadcrumbLink asChild>
+                <Link href="/" className="transition-colors hover:text-foreground" aria-label="ホームページへ戻る">
+                  <Home className={homeIconStyle} />
+                </Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             
-            {index < breadcrumbItems.length - 1 && (
+            {breadcrumbItems.length > 0 && (
               <BreadcrumbSeparator className={cn(
                 theme === 'light' ? "text-foreground/30" : "text-foreground/30",
                 "[&>svg]:w-3 [&>svg]:h-3 sm:[&>svg]:w-3.5 sm:[&>svg]:h-3.5"
               )} />
             )}
-          </React.Fragment>
-        ))}
-      </BreadcrumbList>
-    </Breadcrumb>
+            
+            {/* 動的に生成されたパンくず項目 */}
+            {breadcrumbItems.map((item, index) => (
+              <React.Fragment key={item.url}>
+                <BreadcrumbItem>
+                  {item.isCurrentPage ? (
+                    <BreadcrumbPage className={currentPageStyle}>{item.label}</BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink 
+                      asChild 
+                      className={linkStyle}
+                      onClick={item.customAction ? (e) => {
+                        e.preventDefault();
+                        item.customAction?.();
+                      } : undefined}
+                    >
+                      {/* カスタムアクションがある場合はそれを使用し、なければ通常のリンク */}
+                      {item.customAction ? (
+                        <span 
+                          role="link" 
+                          tabIndex={0} 
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {item.label}
+                        </span>
+                      ) : (
+                        <Link href={item.url}>{item.label}</Link>
+                      )}
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+                
+                {index < breadcrumbItems.length - 1 && (
+                  <BreadcrumbSeparator className={cn(
+                    theme === 'light' ? "text-foreground/30" : "text-foreground/30",
+                    "[&>svg]:w-3 [&>svg]:h-3 sm:[&>svg]:w-3.5 sm:[&>svg]:h-3.5"
+                  )} />
+                )}
+              </React.Fragment>
+            ))}
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+    ) : (
+      <Breadcrumb className={breadcrumbStyle}>
+        <BreadcrumbList>
+          {/* ホームリンク - 常に表示 */}
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/" className="transition-colors hover:text-foreground" aria-label="ホームページへ戻る">
+                <Home className={homeIconStyle} />
+              </Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          
+          {breadcrumbItems.length > 0 && (
+            <BreadcrumbSeparator className={cn(
+              theme === 'light' ? "text-foreground/30" : "text-foreground/30",
+              "[&>svg]:w-3 [&>svg]:h-3 sm:[&>svg]:w-3.5 sm:[&>svg]:h-3.5"
+            )} />
+          )}
+          
+          {/* 動的に生成されたパンくず項目 */}
+          {breadcrumbItems.map((item, index) => (
+            <React.Fragment key={item.url}>
+              <BreadcrumbItem>
+                {item.isCurrentPage ? (
+                  <BreadcrumbPage className={currentPageStyle}>{item.label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink 
+                    asChild 
+                    className={linkStyle}
+                    onClick={item.customAction ? (e) => {
+                      e.preventDefault();
+                      item.customAction?.();
+                    } : undefined}
+                  >
+                    {/* カスタムアクションがある場合はそれを使用し、なければ通常のリンク */}
+                    {item.customAction ? (
+                      <span 
+                        role="link" 
+                        tabIndex={0} 
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {item.label}
+                      </span>
+                    ) : (
+                      <Link href={item.url}>{item.label}</Link>
+                    )}
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+              
+              {index < breadcrumbItems.length - 1 && (
+                <BreadcrumbSeparator className={cn(
+                  theme === 'light' ? "text-foreground/30" : "text-foreground/30",
+                  "[&>svg]:w-3 [&>svg]:h-3 sm:[&>svg]:w-3.5 sm:[&>svg]:h-3.5"
+                )} />
+              )}
+            </React.Fragment>
+          ))}
+        </BreadcrumbList>
+      </Breadcrumb>
+    )
   );
 };
 
