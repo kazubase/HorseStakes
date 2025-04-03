@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MainLayout from "@/components/layout/MainLayout";
-import { Ticket, Calendar, Coins, Trophy, ChevronRight, Info, Award, BarChart3, Calculator, X, Check, Lightbulb } from "lucide-react";
+import { Ticket, Calendar, Coins, Trophy, ChevronRight, Info, Award, BarChart3, Calculator, X, Check, Lightbulb, BookOpen, Settings } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { useThemeStore } from "@/stores/themeStore";
 import { Link, useLocation } from "wouter";
@@ -8,7 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Race } from "@db/schema";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, useEffect } from "react";
 import { isSameDay, subDays } from "date-fns";
 
 // レースカードコンポーネント
@@ -249,58 +249,392 @@ const ThisWeekRaces = () => {
 export default function Guide() {
   const { theme } = useThemeStore();
   
+  // IntersectionObserver設定のためのuseEffect
+  useEffect(() => {
+    // アニメーション要素の選択
+    const animatedElements = document.querySelectorAll('.scroll-animate');
+    
+    // IntersectionObserverの設定
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          // 要素が表示領域に入った時
+          if (entry.isIntersecting) {
+            // アニメーションクラスを追加
+            entry.target.classList.add('animate');
+            // 一度アニメーションした要素は監視を解除
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        root: null, // ビューポートを基準
+        rootMargin: '0px 0px -100px 0px', // 下部に少し余裕を持たせる
+        threshold: 0.1 // 10%表示されたらアニメーション開始
+      }
+    );
+    
+    // すべてのアニメーション対象要素を監視
+    animatedElements.forEach(el => {
+      observer.observe(el);
+    });
+    
+    // ページ読み込み完了時の処理
+    const onLoad = () => {
+      // 最初の画面に表示されている要素については、ページロード完了時にアニメーション実行
+      setTimeout(() => {
+        const initialElements = document.querySelectorAll('.animate-fadeInUp, .animate-fadeInLeft, .animate-fadeIn');
+        initialElements.forEach(el => {
+          if (el instanceof HTMLElement) {
+            // 既に適用されている可能性があるのでリセット
+            el.style.opacity = '0';
+            // 少し遅延を入れてから再アニメーション
+            setTimeout(() => {
+              if (el.classList.contains('animate-fadeInUp') || 
+                  el.classList.contains('animate-fadeInLeft') || 
+                  el.classList.contains('animate-fadeIn')) {
+                // 既存のアニメーションスタイルを活かす
+                el.style.opacity = '';
+              }
+            }, 100);
+          }
+        });
+      }, 200);
+    };
+    
+    // ページが既に読み込まれている場合は即実行
+    if (document.readyState === 'complete') {
+      onLoad();
+    } else {
+      // そうでなければloadイベントで実行
+      window.addEventListener('load', onLoad);
+    }
+    
+    // クリーンアップ関数
+    return () => {
+      animatedElements.forEach(el => {
+        observer.unobserve(el);
+      });
+      window.removeEventListener('load', onLoad);
+    };
+  }, []);
+  
+  // details要素の開閉状態を検知して目次のアニメーションを制御するuseEffect
+  useEffect(() => {
+    const detailsElement = document.querySelector('details');
+    
+    if (!detailsElement) return;
+    
+    // 目次アニメーションをリセットして再実行する関数
+    const resetAndAnimateContent = () => {
+      // アニメーション対象の要素を取得
+      const menuItems = document.querySelectorAll('.animate-fadeInLeft');
+      const containerElement = document.querySelector('.animate-fadeInUp');
+      
+      // 一度すべてのアニメーション要素をリセット
+      if (containerElement instanceof HTMLElement) {
+        containerElement.style.animation = 'none';
+        containerElement.style.opacity = '0';
+      }
+      
+      menuItems.forEach((item) => {
+        if (item instanceof HTMLElement) {
+          item.style.animation = 'none';
+          item.style.opacity = '0';
+        }
+      });
+      
+      // レンダリングを強制
+      void document.body.offsetHeight;
+      
+      // アニメーションを再開
+      if (containerElement instanceof HTMLElement) {
+        containerElement.style.animation = '';
+        containerElement.style.opacity = '';
+      }
+      
+      // 各メニュー項目を順番に表示
+      menuItems.forEach((item, index) => {
+        if (item instanceof HTMLElement) {
+          setTimeout(() => {
+            item.style.animation = '';
+            item.style.opacity = '';
+          }, 50 * (index + 1));
+        }
+      });
+    };
+    
+    // details要素のクリックイベントリスナー
+    const handleDetailsClick = () => {
+      // details要素が開かれた場合のみアニメーションをリセット
+      if (detailsElement.hasAttribute('open')) {
+        // 少し遅延を入れてアニメーションを再実行（CSSトランジションが完了した後）
+        setTimeout(() => {
+          resetAndAnimateContent();
+        }, 300);
+      }
+    };
+    
+    // イベントリスナーを追加
+    detailsElement.addEventListener('click', handleDetailsClick);
+    
+    // クリーンアップ関数
+    return () => {
+      detailsElement.removeEventListener('click', handleDetailsClick);
+    };
+  }, []);
+  
+  // CSS変数をテーマに基づいて動的に変更するuseEffect
+  useEffect(() => {
+    // :root CSS変数を設定
+    document.documentElement.style.setProperty(
+      '--animation-easing', 
+      theme === 'dark' 
+        ? 'cubic-bezier(0.16, 1, 0.3, 1)' // 滑らかな動き (dark)
+        : 'cubic-bezier(0.34, 1.56, 0.64, 1)' // 若干弾むような動き (light)
+    );
+    
+    document.documentElement.style.setProperty(
+      '--animation-duration', 
+      theme === 'dark' ? '0.6s' : '0.5s'
+    );
+    
+    document.documentElement.style.setProperty(
+      '--animation-stagger', 
+      theme === 'dark' ? '80ms' : '60ms'
+    );
+    
+    // テーマ変更時のスムーズな遷移のために少し遅延を入れる
+    setTimeout(() => {
+      const animatedElements = document.querySelectorAll('.scroll-animate.animate');
+      animatedElements.forEach(el => {
+        // 一度アニメーションをリセットして再適用
+        el.classList.remove('animate');
+        setTimeout(() => {
+          el.classList.add('animate');
+        }, 50);
+      });
+    }, 100);
+    
+  }, [theme]);
+  
+  // カスタムアニメーション用のスタイル
+  const animationStyles = `
+    /* 基本的なアニメーション変数 */
+    :root {
+      --animation-duration: 0.6s;
+      --animation-stagger: 80ms;
+      --animation-easing: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+        filter: blur(5px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+      }
+    }
+    
+    @keyframes fadeInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+        filter: blur(2px);
+      }
+      50% {
+        filter: blur(1px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+        filter: blur(0);
+      }
+    }
+    
+    @keyframes fadeInRight {
+      from {
+        opacity: 0;
+        transform: translateX(10px);
+        filter: blur(2px);
+      }
+      50% {
+        filter: blur(1px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+        filter: blur(0);
+      }
+    }
+    
+    /* アニメーションの実行を保証するための明示的な初期状態 */
+    .animate-fadeInUp, .animate-fadeInLeft, .animate-fadeInRight {
+      will-change: transform, opacity;
+      backface-visibility: hidden;
+    }
+    
+    .animate-fadeInUp {
+      animation: fadeInUp var(--animation-duration) var(--animation-easing) both;
+    }
+    
+    .animate-fadeInLeft {
+      animation: fadeInLeft var(--animation-duration) var(--animation-easing) both;
+    }
+    
+    .animate-fadeInRight {
+      animation: fadeInRight var(--animation-duration) var(--animation-easing) both;
+    }
+
+    /* シンプルなフェードインアニメーション */
+    @keyframes fadeIn {
+      from { 
+        opacity: 0; 
+        transform: translateY(8px);
+        filter: blur(2px);
+      }
+      to { 
+        opacity: 1; 
+        transform: translateY(0);
+        filter: blur(0);
+      }
+    }
+    
+    .animate-fadeIn {
+      animation: fadeIn var(--animation-duration) var(--animation-easing) both;
+      will-change: transform, opacity;
+    }
+
+    /* セクションハイライト改善 */
+    .section-highlight {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section-highlight::before {
+      content: '';
+      position: absolute;
+      top: -10%;
+      left: -10%;
+      width: 120%;
+      height: 120%;
+      background: radial-gradient(circle at 50% 50%, rgba(var(--primary-rgb), 0.15), transparent 70%);
+      z-index: -1;
+      opacity: 0;
+      animation: fadeIn 1s var(--animation-easing) forwards;
+      animation-delay: 0.3s;
+    }
+    
+    /* スクロールアニメーション */
+    .scroll-animate {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity var(--animation-duration) var(--animation-easing),
+                  transform var(--animation-duration) var(--animation-easing),
+                  filter var(--animation-duration) var(--animation-easing);
+      filter: blur(5px);
+    }
+    
+    .scroll-animate.animate {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+    
+    .scroll-animate-left {
+      opacity: 0;
+      transform: translateX(-20px);
+      transition: opacity var(--animation-duration) var(--animation-easing),
+                  transform var(--animation-duration) var(--animation-easing),
+                  filter var(--animation-duration) var(--animation-easing);
+      filter: blur(2px);
+    }
+    
+    .scroll-animate-left.animate {
+      opacity: 1;
+      transform: translateX(0);
+      filter: blur(0);
+    }
+    
+    .scroll-animate-right {
+      opacity: 0;
+      transform: translateX(20px);
+      transition: opacity var(--animation-duration) var(--animation-easing),
+                  transform var(--animation-duration) var(--animation-easing),
+                  filter var(--animation-duration) var(--animation-easing);
+      filter: blur(2px);
+    }
+    
+    .scroll-animate-right.animate {
+      opacity: 1;
+      transform: translateX(0);
+      filter: blur(0);
+    }
+    
+    /* スタガーアニメーション（連続的な要素の遅延表示） */
+    .stagger-container .stagger-item:nth-child(1) { transition-delay: calc(var(--animation-stagger) * 1); }
+    .stagger-container .stagger-item:nth-child(2) { transition-delay: calc(var(--animation-stagger) * 2); }
+    .stagger-container .stagger-item:nth-child(3) { transition-delay: calc(var(--animation-stagger) * 3); }
+    .stagger-container .stagger-item:nth-child(4) { transition-delay: calc(var(--animation-stagger) * 4); }
+    .stagger-container .stagger-item:nth-child(5) { transition-delay: calc(var(--animation-stagger) * 5); }
+    .stagger-container .stagger-item:nth-child(6) { transition-delay: calc(var(--animation-stagger) * 6); }
+    .stagger-container .stagger-item:nth-child(7) { transition-delay: calc(var(--animation-stagger) * 7); }
+    .stagger-container .stagger-item:nth-child(8) { transition-delay: calc(var(--animation-stagger) * 8); }
+    
+    /* details要素のアニメーション改善 */
+    details[open] summary ~ * {
+      animation: fadeIn 0.4s var(--animation-easing);
+    }
+    
+    details summary {
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    details[open] summary {
+      margin-bottom: 10px;
+    }
+    
+    /* ホバー効果の修正 - 個別要素のみがハイライトされるように */
+    .guide-menu-item {
+      transition: all 0.3s ease;
+    }
+    
+    .guide-menu-item:hover {
+      background-color: rgba(var(--primary-rgb), 0.05);
+    }
+    
+    .guide-menu-item:hover .guide-menu-text {
+      color: hsl(var(--primary));
+    }
+    
+    .guide-menu-item:hover .guide-menu-circle {
+      background-color: rgba(var(--primary-rgb), 0.2);
+    }
+    
+    .guide-menu-item:hover .guide-menu-circle-bg {
+      transform: scale(1);
+    }
+  `;
+
   return (
     <MainLayout>
       <Helmet>
-        <title>競馬の期待値計算と回収率アップガイド | 馬券戦略</title>
-        <meta name="description" content="競馬の期待値計算を分かりやすく解説。単勝確率と複勝確率を予想して期待値の高い馬券を見つける方法や、期待値計算ツールの使い方を詳しく紹介。期待値思考で競馬の回収率アップを目指す人のための完全ガイド。" />
-        <meta name="keywords" content="競馬 期待値,競馬 期待値計算,期待値計算,馬券,回収率,単勝確率,複勝確率,期待値ツール,競馬予想,馬券戦略" />
-        <link rel="canonical" href="https://example.com/guide" />
-        <meta property="og:title" content="競馬の期待値計算と回収率アップガイド | 馬券戦略" />
-        <meta property="og:description" content="競馬の期待値計算を分かりやすく解説。単勝確率と複勝確率を予想して期待値の高い馬券を見つける方法や、期待値計算ツールの使い方を詳しく紹介。期待値思考で競馬の回収率アップを目指す人のための完全ガイド。" />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content="https://example.com/guide" />
-        <meta property="og:image" content="https://example.com/images/guide-ogp.png" />
-        <meta property="og:site_name" content="馬券戦略" />
-        <meta name="twitter:card" content="summary_large_image" />
-        
-        {/* グリッドパターンのスタイルを追加 */}
-        <style>
-          {`
-            .bg-grid-pattern {
-              background-image: 
-                linear-gradient(to right, rgba(100, 100, 100, 0.1) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(100, 100, 100, 0.1) 1px, transparent 1px);
-              background-size: 20px 20px;
-            }
-
-            .section-highlight {
-              position: relative;
-              overflow: hidden;
-            }
-
-            .section-highlight::before {
-              content: '';
-              position: absolute;
-              top: -10%;
-              left: -10%;
-              width: 120%;
-              height: 120%;
-              background: radial-gradient(circle at 50% 50%, rgba(var(--primary-rgb), 0.15), transparent 70%);
-              z-index: -1;
-            }
-            
-            /* シンプルなフェードインアニメーション */
-            @keyframes fadeIn {
-              from { opacity: 0; transform: translateY(10px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-            
-            .animate-fadeIn {
-              animation: fadeIn 0.6s ease-out forwards;
-            }
-          `}
-        </style>
+        <title>競馬の期待値計算 | 回収率を上げる期待値思考の基本と実践</title>
+        <meta
+          name="description"
+          content="競馬で期待値計算を活用して回収率を上げるための完全ガイド。オッズと予想確率から期待値を算出する方法と、期待値の高い馬券を効率的に見つけるコツを解説。期待値1.4以上の馬券を狙って長期的に利益を出す戦略を学びましょう。"
+        />
+        <meta
+          name="keywords"
+          content="競馬, 期待値, 期待値計算, 回収率, 競馬 期待値, 競馬 期待値計算, オッズ, 予想確率, 的中確率, 期待値1.4"
+        />
+        <link rel="canonical" href="https://www.horsestakes.net/guide" />
+        <style type="text/css">{animationStyles}</style>
       </Helmet>
 
       {/* WebSite構造化データ */}
@@ -452,15 +786,15 @@ export default function Guide() {
       {/* タイトルセクション - シンプルかつ洗練されたデザイン */}
       <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 mb-12">
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-foreground relative inline-block whitespace-nowrap">
+          <h1 className="pb-1 md:pb-2 text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-foreground relative inline-block whitespace-nowrap">
             競馬の期待値思考
-            <span className="absolute -bottom-2 left-0 right-0 h-1 bg-primary rounded-full transform scale-x-75 mx-auto"></span>
+            <span className="absolute -bottom-3 left-0 right-0 h-1 bg-primary rounded-full transform scale-x-75 mx-auto"></span>
           </h1>
-          <p className="text-xl md:text-2xl font-medium text-foreground/90 mb-4 whitespace-nowrap">
+          <p className="pt-1 md:pt-2 text-xl md:text-2xl font-medium text-foreground/90 mb-4 whitespace-nowrap">
             回収率アップの秘訣と実践方法
           </p>
           <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-            オッズと予想確率から期待値を算出し、長期的な回収率向上を目指す方法を解説します。
+            オッズと予想確率から期待値を算出し、回収率向上を目指す方法を解説します。
           </p>
         </div>
       </div>
@@ -469,91 +803,200 @@ export default function Guide() {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 px-4 sm:px-6">
         {/* メインコンテンツ - 最大幅を左側3/4に制限 */}
         <div className="lg:col-span-3">
-          {/* 以前のヘッダーセクションは削除 */}
-
-          {/* キーポイントセクション - 追加 */}
-          <div className="mb-10">
-            <div className="flex items-center mb-5">
-              <Info className="h-5 w-5 mr-2 text-primary" />
-              <h2 className="text-xl font-bold">このページでわかること</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-background/50 backdrop-blur-sm rounded-lg p-4 border border-primary/10 shadow-sm flex flex-col items-center text-center">
-                <div className="bg-primary/10 p-3 rounded-full mb-3">
-                  <Calculator className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="font-medium mb-2">期待値の理解</h3>
-                <p className="text-sm text-foreground/70">オッズと予想確率から理論上の投資価値を数値化</p>
-              </div>
-              
-              <div className="bg-background/50 backdrop-blur-sm rounded-lg p-4 border border-primary/10 shadow-sm flex flex-col items-center text-center">
-                <div className="bg-primary/10 p-3 rounded-full mb-3">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="font-medium mb-2">確率予想のコツ</h3>
-                <p className="text-sm text-foreground/70">客観的データから精度の高い勝率予想を導き出す方法</p>
-              </div>
-              
-              <div className="bg-background/50 backdrop-blur-sm rounded-lg p-4 border border-primary/10 shadow-sm flex flex-col items-center text-center">
-                <div className="bg-primary/10 p-3 rounded-full mb-3">
-                  <Trophy className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="font-medium mb-2">実践テクニック</h3>
-                <p className="text-sm text-foreground/70">期待値1.4以上の馬券を見つけ出す具体的な方法</p>
-              </div>
-            </div>
-          </div>
         
           {/* 目次 - 折りたたみ可能 */}
           <div className="mb-10">
-            <details className="group shadow-sm">
-              <summary className="flex items-center justify-between p-4 rounded-t-lg bg-background/50 backdrop-blur-sm border border-primary/10 cursor-pointer">
+            <details open className="group shadow-md">
+              <summary className="flex items-center justify-between p-3 sm:p-4 rounded-t-lg bg-gradient-to-r from-primary/10 to-primary/5 backdrop-blur-sm border border-primary/20 cursor-pointer">
                 <div className="flex items-center">
-                  <Info className="h-5 w-5 mr-2 text-primary" />
-                  <h2 className="text-lg font-medium">目次</h2>
+                  <div className="bg-primary/20 p-1.5 rounded-lg mr-2.5 shadow-sm">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </div>
+                  <h2 className="text-lg font-semibold tracking-tight">コンテンツガイド</h2>
                 </div>
-                <div className="transition-transform duration-300 group-open:rotate-180">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <div className="transition-transform duration-300 ease-in-out group-open:rotate-180">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
+                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
               </summary>
-              <div className="p-4 pt-2 pl-6 rounded-b-lg bg-background/50 backdrop-blur-sm border border-t-0 border-primary/10">
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">1</span>
-                    <a href="#what-is-ev" className="hover:text-primary transition-colors">競馬の期待値思考とは？ - 勝ち続ける人の思考法</a>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">2</span>
-                    <a href="#ev-examples" className="hover:text-primary transition-colors">具体例で理解する期待値計算 - 買うべき馬券の見極め方</a>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">3</span>
-                    <a href="#win-place-prob" className="hover:text-primary transition-colors">単勝確率・複勝確率の予想方法 - 精度を高めるテクニック</a>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">4</span>
-                    <a href="#optimal-betting" className="hover:text-primary transition-colors">期待値に基づく最適な馬券構成 - 資金配分の秘訣</a>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">5</span>
-                    <a href="#ev-tools" className="hover:text-primary transition-colors">当サイトの期待値計算ツールの使い方 - 実践ガイド</a>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">6</span>
-                    <a href="#ev-training" className="hover:text-primary transition-colors">期待値計算プロの実践トレーニング - あなたの予想力を高める方法</a>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">7</span>
-                    <a href="#faq" className="hover:text-primary transition-colors">期待値計算と確率計算に関するよくある質問</a>
-                  </li>
-                </ul>
+              <div className="p-4 rounded-b-lg bg-gradient-to-b from-background/90 to-background/70 backdrop-blur-sm border border-t-0 border-primary/20">
+                {/* アニメーションで表示されるコンテンツ */}
+                <div 
+                  className="opacity-0 animate-fadeInUp"
+                  style={{ 
+                    animationDelay: '100ms', 
+                    animationDuration: 'var(--animation-duration)'
+                  }}
+                >
+                  
+                  {/* セクション1: 基礎知識と理論 */}
+                  <div className="mb-5">
+                    <div className="flex items-center mb-2">
+                      <div className="bg-primary/10 p-1.5 rounded-lg mr-2.5">
+                        <BookOpen className="h-4 w-4 text-primary" />
+                      </div>
+                      <h3 className="text-base font-semibold text-primary/90">I. 基礎知識と理論</h3>
+                    </div>
+                    
+                    <div className="space-y-2.5 ml-3 pl-6 border-l border-dashed border-primary/30">
+                      <a 
+                        href="#what-is-ev" 
+                        className="guide-menu-item group flex items-center gap-2.5 pl-2 py-1.5 pr-3 rounded-md transition-all duration-300 cursor-pointer opacity-0 animate-fadeInLeft" 
+                        style={{ 
+                          animationDelay: 'calc(100ms + var(--animation-stagger))',
+                          animationDuration: 'var(--animation-duration)'
+                        }}
+                      >
+                        <div className="guide-menu-circle bg-primary/10 transition-colors duration-300 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium text-primary shadow-sm relative overflow-hidden">
+                          <span className="relative z-10">1</span>
+                          <span className="guide-menu-circle-bg absolute inset-0 bg-primary/10 transform scale-0 transition-transform duration-300 origin-center rounded-full"></span>
+                        </div>
+                        <div>
+                          <span className="guide-menu-text font-medium block transition-colors text-sm sm:text-base">競馬の期待値思考とは？</span>
+                          <span className="text-xs text-foreground/60 transition-colors">勝ち続ける人の思考法</span>
+                        </div>
+                      </a>
+                      
+                      <a 
+                        href="#ev-examples" 
+                        className="guide-menu-item group flex items-center gap-2.5 pl-2 py-1.5 pr-3 rounded-md transition-all duration-300 cursor-pointer opacity-0 animate-fadeInLeft" 
+                        style={{ 
+                          animationDelay: 'calc(100ms + var(--animation-stagger) * 2)',
+                          animationDuration: 'var(--animation-duration)'
+                        }}
+                      >
+                        <div className="guide-menu-circle bg-primary/10 transition-colors duration-300 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium text-primary shadow-sm relative overflow-hidden">
+                          <span className="relative z-10">2</span>
+                          <span className="guide-menu-circle-bg absolute inset-0 bg-primary/10 transform scale-0 transition-transform duration-300 origin-center rounded-full"></span>
+                        </div>
+                        <div>
+                          <span className="guide-menu-text font-medium block transition-colors text-sm sm:text-base">具体例で理解する期待値計算</span>
+                          <span className="text-xs text-foreground/60 transition-colors">買うべき馬券の見極め方</span>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  
+                  {/* セクション2: 実践方法と戦略 */}
+                  <div className="mb-5">
+                    <div className="flex items-center mb-2">
+                      <div className="bg-primary/10 p-1.5 rounded-lg mr-2.5">
+                        <BarChart3 className="h-4 w-4 text-primary" />
+                      </div>
+                      <h3 className="text-base font-semibold text-primary/90">II. 実践方法と戦略</h3>
+                    </div>
+                    
+                    <div className="space-y-2.5 ml-3 pl-6 border-l border-dashed border-primary/30">
+                      <a 
+                        href="#win-place-prob" 
+                        className="guide-menu-item group flex items-center gap-2.5 pl-2 py-1.5 pr-3 rounded-md transition-all duration-300 cursor-pointer opacity-0 animate-fadeInLeft" 
+                        style={{ 
+                          animationDelay: 'calc(100ms + var(--animation-stagger) * 3)',
+                          animationDuration: 'var(--animation-duration)'
+                        }}
+                      >
+                        <div className="guide-menu-circle bg-primary/10 transition-colors duration-300 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium text-primary shadow-sm relative overflow-hidden">
+                          <span className="relative z-10">3</span>
+                          <span className="guide-menu-circle-bg absolute inset-0 bg-primary/10 transform scale-0 transition-transform duration-300 origin-center rounded-full"></span>
+                        </div>
+                        <div>
+                          <span className="guide-menu-text font-medium block transition-colors text-sm sm:text-base">単勝確率・複勝確率の予想方法</span>
+                          <span className="text-xs text-foreground/60 transition-colors">精度を高めるテクニック</span>
+                        </div>
+                      </a>
+                      
+                      <a 
+                        href="#optimal-betting" 
+                        className="guide-menu-item group flex items-center gap-2.5 pl-2 py-1.5 pr-3 rounded-md transition-all duration-300 cursor-pointer opacity-0 animate-fadeInLeft" 
+                        style={{ 
+                          animationDelay: 'calc(100ms + var(--animation-stagger) * 4)',
+                          animationDuration: 'var(--animation-duration)'
+                        }}
+                      >
+                        <div className="guide-menu-circle bg-primary/10 transition-colors duration-300 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium text-primary shadow-sm relative overflow-hidden">
+                          <span className="relative z-10">4</span>
+                          <span className="guide-menu-circle-bg absolute inset-0 bg-primary/10 transform scale-0 transition-transform duration-300 origin-center rounded-full"></span>
+                        </div>
+                        <div>
+                          <span className="guide-menu-text font-medium block transition-colors text-sm sm:text-base">期待値に基づく最適な馬券構成</span>
+                          <span className="text-xs text-foreground/60 transition-colors">資金配分の秘訣</span>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  
+                  {/* セクション3: ツールの活用とスキルアップ */}
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <div className="bg-primary/10 p-1.5 rounded-lg mr-2.5">
+                        <Settings className="h-4 w-4 text-primary" />
+                      </div>
+                      <h3 className="text-base font-semibold text-primary/90">III. ツールの活用とスキルアップ</h3>
+                    </div>
+                    
+                    <div className="space-y-2.5 ml-3 pl-6 border-l border-dashed border-primary/30">
+                      <a 
+                        href="#ev-tools" 
+                        className="guide-menu-item group flex items-center gap-2.5 pl-2 py-1.5 pr-3 rounded-md transition-all duration-300 cursor-pointer opacity-0 animate-fadeInLeft" 
+                        style={{ 
+                          animationDelay: 'calc(100ms + var(--animation-stagger) * 5)',
+                          animationDuration: 'var(--animation-duration)'
+                        }}
+                      >
+                        <div className="guide-menu-circle bg-primary/10 transition-colors duration-300 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium text-primary shadow-sm relative overflow-hidden">
+                          <span className="relative z-10">5</span>
+                          <span className="guide-menu-circle-bg absolute inset-0 bg-primary/10 transform scale-0 transition-transform duration-300 origin-center rounded-full"></span>
+                        </div>
+                        <div>
+                          <span className="guide-menu-text font-medium block transition-colors text-sm sm:text-base">当サイトの期待値計算ツールの使い方</span>
+                          <span className="text-xs text-foreground/60 transition-colors">実践ガイド</span>
+                        </div>
+                      </a>
+                      
+                      <a 
+                        href="#ev-training" 
+                        className="guide-menu-item group flex items-center gap-2.5 pl-2 py-1.5 pr-3 rounded-md transition-all duration-300 cursor-pointer opacity-0 animate-fadeInLeft" 
+                        style={{ 
+                          animationDelay: 'calc(100ms + var(--animation-stagger) * 6)',
+                          animationDuration: 'var(--animation-duration)'
+                        }}
+                      >
+                        <div className="guide-menu-circle bg-primary/10 transition-colors duration-300 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium text-primary shadow-sm relative overflow-hidden">
+                          <span className="relative z-10">6</span>
+                          <span className="guide-menu-circle-bg absolute inset-0 bg-primary/10 transform scale-0 transition-transform duration-300 origin-center rounded-full"></span>
+                        </div>
+                        <div>
+                          <span className="guide-menu-text font-medium block transition-colors text-sm sm:text-base">期待値計算プロの実践トレーニング</span>
+                          <span className="text-xs text-foreground/60 transition-colors">あなたの予想力を高める方法</span>
+                        </div>
+                      </a>
+                      
+                      <a 
+                        href="#faq" 
+                        className="guide-menu-item group flex items-center gap-2.5 pl-2 py-1.5 pr-3 rounded-md transition-all duration-300 cursor-pointer opacity-0 animate-fadeInLeft" 
+                        style={{ 
+                          animationDelay: 'calc(100ms + var(--animation-stagger) * 7)',
+                          animationDuration: 'var(--animation-duration)'
+                        }}
+                      >
+                        <div className="guide-menu-circle bg-primary/10 transition-colors duration-300 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium text-primary shadow-sm relative overflow-hidden">
+                          <span className="relative z-10">7</span>
+                          <span className="guide-menu-circle-bg absolute inset-0 bg-primary/10 transform scale-0 transition-transform duration-300 origin-center rounded-full"></span>
+                        </div>
+                        <div>
+                          <span className="guide-menu-text font-medium block transition-colors text-sm sm:text-base">期待値計算と確率計算に関するよくある質問</span>
+                          <span className="text-xs text-foreground/60 transition-colors">FAQ</span>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
             </details>
           </div>
 
-          <div id="what-is-ev" className="mb-16 scroll-mt-16 section-highlight animate-fadeIn">
+          <div id="what-is-ev" className="mb-16 scroll-mt-16 section-highlight animate-fadeIn" style={{ animationDelay: 'calc(var(--animation-stagger) * 8)' }}>
             <div className="flex items-center mb-6">
               <div className="bg-primary/10 p-2.5 rounded-lg mr-3 shadow-sm">
                 <Calculator className="h-6 w-6 text-primary" />
@@ -566,13 +1009,13 @@ export default function Guide() {
 
             <div className="space-y-8">
               {/* 1つ目のカード：なぜ「印」ではなく「確率」で予想するのか */}
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md">
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
                 <CardHeader className="border-b border-primary/5 bg-primary/5">
                   <CardTitle className="text-foreground text-xl">なぜ「印」ではなく「確率」で予想するのか</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-5 rounded-lg bg-red-500/10 space-y-3 border border-red-500/20 shadow-sm">
+                  <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 stagger-container">
+                    <div className="p-5 rounded-lg bg-red-500/10 space-y-3 border border-red-500/20 shadow-sm scroll-animate-left stagger-item">
                       <p className="font-semibold text-red-500 flex items-center gap-2">
                         <X className="h-4 w-4" />
                         従来の印予想の限界
@@ -592,7 +1035,7 @@ export default function Guide() {
                         </li>
                       </ul>
                     </div>
-                    <div className="p-5 rounded-lg bg-green-500/10 space-y-3 border border-green-500/20 shadow-sm">
+                    <div className="p-5 rounded-lg bg-green-500/10 space-y-3 border border-green-500/20 shadow-sm scroll-animate-right stagger-item">
                       <p className="font-semibold text-green-500 flex items-center gap-2">
                         <Check className="h-4 w-4" />
                         確率予想の優位性
@@ -634,7 +1077,7 @@ export default function Guide() {
               </Card>
 
               {/* 2つ目のカード：競馬における期待値の定義と計算方法 */}
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md">
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
                 <CardHeader className="border-b border-primary/5 bg-primary/5">
                   <CardTitle className="text-foreground text-xl">競馬における期待値の定義と計算方法</CardTitle>
                 </CardHeader>
@@ -722,10 +1165,10 @@ export default function Guide() {
             </div>
           </div>
 
-          <div id="ev-examples" className="mb-16 scroll-mt-16 section-highlight animate-fadeIn" style={{ animationDelay: '0.1s' }}>
+          <div id="ev-examples" className="mb-16 scroll-mt-16 section-highlight animate-fadeIn" style={{ animationDelay: 'calc(var(--animation-stagger) * 9)' }}>
             <div className="flex items-center mb-6">
               <div className="bg-primary/10 p-2.5 rounded-lg mr-3 shadow-sm">
-                <BarChart3 className="h-6 w-6 text-primary" />
+                <Calculator className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <span className="text-sm font-medium text-primary/70 block">SECTION 02</span>
@@ -733,85 +1176,83 @@ export default function Guide() {
               </div>
             </div>
 
-            <div className="space-y-6">
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">印予想と確率予想の比較</CardTitle>
+            <div className="space-y-8">
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
+                <CardHeader className="border-b border-primary/5 bg-primary/5">
+                  <CardTitle className="text-foreground text-xl">買うべき馬券の見極め方</CardTitle>
                 </CardHeader>
+                
                 <CardContent className="pt-1">
                   <p className="mb-4">
-                    従来の印予想から確率予想への転換を、具体的なレース例で見てみましょう。
+                    単勝オッズ2倍の1番人気と単勝オッズ10倍の穴馬、どちらを買うべきか考えてみましょう。
                   </p>
                   
-                  <div className="overflow-x-auto mb-4">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-primary/10">
-                          <th className="border border-primary/20 p-2 text-left">馬番</th>
-                          <th className="border border-primary/20 p-2 text-left">馬名</th>
-                          <th className="border border-primary/20 p-2 text-center">従来の印</th>
-                          <th className="border border-primary/20 p-2 text-center">単勝オッズ</th>
-                          <th className="border border-primary/20 p-2 text-center">予想勝率</th>
-                          <th className="border border-primary/20 p-2 text-center">期待値</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="border border-primary/20 p-2">1</td>
-                          <td className="border border-primary/20 p-2">サンプル馬A</td>
-                          <td className="border border-primary/20 p-2 text-center">◎</td>
-                          <td className="border border-primary/20 p-2 text-center">2.0倍</td>
-                          <td className="border border-primary/20 p-2 text-center">40%</td>
-                          <td className="border border-primary/20 p-2 text-center">0.8</td>
-                        </tr>
-                        <tr className="bg-background/30">
-                          <td className="border border-primary/20 p-2">2</td>
-                          <td className="border border-primary/20 p-2">サンプル馬B</td>
-                          <td className="border border-primary/20 p-2 text-center">○</td>
-                          <td className="border border-primary/20 p-2 text-center">4.0倍</td>
-                          <td className="border border-primary/20 p-2 text-center">22%</td>
-                          <td className="border border-primary/20 p-2 text-center">0.88</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-primary/20 p-2">3</td>
-                          <td className="border border-primary/20 p-2">サンプル馬C</td>
-                          <td className="border border-primary/20 p-2 text-center">▲</td>
-                          <td className="border border-primary/20 p-2 text-center">8.0倍</td>
-                          <td className="border border-primary/20 p-2 text-center">15%</td>
-                          <td className="border border-primary/20 p-2 text-center">1.2</td>
-                        </tr>
-                        <tr className="bg-background/30">
-                          <td className="border border-primary/20 p-2">4</td>
-                          <td className="border border-primary/20 p-2">サンプル馬D</td>
-                          <td className="border border-primary/20 p-2 text-center">△</td>
-                          <td className="border border-primary/20 p-2 text-center">15.0倍</td>
-                          <td className="border border-primary/20 p-2 text-center">10%</td>
-                          <td className="border border-primary/20 p-2 text-center">1.5</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-primary/20 p-2">5</td>
-                          <td className="border border-primary/20 p-2">サンプル馬E</td>
-                          <td className="border border-primary/20 p-2 text-center">-</td>
-                          <td className="border border-primary/20 p-2 text-center">30.0倍</td>
-                          <td className="border border-primary/20 p-2 text-center">5%</td>
-                          <td className="border border-primary/20 p-2 text-center">1.5</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                  <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-lg bg-background/50 border border-primary/20 space-y-2">
+                      <p className="font-semibold text-center">単勝オッズ2.0倍の1番人気</p>
+                      <div className="space-y-1">
+                        <p className="flex justify-between">
+                          <span>市場予想勝率：</span>
+                          <span className="font-medium">50%</span>
+                        </p>
+                        <p className="flex justify-between">
+                          <span>あなたの予想勝率：</span>
+                          <span className="font-medium">40%</span>
+                        </p>
+                        <p className="flex justify-between text-lg font-bold border-t border-primary/20 pt-1 mt-1">
+                          <span>期待値：</span>
+                          <span className="text-red-500">0.8</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-lg bg-background/50 border border-primary/20 space-y-2">
+                      <p className="font-semibold text-center">単勝オッズ10.0倍の穴馬</p>
+                      <div className="space-y-1">
+                        <p className="flex justify-between">
+                          <span>市場予想勝率：</span>
+                          <span className="font-medium">10%</span>
+                        </p>
+                        <p className="flex justify-between">
+                          <span>あなたの予想勝率：</span>
+                          <span className="font-medium">15%</span>
+                        </p>
+                        <p className="flex justify-between text-lg font-bold border-t border-primary/20 pt-1 mt-1">
+                          <span>期待値：</span>
+                          <span className="text-green-500">1.5</span>
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   
+                  <p className="mb-4">
+                    <strong className="text-primary">市場の予想と自分の予想のギャップ</strong>が期待値を生み出します。上の例では、1番人気は市場が過大評価している（実際より勝率が高く見積もられている）のに対し、穴馬は市場が過小評価している（実際より勝率が低く見積もられている）ため、期待値が高くなっています。
+                  </p>
+                  
                   <div className="p-4 rounded-lg bg-primary/5 mb-4">
-                    <p className="font-semibold mb-2">【印予想と確率予想の違い】</p>
-                    <p>印予想だけでは、本命の◎サンプル馬Aを買うことになりますが、期待値が0.8と低いため理論上は損失が出る馬券です。</p>
-                    <p className="mt-2">確率予想では、期待値が1.5と最も高いサンプル馬Dとサンプル馬Eを買うべきだとわかります。</p>
+                    <p className="font-semibold mb-2">【実践での判断基準】</p>
+                    <ul className="space-y-1">
+                      <li className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">1</span>
+                        <span>自分の予想勝率が市場予想（オッズから逆算）より高い馬を探す</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">2</span>
+                        <span>期待値1.4以上の馬券を優先的に購入する</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">3</span>
+                        <span>1つのレースで複数の馬券が期待値1.4以上なら、期待値が高い順に資金配分</span>
+                      </li>
+                    </ul>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">期待値による馬券選択の実践</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
+                <CardHeader className="border-b border-primary/5 bg-primary/5">
+                  <CardTitle className="text-foreground text-xl">期待値による馬券選択の実践</CardTitle>
                 </CardHeader>
+                
                 <CardContent className="pt-1">
                   <p className="mb-4">
                     単勝オッズ2倍の1番人気と単勝オッズ10倍の穴馬、どちらを買うべきか考えてみましょう。
@@ -889,9 +1330,9 @@ export default function Guide() {
             </div>
 
             <div className="space-y-6">
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">単勝確率の予想方法</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
+                <CardHeader className="border-b border-primary/5 bg-primary/5">
+                  <CardTitle className="text-foreground text-xl">単勝確率の予想方法</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
                   <p className="mb-4">
@@ -915,9 +1356,9 @@ export default function Guide() {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">複勝確率の予想方法</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
+                <CardHeader className="border-b border-primary/5 bg-primary/5">
+                  <CardTitle className="text-foreground text-xl">複勝確率の予想方法</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
                   <p className="mb-4">
@@ -952,9 +1393,9 @@ export default function Guide() {
             </div>
 
             <div className="space-y-6">
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">期待値1.4の法則とリスク管理</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
+                <CardHeader className="border-b border-primary/5 bg-primary/5">
+                  <CardTitle className="text-foreground text-xl">期待値1.4の法則とリスク管理</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
                   <p className="mb-4">
@@ -1023,9 +1464,9 @@ export default function Guide() {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">資金配分の最適化戦略</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
+                <CardHeader className="border-b border-primary/5 bg-primary/5">
+                  <CardTitle className="text-foreground text-xl">資金配分の最適化戦略</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
                   <p className="mb-4">
@@ -1109,9 +1550,9 @@ export default function Guide() {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">馬券種別の選択ガイド</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
+                <CardHeader className="border-b border-primary/5 bg-primary/5">
+                  <CardTitle className="text-foreground text-xl">馬券種別の選択ガイド</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
                   <p className="mb-4">
@@ -1221,9 +1662,9 @@ export default function Guide() {
             </div>
 
             <div className="space-y-6">
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">期待値計算の基本ステップ</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
+                <CardHeader className="border-b border-primary/5 bg-primary/5">
+                  <CardTitle className="text-foreground text-xl">期待値計算の基本ステップ</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
                   <p className="mb-4">
@@ -1337,9 +1778,9 @@ export default function Guide() {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">複合的な馬券種の期待値計算</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
+                <CardHeader className="border-b border-primary/5 bg-primary/5">
+                  <CardTitle className="text-foreground text-xl">複合的な馬券種の期待値計算</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
                   <p className="mb-4">
@@ -1400,9 +1841,9 @@ export default function Guide() {
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">期待値計算の高度な活用法</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
+                <CardHeader className="border-b border-primary/5 bg-primary/5">
+                  <CardTitle className="text-foreground text-xl">期待値計算の高度な活用法</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
                   <p className="mb-4">
