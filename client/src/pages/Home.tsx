@@ -1229,7 +1229,7 @@ export default function Home() {
 
               {/* 左カラム: 出馬表 */}
               <Card className="lg:order-1 lg:col-span-4 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/50">
-                <CardContent className="p-0 sm:p-6 md:p-0 lg:p-6 relative">
+                <CardContent className="p-0 sm:p-6 md:p-4 lg:p-6 relative">
                   {/* グラデーションオーバーレイ */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
                   
@@ -1242,11 +1242,11 @@ export default function Home() {
                       {/* モバイル用の2列表示 */}
                       <div className="block lg:hidden">
                         {/* モバイル用のソートボタンヘッダー */}
-                        <div className="grid grid-cols-2 gap-x-0.5 px-1 mb-1">
+                        <div className="grid grid-cols-2 gap-x-0.5 px-1 sm:px-4 md:px-8 mb-1">
                           <div className="flex items-center justify-start pl-1.5">
                             <button 
                               onClick={() => handleSortClick('number')}
-                              className="flex items-center justify-center pl-0.5 sm:pl-1 pt-3 hover:bg-muted/30 rounded-sm transition-colors"
+                              className="flex items-center justify-center pl-0.5 sm:pl-2 pt-3 pb-1 hover:bg-muted/30 rounded-sm transition-colors"
                               aria-label="馬番でソート"
                             >
                               {sortOrder === 'number-asc' ? (
@@ -1261,7 +1261,7 @@ export default function Home() {
                           <div className="flex items-center justify-end pr-1.5">
                             <button 
                               onClick={() => handleSortClick('odds')}
-                              className="flex items-center justify-center pr-4 sm:pr-5 pt-3 hover:bg-muted/30 rounded-sm transition-colors"
+                              className="flex items-center justify-center pr-4 sm:pr-6 pt-3 pb-1 hover:bg-muted/30 rounded-sm transition-colors"
                               aria-label="オッズでソート"
                             >
                               {sortOrder === 'odds-asc' ? (
@@ -1275,7 +1275,7 @@ export default function Home() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-x-2 sm:gap-x-24 gap-y-0.5 px-1">
+                        <div className="grid grid-cols-2 gap-x-2 sm:gap-x-4 md:gap-x-16 gap-y-0.5 px-1 sm:px-4 md:px-8">
                           {displayHorses.map((horse) => {
                             const latestOdd = latestOdds?.find(odd => 
                               Number(odd.horseId) === horse.number
@@ -1293,7 +1293,7 @@ export default function Home() {
                                 onTouchEnd={(e) => handleTouchEnd(e, horse.number)}
                                 className={`
                                   flex items-center justify-between
-                                  relative px-1.5 py-0.5
+                                  relative px-1.5 py-0.5 sm:px-2.5 sm:py-1
                                   cursor-pointer 
                                   transition-all duration-300
                                   group rounded-sm
@@ -1433,7 +1433,7 @@ export default function Home() {
                                   </TableCell>
                                   
                                   <TableCell className="relative border-0 py-0.5 sm:py-2 pl-0 pr-0">
-                                    <span className="relative z-10 font-medium text-xs sm:text-base md:text-lg line-clamp-1 sm:line-clamp-none">
+                                    <span className="relative z-10 font-medium text-xs sm:text-sm md:text-base line-clamp-1 sm:line-clamp-none">
                                       {horse.name}
                                     </span>
                                   </TableCell>
