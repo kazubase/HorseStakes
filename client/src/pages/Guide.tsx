@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MainLayout from "@/components/layout/MainLayout";
-import { Ticket, Calendar, Coins, Trophy, ChevronRight, Info, Award, BarChart3, Calculator, X, Check, Lightbulb, BookOpen, Settings } from "lucide-react";
+import { Ticket, Calendar, Coins, Trophy, ChevronRight, Info, Award, BarChart3, Calculator, X, Check, Lightbulb, BookOpen, Settings, TrendingUp, Target, Pencil } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { useThemeStore } from "@/stores/themeStore";
 import { Link, useLocation } from "wouter";
@@ -812,7 +812,7 @@ export default function Guide() {
                   <div className="bg-primary/20 p-1.5 rounded-lg mr-2.5 shadow-sm">
                     <BookOpen className="h-4 w-4 text-primary" />
                   </div>
-                  <h2 className="text-lg font-semibold tracking-tight">コンテンツガイド</h2>
+                  <h2 className="text-lg font-semibold tracking-tight">目次</h2>
                 </div>
                 <div className="transition-transform duration-300 ease-in-out group-open:rotate-180">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
@@ -1011,7 +1011,10 @@ export default function Guide() {
               {/* 1つ目のカード：なぜ「印」ではなく「確率」で予想するのか */}
               <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
                 <CardHeader className="border-b border-primary/5 bg-primary/5">
-                  <CardTitle className="text-foreground text-xl">なぜ「印」ではなく「確率」で予想するのか</CardTitle>
+                  <CardTitle className="text-foreground text-xl flex items-center">
+                  <Pencil className="h-5 w-5 text-primary mr-2" />
+                    なぜ「印」ではなく「確率」で予想するのか
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
                 
@@ -1180,142 +1183,113 @@ export default function Guide() {
             </div>
 
             <div className="space-y-8">
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
-                <CardHeader className="border-b border-primary/5 bg-primary/5">
-                  <CardTitle className="text-foreground text-xl">買うべき馬券の見極め方</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-animate">
+                <CardHeader className="border-b border-primary/10 bg-gradient-to-r from-primary/10 to-primary/5">
+                  <CardTitle className="text-foreground text-xl flex items-center">
+                    <TrendingUp className="h-5 w-5 text-primary mr-2" />
+                    期待値で見極める勝率のギャップ
+                  </CardTitle>
                 </CardHeader>
                 
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    単勝オッズ2倍の1番人気と単勝オッズ10倍の穴馬、どちらを買うべきか考えてみましょう。
+                <CardContent className="pt-4">
+                  <p className="mb-5 text-base leading-relaxed">
+                    競馬の予想で大切なのは<span className="font-semibold">「あなたの予想と市場の予想（オッズ）の差」</span>です。
+                    単勝オッズ2倍の1番人気と単勝オッズ10倍の穴馬を比較し、どちらを買うべきか考えてみましょう。
                   </p>
                   
-                  <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-lg bg-background/50 border border-primary/20 space-y-2">
-                      <p className="font-semibold text-center">単勝オッズ2.0倍の1番人気</p>
-                      <div className="space-y-1">
-                        <p className="flex justify-between">
-                          <span>市場予想勝率：</span>
-                          <span className="font-medium">50%</span>
+                  <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-5 rounded-xl bg-background border-2 border-primary/10 hover:border-primary/20 transition-colors duration-300 shadow-sm space-y-3">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
+                          <span className="text-rose-600 font-bold">1番</span>
+                        </div>
+                        <p className="font-semibold text-lg">単勝オッズ2.0倍の1番人気</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="flex justify-between items-center">
+                          <span className="text-sm text-foreground/80">市場予想勝率：</span>
+                          <span className="font-medium text-lg">50%</span>
                         </p>
-                        <p className="flex justify-between">
-                          <span>あなたの予想勝率：</span>
-                          <span className="font-medium">40%</span>
+                        <p className="flex justify-between items-center">
+                          <span className="text-sm text-foreground/80">あなたの予想勝率：</span>
+                          <span className="font-medium text-lg">40%</span>
                         </p>
-                        <p className="flex justify-between text-lg font-bold border-t border-primary/20 pt-1 mt-1">
-                          <span>期待値：</span>
-                          <span className="text-red-500">0.8</span>
-                        </p>
+                        <div className="border-t border-primary/10 pt-2 mt-2">
+                          <p className="flex justify-between items-center">
+                            <span className="font-semibold">期待値：</span>
+                            <span className="text-rose-500 text-xl font-bold">0.8</span>
+                          </p>
+                          <p className="text-sm text-foreground/70 mt-1">市場の過大評価 = 期待値が1.0未満</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="p-4 rounded-lg bg-background/50 border border-primary/20 space-y-2">
-                      <p className="font-semibold text-center">単勝オッズ10.0倍の穴馬</p>
-                      <div className="space-y-1">
-                        <p className="flex justify-between">
-                          <span>市場予想勝率：</span>
-                          <span className="font-medium">10%</span>
-                        </p>
-                        <p className="flex justify-between">
-                          <span>あなたの予想勝率：</span>
-                          <span className="font-medium">15%</span>
-                        </p>
-                        <p className="flex justify-between text-lg font-bold border-t border-primary/20 pt-1 mt-1">
-                          <span>期待値：</span>
-                          <span className="text-green-500">1.5</span>
-                        </p>
+                    <div className="p-5 rounded-xl bg-background border-2 border-primary/10 hover:border-primary/20 transition-colors duration-300 shadow-sm space-y-3">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                          <span className="text-emerald-600 font-bold">穴馬</span>
+                        </div>
+                        <p className="font-semibold text-lg">単勝オッズ10.0倍の穴馬</p>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <p className="mb-4">
-                    <strong className="text-primary">市場の予想と自分の予想のギャップ</strong>が期待値を生み出します。上の例では、1番人気は市場が過大評価している（実際より勝率が高く見積もられている）のに対し、穴馬は市場が過小評価している（実際より勝率が低く見積もられている）ため、期待値が高くなっています。
-                  </p>
-                  
-                  <div className="p-4 rounded-lg bg-primary/5 mb-4">
-                    <p className="font-semibold mb-2">【実践での判断基準】</p>
-                    <ul className="space-y-1">
-                      <li className="flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">1</span>
-                        <span>自分の予想勝率が市場予想（オッズから逆算）より高い馬を探す</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">2</span>
-                        <span>期待値1.4以上の馬券を優先的に購入する</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">3</span>
-                        <span>1つのレースで複数の馬券が期待値1.4以上なら、期待値が高い順に資金配分</span>
-                      </li>
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
-                <CardHeader className="border-b border-primary/5 bg-primary/5">
-                  <CardTitle className="text-foreground text-xl">期待値による馬券選択の実践</CardTitle>
-                </CardHeader>
-                
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    単勝オッズ2倍の1番人気と単勝オッズ10倍の穴馬、どちらを買うべきか考えてみましょう。
-                  </p>
-                  
-                  <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-lg bg-background/50 border border-primary/20 space-y-2">
-                      <p className="font-semibold text-center">単勝オッズ2.0倍の1番人気</p>
-                      <div className="space-y-1">
-                        <p className="flex justify-between">
-                          <span>市場予想勝率：</span>
-                          <span className="font-medium">50%</span>
+                      <div className="space-y-2">
+                        <p className="flex justify-between items-center">
+                          <span className="text-sm text-foreground/80">市場予想勝率：</span>
+                          <span className="font-medium text-lg">10%</span>
                         </p>
-                        <p className="flex justify-between">
-                          <span>あなたの予想勝率：</span>
-                          <span className="font-medium">40%</span>
+                        <p className="flex justify-between items-center">
+                          <span className="text-sm text-foreground/80">あなたの予想勝率：</span>
+                          <span className="font-medium text-lg">15%</span>
                         </p>
-                        <p className="flex justify-between text-lg font-bold border-t border-primary/20 pt-1 mt-1">
-                          <span>期待値：</span>
-                          <span className="text-red-500">0.8</span>
-                        </p>
-                      </div>
-                    </div>
-                    <div className="p-4 rounded-lg bg-background/50 border border-primary/20 space-y-2">
-                      <p className="font-semibold text-center">単勝オッズ10.0倍の穴馬</p>
-                      <div className="space-y-1">
-                        <p className="flex justify-between">
-                          <span>市場予想勝率：</span>
-                          <span className="font-medium">10%</span>
-                        </p>
-                        <p className="flex justify-between">
-                          <span>あなたの予想勝率：</span>
-                          <span className="font-medium">15%</span>
-                        </p>
-                        <p className="flex justify-between text-lg font-bold border-t border-primary/20 pt-1 mt-1">
-                          <span>期待値：</span>
-                          <span className="text-green-500">1.5</span>
-                        </p>
+                        <div className="border-t border-primary/10 pt-2 mt-2">
+                          <p className="flex justify-between items-center">
+                            <span className="font-semibold">期待値：</span>
+                            <span className="text-emerald-500 text-xl font-bold">1.5</span>
+                          </p>
+                          <p className="text-sm text-foreground/70 mt-1">市場の過小評価 = 期待値が1.0以上</p>
+                        </div>
                       </div>
                     </div>
                   </div>
                   
-                  <p className="mb-4">
-                    <strong className="text-primary">市場の予想と自分の予想のギャップ</strong>が期待値を生み出します。上の例では、1番人気は市場が過大評価している（実際より勝率が高く見積もられている）のに対し、穴馬は市場が過小評価している（実際より勝率が低く見積もられている）ため、期待値が高くなっています。
-                  </p>
+                  <div className="p-5 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 mb-6">
+                    <h3 className="font-semibold text-lg mb-3">期待値の正体：<span className="text-primary">市場の予想と自分の予想のギャップ</span></h3>
+                    <p className="mb-4 leading-relaxed">
+                      上の例で分かるように、<span className="underline decoration-primary/30 decoration-2">期待値は市場の評価と自分の評価の差から生まれます</span>。
+                      1番人気は市場が過大評価（実際より勝率が高く見積もられている）している一方、
+                      穴馬は市場が過小評価（実際より勝率が低く見積もられている）しているため、
+                      期待値が高くなっています。
+                    </p>
+                    <div className="flex items-center gap-2 mb-2 text-primary">
+                      <Lightbulb className="h-5 w-5" />
+                      <span className="font-medium">期待値計算式：あなたの予想勝率 × オッズ</span>
+                    </div>
+                  </div>
                   
-                  <div className="p-4 rounded-lg bg-primary/5 mb-4">
-                    <p className="font-semibold mb-2">【実践での判断基準】</p>
-                    <ul className="space-y-1">
-                      <li className="flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">1</span>
-                        <span>自分の予想勝率が市場予想（オッズから逆算）より高い馬を探す</span>
+                  <div className="p-5 rounded-xl bg-primary/5 border border-primary/10 shadow-inner">
+                    <h3 className="font-semibold text-lg mb-3 flex items-center">
+                      <Target className="h-5 w-5 text-primary mr-2" />
+                      実践的な期待値判断基準
+                    </h3>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">1</div>
+                        <div>
+                          <p className="font-medium">自分の予想勝率が市場予想（オッズから逆算）より高い馬を探す</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">これが期待値1.0以上の条件です</p>
+                        </div>
                       </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">2</span>
-                        <span>期待値1.4以上の馬券を優先的に購入する</span>
+                      <li className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">2</div>
+                        <div>
+                          <p className="font-medium">期待値1.4以上の馬券を優先的に購入する</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">長期的に利益を出すために重要な閾値です</p>
+                        </div>
                       </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">3</span>
-                        <span>1つのレースで複数の馬券が期待値1.4以上なら、期待値が高い順に資金配分</span>
+                      <li className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">3</div>
+                        <div>
+                          <p className="font-medium">1つのレースで複数の馬券が期待値1.4以上なら、期待値が高い順に資金配分</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">期待値の高さに比例して資金を振り分けることで、最適な投資が可能になります</p>
+                        </div>
                       </li>
                     </ul>
                   </div>
@@ -1325,62 +1299,306 @@ export default function Guide() {
           </div>
 
           <div id="win-place-prob" className="mb-12 scroll-mt-16">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <Coins className="h-5 w-5 text-primary" />
+            <div className="flex items-center mb-6">
+              <div className="bg-primary/10 p-2.5 rounded-lg mr-3 shadow-sm">
+                <BarChart3 className="h-6 w-6 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">3. 単勝確率・複勝確率の予想方法 - 精度を高めるテクニック</h2>
+              <div>
+                <span className="text-sm font-medium text-primary/70 block">SECTION 03</span>
+                <h2 className="text-2xl sm:text-3xl font-bold">単勝確率・複勝確率の科学的予想法</h2>
+              </div>
             </div>
 
-            <div className="space-y-6">
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
-                <CardHeader className="border-b border-primary/5 bg-primary/5">
-                  <CardTitle className="text-foreground text-xl">単勝確率の予想方法</CardTitle>
+            <div className="space-y-8">
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-animate">
+                <CardHeader className="border-b border-primary/10 bg-gradient-to-r from-primary/10 to-primary/5">
+                  <CardTitle className="text-foreground text-xl flex items-center">
+                    <Target className="h-5 w-5 text-primary mr-2" />
+                    単勝オッズから見る勝率データ
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    単勝確率の予想は、競馬で最もシンプルな予想方法です。以下の手順で予想してみましょう。
+                <CardContent className="pt-4">
+                  <p className="mb-5 text-base leading-relaxed">
+                    単勝オッズと実際の勝率には強い相関関係があります。以下の表は過去のデータから算出された<span className="font-semibold">オッズ別の勝率と回収率</span>です。
+                    これらのデータを参考にすることで、各馬の勝率を客観的に推定できます。
                   </p>
                   
-                  <div className="p-4 rounded-lg bg-primary/5 mb-4">
-                    <p className="font-semibold mb-2">【手順1：人気順に並べる】</p>
-                    <p>まずは、各馬の人気順に並べてみます。人気が高い馬ほど勝つ確率が高いと考えられます。</p>
+                  <div className="mb-6 overflow-x-auto">
+                    <table className="w-full border-collapse bg-background/80 shadow-sm rounded-lg overflow-hidden">
+                      <thead>
+                        <tr className="bg-primary/10">
+                          <th className="p-3 text-left border-b border-r border-primary/10 font-medium">オッズ超</th>
+                          <th className="p-3 text-left border-b border-r border-primary/10 font-medium">オッズ以下</th>
+                          <th className="p-3 text-center border-b border-r border-primary/10 font-medium">勝率(%)</th>
+                          <th className="p-3 text-center border-b border-primary/10 font-medium">回収率(%)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="hover:bg-primary/5 transition-colors">
+                          <td className="p-3 border-r border-b border-primary/10">-</td>
+                          <td className="p-3 border-r border-b border-primary/10">1.5</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">59.19</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-emerald-600">81.56</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors bg-background/30">
+                          <td className="p-3 border-r border-b border-primary/10">1.5</td>
+                          <td className="p-3 border-r border-b border-primary/10">2.0</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">42.46</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-emerald-600">76.22</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors">
+                          <td className="p-3 border-r border-b border-primary/10">2.0</td>
+                          <td className="p-3 border-r border-b border-primary/10">3.0</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">30.76</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-emerald-600">78.60</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors bg-background/30">
+                          <td className="p-3 border-r border-b border-primary/10">3.0</td>
+                          <td className="p-3 border-r border-b border-primary/10">4.0</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">22.56</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-emerald-600">79.84</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors">
+                          <td className="p-3 border-r border-b border-primary/10">4.0</td>
+                          <td className="p-3 border-r border-b border-primary/10">5.0</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">17.30</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-emerald-600">78.31</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors bg-background/30">
+                          <td className="p-3 border-r border-b border-primary/10">5.0</td>
+                          <td className="p-3 border-r border-b border-primary/10">7.0</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">13.33</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-emerald-600">79.40</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors">
+                          <td className="p-3 border-r border-b border-primary/10">7.0</td>
+                          <td className="p-3 border-r border-b border-primary/10">10.0</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">9.96</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-emerald-600">83.30</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors bg-background/30">
+                          <td className="p-3 border-r border-b border-primary/10">10.0</td>
+                          <td className="p-3 border-r border-b border-primary/10">20.0</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">6.31</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-emerald-600">84.92</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors">
+                          <td className="p-3 border-r border-b border-primary/10">20.0</td>
+                          <td className="p-3 border-r border-b border-primary/10">30.0</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">3.40</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-emerald-600">82.75</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors bg-background/30">
+                          <td className="p-3 border-r border-b border-primary/10">30.0</td>
+                          <td className="p-3 border-r border-b border-primary/10">50.0</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">1.70</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-emerald-600">75.76</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors">
+                          <td className="p-3 border-r border-b border-primary/10">50.0</td>
+                          <td className="p-3 border-r border-b border-primary/10">100.0</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">0.83</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-rose-500">69.06</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors bg-background/30">
+                          <td className="p-3 border-r border-b border-primary/10">100.0</td>
+                          <td className="p-3 border-r border-b border-primary/10">200.0</td>
+                          <td className="p-3 text-center border-r border-b border-primary/10 font-medium">0.29</td>
+                          <td className="p-3 text-center border-b border-primary/10 font-medium text-rose-500">49.96</td>
+                        </tr>
+                        <tr className="hover:bg-primary/5 transition-colors">
+                          <td className="p-3 border-r border-primary/10">200.0</td>
+                          <td className="p-3 border-r border-primary/10">-</td>
+                          <td className="p-3 text-center border-r border-primary/10 font-medium">0.08</td>
+                          <td className="p-3 text-center border-primary/10 font-medium text-rose-500">29.82</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
-                  
-                  <div className="p-4 rounded-lg bg-primary/5 mb-4">
-                    <p className="font-semibold mb-2">【手順2：過去の結果を参考にする】</p>
-                    <p>過去のレース結果を参考にして、人気順に並べた馬が実際に勝ったかどうかを確認します。</p>
-                  </div>
-                  
-                  <div className="p-4 rounded-lg bg-primary/5 mb-4">
-                    <p className="font-semibold mb-2">【手順3：確率を計算する】</p>
-                    <p>人気順に並べた馬の勝率を計算します。例えば、1番人気の馬が10回中3回勝っている場合、その馬の単勝確率は30%となります。</p>
+
+                  <div className="p-5 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 mb-6">
+                    <h3 className="font-semibold text-lg mb-3">表から分かること</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">1</div>
+                        <div>
+                          <p className="font-medium">人気馬ほど勝率は高いが回収率は低い傾向</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">1.5倍以下の超人気馬でも回収率は81.56%に留まります</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">2</div>
+                        <div>
+                          <p className="font-medium">どのオッズ帯でも回収率は100%を下回る</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">市場全体では賭け手が不利になるように設計されています</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">3</div>
+                        <div>
+                          <p className="font-medium">大穴馬(50倍超)は回収率が著しく低下</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">50倍を超えるオッズでは回収率が70%を下回り、効率が悪化します</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
-                <CardHeader className="border-b border-primary/5 bg-primary/5">
-                  <CardTitle className="text-foreground text-xl">複勝確率の予想方法</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-animate">
+                <CardHeader className="border-b border-primary/10 bg-gradient-to-r from-primary/10 to-primary/5">
+                  <CardTitle className="text-foreground text-xl flex items-center">
+                    <Calculator className="h-5 w-5 text-primary mr-2" />
+                    確率予想の基本原則
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    複勝確率の予想は、単勝確率と同様に人気順に並べて予想します。以下の手順で予想してみましょう。
-                  </p>
-                  
-                  <div className="p-4 rounded-lg bg-primary/5 mb-4">
-                    <p className="font-semibold mb-2">【手順1：人気順に並べる】</p>
-                    <p>まずは、各馬の人気順に並べてみます。人気が高い馬ほど勝つ確率が高いと考えられます。</p>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="p-5 rounded-xl bg-background border-2 border-primary/10 hover:border-primary/20 transition-colors duration-300 shadow-sm space-y-3">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
+                          <span className="text-rose-600 font-bold">単</span>
+                        </div>
+                        <p className="font-semibold text-lg">単勝確率の特徴</p>
+                      </div>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2">
+                          <span className="text-primary font-bold">•</span>
+                          <span>各馬の1着になる確率を予想</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-primary font-bold">•</span>
+                          <span><strong>全馬の合計が100%</strong>になるように調整する</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-primary font-bold">•</span>
+                          <span>オッズの逆数から市場の予想確率を推定可能</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-primary font-bold">•</span>
+                          <span>例: オッズ2.0倍 → 市場予想確率 50%</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="p-5 rounded-xl bg-background border-2 border-primary/10 hover:border-primary/20 transition-colors duration-300 shadow-sm space-y-3">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                          <span className="text-emerald-600 font-bold">複</span>
+                        </div>
+                        <p className="font-semibold text-lg">複勝確率の特徴</p>
+                      </div>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2">
+                          <span className="text-primary font-bold">•</span>
+                          <span>各馬の3着以内に入る確率を予想</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-primary font-bold">•</span>
+                          <span><strong>全馬の合計が300%</strong>になるように調整する</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-primary font-bold">•</span>
+                          <span>単勝確率が高い馬ほど複勝確率も高くなる傾向</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-primary font-bold">•</span>
+                          <span>例: 単勝確率20%の馬 → 複勝確率 約50%前後</span>
+                        </li>
+                      </ul>
+                    </div>
                   </div>
                   
-                  <div className="p-4 rounded-lg bg-primary/5 mb-4">
-                    <p className="font-semibold mb-2">【手順2：過去の結果を参考にする】</p>
-                    <p>過去のレース結果を参考にして、人気順に並べた馬が実際に勝ったかどうかを確認します。</p>
+                  <div className="p-5 rounded-xl bg-primary/5 border border-primary/10 shadow-inner mb-6">
+                    <h3 className="font-semibold text-lg mb-3 flex items-center">
+                      <Lightbulb className="h-5 w-5 text-primary mr-2" />
+                      確率配分の重要ポイント
+                    </h3>
+                    <div className="space-y-4">
+                      <p className="leading-relaxed">
+                        <span className="underline decoration-primary/30 decoration-2">確率配分で最も重要なのは、全体の合計を適切に調整すること</span>です。
+                        単勝確率は全馬合計で<strong className="text-primary">100%</strong>、複勝確率は全馬合計で<strong className="text-primary">300%</strong>になるように各馬に配分します。
+                      </p>
+                      <div className="bg-background/70 p-4 rounded-lg border border-primary/10">
+                        <p className="font-medium mb-2">例: 10頭立てのレースでの確率配分</p>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-primary/10">
+                                <th className="p-2 text-left">馬番</th>
+                                <th className="p-2 text-center">単勝オッズ</th>
+                                <th className="p-2 text-center">市場予想確率</th>
+                                <th className="p-2 text-center">あなたの単勝確率</th>
+                                <th className="p-2 text-center">あなたの複勝確率</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr className="border-b border-primary/10">
+                                <td className="p-2">1番人気</td>
+                                <td className="p-2 text-center">2.5</td>
+                                <td className="p-2 text-center">40%</td>
+                                <td className="p-2 text-center">35%</td>
+                                <td className="p-2 text-center">70%</td>
+                              </tr>
+                              <tr className="border-b border-primary/10 bg-background/30">
+                                <td className="p-2">2番人気</td>
+                                <td className="p-2 text-center">4.0</td>
+                                <td className="p-2 text-center">25%</td>
+                                <td className="p-2 text-center">20%</td>
+                                <td className="p-2 text-center">50%</td>
+                              </tr>
+                              <tr className="border-b border-primary/10">
+                                <td className="p-2">3番人気</td>
+                                <td className="p-2 text-center">8.0</td>
+                                <td className="p-2 text-center">12.5%</td>
+                                <td className="p-2 text-center">15%</td>
+                                <td className="p-2 text-center">40%</td>
+                              </tr>
+                              <tr className="border-b border-primary/10 bg-background/30">
+                                <td className="p-2">その他7頭</td>
+                                <td className="p-2 text-center">10.0~</td>
+                                <td className="p-2 text-center">22.5%</td>
+                                <td className="p-2 text-center">30%</td>
+                                <td className="p-2 text-center">140%</td>
+                              </tr>
+                              <tr className="bg-primary/5 font-medium">
+                                <td className="p-2">合計</td>
+                                <td className="p-2 text-center">-</td>
+                                <td className="p-2 text-center">100%</td>
+                                <td className="p-2 text-center">100%</td>
+                                <td className="p-2 text-center">300%</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="p-4 rounded-lg bg-primary/5 mb-4">
-                    <p className="font-semibold mb-2">【手順3：確率を計算する】</p>
-                    <p>人気順に並べた馬の勝率を計算します。例えば、1番人気の馬が10回中3回勝っている場合、その馬の複勝確率は30%となります。</p>
+                  <div className="p-5 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5">
+                    <h3 className="font-semibold text-lg mb-3">精度を高めるテクニック</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">1</div>
+                        <div>
+                          <p className="font-medium">過去の類似レースデータを参考にする</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">同じコース・距離・クラスでの過去の結果から傾向を掴みます</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">2</div>
+                        <div>
+                          <p className="font-medium">馬の調子・騎手・枠順などの要素を数値化</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">各要素に点数をつけて客観的に評価することで精度が上がります</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">3</div>
+                        <div>
+                          <p className="font-medium">レース条件と馬の適性をマッチングさせる</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">馬場状態・距離適性・脚質などの相性を重視した確率配分が重要です</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
