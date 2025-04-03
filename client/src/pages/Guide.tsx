@@ -431,45 +431,45 @@ export default function Guide() {
       {/* このページ専用の余白調整 */}
       <div className="mt-6 sm:mt-8 md:mt-10"></div>
 
+      {/* ヘッダー画像を最初に大きく表示 */}
+      <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 mb-8">
+        {/* Canvaで作成する画像サイズ: 1200px × 600px (アスペクト比 2:1) */}
+        <div className="relative w-full overflow-hidden rounded-xl shadow-xl aspect-[2/1]">
+          <img 
+            src="/images/guide_header.webp" 
+            alt="競馬の期待値思考 - 回収率アップの秘訣" 
+            className="w-full h-full object-cover"
+            width="1200"
+            height="600"
+            loading="eager"
+            {...{ fetchpriority: "high" } as any}
+          />
+          {/* オーバーレイ効果 */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+        </div>
+      </div>
+
+      {/* タイトルセクション - シンプルかつ洗練されたデザイン */}
+      <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 mb-12">
+        <div className="text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-foreground relative inline-block whitespace-nowrap">
+            競馬の期待値思考
+            <span className="absolute -bottom-2 left-0 right-0 h-1 bg-primary rounded-full transform scale-x-75 mx-auto"></span>
+          </h1>
+          <p className="text-xl md:text-2xl font-medium text-foreground/90 mb-4 whitespace-nowrap">
+            回収率アップの秘訣と実践方法
+          </p>
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+            オッズと予想確率から期待値を算出し、長期的な回収率向上を目指す方法を解説します。
+          </p>
+        </div>
+      </div>
+
       {/* コンテンツをメインとサイドバーの2カラムレイアウトに変更 */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 px-4 sm:px-6">
         {/* メインコンテンツ - 最大幅を左側3/4に制限 */}
         <div className="lg:col-span-3">
-          {/* ヘッダーセクション - 改善したデザイン */}
-          <div className="relative overflow-hidden rounded-xl mb-10 shadow-md bg-gradient-to-br from-primary/5 to-primary/20 dark:from-primary/10 dark:to-primary/30">
-            <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
-            
-            <div className="flex flex-col items-center p-6 md:p-8">
-              <div className="w-full text-center mb-6 z-10">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
-                  競馬の期待値思考
-                </h1>
-                <p className="text-xl font-medium text-foreground/90 mb-4">
-                  回収率アップの秘訣と実践方法
-                </p>
-                <p className="text-base md:text-lg text-foreground/80 max-w-2xl mx-auto">
-                  オッズと予想確率から期待値を算出し、長期的な回収率向上を目指す方法を解説します。
-                </p>
-              </div>
-              
-              <div className="w-full relative">
-                <div className="overflow-hidden rounded-lg shadow-lg">
-                  <img 
-                    src="/images/guide_header.webp" 
-                    alt="競馬の期待値思考 - 回収率アップの秘訣" 
-                    className="w-full h-auto object-cover"
-                    width="800"
-                    height="421"
-                    loading="eager"
-                    {...{ fetchpriority: "high" } as any}
-                  />
-                </div>
-                <div className="absolute -bottom-3 -right-3 bg-primary/10 p-3 rounded-full backdrop-blur-sm border border-primary/20 shadow-md hidden md:block">
-                  <Calculator className="h-8 w-8 text-primary" />
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* 以前のヘッダーセクションは削除 */}
 
           {/* キーポイントセクション - 追加 */}
           <div className="mb-10">
