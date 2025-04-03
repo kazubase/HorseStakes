@@ -3,7 +3,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { useAtom } from 'jotai';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Race } from "@db/schema";
-import { currentStepAtom, horsesAtom, latestOddsAtom } from '@/stores/bettingStrategy';
+import { currentStepAtom, horsesAtom, latestOddsAtom, raceAtom } from '@/stores/bettingStrategy';
 import { BettingAnalysis } from "@/components/betting/BettingAnalysis";
 import { BettingSelection } from "@/components/betting/BettingSelection";
 import { BettingPortfolio } from "@/components/betting/BettingPortfolio";
@@ -27,13 +27,15 @@ export function BettingStrategy() {
   const { theme } = useThemeStore();
   const queryClient = useQueryClient();
   const [showMarquee, setShowMarquee] = useState(true);
+  const [storedRace] = useAtom(raceAtom);
   
   // レース情報を取得（無限キャッシュ）
-  const { data: race } = useQuery<Race>({
+  const { data: race, isLoading: raceLoading } = useQuery<Race>({
     queryKey: [`/api/races/${id}`],
-    enabled: !!id,
+    enabled: !!id && !storedRace,
     staleTime: Infinity, // レース情報は永続的にキャッシュ
     gcTime: Infinity, // キャッシュを永続的に保持
+    initialData: storedRace || undefined
   });
   
   // 馬データと単勝オッズをマージ
@@ -108,6 +110,10 @@ export function BettingStrategy() {
     );
   }
 
+  // 表示するレースデータを決定
+  const displayRace = storedRace || race;
+  const isLoadingRace = !displayRace && raceLoading;
+
   return (
     <MainLayout>
     <div className="space-y-1 sm:space-y-2">
@@ -130,18 +136,16 @@ export function BettingStrategy() {
                   ? "text-base sm:text-2xl font-bold mb-2 tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
                   : "text-base sm:text-2xl font-bold mb-2 bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent"
               }>
-                {race?.name || 'レース名を読み込み中...'}
+                {isLoadingRace ? 'レース名を読み込み中...' : displayRace?.name}
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground">
-                {race?.startTime ? (
-                  format(new Date(race.startTime), 'yyyy年M月d日')
+                {isLoadingRace ? (
+                  '読み込み中...'
+                ) : displayRace?.startTime ? (
+                  `${format(new Date(displayRace.startTime), 'yyyy年M月d日')} ${displayRace.venue} ${format(new Date(displayRace.startTime), 'HH:mm')}発走`
                 ) : (
                   '読み込み中...'
-                )} {race?.venue} {race?.startTime ? (
-                  format(new Date(race.startTime), 'HH:mm')
-                ) : (
-                  ''
-                )}発走
+                )}
               </p>
             </div>
           </div>

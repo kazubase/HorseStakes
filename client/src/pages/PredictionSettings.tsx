@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -26,8 +26,8 @@ export default function PredictionSettings() {
   const [activeTab, setActiveTab] = useState("win");
   
   // Get data from Jotai atoms if available
-  const [storedHorses] = useAtom(horsesAtom);
-  const [storedRace] = useAtom(raceAtom);
+  const [storedHorses, setStoredHorses] = useAtom(horsesAtom);
+  const [storedRace, setStoredRace] = useAtom(raceAtom);
   
   // 単勝確率の状態
   const [winProbabilities, setWinProbabilities] = useState<{ [key: number]: number }>({});
@@ -47,6 +47,7 @@ export default function PredictionSettings() {
   const [error, setError] = useState<string>("");
   
   const [isInitialized, setIsInitialized] = useState(false);
+  const queryClient = useQueryClient();
 
   // Use stored race data if available, otherwise fetch from API
   const { data: race, isLoading: raceLoading } = useQuery<Race>({
@@ -736,10 +737,20 @@ export default function PredictionSettings() {
       return;
     }
 
+    // データがJotaiアトムに確実に格納されていることを確認
+    if (race) {
+      setStoredRace(race);
+    }
+    
+    if (horses && horses.length > 0) {
+      setStoredHorses(horses);
+    }
+
     const encodedWinProbs = encodeURIComponent(JSON.stringify(winProbabilities));
     const encodedPlaceProbs = encodeURIComponent(JSON.stringify(placeProbabilities));
     
-    window.location.href = `/races/${id}/betting-strategy?budget=${budget}&risk=${riskRatio}&winProbs=${encodedWinProbs}&placeProbs=${encodedPlaceProbs}`;
+    // より良いUXのためにwouter's setLocationを使用
+    setLocation(`/races/${id}/betting-strategy?budget=${budget}&risk=${riskRatio}&winProbs=${encodedWinProbs}&placeProbs=${encodedPlaceProbs}`);
   };
 
   // 初期化後にUIを更新するためのeffect
