@@ -111,7 +111,7 @@ const generateBreadcrumbItems = (pathWithQuery: string, raceData: Race | null, h
 const getBreadcrumbLabel = (segment: string, fullPath: string) => {
   // 特定のパスに対するカスタムラベル
   const pathLabels: Record<string, string> = {
-    'guide': '使い方ガイド',
+    'guide': 'ガイド',
     'terms': '利用規約',
     'privacy': 'プライバシーポリシー',
     'predict': '予想設定',

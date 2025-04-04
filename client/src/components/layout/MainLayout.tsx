@@ -150,7 +150,7 @@ const SidebarNavigation = memo(() => {
                     </div>
                   </Link>
                   
-                  {/* 使い方ガイド - 2番目 */}
+                  {/* ガイド - 2番目 */}
                   <Link href="/guide">
                     <div 
                       className={location === "/guide" ? activeMenuItemClass : menuItemClass}
@@ -160,7 +160,7 @@ const SidebarNavigation = memo(() => {
                       }}
                     >
                       <HelpCircle className="h-5 w-5 text-primary" />
-                      <span>使い方</span>
+                      <span>ガイド</span>
                     </div>
                   </Link>
 
