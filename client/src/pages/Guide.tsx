@@ -920,13 +920,13 @@ export default function Guide() {
         {/* Canvaで作成する画像サイズ: 1200px × 600px (アスペクト比 2:1) */}
         <div className="relative w-full overflow-hidden rounded-xl shadow-xl aspect-[2/1]">
           <img 
-            src="/images/guide_header.webp" 
+            src="/images/optimized_guide_header.webp" 
             alt="競馬の期待値思考 - 回収率アップの秘訣" 
             className="w-full h-full object-cover"
             width="1200"
             height="600"
             loading="eager"
-            {...{ fetchpriority: "high" } as any}
+            {...{ fetchpriority: "high", decoding: "async" } as any}
           />
           {/* オーバーレイ効果 */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
@@ -2238,9 +2238,9 @@ export default function Guide() {
                       </div>
                       <div className="relative">
                         <img 
-                          src="/images/Prediction.webp" 
-                          alt="予想確率入力画面" 
-                          className="w-full h-auto object-cover"
+                          src="/images/optimized_Prediction.webp" 
+                          alt="レース予想と的中率" 
+                          className="rounded-lg shadow-md" 
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 text-white text-xs">
                           直感的なスライダーで各馬の勝率・複勝率を簡単に設定
@@ -2255,9 +2255,9 @@ export default function Guide() {
                       </div>
                       <div className="relative">
                         <img 
-                          src="/images/Output.webp" 
-                          alt="期待値計算結果画面" 
-                          className="w-full h-auto object-cover"
+                          src="/images/optimized_Output.webp" 
+                          alt="期待値計算結果" 
+                          className="rounded-lg shadow-md" 
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 text-white text-xs">
                           馬券種別ごとの期待値を一覧表示し、最適な投資判断をサポート
@@ -2349,10 +2349,9 @@ export default function Guide() {
                     </div>
                     <div className="p-4">
                       <img 
-                        src="/images/RaceCase.webp" 
-                        alt="高松宮記念出馬表" 
-                        className="w-full h-auto object-cover rounded-md shadow-sm" 
-                        loading="lazy"
+                        src="/images/optimized_RaceCase.webp" 
+                        alt="期待値計算の実例" 
+                        className="rounded-lg shadow-md"
                       />
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">※ 出典：https://race.netkeiba.com/race/result.html?race_id=202507020611</p>
                     </div>
@@ -2366,10 +2365,9 @@ export default function Guide() {
                     </div>
                     <div className="p-4">
                       <img 
-                        src="/images/RaceCase1.webp" 
-                        alt="高松宮記念出馬表（前半）" 
-                        className="w-full h-auto object-cover rounded-md shadow-sm" 
-                        loading="lazy"
+                        src="/images/optimized_RaceCase1.webp" 
+                        alt="競馬回収率アップの期待値計算例" 
+                        className="rounded-lg shadow-md"
                       />
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">※ 出典：https://race.netkeiba.com/race/result.html?race_id=202507020611</p>
                     </div>

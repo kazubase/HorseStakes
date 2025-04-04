@@ -16,7 +16,7 @@ const Logo = memo(() => {
       <div className="flex items-center gap-3 cursor-pointer">
         {theme === 'light' ? (
           <img 
-            src="/images/horseshoe-icon-light.webp" 
+            src="/images/optimized_horseshoe-icon-light.webp" 
             alt="馬券戦略アプリロゴ" 
             className="h-9 w-9 rounded-lg"
             width="36"
@@ -27,7 +27,7 @@ const Logo = memo(() => {
           />
         ) : (
           <img 
-            src="/images/horseshoe-icon.webp" 
+            src="/images/optimized_horseshoe-icon.webp" 
             alt="馬券戦略アプリロゴ" 
             className="h-9 w-9 rounded-lg shadow-sm"
             width="36"
