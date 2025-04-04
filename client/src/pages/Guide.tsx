@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MainLayout from "@/components/layout/MainLayout";
-import { Ticket, Calendar, Coins, Trophy, ChevronRight, Info, Award, BarChart3, Calculator, X, Check, Lightbulb, BookOpen, Settings, TrendingUp, Target, Pencil, ArrowRight, CheckCircle2, XCircle, InfoIcon, Quote, CircleArrowDownIcon, LineChartIcon, Brain, BadgeDollarSign, Gauge, Flag, LightbulbIcon, CircleCheck, Camera, BarChart3Icon, Image, Search, ArrowDownRight, ArrowUpRight, ArrowDown, ArrowUp, Percent, SearchIcon, ThumbsUp, Wallet, CircleDollarSign, LineChart, Circle } from "lucide-react";
+import { Ticket, Calendar, Coins, Trophy, ChevronRight, Info, Award, BarChart3, Calculator, X, Check, Lightbulb, BookOpen, Settings, TrendingUp, Target, Pencil, ArrowRight, CheckCircle2, XCircle, InfoIcon, Quote, CircleArrowDownIcon, LineChartIcon, Brain, BadgeDollarSign, Gauge, Flag, LightbulbIcon, CircleCheck, Camera, BarChart3Icon, Image, Search, ArrowDownRight, ArrowUpRight, ArrowDown, ArrowUp, Percent, SearchIcon, ThumbsUp, Wallet, CircleDollarSign, LineChart, Circle, AlertTriangle, CalendarDays, Play, Star } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { useThemeStore } from "@/stores/themeStore";
 import { Link, useLocation } from "wouter";
@@ -12,7 +12,6 @@ import { memo, useCallback, useMemo, useEffect } from "react";
 import { isSameDay, subDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
 
 // レースカードコンポーネント
 const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) => {
@@ -2556,135 +2555,186 @@ export default function Guide() {
                 <CardHeader className="border-b border-primary/10 bg-gradient-to-r from-primary/10 to-primary/5">
                   <CardTitle className="text-foreground text-xl flex items-center">
                     <Settings className="h-5 w-5 text-primary mr-2" />
-                    期待値計算ツールで投資効率を最大化する方法
+                    期待値計算ツールの活用法
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="flex items-center gap-3 mb-5 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50">
-                    <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  <div className="flex items-center gap-3 mb-5 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50">
+                    <Lightbulb className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
                     <p className="text-sm">
-                      期待値計算ツールを使いこなすことで、あなたの馬券購入は感覚的な予想から
-                      データに基づいた投資へと変わります。科学的アプローチで収益率を向上させましょう。
+                      感覚的な予想からデータに基づく<span className="font-medium">科学的投資</span>へ転換。収益率向上を実現します。
                     </p>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <div className="flex flex-col">
-                      <h3 className="text-lg font-semibold mb-5 flex items-center gap-2">
-                        <ArrowRight className="h-5 w-5 text-primary/80" />
-                        期待値計算の基本フロー
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+                    <div className="col-span-1 lg:col-span-2">
+                      <h3 className="font-semibold mb-4 flex items-center gap-2 text-base border-b border-primary/10 pb-2">
+                        <Play className="h-4 w-4 text-green-600" />
+                        ツール操作の5ステップ
                       </h3>
                       
-                      <div className="space-y-4">
-                        <div className="flex gap-3 p-3 rounded-lg bg-muted/30 border border-muted">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center font-medium">1</div>
-                          <div>
-                            <p className="font-medium mb-1">レース選択</p>
-                            <p className="text-sm text-muted-foreground">
-                              開催日・開催場・レース番号から分析したいレースを選択します
-                            </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                        <div className="flex flex-col items-center bg-green-50/50 dark:bg-green-900/10 rounded-lg p-3 text-center relative hover:shadow-md transition-shadow border border-green-100 dark:border-green-900/30">
+                          <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 mb-2">
+                            <CalendarDays className="h-5 w-5" />
                           </div>
+                          <p className="font-medium text-sm mb-1">レース選択</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">開催日・場所・レース</p>
+                          <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-600 rounded-full text-white flex items-center justify-center text-xs font-bold">1</div>
                         </div>
                         
-                        <div className="flex gap-3 p-3 rounded-lg bg-muted/30 border border-muted">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center font-medium">2</div>
-                          <div>
-                            <p className="font-medium mb-1">確率予想入力</p>
-                            <p className="text-sm text-muted-foreground">
-                              各馬の単勝確率と複勝確率をスライダーで入力します（合計が自動調整されます）
-                            </p>
+                        <div className="flex flex-col items-center bg-green-50/50 dark:bg-green-900/10 rounded-lg p-3 text-center relative hover:shadow-md transition-shadow border border-green-100 dark:border-green-900/30">
+                          <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 mb-2">
+                            <Percent className="h-5 w-5" />
                           </div>
+                          <p className="font-medium text-sm mb-1">確率入力</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">単勝率・複勝率設定</p>
+                          <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-600 rounded-full text-white flex items-center justify-center text-xs font-bold">2</div>
                         </div>
                         
-                        <div className="flex gap-3 p-3 rounded-lg bg-muted/30 border border-muted">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center font-medium">3</div>
-                          <div>
-                            <p className="font-medium mb-1">予算・リスク設定</p>
-                            <p className="text-sm text-muted-foreground">
-                              投資予算とリスク許容度を設定し、馬券ポートフォリオを調整します
-                            </p>
+                        <div className="flex flex-col items-center bg-green-50/50 dark:bg-green-900/10 rounded-lg p-3 text-center relative hover:shadow-md transition-shadow border border-green-100 dark:border-green-900/30">
+                          <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 mb-2">
+                            <Wallet className="h-5 w-5" />
                           </div>
+                          <p className="font-medium text-sm mb-1">予算設定</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">投資額・リスク調整</p>
+                          <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-600 rounded-full text-white flex items-center justify-center text-xs font-bold">3</div>
                         </div>
                         
-                        <div className="flex gap-3 p-3 rounded-lg bg-muted/30 border border-muted">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center font-medium">4</div>
-                          <div>
-                            <p className="font-medium mb-1">期待値計算実行</p>
-                            <p className="text-sm text-muted-foreground">
-                              全馬券種の期待値を自動計算し、最適な馬券を抽出します
-                            </p>
+                        <div className="flex flex-col items-center bg-green-50/50 dark:bg-green-900/10 rounded-lg p-3 text-center relative hover:shadow-md transition-shadow border border-green-100 dark:border-green-900/30">
+                          <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 mb-2">
+                            <Calculator className="h-5 w-5" />
                           </div>
+                          <p className="font-medium text-sm mb-1">計算実行</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">全馬券種の期待値算出</p>
+                          <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-600 rounded-full text-white flex items-center justify-center text-xs font-bold">4</div>
                         </div>
                         
-                        <div className="flex gap-3 p-3 rounded-lg bg-muted/30 border border-muted">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center font-medium">5</div>
-                          <div>
-                            <p className="font-medium mb-1">馬券選択・購入</p>
-                            <p className="text-sm text-muted-foreground">
-                              高期待値馬券を選択し、最適配分で投資します
-                            </p>
+                        <div className="flex flex-col items-center bg-green-50/50 dark:bg-green-900/10 rounded-lg p-3 text-center relative hover:shadow-md transition-shadow border border-green-100 dark:border-green-900/30">
+                          <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 mb-2">
+                            <Ticket className="h-5 w-5" />
                           </div>
+                          <p className="font-medium text-sm mb-1">馬券選択</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">最適配分で馬券購入</p>
+                          <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-600 rounded-full text-white flex items-center justify-center text-xs font-bold">5</div>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex flex-col">
-                      <h3 className="text-lg font-semibold mb-5 flex items-center gap-2">
-                        <Lightbulb className="h-5 w-5 text-primary/80" />
-                        期待値計算ツールのポイント
+                    <div>
+                      <h3 className="font-semibold mb-4 flex items-center gap-2 text-base border-b border-primary/10 pb-2">
+                        <ArrowRight className="h-4 w-4 text-red-600" />
+                        期待値判断の基準
                       </h3>
                       
-                      <div className="bg-primary/5 p-4 rounded-lg border border-primary/10 mb-5">
-                        <h4 className="font-medium mb-3 pb-2 border-b border-primary/10">確率入力のコツ</h4>
-                        <ul className="space-y-2 text-sm">
-                          <li className="flex items-start gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                            <span>単勝確率の合計は100%になるよう調整する</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                            <span>複勝確率の合計は300%になるよう調整する</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                            <span>確率が高すぎたり低すぎたりしないよう現実的な値を入力する</span>
-                          </li>
-                        </ul>
-                      </div>
-                      
-                      <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
-                        <h4 className="font-medium mb-3 pb-2 border-b border-primary/10">期待値判断基準</h4>
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center p-2 rounded bg-background/80 border border-muted">
-                            <span className="text-sm">期待値 &lt; 0.8</span>
-                            <Badge variant="outline" className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">投資非推奨</Badge>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 p-2 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10">
+                          <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                            <X className="h-4 w-4 text-red-600" />
                           </div>
-                          <div className="flex justify-between items-center p-2 rounded bg-background/80 border border-muted">
-                            <span className="text-sm">0.8 ≤ 期待値 &lt; 1.0</span>
-                            <Badge variant="outline" className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">要注意</Badge>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">期待値 &lt; 0.8</span>
+                            <span className="text-xs text-gray-600 dark:text-gray-400">投資非推奨</span>
                           </div>
-                          <div className="flex justify-between items-center p-2 rounded bg-background/80 border border-muted">
-                            <span className="text-sm">1.0 ≤ 期待値 &lt; 1.4</span>
-                            <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">投資検討可</Badge>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 p-2 rounded-lg border border-yellow-200 dark:border-yellow-900/30 bg-yellow-50/50 dark:bg-yellow-900/10">
+                          <div className="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                            <AlertTriangle className="h-4 w-4 text-yellow-600" />
                           </div>
-                          <div className="flex justify-between items-center p-2 rounded bg-background/80 border border-muted">
-                            <span className="text-sm">1.4 ≤ 期待値</span>
-                            <Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">積極投資</Badge>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">0.8〜1.0</span>
+                            <span className="text-xs text-gray-600 dark:text-gray-400">要注意</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 p-2 rounded-lg border border-blue-200 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-900/10">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <Circle className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">1.0〜1.4</span>
+                            <span className="text-xs text-gray-600 dark:text-gray-400">投資検討可</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 p-2 rounded-lg border border-green-200 dark:border-green-900/30 bg-green-50/50 dark:bg-green-900/10">
+                          <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">1.4以上</span>
+                            <span className="text-xs text-gray-600 dark:text-gray-400">積極投資</span>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="mb-8">
-                    <h3 className="text-lg font-semibold mb-5 flex items-center gap-2">
-                      <Image className="h-5 w-5 text-primary/80" />
-                      期待値計算ツールのスクリーンショット
+                  <div className="rounded-xl border border-primary/10 bg-primary/5 p-4 mb-6">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2 text-base border-b border-primary/10 pb-2">
+                      <Lightbulb className="h-4 w-4 text-yellow-600" />
+                      確率入力のポイント
                     </h3>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="flex flex-col">
-                        <h4 className="font-medium mb-3 text-center">予想確率入力画面</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="flex flex-col p-3 bg-background rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge className="bg-green-600">単勝確率</Badge>
+                          <span className="text-xs font-medium">合計100%</span>
+                        </div>
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="w-20 h-20 rounded-full border-8 border-green-200 dark:border-green-900/30 flex items-center justify-center text-sm font-bold text-green-600">
+                            100%
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col p-3 bg-background rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge className="bg-blue-600">複勝確率</Badge>
+                          <span className="text-xs font-medium">合計300%</span>
+                        </div>
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="w-20 h-20 rounded-full border-8 border-blue-200 dark:border-blue-900/30 flex items-center justify-center text-sm font-bold text-blue-600">
+                            300%
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col p-3 bg-background rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge className="bg-yellow-600">データ入力</Badge>
+                          <span className="text-xs font-medium">現実的な値</span>
+                        </div>
+                        <div className="flex-1">
+                          <ul className="text-xs space-y-1">
+                            <li className="flex items-start gap-1">
+                              <span className="text-green-500">●</span>
+                              <span>本命馬：15〜25%</span>
+                            </li>
+                            <li className="flex items-start gap-1">
+                              <span className="text-yellow-500">●</span>
+                              <span>対抗馬：10〜15%</span>
+                            </li>
+                            <li className="flex items-start gap-1">
+                              <span className="text-red-500">●</span>
+                              <span>大穴馬：1〜5%</span>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2 text-base border-b border-primary/10 pb-2">
+                      <Image className="h-4 w-4 text-primary" />
+                      ツール画面サンプル
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="relative group">
                         <div className="border border-primary/10 rounded-lg overflow-hidden">
                           <img 
                             src="/images/Prediction.webp" 
@@ -2692,13 +2742,14 @@ export default function Guide() {
                             className="w-full h-auto object-cover"
                           />
                         </div>
-                        <p className="text-sm text-muted-foreground mt-3 text-center">
-                          直感的なスライダーUIで各馬の勝率・複勝率を簡単に入力できます
-                        </p>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <p className="text-xs text-white p-3">
+                            スライダーUIで各馬の勝率・複勝率を簡単に設定できます
+                          </p>
+                        </div>
                       </div>
                       
-                      <div className="flex flex-col">
-                        <h4 className="font-medium mb-3 text-center">期待値計算結果画面</h4>
+                      <div className="relative group">
                         <div className="border border-primary/10 rounded-lg overflow-hidden">
                           <img 
                             src="/images/Output.webp" 
@@ -2706,46 +2757,53 @@ export default function Guide() {
                             className="w-full h-auto object-cover"
                           />
                         </div>
-                        <p className="text-sm text-muted-foreground mt-3 text-center">
-                          馬券種別ごとの期待値を一覧表示し、最適な投資判断をサポートします
-                        </p>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <p className="text-xs text-white p-3">
+                            馬券種別ごとの期待値を一覧表示し、最適な投資判断をサポート
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg p-4">
-                    <h4 className="font-medium mb-3 flex items-center gap-2">
-                      <InfoIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                      効果的な活用ポイント
-                    </h4>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                        <span>複数のレースで期待値計算を行い、最も期待値の高いレースに投資集中する</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                        <span>期待値の計算結果を記録し、予想と実績の差を分析して予想精度を向上させる</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                        <span>最終オッズを使って再計算し、オッズ変動による期待値の変化に対応する</span>
-                      </li>
-                    </ul>
+                  <div className="bg-gradient-to-r from-yellow-50 to-green-50 dark:from-yellow-900/20 dark:to-green-900/20 rounded-lg p-4 mb-6">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2 text-base">
+                      <Star className="h-4 w-4 text-yellow-600" />
+                      プロが実践する3つの活用テクニック
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-white/80 dark:bg-gray-800/90 p-3 rounded-lg flex flex-col">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-xs font-bold text-green-600">1</div>
+                          <p className="text-sm font-medium">レース選別</p>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">複数レースの中から期待値が最も高いレースに投資集中</p>
+                      </div>
+                      
+                      <div className="bg-white/80 dark:bg-gray-800/90 p-3 rounded-lg flex flex-col">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-xs font-bold text-green-600">2</div>
+                          <p className="text-sm font-medium">予想精度向上</p>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">計算結果を記録し予想と実績の差を分析して精度を磨く</p>
+                      </div>
+                      
+                      <div className="bg-white/80 dark:bg-gray-800/90 p-3 rounded-lg flex flex-col">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-xs font-bold text-green-600">3</div>
+                          <p className="text-sm font-medium">オッズ変動対応</p>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">最終オッズで再計算し、期待値の変化に柔軟に対応</p>
+                      </div>
+                    </div>
                   </div>
-
-                   <div className="bg-gradient-to-r from-green-50 dark:from-green-900/20 to-yellow-50 dark:to-yellow-900/20 p-5 rounded-xl flex items-center gap-4">
-                    <div className="bg-white/80 dark:bg-gray-800/80 p-3 rounded-lg shadow-sm hidden md:block">
-                      <Calculator className="h-10 w-10 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg mb-1">期待値計算ツールを活用しよう</h3>
-                      <p className="text-sm mb-3">各馬券の期待値と最適投資額を自動計算</p>
-                      <a href="/" className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 transition-colors text-sm shadow-sm">
-                        <Calculator className="h-4 w-4" />
-                        <span>計算ツールを使う</span>
-                      </a>
-                    </div>
+                  
+                  <div className="flex justify-center">
+                    <a href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-colors shadow-md text-sm">
+                      <Play className="h-4 w-4" />
+                      <span>期待値計算ツールを今すぐ試す</span>
+                    </a>
                   </div>
                 </CardContent>
               </Card>
