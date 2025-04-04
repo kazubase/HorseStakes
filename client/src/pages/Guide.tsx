@@ -749,23 +749,83 @@ export default function Guide() {
           content="競馬, 期待値, 期待値計算, 期待値計算ツール, 馬券戦略"
         />
         <link rel="canonical" href="https://horse-stakes.com/guide" />
+        {/* クリティカルCSSをインライン化 */}
+        <style>
+          {`
+          /* クリティカルCSS - ファーストビューのみ最適化 */
+          .hero-image {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            object-position: center center;
+            background-color: #f0f0f0;
+            content-visibility: auto;
+          }
+          .hero-image-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+          }
+          picture {
+            width: 100%;
+            height: 100%;
+            display: block;
+          }
+          .hero-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.1) 0%, transparent 80%);
+            pointer-events: none;
+            z-index: 1;
+          }
+          /* スマホ最適化 */
+          @media (max-width: 640px) {
+            .hero-image-container {
+              min-height: unset; /* min-heightを削除 */
+              transform: translateZ(0);
+            }
+            .hero-image {
+              transform: translateZ(0);
+            }
+          }
+          `}
+        </style>
+        {/* モバイル向けの画像をプリロード（優先度高） */}
+        <link
+          rel="preload"
+          href="/images/mobile/optimized_guide_header_mobile.webp"
+          as="image"
+          type="image/webp"
+          media="(max-width: 640px)"
+          {...({'fetchpriority': 'high'} as {})}
+        />
+        {/* デスクトップ向けの画像をプリロード */}
         <link
           rel="preload"
           href="/images/optimized_guide_header.webp"
           as="image"
           type="image/webp"
-          {...({'imagesizes': '100vw', 'imagesrcset': '/images/optimized_guide_header.webp 1200w', 'fetchpriority': 'high'} as {})}
+          media="(min-width: 641px)"
+          {...({'fetchpriority': 'high'} as {})}
         />
         <meta property="og:title" content="競馬の期待値計算と回収率アップガイド | 馬券戦略" />
         <meta property="og:description" content="競馬で期待値計算を活用して回収率を上げるための完全ガイド。オッズと予想確率から期待値を算出する方法と、期待値の高い馬券を効率的に見つけるコツを解説。期待値1.4以上の馬券を狙って長期的に利益を出す戦略を学びましょう。" />
         <meta property="og:type" content="article" />
         <meta property="og:url" content="https://horse-stakes.com/guide" />
-        <meta property="og:image" content="https://horse-stakes.com/images/guide_header.webp" />
+        <meta property="og:image" content="https://horse-stakes.com/images/optimized_guide_header.webp" />
         <meta property="og:site_name" content="馬券戦略" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="競馬の期待値計算と回収率アップガイド | 馬券戦略" />
         <meta name="twitter:description" content="競馬で期待値計算を活用して回収率を上げるための完全ガイド。オッズと予想確率から期待値を算出する方法と、期待値の高い馬券を効率的に見つけるコツを解説。" />
-        <meta name="twitter:image" content="https://horse-stakes.com/images/guide_header.webp" />
+        <meta name="twitter:image" content="https://horse-stakes.com/images/optimized_guide_header.webp" />
         <style type="text/css">{animationStyles}</style>
       </Helmet>
       
@@ -924,30 +984,47 @@ export default function Guide() {
 
       {/* ヘッダー画像を最初に大きく表示 */}
       <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 mb-8">
-        {/* Canvaで作成する画像サイズ: 1200px × 675px (アスペクト比 16:9) */}
-        <div className="relative w-full overflow-hidden rounded-xl shadow-xl aspect-[16/9]">
-          <img 
-            src="/images/optimized_guide_header.webp" 
-            alt="競馬の期待値思考 - 回収率アップの秘訣" 
-            className="w-full h-full object-cover"
-            width="1200"
-            height="675"
-            loading="eager"
-            decoding="async"
-            style={{
-              contentVisibility: "auto",
-              backgroundColor: "#f0f0f0", // プレースホルダーの色
-              display: "block"
-            }}
-            onLoad={(e) => {
-              if (e.currentTarget) {
-                e.currentTarget.style.backgroundColor = "transparent";
-              }
-            }}
-            {...({'fetchpriority': 'high'} as {})}
-          />
-          {/* オーバーレイ効果 */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+        {/* スマホとPCで異なるサイズの画像を使用 */}
+        <div className="hero-image-container">
+          <picture>
+            {/* スマホ向け (640px以下) - より小さいファイルサイズの画像 */}
+            <source
+              media="(max-width: 640px)"
+              srcSet="/images/mobile/optimized_guide_header_mobile.webp"
+              sizes="100vw"
+              {...({'fetchpriority': 'high'} as {})}
+            />
+            {/* タブレット向け (641px-1024px) */}
+            <source
+              media="(max-width: 1024px)"
+              srcSet="/images/optimized_guide_header.webp"
+              sizes="100vw"
+            />
+            {/* デスクトップ向け */}
+            <source
+              media="(min-width: 1025px)"
+              srcSet="/images/optimized_guide_header.webp"
+              sizes="1200px"
+            />
+            {/* フォールバック */}
+            <img 
+              src="/images/optimized_guide_header.webp" 
+              alt="競馬の期待値思考 - 回収率アップの秘訣" 
+              className="hero-image"
+              width="1200"
+              height="675"
+              loading="eager"
+              decoding="async"
+              onLoad={(e) => {
+                if (e.currentTarget) {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }
+              }}
+              {...({'fetchpriority': 'high'} as {})}
+            />
+          </picture>
+          {/* オーバーレイ効果を調整 - より薄く */}
+          <div className="hero-overlay"></div>
         </div>
       </div>
 
