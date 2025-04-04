@@ -12,6 +12,7 @@ import { memo, useCallback, useMemo, useEffect, useState } from "react";
 import { isSameDay, subDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { InlineBadge } from "@/components/ui/inline-badge";
 
 // レースカードコンポーネント
 const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) => {
@@ -2068,8 +2069,8 @@ export default function Guide() {
                       </h3>
                       <div className="p-3 bg-background rounded-lg mb-3">
                         <div className="flex items-center gap-2 mb-2">
-                          <Badge className="bg-green-600">プロの競馬予想家が重視</Badge>
-                          <Badge className="bg-yellow-600">安全マージン</Badge>
+                          <InlineBadge className="bg-green-600">プロの競馬予想家が重視</InlineBadge>
+                          <InlineBadge className="bg-yellow-600">安全マージン</InlineBadge>
                         </div>
                         <p className="text-sm">予想誤差を考慮しても利益を出せる確率が高い</p>
                       </div>
@@ -2367,7 +2368,7 @@ export default function Guide() {
                         </div>
                         <div className="border-t border-primary/10 mt-3 pt-3">
                           <p className="text-xs flex items-center gap-1">
-                            <Badge className="bg-green-600">向いている人</Badge>
+                            <InlineBadge className="bg-green-600">向いている人</InlineBadge>
                             予想精度に自信あり、高回収狙い
                           </p>
                         </div>
@@ -2423,7 +2424,7 @@ export default function Guide() {
                         </div>
                         <div className="border-t border-primary/10 mt-3 pt-3">
                           <p className="text-xs flex items-center gap-1">
-                            <Badge className="bg-green-600">向いている人</Badge>
+                            <InlineBadge className="bg-green-600">向いている人</InlineBadge>
                             安定重視、資金少、初心者
                           </p>
                         </div>
@@ -2479,7 +2480,7 @@ export default function Guide() {
                         </div>
                         <div className="border-t border-primary/10 mt-3 pt-3">
                           <p className="text-xs flex items-center gap-1">
-                            <Badge className="bg-green-600">向いている人</Badge>
+                            <InlineBadge className="bg-green-600">向いている人</InlineBadge>
                             バランス重視、上位馬把握可能
                           </p>
                         </div>
@@ -2535,7 +2536,7 @@ export default function Guide() {
                         </div>
                         <div className="border-t border-primary/10 mt-3 pt-3">
                           <p className="text-xs flex items-center gap-1">
-                            <Badge className="bg-green-600">向いている人</Badge>
+                            <InlineBadge className="bg-green-600">向いている人</InlineBadge>
                             ハイリスク・ハイリターン志向、上級者
                           </p>
                         </div>
@@ -2553,24 +2554,24 @@ export default function Guide() {
                         <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-sm font-medium shadow-sm">1</div>
                         <p className="font-medium text-center text-sm">予想スタイルに合わせる</p>
                         <div className="flex justify-center gap-1 mt-1">
-                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">得意</Badge>
-                          <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">強み</Badge>
+                          <InlineBadge variant="outline" className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">得意</InlineBadge>
+                          <InlineBadge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">強み</InlineBadge>
                         </div>
                       </div>
                       <div className="flex flex-col items-center gap-2 bg-background rounded-lg p-3 border border-primary/10">
                         <div className="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-sm font-medium shadow-sm">2</div>
                         <p className="font-medium text-center text-sm">期待値比較で選択</p>
                         <div className="flex justify-center gap-1 mt-1">
-                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">効率</Badge>
-                          <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">最適化</Badge>
+                          <InlineBadge variant="outline" className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">効率</InlineBadge>
+                          <InlineBadge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">最適化</InlineBadge>
                         </div>
                       </div>
                       <div className="flex flex-col items-center gap-2 bg-background rounded-lg p-3 border border-primary/10">
                         <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-sm font-medium shadow-sm">3</div>
                         <p className="font-medium text-center text-sm">レース特性に合わせる</p>
                         <div className="flex justify-center gap-1 mt-1">
-                          <Badge variant="outline" className="text-xs bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">荒レース→3連</Badge>
-                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">堅実→単複</Badge>
+                          <InlineBadge variant="outline" className="text-xs bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">荒レース→3連</InlineBadge>
+                          <InlineBadge variant="outline" className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">堅実→単複</InlineBadge>
                         </div>
                       </div>
                     </div>
@@ -2722,7 +2723,7 @@ export default function Guide() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="flex flex-col p-3 bg-background rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
-                          <Badge className="bg-green-600">単勝確率</Badge>
+                          <InlineBadge className="bg-green-600">単勝確率</InlineBadge>
                           <span className="text-xs font-medium">合計100%</span>
                         </div>
                         <div className="flex-1 flex items-center justify-center">
@@ -2734,7 +2735,7 @@ export default function Guide() {
                       
                       <div className="flex flex-col p-3 bg-background rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
-                          <Badge className="bg-yellow-600">複勝確率</Badge>
+                          <InlineBadge className="bg-yellow-600">複勝確率</InlineBadge>
                           <span className="text-xs font-medium">合計300%</span>
                         </div>
                         <div className="flex-1 flex items-center justify-center">
@@ -2746,7 +2747,7 @@ export default function Guide() {
                       
                       <div className="flex flex-col p-3 bg-background rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
-                          <Badge className="bg-yellow-600">データ入力</Badge>
+                          <InlineBadge className="bg-yellow-600">データ入力</InlineBadge>
                           <span className="text-xs font-medium">現実的な値</span>
                         </div>
                         <div className="flex-1">
@@ -3069,7 +3070,7 @@ export default function Guide() {
                           <div className="p-2 text-xs text-center bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">10%</div>
                           <div className="p-2 text-xs text-center bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 font-medium">0.71</div>
                           <div className="p-2 text-xs text-center bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-                            <Badge className="bg-yellow-500 text-white">注意</Badge>
+                            <InlineBadge className="bg-yellow-500 text-white">注意</InlineBadge>
                           </div>
                           
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900 font-medium border-b border-gray-100 dark:border-gray-800">6</div>
@@ -3078,7 +3079,7 @@ export default function Guide() {
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">10%</div>
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 font-medium">0.57</div>
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-                            <Badge className="bg-red-500 text-white">低</Badge>
+                            <InlineBadge className="bg-red-500 text-white">低</InlineBadge>
                           </div>
                           
                           <div className="p-2 text-xs text-center bg-white dark:bg-gray-900 font-medium border-b border-gray-100 dark:border-gray-800">10</div>
@@ -3087,7 +3088,7 @@ export default function Guide() {
                           <div className="p-2 text-xs text-center bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">30%</div>
                           <div className="p-2 text-xs text-center bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 font-medium">1.14</div>
                           <div className="p-2 text-xs text-center bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-                            <Badge className="bg-green-500 text-white">良</Badge>
+                            <InlineBadge className="bg-green-500 text-white">良</InlineBadge>
                           </div>
                           
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900 font-medium border-b border-gray-100 dark:border-gray-800">12</div>
@@ -3096,7 +3097,7 @@ export default function Guide() {
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">15%</div>
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 font-medium">1.10</div>
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-                            <Badge className="bg-green-500 text-white">良</Badge>
+                            <InlineBadge className="bg-green-500 text-white">良</InlineBadge>
                           </div>
                           
                           <div className="p-2 text-xs text-center bg-white dark:bg-gray-900 font-medium border-b border-gray-100 dark:border-gray-800">14</div>
@@ -3105,7 +3106,7 @@ export default function Guide() {
                           <div className="p-2 text-xs text-center bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">25%</div>
                           <div className="p-2 text-xs text-center bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 font-medium">0.88</div>
                           <div className="p-2 text-xs text-center bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-                            <Badge className="bg-yellow-500 text-white">注意</Badge>
+                            <InlineBadge className="bg-yellow-500 text-white">注意</InlineBadge>
                           </div>
                           
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900 font-medium">15</div>
@@ -3114,7 +3115,7 @@ export default function Guide() {
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900">10%</div>
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900 font-medium">1.46</div>
                           <div className="p-2 text-xs text-center bg-gray-50 dark:bg-gray-900">
-                            <Badge className="bg-green-500 text-white">推奨</Badge>
+                            <InlineBadge className="bg-green-500 text-white">推奨</InlineBadge>
                           </div>
                         </div>
                       </div>
@@ -3214,18 +3215,18 @@ export default function Guide() {
 
             {/* FAQ カテゴリータブ */}
             <div className="flex flex-wrap justify-center gap-2 mb-8">
-              <Badge className="py-2 px-4 bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer">
+              <InlineBadge className="py-2 px-4 bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer">
                 <Calculator className="h-3.5 w-3.5 mr-1" />
                 <span>期待値の基本</span>
-              </Badge>
-              <Badge className="py-2 px-4 bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer">
+              </InlineBadge>
+              <InlineBadge className="py-2 px-4 bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer">
                 <Percent className="h-3.5 w-3.5 mr-1" />
                 <span>確率予想</span>
-              </Badge>
-              <Badge className="py-2 px-4 bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer">
+              </InlineBadge>
+              <InlineBadge className="py-2 px-4 bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer">
                 <TrendingUp className="h-3.5 w-3.5 mr-1" />
                 <span>回収率アップ</span>
-              </Badge>
+              </InlineBadge>
             </div>
 
             <div className="space-y-4">
@@ -3239,7 +3240,7 @@ export default function Guide() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <h3 className="font-bold text-base">競馬の期待値計算とは何ですか？</h3>
-                        <Badge variant="outline" className="bg-primary/10 text-primary">基本</Badge>
+                        <InlineBadge variant="outline" className="bg-primary/10 text-primary">基本</InlineBadge>
                       </div>
                       <p className="mt-3 text-sm">
                         競馬の期待値計算とは、オッズと予想勝率から理論上の投資価値を算出する方法です。「期待値 = オッズ × 的中確率」の式で計算され、期待値が1以上なら理論上は利益が期待できます。
@@ -3269,7 +3270,7 @@ export default function Guide() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <h3 className="font-bold text-base">競馬の期待値計算で本当に回収率は上がりますか？</h3>
-                        <Badge variant="outline" className="bg-primary/10 text-primary">基本</Badge>
+                        <InlineBadge variant="outline" className="bg-primary/10 text-primary">基本</InlineBadge>
                       </div>
                       <p className="mt-3 text-sm">
                         はい、期待値計算を正しく活用することで長期的な回収率向上が期待できます。特に<span className="font-medium text-primary">期待値1.4以上の馬券</span>を狙うことで、予想の誤差を考慮しても利益につながりやすくなります。
@@ -3312,7 +3313,7 @@ export default function Guide() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <h3 className="font-bold text-base">単勝の期待値計算と複勝の期待値計算、どちらが重要ですか？</h3>
-                        <Badge variant="outline" className="bg-primary/10 text-primary">確率予想</Badge>
+                        <InlineBadge variant="outline" className="bg-primary/10 text-primary">確率予想</InlineBadge>
                       </div>
                       <p className="mt-3 text-sm">
                         両方重要ですが、複勝の期待値計算は初心者向けに安定性があります。単勝の期待値計算はリターンが大きい反面、的中率が低くなります。
@@ -3368,7 +3369,7 @@ export default function Guide() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <h3 className="font-bold text-base">競馬の期待値計算ツールはどのような馬券種類に対応していますか？</h3>
-                        <Badge variant="outline" className="bg-primary/10 text-primary">確率予想</Badge>
+                        <InlineBadge variant="outline" className="bg-primary/10 text-primary">確率予想</InlineBadge>
                       </div>
                       <p className="mt-3 text-sm">
                         期待値計算ツールは、単勝、複勝、馬連、馬単、ワイド、3連複、3連単など、JRAの主要な馬券種類すべてに対応しています。単勝確率と複勝確率を入力するだけで、すべての券種について期待値計算を行います。
@@ -3435,7 +3436,7 @@ export default function Guide() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <h3 className="font-bold text-base">競馬で期待値が高い馬券を見つけるコツはありますか？</h3>
-                        <Badge variant="outline" className="bg-primary/10 text-primary">回収率アップ</Badge>
+                        <InlineBadge variant="outline" className="bg-primary/10 text-primary">回収率アップ</InlineBadge>
                       </div>
                       <p className="mt-3 text-sm">
                         期待値の高い馬券を見つけるには、公式オッズと独自予想の差異を探すことが重要です。以下の3つの視点で「割安馬券」を見つけましょう。
@@ -3479,7 +3480,7 @@ export default function Guide() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <h3 className="font-bold text-base">競馬の期待値と回収率の関係を教えてください</h3>
-                        <Badge variant="outline" className="bg-primary/10 text-primary">回収率アップ</Badge>
+                        <InlineBadge variant="outline" className="bg-primary/10 text-primary">回収率アップ</InlineBadge>
                       </div>
                       <p className="mt-3 text-sm">
                         期待値と回収率には密接な関係があります。期待値は理論上の投資価値を示す指標で、期待値1.0は理論的回収率100%、期待値1.5なら理論的回収率150%を意味します。
@@ -3502,27 +3503,27 @@ export default function Guide() {
                               <tr className="border-t border-primary/10">
                                 <td className="p-2 text-xs">0.7</td>
                                 <td className="p-2 text-xs">70%</td>
-                                <td className="p-2 text-xs"><Badge variant="destructive" className="bg-destructive/80 text-white">非推奨</Badge></td>
+                                <td className="p-2 text-xs"><InlineBadge variant="destructive" className="bg-destructive/80 text-white">非推奨</InlineBadge></td>
                               </tr>
                               <tr className="border-t border-primary/10 bg-primary/5">
                                 <td className="p-2 text-xs">1.0</td>
                                 <td className="p-2 text-xs">100%</td>
-                                <td className="p-2 text-xs"><Badge className="bg-primary/40 text-white">検討可</Badge></td>
+                                <td className="p-2 text-xs"><InlineBadge className="bg-primary/40 text-white">検討可</InlineBadge></td>
                               </tr>
                               <tr className="border-t border-primary/10">
                                 <td className="p-2 text-xs">1.2</td>
                                 <td className="p-2 text-xs">120%</td>
-                                <td className="p-2 text-xs"><Badge className="bg-primary/40 text-white">検討可</Badge></td>
+                                <td className="p-2 text-xs"><InlineBadge className="bg-primary/40 text-white">検討可</InlineBadge></td>
                               </tr>
                               <tr className="border-t border-primary/10 bg-primary/5">
                                 <td className="p-2 text-xs font-medium">1.4</td>
                                 <td className="p-2 text-xs font-medium">140%</td>
-                                <td className="p-2 text-xs"><Badge className="bg-primary text-white">積極投資</Badge></td>
+                                <td className="p-2 text-xs"><InlineBadge className="bg-primary text-white">積極投資</InlineBadge></td>
                               </tr>
                               <tr className="border-t border-primary/10">
                                 <td className="p-2 text-xs font-medium">1.8</td>
                                 <td className="p-2 text-xs font-medium">180%</td>
-                                <td className="p-2 text-xs"><Badge className="bg-primary text-white">積極投資</Badge></td>
+                                <td className="p-2 text-xs"><InlineBadge className="bg-primary text-white">積極投資</InlineBadge></td>
                               </tr>
                             </tbody>
                           </table>
