@@ -13,3 +13,4 @@ vite.config.ts.*
 # ビルド出力
 /dist/
 dist/
+convert-to-webp.cjs

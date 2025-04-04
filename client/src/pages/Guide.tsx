@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MainLayout from "@/components/layout/MainLayout";
-import { Ticket, Calendar, Coins, Trophy, ChevronRight, Info, Award, BarChart3, Calculator, X, Check, Lightbulb, BookOpen, Settings, TrendingUp, Target, Pencil } from "lucide-react";
+import { Ticket, Calendar, Coins, Trophy, ChevronRight, Info, Award, BarChart3, Calculator, X, Check, Lightbulb, BookOpen, Settings, TrendingUp, Target, Pencil, ArrowRight, CheckCircle2, XCircle, InfoIcon, Quote, CircleArrowDownIcon, LineChartIcon, Brain, BadgeDollarSign, Gauge, Flag, LightbulbIcon, CircleCheck, Camera, BarChart3Icon, Image } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { useThemeStore } from "@/stores/themeStore";
 import { Link, useLocation } from "wouter";
@@ -10,6 +10,8 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { memo, useCallback, useMemo, useEffect } from "react";
 import { isSameDay, subDays } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 // レースカードコンポーネント
 const RaceCard = memo(({ race, onClick }: { race: Race; onClick: () => void }) => {
@@ -1178,7 +1180,7 @@ export default function Guide() {
               </div>
               <div>
                 <span className="text-sm font-medium text-primary/70 block">SECTION 02</span>
-                <h2 className="text-2xl sm:text-3xl font-bold">具体例で理解する期待値計算</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold">期待値で見極める勝率のギャップ</h2>
               </div>
             </div>
 
@@ -1606,820 +1608,1102 @@ export default function Guide() {
           </div>
 
           <div id="optimal-betting" className="mb-12 scroll-mt-16">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <Coins className="h-5 w-5 text-primary" />
+            <div className="flex items-center mb-6">
+              <div className="bg-primary/10 p-2.5 rounded-lg mr-3 shadow-sm">
+                <Coins className="h-6 w-6 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">4. 期待値に基づく最適な馬券構成 - 資金配分の秘訣</h2>
+              <div>
+                <span className="text-sm font-medium text-primary/70 block">SECTION 04</span>
+                <h2 className="text-2xl sm:text-3xl font-bold">期待値に基づく最適な馬券構成</h2>
+              </div>
             </div>
 
-            <div className="space-y-6">
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
-                <CardHeader className="border-b border-primary/5 bg-primary/5">
-                  <CardTitle className="text-foreground text-xl">期待値1.4の法則とリスク管理</CardTitle>
+            <div className="space-y-8">
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-animate">
+                <CardHeader className="border-b border-primary/10 bg-gradient-to-r from-primary/10 to-primary/5">
+                  <CardTitle className="text-foreground text-xl flex items-center">
+                    <Target className="h-5 w-5 text-primary mr-2" />
+                    期待値1.4の法則とリスク管理
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    プロの競馬予想家が重視する「期待値1.4の法則」について、より詳しく見ていきましょう。単に期待値が1.0を超えていればよいというわけではなく、予想誤差を考慮したマージンが重要です。
-                  </p>
+                <CardContent className="pt-4">
+                  <div className="p-5 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 mb-6">
+                    <h3 className="font-semibold text-lg mb-3">1.4の法則とは</h3>
+                    <p className="mb-4 leading-relaxed">
+                      プロの競馬予想家が重視する<span className="underline decoration-primary/30 decoration-2">「期待値1.4の法則」</span>は、単に期待値が1.0を超えるだけでなく、
+                      予想誤差を考慮した<strong className="text-primary">安全マージン</strong>を確保するための重要な基準です。
+                    </p>
+                  </div>
                   
-                  <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-lg bg-primary/5 space-y-2">
-                      <p className="font-semibold text-center">理論と現実のギャップ</p>
-                      <ul className="space-y-2 text-sm">
+                  <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-5 rounded-xl bg-background border-2 border-primary/10 hover:border-primary/20 transition-colors duration-300 shadow-sm space-y-3">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
+                          <X className="h-5 w-5 text-rose-600" />
+                        </div>
+                        <p className="font-semibold text-lg">理論と現実のギャップ</p>
+                      </div>
+                      <ul className="space-y-2">
                         <li className="flex items-start gap-2">
-                          <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">!</span>
+                          <span className="text-rose-500 font-bold">•</span>
                           <span>確率予想には必ず誤差が伴う（±5〜10%程度）</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">!</span>
+                          <span className="text-rose-500 font-bold">•</span>
                           <span>理論上の期待値1.0では誤差でマイナスになるリスクが大きい</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">!</span>
+                          <span className="text-rose-500 font-bold">•</span>
                           <span>予想精度が上がっても完璧な予想は不可能</span>
                         </li>
                       </ul>
                     </div>
-                    <div className="p-4 rounded-lg bg-primary/5 space-y-2">
-                      <p className="font-semibold text-center">期待値1.4以上を選ぶ理由</p>
-                      <ul className="space-y-2 text-sm">
+                    <div className="p-5 rounded-xl bg-background border-2 border-primary/10 hover:border-primary/20 transition-colors duration-300 shadow-sm space-y-3">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                          <Check className="h-5 w-5 text-emerald-600" />
+                        </div>
+                        <p className="font-semibold text-lg">期待値1.4以上を選ぶ理由</p>
+                      </div>
+                      <ul className="space-y-2">
                         <li className="flex items-start gap-2">
-                          <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">✓</span>
+                          <span className="text-emerald-500 font-bold">•</span>
                           <span>予想誤差を吸収できる安全マージンを確保できる</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">✓</span>
+                          <span className="text-emerald-500 font-bold">•</span>
                           <span>長期的に見て回収率130%以上を目指せる水準</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium mt-0.5">✓</span>
+                          <span className="text-emerald-500 font-bold">•</span>
                           <span>資金効率を考慮した最適な投資判断の基準</span>
                         </li>
                       </ul>
                     </div>
                   </div>
                   
-                  <div className="p-4 rounded-lg bg-primary/5 mb-4">
-                    <p className="font-semibold mb-2">【期待値に応じたリスク管理の指針】</p>
-                    <p className="mb-2">期待値別のリスク管理方法を理解することで、馬券投資の精度が高まります：</p>
-                    <ul className="space-y-2">
-                      <li className="flex items-start gap-2">
-                        <span className="text-yellow-500 font-bold">▲</span>
-                        <span><strong>期待値1.0〜1.4</strong>：小額投資か見送り（予想誤差を考慮するとリスクが高い）</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-green-500 font-bold">○</span>
-                        <span><strong>期待値1.4〜1.7</strong>：標準的な投資額（一定のリスクはあるが投資価値あり）</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-green-500 font-bold">◎</span>
-                        <span><strong>期待値1.7以上</strong>：積極的な投資（予想誤差を考慮しても高い回収が期待できる）</span>
-                      </li>
-                    </ul>
-                  </div>
-                  
-                  <p>
-                    期待値1.4以上の馬券を選ぶことで、確率予想の誤差があったとしても長期的には利益を出せる可能性が高まります。しかし、<strong className="text-primary">期待値の高い馬券が毎回見つかるわけではない</strong>ことを理解し、無理な投資は避けることも重要です。
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
-                <CardHeader className="border-b border-primary/5 bg-primary/5">
-                  <CardTitle className="text-foreground text-xl">資金配分の最適化戦略</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    期待値計算はどの馬券に投資すべきかを教えてくれますが、それぞれの馬券にいくら投資するかという資金配分も同じく重要です。効率的な資金配分で回収率を最大化する方法を見ていきましょう。
-                  </p>
-                  
-                  <div className="p-4 rounded-lg bg-primary/5 mb-6">
-                    <p className="font-semibold mb-2">【期待値別の最適投資額の目安】</p>
+                  <div className="p-5 rounded-xl bg-primary/5 border border-primary/10 shadow-inner mb-6">
+                    <h3 className="font-semibold text-lg mb-3 flex items-center">
+                      <Lightbulb className="h-5 w-5 text-primary mr-2" />
+                      期待値別リスク管理の指針
+                    </h3>
                     <div className="overflow-x-auto">
-                      <table className="w-full border-collapse">
+                      <table className="w-full text-sm border-collapse">
                         <thead>
                           <tr className="bg-primary/10">
-                            <th className="border border-primary/20 p-2 text-left">期待値</th>
-                            <th className="border border-primary/20 p-2 text-center">投資金額（%）</th>
-                            <th className="border border-primary/20 p-2 text-center">理由</th>
+                            <th className="p-3 border-b border-r border-primary/10">評価</th>
+                            <th className="p-3 border-b border-r border-primary/10">期待値</th>
+                            <th className="p-3 border-b border-r border-primary/10">投資判断</th>
+                            <th className="p-3 border-b border-primary/10">理由</th>
                           </tr>
                         </thead>
                         <tbody>
-                          <tr>
-                            <td className="border border-primary/20 p-2">1.0〜1.2</td>
-                            <td className="border border-primary/20 p-2 text-center">0〜1%</td>
-                            <td className="border border-primary/20 p-2 text-sm">予想誤差を考慮すると実質的に期待値が1.0を下回るリスクが高い</td>
+                          <tr className="hover:bg-primary/5 transition-colors">
+                            <td className="p-3 border-r border-b border-primary/10 text-center">
+                              <span className="text-yellow-500 font-bold text-lg">▲</span>
+                            </td>
+                            <td className="p-3 border-r border-b border-primary/10 font-medium">1.0〜1.4</td>
+                            <td className="p-3 border-r border-b border-primary/10">小額投資か見送り</td>
+                            <td className="p-3 border-b border-primary/10 text-sm">予想誤差を考慮するとリスクが高い</td>
                           </tr>
-                          <tr className="bg-background/30">
-                            <td className="border border-primary/20 p-2">1.2〜1.4</td>
-                            <td className="border border-primary/20 p-2 text-center">1〜3%</td>
-                            <td className="border border-primary/20 p-2 text-sm">ややリスクがあるため、合計投資額を抑える</td>
+                          <tr className="hover:bg-primary/5 transition-colors bg-background/30">
+                            <td className="p-3 border-r border-b border-primary/10 text-center">
+                              <span className="text-emerald-500 font-bold text-lg">○</span>
+                            </td>
+                            <td className="p-3 border-r border-b border-primary/10 font-medium">1.4〜1.7</td>
+                            <td className="p-3 border-r border-b border-primary/10">標準的な投資額</td>
+                            <td className="p-3 border-b border-primary/10 text-sm">一定のリスクはあるが投資価値あり</td>
                           </tr>
-                          <tr>
-                            <td className="border border-primary/20 p-2">1.4〜1.7</td>
-                            <td className="border border-primary/20 p-2 text-center">3〜5%</td>
-                            <td className="border border-primary/20 p-2 text-sm">標準的な投資価値があり、安定した回収が期待できる</td>
-                          </tr>
-                          <tr className="bg-background/30">
-                            <td className="border border-primary/20 p-2">1.7〜2.0</td>
-                            <td className="border border-primary/20 p-2 text-center">5〜8%</td>
-                            <td className="border border-primary/20 p-2 text-sm">高い期待値で、予想誤差があっても利益が期待できる</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-primary/20 p-2">2.0以上</td>
-                            <td className="border border-primary/20 p-2 text-center">8〜10%</td>
-                            <td className="border border-primary/20 p-2 text-sm">非常に高い期待値で、積極的な投資が正当化される</td>
+                          <tr className="hover:bg-primary/5 transition-colors">
+                            <td className="p-3 border-r border-primary/10 text-center">
+                              <span className="text-emerald-500 font-bold text-lg">◎</span>
+                            </td>
+                            <td className="p-3 border-r border-primary/10 font-medium">1.7以上</td>
+                            <td className="p-3 border-r border-primary/10">積極的な投資</td>
+                            <td className="p-3 border-primary/10 text-sm">予想誤差を考慮しても高い回収が期待できる</td>
                           </tr>
                         </tbody>
                       </table>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-2">※投資金額は競馬投資用の総資金に対する割合</p>
                   </div>
                   
-                  <div className="mb-6">
-                    <p className="font-semibold mb-2">複数の馬券種を組み合わせた分散投資：</p>
-                    <p className="mb-3">
-                      同じレースで複数の馬券種が高い期待値を示す場合は、期待値に応じた分散投資が効果的です。
-                    </p>
-                    <div className="p-4 rounded-lg bg-background/50 border border-primary/20">
-                      <p className="font-medium mb-2">【例】あるレースで以下の馬券が高い期待値を示した場合</p>
-                      <ul className="space-y-2 text-sm">
-                        <li className="flex justify-between">
-                          <span>・3番単勝（期待値1.8）</span>
-                          <span className="font-medium">投資額：総資金の6%</span>
-                        </li>
-                        <li className="flex justify-between">
-                          <span>・3-5馬連（期待値1.5）</span>
-                          <span className="font-medium">投資額：総資金の4%</span>
-                        </li>
-                        <li className="flex justify-between">
-                          <span>・3-5-7三連複（期待値1.4）</span>
-                          <span className="font-medium">投資額：総資金の3%</span>
-                        </li>
-                        <li className="flex justify-between border-t border-primary/20 pt-1 mt-1">
-                          <span>合計</span>
-                          <span className="font-medium">総資金の13%</span>
-                        </li>
-                      </ul>
+                  <div className="border-t border-primary/10 mt-6 pt-6">
+                    <div className="flex items-center">
+                      <Quote className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2" />
+                      <p className="text-sm">
+                        <span className="font-medium">プロが実践する法則：</span>
+                        期待値1.4以上の馬券を選ぶことで、確率予想の誤差があったとしても長期的に利益を出せる可能性が高まります。
+                      </p>
                     </div>
                   </div>
-                  
-                  <p>
-                    期待値による資金配分最適化の基本原則は「<strong className="text-primary">期待値が高いほど投資額を増やす</strong>」という単純なものですが、<strong className="text-primary">一つのレースに投資しすぎない</strong>という点も重要です。一般的に総資金の15〜20%を一つのレースに投資する上限とする方法がリスク管理として効果的です。
-                  </p>
                 </CardContent>
               </Card>
 
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
-                <CardHeader className="border-b border-primary/5 bg-primary/5">
-                  <CardTitle className="text-foreground text-xl">馬券種別の選択ガイド</CardTitle>
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-animate">
+                <CardHeader className="border-b border-primary/10 bg-gradient-to-r from-primary/10 to-primary/5">
+                  <CardTitle className="text-foreground text-xl flex items-center">
+                    <Settings className="h-5 w-5 text-primary mr-2" />
+                    資金配分の最適化戦略
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    単勝確率と複勝確率から各馬券種の期待値を計算できますが、どの馬券種が自分の予想スタイルに合っているかを知ることも重要です。
+                <CardContent className="pt-4">
+                  <p className="mb-5 text-base leading-relaxed">
+                    期待値計算はどの馬券に投資すべきかを教えてくれますが、馬券ごとの<span className="font-semibold">投資金額の配分</span>も重要です。
+                    効率的な資金配分で回収率を最大化しましょう。
                   </p>
                   
-                  <div className="space-y-4 mb-6">
-                    <div className="p-3 bg-primary/5 rounded-lg">
-                      <p className="font-semibold mb-1">単勝馬券の特徴</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <p className="font-medium text-green-500">メリット：</p>
-                          <ul className="space-y-1">
-                            <li>・計算がシンプルで期待値が分かりやすい</li>
-                            <li>・的中時の回収額が大きい</li>
-                          </ul>
-                        </div>
-                        <div>
-                          <p className="font-medium text-red-500">デメリット：</p>
-                          <ul className="space-y-1">
-                            <li>・的中率が低い</li>
-                            <li>・連敗が続くとメンタル面で厳しい</li>
-                          </ul>
+                  <div className="p-5 rounded-xl bg-primary/5 border border-primary/10 shadow-inner mb-6">
+                    <h3 className="font-semibold text-lg mb-3 flex items-center">
+                      <Award className="h-5 w-5 text-primary mr-2" />
+                      期待値別の最適投資額ガイド
+                    </h3>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-gradient-to-r from-primary/15 to-primary/5">
+                            <th className="p-3 text-left border-b border-r border-primary/10 font-medium">期待値</th>
+                            <th className="p-3 text-center border-b border-r border-primary/10 font-medium w-24">投資金額</th>
+                            <th className="p-3 text-left border-b border-primary/10 font-medium">解説</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="hover:bg-primary/5 transition-colors">
+                            <td className="p-3 border-r border-b border-primary/10 font-medium">1.0〜1.2</td>
+                            <td className="p-3 border-r border-b border-primary/10 text-center bg-amber-50/50 dark:bg-amber-900/20">0〜1%</td>
+                            <td className="p-3 border-b border-primary/10 text-sm">予想誤差を考慮すると実質的に期待値が1.0を下回るリスクが高い</td>
+                          </tr>
+                          <tr className="hover:bg-primary/5 transition-colors bg-background/30">
+                            <td className="p-3 border-r border-b border-primary/10 font-medium">1.2〜1.4</td>
+                            <td className="p-3 border-r border-b border-primary/10 text-center bg-amber-50/50 dark:bg-amber-900/20">1〜3%</td>
+                            <td className="p-3 border-b border-primary/10 text-sm">ややリスクがあるため、合計投資額を抑える</td>
+                          </tr>
+                          <tr className="hover:bg-primary/5 transition-colors">
+                            <td className="p-3 border-r border-b border-primary/10 font-medium">1.4〜1.7</td>
+                            <td className="p-3 border-r border-b border-primary/10 text-center bg-emerald-50/50 dark:bg-emerald-900/20">3〜5%</td>
+                            <td className="p-3 border-b border-primary/10 text-sm">標準的な投資価値があり、安定した回収が期待できる</td>
+                          </tr>
+                          <tr className="hover:bg-primary/5 transition-colors bg-background/30">
+                            <td className="p-3 border-r border-b border-primary/10 font-medium">1.7〜2.0</td>
+                            <td className="p-3 border-r border-b border-primary/10 text-center bg-emerald-50/50 dark:bg-emerald-900/20">5〜8%</td>
+                            <td className="p-3 border-b border-primary/10 text-sm">高い期待値で、予想誤差があっても利益が期待できる</td>
+                          </tr>
+                          <tr className="hover:bg-primary/5 transition-colors">
+                            <td className="p-3 border-r border-primary/10 font-medium">2.0以上</td>
+                            <td className="p-3 border-r border-primary/10 text-center bg-emerald-50/50 dark:bg-emerald-900/20">8〜10%</td>
+                            <td className="p-3 border-primary/10 text-sm">非常に高い期待値で、積極的な投資が正当化される</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-foreground/70 mt-2">※投資金額は競馬投資用の総資金に対する割合</p>
+                  </div>
+                  
+                  <div className="mb-6 flex flex-col md:flex-row gap-6">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-3 flex items-center">
+                        <BarChart3 className="h-5 w-5 text-primary mr-2" />
+                        分散投資の例
+                      </h3>
+                      <div className="p-4 rounded-xl bg-background border-2 border-primary/10 hover:border-primary/20 transition-colors duration-300 shadow-sm h-full">
+                        <p className="font-medium mb-3">あるレースで複数の馬券が高い期待値を示した場合</p>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center p-2 bg-gradient-to-r from-emerald-50/30 dark:from-emerald-900/20 to-transparent rounded border border-emerald-200/50 dark:border-emerald-800/30">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-emerald-100/50 dark:bg-emerald-900/30 flex items-center justify-center text-sm font-medium">◎</div>
+                              <span>3番単勝（期待値1.8）</span>
+                            </div>
+                            <span className="font-medium">総資金の6%</span>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-gradient-to-r from-emerald-50/30 dark:from-emerald-900/20 to-transparent rounded border border-emerald-200/50 dark:border-emerald-800/30">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-emerald-100/50 dark:bg-emerald-900/30 flex items-center justify-center text-sm font-medium">○</div>
+                              <span>3-5馬連（期待値1.5）</span>
+                            </div>
+                            <span className="font-medium">総資金の4%</span>
+                          </div>
+                          <div className="flex justify-between items-center p-2 bg-gradient-to-r from-emerald-50/30 dark:from-emerald-900/20 to-transparent rounded border border-emerald-200/50 dark:border-emerald-800/30">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-emerald-100/50 dark:bg-emerald-900/30 flex items-center justify-center text-sm font-medium">△</div>
+                              <span>3-5-7三連複（期待値1.4）</span>
+                            </div>
+                            <span className="font-medium">総資金の3%</span>
+                          </div>
+                          <div className="flex justify-between items-center p-2 border-t border-primary/10 pt-3 font-medium">
+                            <span>合計投資額</span>
+                            <span>総資金の13%</span>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-xs mt-2">向いている人：予想精度に自信があり、高い回収を狙いたい人</p>
                     </div>
                     
-                    <div className="p-3 bg-primary/5 rounded-lg">
-                      <p className="font-semibold mb-1">複勝馬券の特徴</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <p className="font-medium text-green-500">メリット：</p>
-                          <ul className="space-y-1">
-                            <li>・的中率が高く安定している</li>
-                            <li>・初心者でも取り組みやすい</li>
-                          </ul>
-                        </div>
-                        <div>
-                          <p className="font-medium text-red-500">デメリット：</p>
-                          <ul className="space-y-1">
-                            <li>・オッズが低いため大きな回収は難しい</li>
-                            <li>・人気馬の複勝は特に期待値が低いことが多い</li>
-                          </ul>
-                        </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-3 flex items-center">
+                        <Lightbulb className="h-5 w-5 text-primary mr-2" />
+                        資金管理の鉄則
+                      </h3>
+                      <div className="p-4 rounded-xl bg-background border-2 border-primary/10 hover:border-primary/20 transition-colors duration-300 shadow-sm h-full">
+                        <ul className="space-y-3">
+                          <li className="flex items-start gap-3">
+                            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">1</div>
+                            <div>
+                              <p className="font-medium">期待値が高いほど投資額を増やす</p>
+                              <p className="text-sm text-foreground/70 mt-0.5">期待値の高さに比例して投資額を決めることで効率的な資金運用が可能に</p>
+                            </div>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">2</div>
+                            <div>
+                              <p className="font-medium">一つのレースに投資しすぎない</p>
+                              <p className="text-sm text-foreground/70 mt-0.5">総資金の15〜20%を一レースの上限とすることで、リスク分散ができる</p>
+                            </div>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">3</div>
+                            <div>
+                              <p className="font-medium">複数のレースに分散投資する</p>
+                              <p className="text-sm text-foreground/70 mt-0.5">期待値1.4以上の馬券が出るレースを複数選び、分散投資することで安定性向上</p>
+                            </div>
+                          </li>
+                        </ul>
                       </div>
-                      <p className="text-xs mt-2">向いている人：安定性を重視する人、資金が少ない人</p>
-                    </div>
-                    
-                    <div className="p-3 bg-primary/5 rounded-lg">
-                      <p className="font-semibold mb-1">馬連・ワイドの特徴</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <p className="font-medium text-green-500">メリット：</p>
-                          <ul className="space-y-1">
-                            <li>・単勝より的中率が上がる</li>
-                            <li>・人気と穴馬の組み合わせで高配当も</li>
-                          </ul>
-                        </div>
-                        <div>
-                          <p className="font-medium text-red-500">デメリット：</p>
-                          <ul className="space-y-1">
-                            <li>・2頭の予想精度が必要</li>
-                            <li>・期待値計算がやや複雑</li>
-                          </ul>
-                        </div>
-                      </div>
-                      <p className="text-xs mt-2">向いている人：バランス重視の人、上位数頭の力関係を把握できる人</p>
-                    </div>
-                    
-                    <div className="p-3 bg-primary/5 rounded-lg">
-                      <p className="font-semibold mb-1">三連複・三連単の特徴</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <p className="font-medium text-green-500">メリット：</p>
-                          <ul className="space-y-1">
-                            <li>・高配当が期待できる</li>
-                            <li>・少額で大きなリターンを狙える</li>
-                          </ul>
-                        </div>
-                        <div>
-                          <p className="font-medium text-red-500">デメリット：</p>
-                          <ul className="space-y-1">
-                            <li>・的中率が極めて低い</li>
-                            <li>・期待値計算が最も複雑</li>
-                          </ul>
-                        </div>
-                      </div>
-                      <p className="text-xs mt-2">向いている人：ハイリスク・ハイリターンを好む人、レース全体を読み解ける上級者</p>
                     </div>
                   </div>
                   
-                  <p>
-                    馬券種の選択は予想スタイルや性格によって異なりますが、期待値計算ツールを使えば、<strong className="text-primary">あなたの予想からどの馬券種が最も期待値が高いか</strong>を自動的に判断できます。初心者は単勝・複勝から始め、徐々に馬連・三連系に挑戦するのがおすすめです。
+                  <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-5 rounded-xl flex items-center gap-4">
+                    <div className="bg-white/80 p-3 rounded-lg shadow-sm hidden md:block">
+                      <Calculator className="h-10 w-10 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg mb-1">当サイトの期待値計算ツールを活用しよう</h3>
+                      <p className="text-sm mb-3">複雑な計算をすることなく、各馬券の期待値と最適投資額を自動計算できます</p>
+                      <a href="/" className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm shadow-sm">
+                        <Calculator className="h-4 w-4" />
+                        <span>計算ツールを使ってみる</span>
+                      </a>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-animate">
+                <CardHeader className="border-b border-primary/10 bg-gradient-to-r from-primary/10 to-primary/5">
+                  <CardTitle className="text-foreground text-xl flex items-center">
+                    <Ticket className="h-5 w-5 text-primary mr-2" />
+                    馬券種別の選択ガイド
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <p className="mb-5 text-base leading-relaxed">
+                    単勝確率と複勝確率から各馬券種の期待値を計算できますが、<span className="font-semibold">予想スタイルや性格に合った馬券種を選ぶ</span>ことも収益を安定させるために重要です。
                   </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="rounded-xl overflow-hidden shadow-sm border border-primary/10">
+                      <div className="bg-gradient-to-r from-rose-50 to-rose-100 dark:from-rose-950/40 dark:to-rose-900/30 p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-background p-2 rounded-lg shadow-sm">
+                            <span className="text-rose-600 dark:text-rose-400 font-bold text-lg">単勝</span>
+                          </div>
+                          <h3 className="font-semibold text-lg">単勝馬券の特徴</h3>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-background">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <p className="font-medium text-emerald-600 dark:text-emerald-400 flex items-center">
+                              <Check className="h-4 w-4 mr-1" />
+                              メリット
+                            </p>
+                            <ul className="space-y-1 text-sm pl-5 list-disc">
+                              <li>計算がシンプルで期待値が分かりやすい</li>
+                              <li>的中時の回収額が大きい</li>
+                              <li>期待値が高い馬を直接選べる</li>
+                            </ul>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="font-medium text-rose-600 dark:text-rose-400 flex items-center">
+                              <X className="h-4 w-4 mr-1" />
+                              デメリット
+                            </p>
+                            <ul className="space-y-1 text-sm pl-5 list-disc">
+                              <li>的中率が低い</li>
+                              <li>連敗が続くとメンタル面で厳しい</li>
+                              <li>単頭のみの予想精度に依存</li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div className="border-t border-primary/10 mt-3 pt-3">
+                          <p className="text-sm flex items-center gap-1">
+                            <span className="bg-primary/10 p-1 rounded">向いている人：</span>
+                            <span>予想精度に自信があり、高い回収を狙いたい人</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="rounded-xl overflow-hidden shadow-sm border border-primary/10">
+                      <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/40 dark:to-emerald-900/30 p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-background p-2 rounded-lg shadow-sm">
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold text-lg">複勝</span>
+                          </div>
+                          <h3 className="font-semibold text-lg">複勝馬券の特徴</h3>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-background">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <p className="font-medium text-emerald-600 dark:text-emerald-400 flex items-center">
+                              <Check className="h-4 w-4 mr-1" />
+                              メリット
+                            </p>
+                            <ul className="space-y-1 text-sm pl-5 list-disc">
+                              <li>的中率が高く安定している</li>
+                              <li>初心者でも取り組みやすい</li>
+                              <li>連敗が少なく安心感がある</li>
+                            </ul>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="font-medium text-rose-600 dark:text-rose-400 flex items-center">
+                              <X className="h-4 w-4 mr-1" />
+                              デメリット
+                            </p>
+                            <ul className="space-y-1 text-sm pl-5 list-disc">
+                              <li>オッズが低く大きな回収は難しい</li>
+                              <li>人気馬の複勝は期待値が低いことが多い</li>
+                              <li>リターンが小さい</li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div className="border-t border-primary/10 mt-3 pt-3">
+                          <p className="text-sm flex items-center gap-1">
+                            <span className="bg-primary/10 p-1 rounded">向いている人：</span>
+                            <span>安定性を重視する人、資金が少ない人、初心者</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="rounded-xl overflow-hidden shadow-sm border border-primary/10">
+                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-background p-2 rounded-lg shadow-sm">
+                            <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">馬連/ワイド</span>
+                          </div>
+                          <h3 className="font-semibold text-lg">馬連・ワイドの特徴</h3>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-background">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <p className="font-medium text-emerald-600 dark:text-emerald-400 flex items-center">
+                              <Check className="h-4 w-4 mr-1" />
+                              メリット
+                            </p>
+                            <ul className="space-y-1 text-sm pl-5 list-disc">
+                              <li>単勝より的中率が上がる</li>
+                              <li>人気と穴馬の組み合わせで高配当も</li>
+                              <li>馬券種としてバランスが良い</li>
+                            </ul>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="font-medium text-rose-600 dark:text-rose-400 flex items-center">
+                              <X className="h-4 w-4 mr-1" />
+                              デメリット
+                            </p>
+                            <ul className="space-y-1 text-sm pl-5 list-disc">
+                              <li>2頭の予想精度が必要</li>
+                              <li>期待値計算がやや複雑</li>
+                              <li>組み合わせが多いと投資額が増える</li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div className="border-t border-primary/10 mt-3 pt-3">
+                          <p className="text-sm flex items-center gap-1">
+                            <span className="bg-primary/10 p-1 rounded">向いている人：</span>
+                            <span>バランス重視の人、上位数頭の力関係を把握できる人</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="rounded-xl overflow-hidden shadow-sm border border-primary/10">
+                      <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/30 p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-background p-2 rounded-lg shadow-sm">
+                            <span className="text-purple-600 dark:text-purple-400 font-bold text-lg">三連系</span>
+                          </div>
+                          <h3 className="font-semibold text-lg">三連複・三連単の特徴</h3>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-background">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <p className="font-medium text-emerald-600 dark:text-emerald-400 flex items-center">
+                              <Check className="h-4 w-4 mr-1" />
+                              メリット
+                            </p>
+                            <ul className="space-y-1 text-sm pl-5 list-disc">
+                              <li>高配当が期待できる</li>
+                              <li>少額で大きなリターンを狙える</li>
+                              <li>レース全体の読みが合えば大きな利益</li>
+                            </ul>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="font-medium text-rose-600 dark:text-rose-400 flex items-center">
+                              <X className="h-4 w-4 mr-1" />
+                              デメリット
+                            </p>
+                            <ul className="space-y-1 text-sm pl-5 list-disc">
+                              <li>的中率が極めて低い</li>
+                              <li>期待値計算が最も複雑</li>
+                              <li>抑えると投資額が膨大になりがち</li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div className="border-t border-primary/10 mt-3 pt-3">
+                          <p className="text-sm flex items-center gap-1">
+                            <span className="bg-primary/10 p-1 rounded">向いている人：</span>
+                            <span>ハイリスク・ハイリターンを好む人、レース全体を読み解ける上級者</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-5 rounded-xl mb-6">
+                    <h3 className="font-semibold text-lg mb-3 flex items-center">
+                      <Lightbulb className="h-5 w-5 text-primary mr-2" />
+                      馬券種選択のポイント
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">1</div>
+                        <div>
+                          <p className="font-medium">予想スタイルに合った馬券種を選ぶ</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">自分の強みを活かせる馬券種を中心に投資しましょう</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">2</div>
+                        <div>
+                          <p className="font-medium">複数の馬券種で期待値を比較する</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">同じ予想から複数の馬券種の期待値を計算し、最も効率の良い馬券を選びましょう</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium mt-0.5 shadow-sm">3</div>
+                        <div>
+                          <p className="font-medium">レース内容に応じて最適な馬券種を選ぶ</p>
+                          <p className="text-sm text-foreground/70 mt-0.5">荒れそうなレースなら三連系、堅そうなレースなら単勝・複勝など、レース特性に合わせた選択を</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <Calculator className="h-10 w-10 text-indigo-600 dark:text-indigo-400 mt-1" />
+                      <div>
+                        <h3 className="font-semibold text-lg">期待値計算ツールで最適な馬券種を見つけよう</h3>
+                        <p className="text-sm text-foreground/70">あなたの予想に基づいた最適な馬券種と投資金額を自動計算できます</p>
+                      </div>
+                    </div>
+                    <a href="/" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm whitespace-nowrap">
+                      レース一覧を見る
+                    </a>
+                  </div>
                 </CardContent>
               </Card>
             </div>
           </div>
 
           <div id="ev-tools" className="mb-12 scroll-mt-16">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <Ticket className="h-5 w-5 text-primary" />
+            <div className="flex items-center mb-6">
+              <div className="bg-primary/10 p-2.5 rounded-lg mr-3 shadow-sm">
+                <Calculator className="h-6 w-6 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">5. 期待値計算ツールの使い方 - 的中率アップを実現する手順</h2>
+              <div>
+                <span className="text-sm font-medium text-primary/70 block">SECTION 05</span>
+                <h2 className="text-2xl sm:text-3xl font-bold">期待値計算ツールの使い方</h2>
+              </div>
             </div>
 
-            <div className="space-y-6">
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
-                <CardHeader className="border-b border-primary/5 bg-primary/5">
-                  <CardTitle className="text-foreground text-xl">期待値計算の基本ステップ</CardTitle>
+            <div className="space-y-8">
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-animate">
+                <CardHeader className="border-b border-primary/10 bg-gradient-to-r from-primary/10 to-primary/5">
+                  <CardTitle className="text-foreground text-xl flex items-center">
+                    <Settings className="h-5 w-5 text-primary mr-2" />
+                    期待値計算ツールで投資効率を最大化する方法
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    当サイトの期待値計算ツールを使えば、複雑な計算をすることなく各馬券の期待値を簡単に求めることができます。基本的な使い方のステップを見ていきましょう。
-                  </p>
-                  
-                  <div className="p-4 bg-primary/5 rounded-lg mb-6">
-                    <p className="font-semibold mb-3">ツールの使用手順：</p>
-                    <ol className="list-decimal list-inside space-y-2">
-                      <li className="pl-2">
-                        <span className="font-medium">レース情報の確認</span>
-                        <p className="text-sm pl-6 mt-1">JRAや地方競馬のオッズ情報をチェックし、レース情報を把握します。</p>
-                      </li>
-                      <li className="pl-2">
-                        <span className="font-medium">各馬の単勝確率の予想</span>
-                        <p className="text-sm pl-6 mt-1">自分の予想に基づいて、各馬の勝つ確率を予想します（合計で100%になるよう調整）。</p>
-                      </li>
-                      <li className="pl-2">
-                        <span className="font-medium">ツールへの入力</span>
-                        <p className="text-sm pl-6 mt-1">予想した確率とJRA発表のオッズを入力します。</p>
-                      </li>
-                      <li className="pl-2">
-                        <span className="font-medium">期待値の計算実行</span>
-                        <p className="text-sm pl-6 mt-1">「計算する」ボタンをクリックして結果を表示します。</p>
-                      </li>
-                      <li className="pl-2">
-                        <span className="font-medium">結果の分析と馬券選択</span>
-                        <p className="text-sm pl-6 mt-1">期待値が1.4以上の馬券を中心に投資判断を行います。</p>
-                      </li>
-                    </ol>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 mb-5 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50">
+                    <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <p className="text-sm">
+                      期待値計算ツールを使いこなすことで、あなたの馬券購入は感覚的な予想から
+                      データに基づいた投資へと変わります。科学的アプローチで収益率を向上させましょう。
+                    </p>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="border border-primary/20 p-4 rounded-lg">
-                      <p className="font-semibold mb-2">入力例：Aレースの場合</p>
-                      <div className="space-y-2 text-sm">
-                        <div className="grid grid-cols-3 gap-2">
-                          <span className="font-medium">馬番</span>
-                          <span className="font-medium">単勝オッズ</span>
-                          <span className="font-medium">予想確率</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div className="flex flex-col">
+                      <h3 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                        <ArrowRight className="h-5 w-5 text-primary/80" />
+                        期待値計算の基本フロー
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        <div className="flex gap-3 p-3 rounded-lg bg-muted/30 border border-muted">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center font-medium">1</div>
+                          <div>
+                            <p className="font-medium mb-1">レース選択</p>
+                            <p className="text-sm text-muted-foreground">
+                              開催日・開催場・レース番号から分析したいレースを選択します
+                            </p>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <span>1番</span>
-                          <span>2.5倍</span>
-                          <span>30%</span>
+                        
+                        <div className="flex gap-3 p-3 rounded-lg bg-muted/30 border border-muted">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center font-medium">2</div>
+                          <div>
+                            <p className="font-medium mb-1">確率予想入力</p>
+                            <p className="text-sm text-muted-foreground">
+                              各馬の単勝確率と複勝確率をスライダーで入力します（合計が自動調整されます）
+                            </p>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <span>2番</span>
-                          <span>4.0倍</span>
-                          <span>25%</span>
+                        
+                        <div className="flex gap-3 p-3 rounded-lg bg-muted/30 border border-muted">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center font-medium">3</div>
+                          <div>
+                            <p className="font-medium mb-1">予算・リスク設定</p>
+                            <p className="text-sm text-muted-foreground">
+                              投資予算とリスク許容度を設定し、馬券ポートフォリオを調整します
+                            </p>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <span>3番</span>
-                          <span>8.0倍</span>
-                          <span>20%</span>
+                        
+                        <div className="flex gap-3 p-3 rounded-lg bg-muted/30 border border-muted">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center font-medium">4</div>
+                          <div>
+                            <p className="font-medium mb-1">期待値計算実行</p>
+                            <p className="text-sm text-muted-foreground">
+                              全馬券種の期待値を自動計算し、最適な馬券を抽出します
+                            </p>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <span>4番</span>
-                          <span>15.0倍</span>
-                          <span>10%</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <span>5番</span>
-                          <span>30.0倍</span>
-                          <span>15%</span>
+                        
+                        <div className="flex gap-3 p-3 rounded-lg bg-muted/30 border border-muted">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center font-medium">5</div>
+                          <div>
+                            <p className="font-medium mb-1">馬券選択・購入</p>
+                            <p className="text-sm text-muted-foreground">
+                              高期待値馬券を選択し、最適配分で投資します
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="border border-primary/20 p-4 rounded-lg">
-                      <p className="font-semibold mb-2">計算結果例：</p>
-                      <div className="space-y-2 text-sm">
-                        <div className="grid grid-cols-3 gap-2">
-                          <span className="font-medium">馬番</span>
-                          <span className="font-medium">単勝オッズ</span>
-                          <span className="font-medium">期待値</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <span>1番</span>
-                          <span>2.5倍</span>
-                          <span className="text-red-500">0.75</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <span>2番</span>
-                          <span>4.0倍</span>
-                          <span className="text-red-500">1.0</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <span>3番</span>
-                          <span>8.0倍</span>
-                          <span className="text-yellow-500">1.6</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <span>4番</span>
-                          <span>15.0倍</span>
-                          <span className="text-red-500">1.5</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <span>5番</span>
-                          <span>30.0倍</span>
-                          <span className="text-green-500">4.5</span>
+                    <div className="flex flex-col">
+                      <h3 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5 text-primary/80" />
+                        期待値計算ツールのポイント
+                      </h3>
+                      
+                      <div className="bg-primary/5 p-4 rounded-lg border border-primary/10 mb-5">
+                        <h4 className="font-medium mb-3 pb-2 border-b border-primary/10">確率入力のコツ</h4>
+                        <ul className="space-y-2 text-sm">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                            <span>単勝確率の合計は100%になるよう調整する</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                            <span>複勝確率の合計は300%になるよう調整する</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                            <span>確率が高すぎたり低すぎたりしないよう現実的な値を入力する</span>
+                          </li>
+                        </ul>
+                      </div>
+                      
+                      <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                        <h4 className="font-medium mb-3 pb-2 border-b border-primary/10">期待値判断基準</h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center p-2 rounded bg-background/80 border border-muted">
+                            <span className="text-sm">期待値 &lt; 0.8</span>
+                            <Badge variant="outline" className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">投資非推奨</Badge>
+                          </div>
+                          <div className="flex justify-between items-center p-2 rounded bg-background/80 border border-muted">
+                            <span className="text-sm">0.8 ≤ 期待値 &lt; 1.0</span>
+                            <Badge variant="outline" className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">要注意</Badge>
+                          </div>
+                          <div className="flex justify-between items-center p-2 rounded bg-background/80 border border-muted">
+                            <span className="text-sm">1.0 ≤ 期待値 &lt; 1.4</span>
+                            <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">投資検討可</Badge>
+                          </div>
+                          <div className="flex justify-between items-center p-2 rounded bg-background/80 border border-muted">
+                            <span className="text-sm">1.4 ≤ 期待値</span>
+                            <Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">積極投資</Badge>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">※この例では3番と5番の単勝に投資価値あり</p>
                     </div>
                   </div>
                   
-                  <p>
-                    上記の例では、市場の評価（オッズ）と比較して自分の予想確率が大きく異なる馬、特に5番馬に大きな期待値があることがわかります。このように期待値計算ツールは、<strong className="text-primary">どの馬券に投資すべきか</strong>を客観的に判断する手助けとなります。
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
-                <CardHeader className="border-b border-primary/5 bg-primary/5">
-                  <CardTitle className="text-foreground text-xl">複合的な馬券種の期待値計算</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    当サイトの期待値計算ツールでは、単勝だけでなく馬連、三連複などの複合的な馬券種の期待値も計算できます。その使い方と注意点を解説します。
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                      <p className="font-semibold mb-2">馬連の期待値計算</p>
-                      <div className="p-3 bg-primary/5 rounded-lg space-y-2 text-sm">
-                        <p className="font-medium">入力必要情報：</p>
-                        <ul className="space-y-1">
-                          <li>・各馬の単勝確率</li>
-                          <li>・馬連のオッズ表</li>
-                        </ul>
-                        <p className="font-medium mt-2">計算の考え方：</p>
-                        <p>馬連の的中確率 = A馬の勝率 × B馬の(2着以内率)</p>
-                        <p className="text-xs text-muted-foreground mt-1">※実際のツールでは自動計算されます</p>
-                      </div>
-                    </div>
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                      <Image className="h-5 w-5 text-primary/80" />
+                      期待値計算ツールのスクリーンショット
+                    </h3>
                     
-                    <div>
-                      <p className="font-semibold mb-2">三連複の期待値計算</p>
-                      <div className="p-3 bg-primary/5 rounded-lg space-y-2 text-sm">
-                        <p className="font-medium">入力必要情報：</p>
-                        <ul className="space-y-1">
-                          <li>・各馬の単勝確率</li>
-                          <li>・各馬の複勝確率(上位3着以内率)</li>
-                          <li>・三連複のオッズ</li>
-                        </ul>
-                        <p className="font-medium mt-2">注意点：</p>
-                        <p>三連複は組み合わせが多く、全体の確率計算が複雑ですが、ツールが自動的に最適な組み合わせを提案します。</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex flex-col">
+                        <h4 className="font-medium mb-3 text-center">予想確率入力画面</h4>
+                        <div className="border border-primary/10 rounded-lg overflow-hidden">
+                          <img 
+                            src="/images/Prediction.webp" 
+                            alt="予想確率入力画面" 
+                            className="w-full h-auto object-cover"
+                          />
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-3 text-center">
+                          直感的なスライダーUIで各馬の勝率・複勝率を簡単に入力できます
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col">
+                        <h4 className="font-medium mb-3 text-center">期待値計算結果画面</h4>
+                        <div className="border border-primary/10 rounded-lg overflow-hidden">
+                          <img 
+                            src="/images/Output.webp" 
+                            alt="期待値計算結果画面" 
+                            className="w-full h-auto object-cover"
+                          />
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-3 text-center">
+                          馬券種別ごとの期待値を一覧表示し、最適な投資判断をサポートします
+                        </p>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="p-4 bg-primary/5 rounded-lg mb-6">
-                    <p className="font-semibold mb-2">利用時の注意点：</p>
-                    <ul className="space-y-2">
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg p-4">
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <InfoIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      効果的な活用ポイント
+                    </h4>
+                    <ul className="space-y-2 text-sm">
                       <li className="flex items-start gap-2">
-                        <span className="text-primary font-bold">●</span>
-                        <span><strong>確率の入力精度</strong>：入力する確率の精度が期待値計算の精度に直結します。特に初心者は予想の精度を上げることに注力しましょう。</span>
+                        <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <span>複数のレースで期待値計算を行い、最も期待値の高いレースに投資集中する</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="text-primary font-bold">●</span>
-                        <span><strong>確率の合計</strong>：すべての馬の確率合計は100%になるように調整してください。ツールには自動調整機能もあります。</span>
+                        <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <span>期待値の計算結果を記録し、予想と実績の差を分析して予想精度を向上させる</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="text-primary font-bold">●</span>
-                        <span><strong>時間経過とオッズ変動</strong>：投票が進むとオッズは変動します。投票締め切り間際に最終確認することをおすすめします。</span>
+                        <ArrowRight className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <span>最終オッズを使って再計算し、オッズ変動による期待値の変化に対応する</span>
                       </li>
                     </ul>
                   </div>
                   
-                  <p>
-                    期待値計算ツールは「買うべき馬券」を見つけるための強力な武器ですが、<strong className="text-primary">あくまで入力する確率予想の精度に依存している</strong>ことを忘れないでください。ツールの使い方に慣れると同時に、確率予想の精度を高めていくことが長期的な勝利への道となります。
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-md scroll-animate">
-                <CardHeader className="border-b border-primary/5 bg-primary/5">
-                  <CardTitle className="text-foreground text-xl">期待値計算の高度な活用法</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    期待値計算ツールを使いこなせるようになったら、より高度な活用法を試してみましょう。期待値思考を取り入れた馬券戦略をさらに発展させるアプローチを紹介します。
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className="p-4 rounded-lg bg-primary/5 space-y-2">
-                      <p className="font-semibold">感度分析による確率検証</p>
-                      <p className="text-sm">
-                        予想した確率を±5%程度変動させたときの期待値の変化を確認します。期待値が大きく変動しない馬券は、予想誤差に対して堅牢で信頼性が高いと言えます。
-                      </p>
-                      <div className="mt-2 p-2 bg-background/50 rounded text-xs">
-                        <p className="font-medium">例：5番馬の確率を15%→10%に下げても期待値が3.0を維持するなら、予想誤差に強い投資先と判断できる</p>
-                      </div>
+                  <div className="mt-4 p-4 rounded-lg bg-muted/40 border border-muted">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Lightbulb className="h-5 w-5 text-primary" />
+                      <h4 className="font-medium">次のステップ</h4>
                     </div>
-                    
-                    <div className="p-4 rounded-lg bg-primary/5 space-y-2">
-                      <p className="font-semibold">複数パターンの予想比較</p>
-                      <p className="text-sm">
-                        レース展開の異なる複数のシナリオを想定し、各シナリオでの確率予想と期待値計算を行います。複数のシナリオで高い期待値を維持する馬券は特に価値が高いと言えます。
-                      </p>
-                      <div className="mt-2 p-2 bg-background/50 rounded text-xs">
-                        <p className="font-medium">例：逃げ馬が成功するパターンと後方から差す展開の両方で期待値計算を行い、共通して高い期待値を示す馬券を選ぶ</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <p className="font-semibold mb-2">進化する確率予想力：</p>
-                    <p className="mb-3">
-                      ツールを継続的に使うことで、あなたの確率予想の精度を検証・改善することができます。
+                    <p className="text-sm text-muted-foreground mb-3">
+                      期待値計算ツールの基本的な使い方を理解したら、次のセクションで実際のレースデータを使った
+                      実践的なトレーニングに進みましょう。リアルなレース例を通して期待値計算の応用力を高めます。
                     </p>
-                    <div className="p-4 rounded-lg bg-primary/5 space-y-2">
-                      <p className="font-medium">【確率予想力向上のステップ】</p>
-                      <ol className="list-decimal list-inside space-y-2 text-sm">
-                        <li>
-                          <span className="font-medium">予想記録のデータベース化</span>
-                          <p className="pl-6 mt-1">各レースで予想した確率と実際の結果を記録し、予想的中率を分析します。</p>
-                        </li>
-                        <li>
-                          <span className="font-medium">誤差パターンの特定</span>
-                          <p className="pl-6 mt-1">どのようなタイプの馬や展開で予想が外れやすいか、傾向を分析します。</p>
-                        </li>
-                        <li>
-                          <span className="font-medium">予想モデルの調整</span>
-                          <p className="pl-6 mt-1">分析結果に基づいて予想方法を継続的に改善・調整します。</p>
-                        </li>
-                        <li>
-                          <span className="font-medium">確率帯域別の精度確認</span>
-                          <p className="pl-6 mt-1">「30%と予想した馬は実際に何%の確率で勝っているか」などを検証します。</p>
-                        </li>
-                      </ol>
-                    </div>
+                    <a href="#ev-training" className="text-sm text-primary flex items-center gap-1 hover:underline">
+                      <ArrowRight className="h-4 w-4" />
+                      <span>期待値計算プロの実践トレーニングへ進む</span>
+                    </a>
                   </div>
-                  
-                  <p>
-                    期待値計算ツールは、単に期待値を計算するだけでなく、<strong className="text-primary">あなたの予想スキルを向上させるための学習ツール</strong>としても活用できます。自分の予想の傾向や精度を客観的に振り返り、継続的に改善していくことで、競馬予想の精度と回収率を段階的に高めていくことが可能になります。
-                  </p>
                 </CardContent>
               </Card>
             </div>
           </div>
 
           <div id="ev-training" className="mb-12 scroll-mt-16">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <Trophy className="h-5 w-5 text-primary" />
+            <div className="flex items-center mb-6">
+              <div className="bg-primary/10 p-2.5 rounded-lg mr-3 shadow-sm">
+                <BookOpen className="h-6 w-6 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">6. 期待値計算プロの実践トレーニング - あなたの予想力を高める方法</h2>
+              <div>
+                <span className="text-sm font-medium text-primary/70 block">SECTION 06</span>
+                <h2 className="text-2xl sm:text-3xl font-bold">期待値計算プロの実践トレーニング</h2>
+              </div>
             </div>
 
-            <div className="space-y-6">
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">初心者向け確率予想トレーニング</CardTitle>
+            <div className="space-y-8">
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-animate">
+                <CardHeader className="border-b border-primary/10 bg-gradient-to-r from-primary/10 to-primary/5">
+                  <CardTitle className="text-foreground text-xl flex items-center">
+                    <Target className="h-5 w-5 text-primary mr-2" />
+                    実戦で使える期待値計算の応用テクニック
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    期待値計算の精度は確率予想の精度に左右されます。競馬予想の初心者が確率予想力を高めるためのトレーニング方法を紹介します。
-                  </p>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 mb-5 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50">
+                    <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                    <p className="text-sm">
+                      高松宮記念（G1）のレースデータを使用して、実践的な期待値計算プロセスを体験します。
+                      実際のレースデータから期待値を導き出し、最適な馬券選択の方法を習得しましょう。
+                    </p>
+                  </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className="p-4 rounded-lg bg-primary/5 space-y-2">
-                      <p className="font-semibold">実践トレーニング①：人気順予想からの脱却</p>
-                      <div className="space-y-2 text-sm">
-                        <p className="font-medium">トレーニング内容：</p>
-                        <ol className="list-decimal list-inside space-y-1">
-                          <li>特定のレースで単純に人気順に1着〜3着を予想する</li>
-                          <li>同じレースを血統、脚質、調子などの要素で分析</li>
-                          <li>分析に基づいて各馬の勝率を予想（合計100%）</li>
-                          <li>レース結果と照らし合わせて予想精度を検証</li>
-                        </ol>
-                        <p className="mt-2 text-xs">目標：オッズから受ける印象と実際の能力評価を区別する力を養う</p>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div className="flex flex-col">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <CircleArrowDownIcon className="h-5 w-5 text-primary/80" />
+                        実践的な期待値計算のステップ
+                      </h3>
+                      <ol className="space-y-3 pl-2">
+                        <li className="relative pl-8 pb-3 border-l border-primary/20">
+                          <div className="absolute left-0 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 border border-primary/30 -translate-x-1/2">
+                            <span className="text-xs font-semibold text-primary">1</span>
+                          </div>
+                          <h4 className="font-medium mb-1">専門的なレース分析</h4>
+                          <p className="text-sm text-muted-foreground">過去走・血統・適性・調教などの深い分析</p>
+                        </li>
+                        <li className="relative pl-8 pb-3 border-l border-primary/20">
+                          <div className="absolute left-0 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 border border-primary/30 -translate-x-1/2">
+                            <span className="text-xs font-semibold text-primary">2</span>
+                          </div>
+                          <h4 className="font-medium mb-1">精密確率予想</h4>
+                          <p className="text-sm text-muted-foreground">複合要素を考慮した勝率・複勝率の精密予想</p>
+                        </li>
+                        <li className="relative pl-8 pb-3 border-l border-primary/20">
+                          <div className="absolute left-0 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 border border-primary/30 -translate-x-1/2">
+                            <span className="text-xs font-semibold text-primary">3</span>
+                          </div>
+                          <h4 className="font-medium mb-1">オッズの批判的分析</h4>
+                          <p className="text-sm text-muted-foreground">市場心理とオッズの歪みを分析し価値を発見</p>
+                        </li>
+                        <li className="relative pl-8 pb-3 border-l border-primary/20">
+                          <div className="absolute left-0 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 border border-primary/30 -translate-x-1/2">
+                            <span className="text-xs font-semibold text-primary">4</span>
+                          </div>
+                          <h4 className="font-medium mb-1">高度期待値計算</h4>
+                          <p className="text-sm text-muted-foreground">馬券の相関関係も考慮した詳細な期待値計算</p>
+                        </li>
+                        <li className="relative pl-8">
+                          <div className="absolute left-0 top-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 border border-primary/30 -translate-x-1/2">
+                            <span className="text-xs font-semibold text-primary">5</span>
+                          </div>
+                          <h4 className="font-medium mb-1">最適投資配分</h4>
+                          <p className="text-sm text-muted-foreground">期待値とリスクを考慮した資金配分の最適化</p>
+                        </li>
+                      </ol>
                     </div>
                     
-                    <div className="p-4 rounded-lg bg-primary/5 space-y-2">
-                      <p className="font-semibold">実践トレーニング②：パドック観察力の向上</p>
-                      <div className="space-y-2 text-sm">
-                        <p className="font-medium">トレーニング内容：</p>
-                        <ol className="list-decimal list-inside space-y-1">
-                          <li>レース前のパドック映像を観察（中継やYouTube）</li>
-                          <li>馬の状態について具体的なメモを取る</li>
-                          <li>良い状態と思われる馬に高い確率を予想</li>
-                          <li>レース結果と照合して観察力を向上</li>
-                        </ol>
-                        <p className="mt-2 text-xs">目標：馬の状態から勝率を判断する力を養い、予想精度を高める</p>
+                    <div className="flex flex-col">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <LineChartIcon className="h-5 w-5 text-primary/80" />
+                        プロの期待値計算実践テクニック
+                      </h3>
+                      <div className="space-y-3 pl-2">
+                        <div className="flex items-start gap-2">
+                          <div className="p-1.5 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                            <TrendingUp className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-0.5">相対価値の発見</h4>
+                            <p className="text-sm text-muted-foreground">公式オッズと自己予想の差から価値を見出す</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                            <Brain className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-0.5">複合期待値の活用</h4>
+                            <p className="text-sm text-muted-foreground">複数種類の馬券を組み合わせたリスク分散投資</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="p-1.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                            <BadgeDollarSign className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-0.5">資金配分の最適化</h4>
+                            <p className="text-sm text-muted-foreground">ケリー基準を応用した最適資金配分戦略</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="p-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                            <Gauge className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-0.5">リスク調整期待値</h4>
+                            <p className="text-sm text-muted-foreground">変動リスクを考慮した高度な期待値分析</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="p-4 rounded-lg bg-primary/5 mb-6">
-                    <p className="font-semibold mb-2">予想精度検証のためのフィードバックシート例：</p>
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse">
+                  <div className="mb-6 p-5 rounded-xl bg-background border border-primary/10 shadow-sm">
+                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                      <Flag className="h-5 w-5 text-primary" />
+                      高松宮記念（G1）期待値計算実践例
+                    </h3>
+                    
+                    <div className="overflow-x-auto mb-5">
+                      <table className="w-full min-w-[600px] border-collapse">
                         <thead>
-                          <tr className="bg-primary/10">
-                            <th className="border border-primary/20 p-2">レース名</th>
-                            <th className="border border-primary/20 p-2">予想した勝率</th>
-                            <th className="border border-primary/20 p-2">実際の結果</th>
-                            <th className="border border-primary/20 p-2">分析（改善点）</th>
+                          <tr className="bg-muted/50">
+                            <th className="p-2 text-sm font-medium text-left border-b">枠番</th>
+                            <th className="p-2 text-sm font-medium text-left border-b">馬番</th>
+                            <th className="p-2 text-sm font-medium text-left border-b">馬名</th>
+                            <th className="p-2 text-sm font-medium text-left border-b">単勝オッズ</th>
+                            <th className="p-2 text-sm font-medium text-left border-b">予想確率</th>
+                            <th className="p-2 text-sm font-medium text-left border-b">期待値</th>
+                            <th className="p-2 text-sm font-medium text-left border-b">評価</th>
                           </tr>
                         </thead>
                         <tbody>
-                          <tr>
-                            <td className="border border-primary/20 p-2">東京5R</td>
-                            <td className="border border-primary/20 p-2">3番：40%<br/>1番：30%<br/>5番：15%</td>
-                            <td className="border border-primary/20 p-2">1着：1番<br/>2着：7番<br/>3着：3番</td>
-                            <td className="border border-primary/20 p-2 text-sm">3番馬の評価が高すぎた。<br/>7番馬の評価が低すぎた。</td>
+                          <tr className="hover:bg-muted/30">
+                            <td className="p-2 text-sm border-b">1</td>
+                            <td className="p-2 text-sm border-b">1</td>
+                            <td className="p-2 text-sm border-b">マッドクール</td>
+                            <td className="p-2 text-sm border-b">7.1</td>
+                            <td className="p-2 text-sm border-b">10%</td>
+                            <td className="p-2 text-sm border-b">0.71</td>
+                            <td className="p-2 text-sm border-b"><Badge variant="outline" className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">要注意</Badge></td>
                           </tr>
-                          <tr className="bg-background/30">
-                            <td className="border border-primary/20 p-2">阪神3R</td>
-                            <td className="border border-primary/20 p-2">2番：35%<br/>4番：25%<br/>6番：20%</td>
-                            <td className="border border-primary/20 p-2">1着：2番<br/>2着：6番<br/>3着：1番</td>
-                            <td className="border border-primary/20 p-2 text-sm">上位評価は良かった。<br/>1番馬の評価漏れ。</td>
+                          <tr className="hover:bg-muted/30">
+                            <td className="p-2 text-sm border-b">3</td>
+                            <td className="p-2 text-sm border-b">6</td>
+                            <td className="p-2 text-sm border-b">ルガル</td>
+                            <td className="p-2 text-sm border-b">5.7</td>
+                            <td className="p-2 text-sm border-b">10%</td>
+                            <td className="p-2 text-sm border-b">0.57</td>
+                            <td className="p-2 text-sm border-b"><Badge variant="outline" className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">低</Badge></td>
+                          </tr>
+                          <tr className="hover:bg-muted/30">
+                            <td className="p-2 text-sm border-b">6</td>
+                            <td className="p-2 text-sm border-b">10</td>
+                            <td className="p-2 text-sm border-b">サトノレーヴ</td>
+                            <td className="p-2 text-sm border-b">3.8</td>
+                            <td className="p-2 text-sm border-b">30%</td>
+                            <td className="p-2 text-sm border-b">1.14</td>
+                            <td className="p-2 text-sm border-b"><Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">良</Badge></td>
+                          </tr>
+                          <tr className="hover:bg-muted/30">
+                            <td className="p-2 text-sm border-b">6</td>
+                            <td className="p-2 text-sm border-b">12</td>
+                            <td className="p-2 text-sm border-b">トウシンマカオ</td>
+                            <td className="p-2 text-sm border-b">7.3</td>
+                            <td className="p-2 text-sm border-b">15%</td>
+                            <td className="p-2 text-sm border-b">1.10</td>
+                            <td className="p-2 text-sm border-b"><Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">良</Badge></td>
+                          </tr>
+                          <tr className="hover:bg-muted/30">
+                            <td className="p-2 text-sm border-b">7</td>
+                            <td className="p-2 text-sm border-b">14</td>
+                            <td className="p-2 text-sm border-b">ナムラクレア</td>
+                            <td className="p-2 text-sm border-b">3.5</td>
+                            <td className="p-2 text-sm border-b">25%</td>
+                            <td className="p-2 text-sm border-b">0.88</td>
+                            <td className="p-2 text-sm border-b"><Badge variant="outline" className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">要注意</Badge></td>
+                          </tr>
+                          <tr className="hover:bg-muted/30">
+                            <td className="p-2 text-sm border-b">7</td>
+                            <td className="p-2 text-sm border-b">15</td>
+                            <td className="p-2 text-sm border-b">ママコチャ</td>
+                            <td className="p-2 text-sm border-b">14.6</td>
+                            <td className="p-2 text-sm border-b">10%</td>
+                            <td className="p-2 text-sm border-b">1.46</td>
+                            <td className="p-2 text-sm border-b"><Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">積極投資</Badge></td>
                           </tr>
                         </tbody>
                       </table>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">※予想と結果を記録することで、自分の予想傾向や弱点を把握できます</p>
-                  </div>
-                  
-                  <p>
-                    初心者は「すべての馬を評価対象とする」ことから始め、徐々に「<strong className="text-primary">消去法</strong>」で馬を絞り込む技術を身につけていくのが効果的です。また、最初は3〜5頭程度の少頭数レースから始めて、徐々に複雑なレースに挑戦していくことをおすすめします。
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">中級者向け確率予想精度向上法</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    ある程度確率予想に慣れてきたら、より高度な分析手法を取り入れてみましょう。中級者向けのトレーニング法を紹介します。
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className="p-4 rounded-lg bg-primary/5 space-y-2">
-                      <p className="font-semibold">要素別スコアリング法</p>
-                      <div className="space-y-2 text-sm">
-                        <p>各馬を以下の要素で10点満点で評価し、合計点から確率を算出する方法：</p>
-                        <ul className="space-y-1">
-                          <li>・適正距離：0〜10点</li>
-                          <li>・適正馬場：0〜10点</li>
-                          <li>・近走の調子：0〜10点</li>
-                          <li>・騎手の相性：0〜10点</li>
-                          <li>・脚質と枠順：0〜10点</li>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                      <div className="flex flex-col p-4 rounded-lg bg-muted/30 border border-muted">
+                        <h4 className="font-medium mb-3 pb-2 border-b border-border">単勝馬券の期待値分析</h4>
+                        <ul className="space-y-2">
+                          <li className="flex items-start gap-2 text-sm">
+                            <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                            <span><strong>ママコチャ</strong>: 期待値1.46が最も高く、積極的な投資対象です</span>
+                          </li>
+                          <li className="flex items-start gap-2 text-sm">
+                            <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                            <span><strong>サトノレーヴ</strong>: 期待値1.14と<strong>トウシンマカオ</strong>: 期待値1.10も投資検討可能です</span>
+                          </li>
+                          <li className="flex items-start gap-2 text-sm">
+                            <XCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+                            <span><strong>ルガル</strong>: 期待値0.57は極めて低く、投資対象外です</span>
+                          </li>
+                          <li className="flex items-start gap-2 text-sm">
+                            <Info className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <span><strong>マッドクール</strong>: 期待値0.71と<strong>ナムラクレア</strong>: 期待値0.88は境界線下のため、投資は慎重に検討</span>
+                          </li>
                         </ul>
-                        <p className="mt-1">各馬の合計点を出して、全体に占める割合を確率とします。</p>
+                      </div>
+                      
+                      <div className="flex flex-col p-4 rounded-lg bg-muted/30 border border-muted">
+                        <h4 className="font-medium mb-3 pb-2 border-b border-border">最適投資配分（予算10,000円）</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center">
+                            <span className="text-sm w-32">ママコチャ(15番)</span>
+                            <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden">
+                              <div className="h-full bg-primary/70 rounded-full" style={{ width: '45%' }}></div>
+                            </div>
+                            <span className="text-sm font-medium ml-2">4,500円</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="text-sm w-32">サトノレーヴ(10番)</span>
+                            <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden">
+                              <div className="h-full bg-primary/70 rounded-full" style={{ width: '30%' }}></div>
+                            </div>
+                            <span className="text-sm font-medium ml-2">3,000円</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="text-sm w-32">トウシンマカオ(12番)</span>
+                            <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden">
+                              <div className="h-full bg-primary/70 rounded-full" style={{ width: '25%' }}></div>
+                            </div>
+                            <span className="text-sm font-medium ml-2">2,500円</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="p-4 rounded-lg bg-primary/5 space-y-2">
-                      <p className="font-semibold">レース展開シミュレーション法</p>
-                      <div className="space-y-2 text-sm">
-                        <p>レースの流れを複数パターン想定し、各パターンの発生確率と馬の好走確率を掛け合わせる方法：</p>
-                        <ol className="list-decimal list-inside space-y-1">
-                          <li>ハイペース想定：30%の確率で発生</li>
-                          <li>ミドルペース想定：50%の確率で発生</li>
-                          <li>スローペース想定：20%の確率で発生</li>
-                        </ol>
-                        <p className="mt-1">各パターンでの馬の好走確率を評価し、加重平均で総合確率を算出します。</p>
-                      </div>
+                    <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/30">
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <LightbulbIcon className="h-4 w-4 text-blue-500" />
+                        期待値計算の実践ポイント
+                      </h4>
+                      <ul className="space-y-1.5 text-sm">
+                        <li className="flex items-start gap-2">
+                          <CircleCheck className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <span>期待値1.4以上は積極投資、1.0〜1.4は通常投資、0.8〜1.0は慎重投資</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CircleCheck className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <span>期待値が高い順に投資配分することで資金効率を最大化できます</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CircleCheck className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <span>オッズが高い期待値馬券はリスクも高いため、投資比率調整が必要です</span>
+                        </li>
+                      </ul>
                     </div>
                   </div>
                   
-                  <div className="p-4 rounded-lg bg-primary/5 mb-6">
-                    <p className="font-semibold mb-2">確率予想の精度を高めるための5つの視点：</p>
-                    <ol className="list-decimal list-inside space-y-2">
-                      <li className="pl-2">
-                        <span className="font-medium">時計・ラップ分析の徹底</span>
-                        <p className="text-sm pl-6 mt-1">単純な上がり3Fだけでなく、前半〜中盤のラップタイムも分析し、レース全体を通した実力を評価します。</p>
-                      </li>
-                      <li className="pl-2">
-                        <span className="font-medium">血統と適性の相関関係の理解</span>
-                        <p className="text-sm pl-6 mt-1">父系・母系の特徴を学び、距離・馬場・季節などの適性をより正確に判断します。</p>
-                      </li>
-                      <li className="pl-2">
-                        <span className="font-medium">厩舎の調教パターンを知る</span>
-                        <p className="text-sm pl-6 mt-1">厩舎ごとの調教パターンや仕上がり傾向を把握することで、馬の状態をより正確に判断できます。</p>
-                      </li>
-                      <li className="pl-2">
-                        <span className="font-medium">条件変更の影響を数値化</span>
-                        <p className="text-sm pl-6 mt-1">斤量増減、距離変更、馬場変化などが各馬に与える影響を具体的な数値（確率補正値）で評価します。</p>
-                      </li>
-                      <li className="pl-2">
-                        <span className="font-medium">データベースからのパターン抽出</span>
-                        <p className="text-sm pl-6 mt-1">過去の類似レースのデータを分析し、勝ち馬のパターンを見つけて現在のレースに応用します。</p>
-                      </li>
-                    </ol>
-                  </div>
-                  
-                  <p>
-                    中級者は、自分なりの予想システムを確立することが重要です。どの要素をどれだけ重視するかを明確にし、<strong className="text-primary">再現性のある予想方法</strong>を身につけましょう。また、予想と結果の検証を繰り返すことで、自分の予想の弱点を把握し、継続的に改善していくことが精度向上につながります。
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">上級者の期待値思考実践法</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-1">
-                  <p className="mb-4">
-                    確率予想の精度が高まったら、より高度な期待値思考を実践してみましょう。上級者向けのアプローチを紹介します。
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className="p-4 rounded-lg bg-primary/5 space-y-2">
-                      <p className="font-semibold">市場の評価と自己評価の乖離分析</p>
-                      <div className="space-y-2 text-sm">
-                        <p>市場（他の参加者）の評価と自分の評価の差を徹底的に分析して投資機会を見つける方法：</p>
-                        <ul className="space-y-1">
-                          <li>・オッズ変動の分析（投票状況の把握）</li>
-                          <li>・メディア予想との比較</li>
-                          <li>・SNSでの人気度チェック</li>
-                          <li>・特定条件での市場の過小評価パターンの発見</li>
-                        </ul>
-                        <p className="mt-1">乖離が大きく、自分の予想に自信がある場合に集中投資します。</p>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 rounded-lg bg-primary/5 space-y-2">
-                      <p className="font-semibold">ポートフォリオ管理手法の応用</p>
-                      <div className="space-y-2 text-sm">
-                        <p>期待値の高い馬券を複数のレースにわたって組み合わせ、リスク分散と資金効率を最適化する方法：</p>
-                        <ul className="space-y-1">
-                          <li>・期待値とリスク（分散）を考慮した資産配分</li>
-                          <li>・相関の低い馬券種の組み合わせ</li>
-                          <li>・異なる展開パターンへの分散投資</li>
-                          <li>・長期的な投資リターンの最大化</li>
-                        </ul>
-                        <p className="mt-1">金融工学の手法を競馬投資に応用します。</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 rounded-lg bg-primary/5 mb-6">
-                    <p className="font-semibold mb-2">期待値最大化のための実践テクニック：</p>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="font-medium">①オッズの動向を読み、最適なタイミングで投票する</p>
-                        <p className="text-sm">レース間際のオッズ変動パターンを分析し、最も有利なタイミングで馬券を購入します。人気馬は発走直前にオッズが下がることが多いため、早めに購入。人気薄の馬は直前に見直されてオッズが下がることがあるため、様子を見て購入するなど、戦略的に対応します。</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">②複数の馬券種を組み合わせたヘッジ戦略</p>
-                        <p className="text-sm">単勝と馬連など異なる馬券種を組み合わせてリスクをヘッジし、複数のシナリオで回収できる構成を作ります。例えば、期待値の高い単勝を軸として購入しつつ、その馬が負けた場合のリスクヘッジとして、他の組み合わせの馬連や三連複も購入することで、回収の安定性を高めます。</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">③期待値アービトラージの実践</p>
-                        <p className="text-sm">同一のレースで複数の馬券種間に期待値の不整合が生じることがあります。例えば単勝オッズと馬連オッズの関係性に矛盾がある場合など、こうした状況を見つけて効率的に資金を分配します。これはマーケットの非効率性を利用した高度な戦略です。</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <p>
-                    上級者にとっての最終目標は、<strong className="text-primary">予想の精度を高めること</strong>と<strong className="text-primary">資金管理の最適化</strong>の両方を達成することです。感情に左右されない冷静な判断と、データに基づく客観的な分析を組み合わせることで、競馬を「趣味」から「投資」へと昇華させることができます。期待値思考を徹底し、長期的な視点で競馬に取り組みましょう。
-                  </p>
                 </CardContent>
               </Card>
             </div>
           </div>
 
           <div id="faq" className="mb-12 scroll-mt-16">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <Info className="h-5 w-5 text-primary" />
+            <div className="flex items-center mb-6">
+              <div className="bg-primary/10 p-2.5 rounded-lg mr-3 shadow-sm">
+                <Info className="h-6 w-6 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">7. 期待値計算と確率計算に関するよくある質問</h2>
+              <div>
+                <span className="text-sm font-medium text-primary/70 block">SECTION 07</span>
+                <h2 className="text-2xl sm:text-3xl font-bold">期待値計算と確率計算に関するよくある質問</h2>
+              </div>
             </div>
-            <div className="space-y-6">
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">①競馬の期待値計算とは何ですか？</CardTitle>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-sm hover:shadow-md transition-all duration-300 hover:border-primary/20">
+                <CardHeader className="bg-primary/5 border-b border-primary/10 pb-3">
+                  <CardTitle className="text-foreground flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">1</span>
+                    <span>競馬の期待値計算とは何ですか？</span>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   <p>競馬の期待値計算とは、オッズと予想勝率から理論上の投資価値を算出する方法です。「期待値 = オッズ × 的中確率」の式で計算され、期待値が1以上なら理論上は利益が期待できます。</p>
                 </CardContent>
               </Card>
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">②競馬の期待値計算で本当に回収率は上がりますか？</CardTitle>
+              
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-sm hover:shadow-md transition-all duration-300 hover:border-primary/20">
+                <CardHeader className="bg-primary/5 border-b border-primary/10 pb-3">
+                  <CardTitle className="text-foreground flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">2</span>
+                    <span>競馬の期待値計算で本当に回収率は上がりますか？</span>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   <p>はい、期待値計算を正しく活用することで長期的な回収率向上が期待できます。特に期待値1.4以上の馬券を狙うことで、予想の誤差を考慮しても利益につながりやすくなります。オッズと自分の予想確率の差を正確に見つけられれば、期待値の高い馬券を選択でき、長期的な競馬投資の回収率アップにつながります。</p>
                 </CardContent>
               </Card>
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">③単勝の期待値計算と複勝の期待値計算、どちらが重要ですか？</CardTitle>
+              
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-sm hover:shadow-md transition-all duration-300 hover:border-primary/20">
+                <CardHeader className="bg-primary/5 border-b border-primary/10 pb-3">
+                  <CardTitle className="text-foreground flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">3</span>
+                    <span>単勝の期待値計算と複勝の期待値計算、どちらが重要ですか？</span>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   <p>両方重要ですが、複勝の期待値計算は初心者向けに安定性があります。単勝の期待値計算はリターンが大きい反面、的中率が低くなります。理想的には、単勝確率と複勝確率の両方を予想し、それぞれの期待値を計算した上で、より期待値の高い方を選ぶ、あるいは両方に賭けることも戦略として有効です。</p>
                 </CardContent>
               </Card>
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">④競馬の期待値計算ツールはどのような馬券種類に対応していますか？</CardTitle>
+              
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-sm hover:shadow-md transition-all duration-300 hover:border-primary/20">
+                <CardHeader className="bg-primary/5 border-b border-primary/10 pb-3">
+                  <CardTitle className="text-foreground flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">4</span>
+                    <span>競馬の期待値計算ツールはどのような馬券種類に対応していますか？</span>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   <p>期待値計算ツールは、単勝、複勝、馬連、馬単、ワイド、三連複、三連単など、JRAの主要な馬券種類すべてに対応しています。単勝確率と複勝確率を入力するだけで、すべての券種について期待値計算を行い、最も期待値の高い馬券種類と組み合わせを自動的に抽出します。これにより効率的な馬券選択が可能になります。</p>
                 </CardContent>
               </Card>
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">⑤競馬で期待値が高い馬券を見つけるコツはありますか？</CardTitle>
+              
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-sm hover:shadow-md transition-all duration-300 hover:border-primary/20">
+                <CardHeader className="bg-primary/5 border-b border-primary/10 pb-3">
+                  <CardTitle className="text-foreground flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">5</span>
+                    <span>競馬で期待値が高い馬券を見つけるコツはありますか？</span>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   <p>期待値の高い馬券を見つけるコツは、①人気になっていない実力馬を見つける（休み明け、斤量増など理由がある場合）、②血統と適性を重視する（特定の条件に適した血統背景を持つ人気薄の馬）、③馬場状態の変化に注目する（雨などによる変化はオッズに十分反映されないことが多い）。これらの要素を考慮した精度の高い勝率予想が期待値計算の基礎となります。</p>
                 </CardContent>
               </Card>
-              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-foreground">⑥競馬の期待値と回収率の関係を教えてください</CardTitle>
+              
+              <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-sm hover:shadow-md transition-all duration-300 hover:border-primary/20">
+                <CardHeader className="bg-primary/5 border-b border-primary/10 pb-3">
+                  <CardTitle className="text-foreground flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">6</span>
+                    <span>競馬の期待値と回収率の関係を教えてください</span>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   <p>期待値と回収率には密接な関係があります。期待値は理論上の投資価値を示す指標で、期待値1.0は理論的回収率100%、期待値1.5なら理論的回収率150%を意味します。ただし実際には予想精度も影響するため、プロの競馬予想家は「期待値1.4以上」を投資判断の目安としています。期待値の高い馬券に継続的に投資することで、長期的な回収率向上が期待できます。</p>
                 </CardContent>
               </Card>
             </div>
           </div>
 
-          <div className="mt-16 text-center">
-            <h2 className="text-2xl font-bold mb-4">期待値思考で競馬を投資に変える - あなたの回収率アップを実現</h2>
+          <div className="mt-16 text-center bg-gradient-to-b from-primary/5 to-background p-8 rounded-2xl border border-primary/10 shadow-sm">
+            <h2 className="text-2xl font-bold mb-4">最新のレース情報をチェックして馬券戦略を立てよう</h2>
             <p className="text-lg text-muted-foreground mb-6">
-              期待値計算と確率予想に基づく馬券戦略で、効率的な競馬投資と長期的な回収率アップを実現しませんか？
-              このサイトの期待値計算ツールを活用して、あなたの競馬予想を次のレベルに引き上げましょう。
+              学んだ期待値の考え方を実際のレースに活用して、より効率的な馬券選びを始めましょう。
+              最新のレース情報をチェックして、あなたの競馬予想を次のレベルに引き上げませんか？
             </p>
             <Link 
               to="/" 
-              className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
             >
-              期待値計算ツールを使ってみる
+              <Calendar className="h-5 w-5" />
+              <span>レース一覧を見る</span>
             </Link>
           </div>
         </div>
