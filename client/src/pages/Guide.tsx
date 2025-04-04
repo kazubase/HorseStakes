@@ -749,6 +749,13 @@ export default function Guide() {
           content="競馬, 期待値, 期待値計算, 期待値計算ツール, 馬券戦略"
         />
         <link rel="canonical" href="https://horse-stakes.com/guide" />
+        <link
+          rel="preload"
+          href="/images/optimized_guide_header.webp"
+          as="image"
+          type="image/webp"
+          {...({'imagesizes': '100vw', 'imagesrcset': '/images/optimized_guide_header.webp 1200w', 'fetchpriority': 'high'} as {})}
+        />
         <meta property="og:title" content="競馬の期待値計算と回収率アップガイド | 馬券戦略" />
         <meta property="og:description" content="競馬で期待値計算を活用して回収率を上げるための完全ガイド。オッズと予想確率から期待値を算出する方法と、期待値の高い馬券を効率的に見つけるコツを解説。期待値1.4以上の馬券を狙って長期的に利益を出す戦略を学びましょう。" />
         <meta property="og:type" content="article" />
@@ -917,16 +924,27 @@ export default function Guide() {
 
       {/* ヘッダー画像を最初に大きく表示 */}
       <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 mb-8">
-        {/* Canvaで作成する画像サイズ: 1200px × 600px (アスペクト比 2:1) */}
-        <div className="relative w-full overflow-hidden rounded-xl shadow-xl aspect-[2/1]">
+        {/* Canvaで作成する画像サイズ: 1200px × 675px (アスペクト比 16:9) */}
+        <div className="relative w-full overflow-hidden rounded-xl shadow-xl aspect-[16/9]">
           <img 
             src="/images/optimized_guide_header.webp" 
             alt="競馬の期待値思考 - 回収率アップの秘訣" 
             className="w-full h-full object-cover"
             width="1200"
-            height="600"
+            height="675"
             loading="eager"
-            {...{ fetchpriority: "high", decoding: "async" } as any}
+            decoding="async"
+            style={{
+              contentVisibility: "auto",
+              backgroundColor: "#f0f0f0", // プレースホルダーの色
+              display: "block"
+            }}
+            onLoad={(e) => {
+              if (e.currentTarget) {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }
+            }}
+            {...({'fetchpriority': 'high'} as {})}
           />
           {/* オーバーレイ効果 */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
