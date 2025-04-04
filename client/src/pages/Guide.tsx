@@ -746,9 +746,19 @@ export default function Guide() {
         />
         <meta
           name="keywords"
-          content="競馬, 期待値, 期待値計算, 回収率, 競馬 期待値, 競馬 期待値計算, オッズ, 予想確率, 的中確率, 期待値1.4"
+          content="競馬, 期待値, 期待値計算, 期待値計算ツール, 馬券戦略"
         />
-        <link rel="canonical" href="https://www.horsestakes.net/guide" />
+        <link rel="canonical" href="https://horse-stakes.com/guide" />
+        <meta property="og:title" content="競馬の期待値計算と回収率アップガイド | 馬券戦略" />
+        <meta property="og:description" content="競馬で期待値計算を活用して回収率を上げるための完全ガイド。オッズと予想確率から期待値を算出する方法と、期待値の高い馬券を効率的に見つけるコツを解説。期待値1.4以上の馬券を狙って長期的に利益を出す戦略を学びましょう。" />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://horse-stakes.com/guide" />
+        <meta property="og:image" content="https://horse-stakes.com/images/guide_header.webp" />
+        <meta property="og:site_name" content="馬券戦略" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="競馬の期待値計算と回収率アップガイド | 馬券戦略" />
+        <meta name="twitter:description" content="競馬で期待値計算を活用して回収率を上げるための完全ガイド。オッズと予想確率から期待値を算出する方法と、期待値の高い馬券を効率的に見つけるコツを解説。" />
+        <meta name="twitter:image" content="https://horse-stakes.com/images/guide_header.webp" />
         <style type="text/css">{animationStyles}</style>
       </Helmet>
       
@@ -814,7 +824,7 @@ export default function Guide() {
             }
           },
           "datePublished": "2025-03-19",
-          "dateModified": "2025-03-19",
+          "dateModified": "2025-04-04",
           "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https://horse-stakes.com/guide"
@@ -857,7 +867,7 @@ export default function Guide() {
               "name": "競馬の期待値計算ツールはどのような馬券種類に対応していますか？",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "期待値計算ツールは、単勝、複勝、馬連、馬単、ワイド、三連複、三連単など、JRAの主要な馬券種類すべてに対応しています。単勝確率と複勝確率を入力するだけで、すべての券種について期待値計算を行い、最も期待値の高い馬券種類と組み合わせを自動的に抽出します。これにより効率的な馬券選択が可能になります。"
+                "text": "期待値計算ツールは、単勝、複勝、馬連、馬単、ワイド、3連複、3連単など、JRAの主要な馬券種類すべてに対応しています。単勝確率と複勝確率を入力するだけで、すべての券種について期待値計算を行います。"
               }
             },
             {
@@ -875,6 +885,28 @@ export default function Guide() {
                 "@type": "Answer",
                 "text": "期待値と回収率には密接な関係があります。期待値は理論上の投資価値を示す指標で、期待値1.0は理論的回収率100%、期待値1.5なら理論的回収率150%を意味します。ただし実際には予想精度も影響するため、プロの競馬予想家は「期待値1.4以上」を投資判断の目安としています。期待値の高い馬券に継続的に投資することで、長期的な回収率向上が期待できます。"
               }
+            }
+          ]
+        })}
+      </script>
+
+      {/* BreadcrumbList構造化データ */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "トップページ",
+              "item": "https://horse-stakes.com"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "競馬の期待値計算と回収率アップガイド",
+              "item": "https://horse-stakes.com/guide"
             }
           ]
         })}
