@@ -486,14 +486,14 @@ export default function Guide() {
             });
             
             // 現在のセクションに対応する目次項目にアクティブクラスを追加
-            const correspondingNavItem = document.querySelector(`.toc-item[href="#${currentId}"]`);
-            if (correspondingNavItem) {
-              correspondingNavItem.classList.add('toc-active');
-            }
+            const tocItems = document.querySelectorAll(`.toc-item[href="#${currentId}"]`);
+            tocItems.forEach(item => {
+              item.classList.add('toc-active');
+            });
           }
         });
       },
-      { threshold: 0.2 } // セクションが20%以上表示されたらハイライト
+      { threshold: 0.2, rootMargin: '-100px 0px -100px 0px' } // セクションが20%以上表示されたらハイライト、マージンを追加
     );
     
     // 監視対象のセクションを設定
@@ -717,21 +717,36 @@ export default function Guide() {
       transform: scale(1);
     }
     
-    /* 目次のアクティブ状態のスタイル */
+    /* 目次のアクティブ状態のスタイル - 共通 */
     .toc-item {
       transition: all 0.3s ease;
-      border-left: 2px solid transparent;
-      padding-left: 8px;
+      position: relative; /* すべてのtoc-itemに位置指定を追加 */
+      border-left: 2px solid transparent; /* すべてのtoc-itemに透明なボーダーを追加 */
     }
     
+    /* サイドバー内の目次のアクティブ状態 */
     .toc-active {
-      border-left: 2px solid hsl(var(--primary));
-      padding-left: 8px;
       color: hsl(var(--primary));
       background-color: rgba(var(--primary-rgb), 0.05);
     }
     
-    .toc-active .circle-number {
+    /* サイドバー内の目次アイテムの追加スタイル */
+    .lg\\:block .toc-item.toc-active {
+      border-left: 2px solid hsl(var(--primary));
+      padding-left: 8px;
+    }
+    
+    .lg\\:block .toc-active .circle-number {
+      background-color: rgba(var(--primary-rgb), 0.3);
+    }
+    
+    /* モバイル目次のアクティブ状態 */
+    .lg\\:hidden .toc-active {
+      background-color: rgba(var(--primary-rgb), 0.1);
+      font-weight: 600;
+    }
+    
+    .lg\\:hidden .toc-active div {
       background-color: rgba(var(--primary-rgb), 0.3);
     }
   `;
@@ -1038,9 +1053,47 @@ export default function Guide() {
           <p className="pt-1 md:pt-2 text-xl md:text-2xl font-medium text-foreground/90 mb-4 whitespace-nowrap">
             回収率アップの秘訣と実践方法
           </p>
-          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
             オッズと予想確率から期待値を算出し、回収率向上を目指す方法を解説します。
           </p>
+          
+          {/* モバイル/タブレット用のコンパクト目次 */}
+          <div className="lg:hidden w-full max-w-md mx-auto bg-background/80 border border-primary/20 rounded-lg p-3 shadow-sm backdrop-blur-sm mb-8 animate-fadeInUp">
+            <div className="flex items-center justify-center mb-2 text-primary font-medium">
+              <BookOpen className="h-4 w-4 mr-1.5" />
+              <span className="text-sm">目次</span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-xs">
+              <a href="#what-is-ev" className="toc-item px-2 py-1 rounded hover:bg-primary/5 transition-colors flex items-center">
+                <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center mr-1.5 flex-shrink-0">1</div>
+                <span className="truncate">期待値思考とは？</span>
+              </a>
+              <a href="#ev-examples" className="toc-item px-2 py-1 rounded hover:bg-primary/5 transition-colors flex items-center">
+                <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center mr-1.5 flex-shrink-0">2</div>
+                <span className="truncate">期待値計算例</span>
+              </a>
+              <a href="#win-place-prob" className="toc-item px-2 py-1 rounded hover:bg-primary/5 transition-colors flex items-center">
+                <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center mr-1.5 flex-shrink-0">3</div>
+                <span className="truncate">確率予想法</span>
+              </a>
+              <a href="#optimal-betting" className="toc-item px-2 py-1 rounded hover:bg-primary/5 transition-colors flex items-center">
+                <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center mr-1.5 flex-shrink-0">4</div>
+                <span className="truncate">最適馬券構成</span>
+              </a>
+              <a href="#ev-tools" className="toc-item px-2 py-1 rounded hover:bg-primary/5 transition-colors flex items-center">
+                <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center mr-1.5 flex-shrink-0">5</div>
+                <span className="truncate">計算ツール</span>
+              </a>
+              <a href="#ev-training" className="toc-item px-2 py-1 rounded hover:bg-primary/5 transition-colors flex items-center">
+                <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center mr-1.5 flex-shrink-0">6</div>
+                <span className="truncate">実践トレーニング</span>
+              </a>
+              <a href="#faq" className="toc-item px-2 py-1 rounded hover:bg-primary/5 transition-colors flex items-center col-span-2">
+                <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center mr-1.5 flex-shrink-0">7</div>
+                <span className="truncate">よくある質問</span>
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3007,7 +3060,7 @@ export default function Guide() {
                   <div className="space-y-1 pl-2">
                     <a 
                       href="#what-is-ev" 
-                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5"
+                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5 pl-2"
                     >
                       <div className="circle-number flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-sm">1</div>
                       <span>競馬の期待値思考とは？</span>
@@ -3015,7 +3068,7 @@ export default function Guide() {
                     
                     <a 
                       href="#ev-examples" 
-                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5"
+                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5 pl-2"
                     >
                       <div className="circle-number flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-sm">2</div>
                       <span>具体例で理解する期待値計算</span>
@@ -3029,18 +3082,18 @@ export default function Guide() {
                   <div className="space-y-1 pl-2">
                     <a 
                       href="#win-place-prob" 
-                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5"
+                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5 pl-2"
                     >
                       <div className="circle-number flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-sm">3</div>
-                      <span>単勝確率・複勝確率の予想方法</span>
+                      <span>単勝・複勝確率の予想方法</span>
                     </a>
                     
                     <a 
                       href="#optimal-betting" 
-                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5"
+                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5 pl-2"
                     >
                       <div className="circle-number flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-sm">4</div>
-                      <span>期待値に基づく最適な馬券構成</span>
+                      <span>期待値による最適な馬券構成</span>
                     </a>
                   </div>
                 </div>
@@ -3051,7 +3104,7 @@ export default function Guide() {
                   <div className="space-y-1 pl-2">
                     <a 
                       href="#ev-tools" 
-                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5"
+                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5 pl-2"
                     >
                       <div className="circle-number flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-sm">5</div>
                       <span>期待値計算ツールの使い方</span>
@@ -3059,7 +3112,7 @@ export default function Guide() {
                     
                     <a 
                       href="#ev-training" 
-                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5"
+                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5 pl-2"
                     >
                       <div className="circle-number flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-sm">6</div>
                       <span>実践トレーニング</span>
@@ -3067,7 +3120,7 @@ export default function Guide() {
                     
                     <a 
                       href="#faq" 
-                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5"
+                      className="toc-item flex items-center gap-1.5 py-1 text-sm rounded-md transition-all duration-200 hover:bg-primary/5 pl-2"
                     >
                       <div className="circle-number flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-sm">7</div>
                       <span>よくある質問</span>
