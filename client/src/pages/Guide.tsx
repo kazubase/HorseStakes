@@ -296,6 +296,9 @@ export default function Guide() {
     // アニメーション要素の選択
     const animatedElements = document.querySelectorAll('.scroll-animate');
     
+    // モバイルデバイスかどうかを判定
+    const isMobile = window.innerWidth <= 768;
+    
     // IntersectionObserverの設定
     const observer = new IntersectionObserver(
       (entries) => {
@@ -311,8 +314,8 @@ export default function Guide() {
       },
       {
         root: null, // ビューポートを基準
-        rootMargin: '0px 0px -100px 0px', // 下部に少し余裕を持たせる
-        threshold: 0.1 // 10%表示されたらアニメーション開始
+        rootMargin: isMobile ? '0px 0px -50px 0px' : '0px 0px -100px 0px', // モバイルでは上部からより早めに表示
+        threshold: isMobile ? 0.05 : 0.1 // モバイルでは僅かに表示された時点でアニメーション開始
       }
     );
     
@@ -338,10 +341,10 @@ export default function Guide() {
                 // 既存のアニメーションスタイルを活かす
                 el.style.opacity = '';
               }
-            }, 100);
+            }, isMobile ? 50 : 100); // モバイルではさらに遅延を短く
           }
         });
-      }, 200);
+      }, isMobile ? 100 : 200); // モバイルではさらに遅延を短く
     };
     
     // ページが既に読み込まれている場合は即実行
@@ -566,6 +569,75 @@ export default function Guide() {
         opacity: 1;
         transform: translateX(0);
         filter: blur(0);
+      }
+    }
+    
+    /* モバイルデバイス用のアニメーション変数とスタイルを追加 */
+    @media (max-width: 768px) {
+      :root {
+        --animation-duration: 0.4s; /* モバイルでは少し速めにアニメーション */
+        --animation-easing: cubic-bezier(0.25, 0.1, 0.25, 1); /* より単純なイージング関数 */
+      }
+      
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(15px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      @keyframes fadeInLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      
+      @keyframes fadeInRight {
+        from {
+          opacity: 0;
+          transform: translateX(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      
+      @keyframes fadeIn {
+        from { 
+          opacity: 0; 
+          transform: translateY(8px);
+        }
+        to { 
+          opacity: 1; 
+          transform: translateY(0);
+        }
+      }
+      
+      /* スクロールアニメーションのblurを無効化し、トランジションを最適化 */
+      .scroll-animate {
+        filter: none !important;
+        transition: opacity var(--animation-duration) var(--animation-easing),
+                    transform var(--animation-duration) var(--animation-easing);
+      }
+      
+      .scroll-animate-left, .scroll-animate-right {
+        filter: none !important;
+      }
+      
+      /* アニメーション要素のパフォーマンス最適化 */
+      .animate-fadeInUp, .animate-fadeInLeft, .animate-fadeInRight, .animate-fadeIn {
+        will-change: transform, opacity;
+        contain: layout paint style; /* コンテンツの影響範囲を制限 */
       }
     }
     
