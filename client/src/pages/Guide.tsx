@@ -1297,7 +1297,7 @@ export default function Guide() {
                   <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="rounded-lg border border-red-400/30 shadow-sm overflow-hidden">
                       <div className="bg-red-500/10 p-2 border-b border-red-500/20 flex items-center">
-                        <div className="w-6 h-6 flex-shrink-0 rounded-full bg-red-100 flex items-center justify-center mr-2">
+                        <div className="w-8 h-8 flex-shrink-0 rounded-full bg-red-100 flex items-center justify-center mr-2">
                           <span className="text-red-600 font-bold text-xs sm:text-sm">1番</span>
                         </div>
                         <p className="text-xs sm:text-sm font-semibold">単勝2.0倍の1番人気</p>
@@ -1319,7 +1319,7 @@ export default function Guide() {
                     
                     <div className="rounded-lg border border-green-400/30 shadow-sm overflow-hidden">
                       <div className="bg-green-500/10 p-2 border-b border-green-500/20 flex items-center">
-                        <div className="w-6 h-6 flex-shrink-0 rounded-full bg-emerald-100 flex items-center justify-center mr-2">
+                        <div className="w-8 h-8 flex-shrink-0 rounded-full bg-emerald-100 flex items-center justify-center mr-2">
                           <span className="text-emerald-600 font-bold text-xs sm:text-sm">穴馬</span>
                         </div>
                         <p className="text-xs sm:text-sm font-semibold">単勝10.0倍の穴馬</p>
@@ -1371,7 +1371,7 @@ export default function Guide() {
                       <div className="p-2 rounded-md bg-primary/5 border border-primary/10 relative">
                         <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">1</div>
                         <div className="flex flex-col items-center pt-3 pb-1">
-                          <Search className="h-4 w-4 text-primary mb-3" />
+                          <Search className="h-4 w-4 sm:h-6 sm:w-6 text-primary mb-3" />
                           <p className="text-xs sm:text-sm text-center font-medium">市場より高く予想できる馬を探す</p>
                         </div>
                       </div>
@@ -1379,7 +1379,7 @@ export default function Guide() {
                       <div className="p-2 rounded-md bg-primary/5 border border-primary/10 relative">
                         <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">2</div>
                         <div className="flex flex-col items-center pt-3 pb-1">
-                          <ThumbsUp className="h-4 w-4 text-primary mb-3" />
+                          <ThumbsUp className="h-4 w-4 sm:h-6 sm:w-6 text-primary mb-3" />
                           <p className="text-xs sm:text-sm text-center font-medium">期待値1.4以上を優先</p>
                         </div>
                       </div>
@@ -1387,7 +1387,7 @@ export default function Guide() {
                       <div className="p-2 rounded-md bg-primary/5 border border-primary/10 relative">
                         <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">3</div>
                         <div className="flex flex-col items-center pt-3 pb-1">
-                          <Wallet className="h-4 w-4 text-primary mb-3" />
+                          <Wallet className="h-4 w-4 sm:h-6 sm:w-6 text-primary mb-3" />
                           <p className="text-xs sm:text-sm text-center font-medium">期待値の高さで資金配分</p>
                         </div>
                       </div>
@@ -1659,187 +1659,181 @@ export default function Guide() {
                     <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 shadow-sm">
                       <div className="flex items-center mb-2">
                         <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                        <p className="font-medium">人気馬は期待通りの勝率</p>
+                        <p className="font-medium text-xs sm:text-sm">人気馬は期待通りの勝率</p>
                       </div>
-                      <p className="text-sm">オッズ1.5倍以下の1番人気馬は約60%の勝率を示し、市場の評価は比較的正確です</p>
+                      <p className="text-xs sm:text-sm">オッズ1.5倍以下の1番人気馬は約60%の勝率を示し、市場の評価は比較的正確です</p>
                     </div>
                     
                     <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 shadow-sm">
                       <div className="flex items-center mb-2">
                         <InfoIcon className="h-5 w-5 text-yellow-500 mr-2" />
-                        <p className="font-medium">中穴馬の回収率が高い</p>
+                        <p className="font-medium text-xs sm:text-sm">中穴馬の回収率が高い</p>
                       </div>
-                      <p className="text-sm">7.0〜20.0倍のオッズ帯が84.1%と最も回収率が高く、期待値を見つけやすい領域</p>
+                      <p className="text-xs sm:text-sm">7.0〜20.0倍のオッズ帯が84.1%と最も回収率が高く、期待値を見つけやすい領域</p>
                     </div>
                     
                     <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 shadow-sm">
                       <div className="flex items-center mb-2">
                         <X className="h-5 w-5 text-red-500 mr-2" />
-                        <p className="font-medium">大穴馬は回収率が低下</p>
+                        <p className="font-medium text-xs sm:text-sm">大穴馬は回収率が低下</p>
                       </div>
-                      <p className="text-sm">50倍超の大穴馬は回収率が70%を下回り、期待値的に効率が悪い傾向があります</p>
+                      <p className="text-xs sm:text-sm">50倍超の大穴馬は回収率が70%を下回り、期待値的に効率が悪い傾向があります</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="overflow-hidden bg-background/50 backdrop-blur-sm border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-animate">
-                <CardHeader className="border-b border-primary/10 bg-gradient-to-r from-primary/10 to-primary/5">
-                  <CardTitle className="text-foreground text-xl flex items-center">
-                    <Calculator className="h-5 w-5 text-primary mr-2" />
-                    確率予想の基本原則
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div className="p-5 rounded-xl bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20 hover:shadow-md transition-all duration-300 relative overflow-hidden">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
-                          <span className="text-red-600 font-bold text-lg">単</span>
+                  <CardHeader className="border-b border-primary/5 bg-primary/5 py-2.5 px-3 sm:px-6">
+                    <CardTitle className="text-foreground text-sm sm:text-xl flex items-center">
+                      <Target className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-primary mr-1.5" />
+                      確率予想の基本原則
+                    </CardTitle>
+                  </CardHeader>
+                <CardContent className="pt-3 sm:pt-6 px-3 sm:px-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-3 sm:mb-6">
+                    <div className="p-3 sm:p-5 rounded-xl bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20 hover:shadow-md transition-all duration-300 relative overflow-hidden">
+                      <div className="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
+                        <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+                          <span className="text-red-600 font-bold text-xs sm:text-lg">単</span>
                         </div>
-                        <p className="font-semibold text-lg">単勝確率の基本</p>
+                        <p className="font-semibold text-xs sm:text-lg">単勝確率の基本</p>
                       </div>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                          <ArrowRight className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-base">各馬の1着になる確率を予想</span>
+                      <ul className="space-y-1 sm:space-y-2">
+                        <li className="flex items-start gap-1 sm:gap-2">
+                          <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-xs sm:text-sm">各馬の1着になる確率を予想</span>
                         </li>
-                        <li className="flex items-start gap-2">
-                          <ArrowRight className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-base"><strong>全馬の合計が100%</strong>になるよう調整</span>
+                        <li className="flex items-start gap-1 sm:gap-2">
+                          <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-xs sm:text-sm"><strong>全馬の合計が100%</strong>になるよう調整</span>
                         </li>
-                        <li className="flex items-start gap-2">
-                          <ArrowRight className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-base">単勝オッズの逆数から市場予想を推定</span>
+                        <li className="flex items-start gap-1 sm:gap-2">
+                          <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-xs sm:text-sm">単勝オッズの逆数から市場予想を推定</span>
                         </li>
                       </ul>
-                      <div className="absolute bottom-0 right-0 w-20 h-20 bg-red-500/5 rounded-tl-full"></div>
+                      <div className="absolute bottom-0 right-0 w-12 h-12 sm:w-20 sm:h-20 bg-red-500/5 rounded-tl-full"></div>
                     </div>
                     
-                    <div className="p-5 rounded-xl bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 hover:shadow-md transition-all duration-300 relative overflow-hidden">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                          <span className="text-green-600 font-bold text-lg">複</span>
+                    <div className="p-3 sm:p-5 rounded-xl bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 hover:shadow-md transition-all duration-300 relative overflow-hidden">
+                      <div className="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
+                        <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <span className="text-green-600 font-bold text-xs sm:text-lg">複</span>
                         </div>
-                        <p className="font-semibold text-lg">複勝確率の基本</p>
+                        <p className="font-semibold text-xs sm:text-lg">複勝確率の基本</p>
                       </div>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                          <ArrowRight className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-base">各馬の3着以内に入る確率を予想</span>
+                      <ul className="space-y-1 sm:space-y-2">
+                        <li className="flex items-start gap-1 sm:gap-2">
+                          <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-xs sm:text-sm">各馬の3着以内に入る確率を予想</span>
                         </li>
-                        <li className="flex items-start gap-2">
-                          <ArrowRight className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-base"><strong>全馬の合計が300%</strong>になるよう調整</span>
+                        <li className="flex items-start gap-1 sm:gap-2">
+                          <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-xs sm:text-sm"><strong>全馬の合計が300%</strong>になるよう調整</span>
                         </li>
-                        <li className="flex items-start gap-2">
-                          <ArrowRight className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-base">単勝確率の2〜3倍が目安になる</span>
+                        <li className="flex items-start gap-1 sm:gap-2">
+                          <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-xs sm:text-sm">単勝確率の2〜3倍が目安になる</span>
                         </li>
                       </ul>
-                      <div className="absolute bottom-0 right-0 w-20 h-20 bg-green-500/5 rounded-tl-full"></div>
+                      <div className="absolute bottom-0 right-0 w-12 h-12 sm:w-20 sm:h-20 bg-green-500/5 rounded-tl-full"></div>
                     </div>
                   </div>
                   
-                  <div className="mb-6 border-2 border-primary/10 rounded-xl overflow-hidden">
-                    <div className="p-3 sm:p-4 bg-primary/10 border-b border-primary/10">
-                      <h3 className="font-semibold text-base sm:text-lg flex items-center">
-                        <Target className="h-4 w-4 sm:h-5 w-5 text-primary mr-2" />
-                        確率配分の具体例：10頭立てのレース
+                  <div className="mb-3 sm:mb-6 border border-primary/10 sm:border-2 rounded-xl overflow-hidden">
+                    <div className="p-2 sm:p-4 bg-primary/10 border-b border-primary/10">
+                      <h3 className="font-semibold text-xs sm:text-lg flex items-center">
+                        <Target className="h-3 w-3 sm:h-5 sm:w-5 text-primary mr-1 sm:mr-2" />
+                        確率配分の具体例：10頭立てレース
                       </h3>
                     </div>
-                    <div className="p-4 sm:p-5 bg-background/90">
-                      <div className="overflow-x-auto mb-3">
-                        <table className="w-full text-sm border-collapse">
+                    <div className="p-2 sm:p-5 bg-background/90">
+                      <div className="overflow-x-auto mb-2 sm:mb-3">
+                        <table className="w-full border-collapse">
                           <thead>
                             <tr className="bg-gradient-to-r from-primary/10 to-primary/5">
-                              <th className="p-3 text-left border-b border-primary/10">人気</th>
-                              <th className="p-3 text-center border-b border-primary/10">単勝オッズ</th>
-                              <th className="p-3 text-center border-b border-primary/10">市場予想</th>
-                              <th className="p-3 text-center border-b border-primary/10">あなたの単勝確率</th>
-                              <th className="p-3 text-center border-b border-primary/10">あなたの複勝確率</th>
-                              <th className="p-3 text-center border-b border-primary/10">期待値</th>
+                              <th className="p-1 sm:p-3 text-left border-b border-primary/10 text-xs sm:text-sm">人気</th>
+                              <th className="p-1 sm:p-3 text-center border-b border-primary/10 text-xs sm:text-sm">単勝<span className="hidden sm:inline">オッズ</span></th>
+                              <th className="p-1 sm:p-3 text-center border-b border-primary/10 text-xs sm:text-sm"><span className="hidden sm:inline">あなたの</span>単勝<span className="hidden sm:inline">確率</span></th>
+                              <th className="p-1 sm:p-3 text-center border-b border-primary/10 text-xs sm:text-sm"><span className="hidden sm:inline">あなたの</span>複勝<span className="hidden sm:inline">確率</span></th>
+                              <th className="p-1 sm:p-3 text-center border-b border-primary/10 text-xs sm:text-sm">期待値</th>
                             </tr>
                           </thead>
                           <tbody>
                             <tr className="border-b border-primary/10 hover:bg-primary/5 transition-colors">
-                              <td className="p-3 border-r border-primary/10 font-medium">1人気</td>
-                              <td className="p-3 text-center">2.5</td>
-                              <td className="p-3 text-center">40%</td>
-                              <td className="p-3 text-center">35%</td>
-                              <td className="p-3 text-center">70%</td>
-                              <td className="p-3 text-center text-red-500 font-medium">0.88</td>
+                              <td className="p-1 sm:p-3 border-r border-primary/10 font-medium text-xs sm:text-sm">1人気</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">2.5</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">35%</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">70%</td>
+                              <td className="p-1 sm:p-3 text-center text-red-500 font-medium text-xs sm:text-sm">0.88</td>
                             </tr>
                             <tr className="border-b border-primary/10 bg-background/30 hover:bg-primary/5 transition-colors">
-                              <td className="p-3 border-r border-primary/10 font-medium">2人気</td>
-                              <td className="p-3 text-center">4.0</td>
-                              <td className="p-3 text-center">25%</td>
-                              <td className="p-3 text-center">20%</td>
-                              <td className="p-3 text-center">50%</td>
-                              <td className="p-3 text-center text-red-500 font-medium">0.80</td>
+                              <td className="p-1 sm:p-3 border-r border-primary/10 font-medium text-xs sm:text-sm">2人気</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">4.0</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">20%</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">50%</td>
+                              <td className="p-1 sm:p-3 text-center text-red-500 font-medium text-xs sm:text-sm">0.80</td>
                             </tr>
                             <tr className="border-b border-primary/10 hover:bg-primary/5 transition-colors">
-                              <td className="p-3 border-r border-primary/10 font-medium">3人気</td>
-                              <td className="p-3 text-center">8.0</td>
-                              <td className="p-3 text-center">12.5%</td>
-                              <td className="p-3 text-center">15%</td>
-                              <td className="p-3 text-center">40%</td>
-                              <td className="p-3 text-center text-green-500 font-medium">1.20</td>
+                              <td className="p-1 sm:p-3 border-r border-primary/10 font-medium text-xs sm:text-sm">3人気</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">8.0</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">12.5%</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">15%</td>
+                              <td className="p-1 sm:p-3 text-center text-green-500 font-medium text-xs sm:text-sm">1.20</td>
                             </tr>
                             <tr className="border-b border-primary/10 bg-background/30 hover:bg-primary/5 transition-colors">
-                              <td className="p-3 border-r border-primary/10 font-medium">4〜10人気</td>
-                              <td className="p-3 text-center">10.0〜</td>
-                              <td className="p-3 text-center">22.5%</td>
-                              <td className="p-3 text-center">30%</td>
-                              <td className="p-3 text-center">140%</td>
-                              <td className="p-3 text-center text-green-500 font-medium">1.33</td>
+                              <td className="p-1 sm:p-3 border-r border-primary/10 font-medium text-xs sm:text-sm">4〜10<span className="hidden sm:inline">人気</span></td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">10<span className="hidden sm:inline">.0</span>〜</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">22.5%</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">30%</td>
+                              <td className="p-1 sm:p-3 text-center text-green-500 font-medium text-xs sm:text-sm">1.33</td>
                             </tr>
                             <tr className="bg-primary/5 font-medium">
-                              <td className="p-3 border-r border-primary/10">合計</td>
-                              <td className="p-3 text-center">-</td>
-                              <td className="p-3 text-center">100%</td>
-                              <td className="p-3 text-center">100%</td>
-                              <td className="p-3 text-center">300%</td>
-                              <td className="p-3 text-center">-</td>
+                              <td className="p-1 sm:p-3 border-r border-primary/10 text-xs sm:text-sm">合計</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">-</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">100%</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">300%</td>
+                              <td className="p-1 sm:p-3 text-center text-xs sm:text-sm">-</td>
                             </tr>
                           </tbody>
                         </table>
                       </div>
-                      <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 text-sm">
+                      <div className="p-2 sm:p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
                         <div className="flex items-center mb-1">
-                          <Lightbulb className="h-4 w-4 text-yellow-500 mr-2 flex-shrink-0" />
-                          <p className="font-medium">確率配分のポイント</p>
+                          <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 mr-1 sm:mr-2 flex-shrink-0" />
+                          <p className="font-medium text-xs sm:text-sm">確率配分のポイント</p>
                         </div>
-                        <p>競馬予想では市場との認識のズレを見つけることが重要です。上の例では人気サイドを低く見積もり、中穴馬を高く評価することで期待値の高い馬券を見つけています。</p>
+                        <p className="text-xs sm:text-sm">競馬予想では市場との認識のズレを見つけることが重要です。上の例では人気サイドを低く見積もり、中穴馬を高く評価することで期待値の高い馬券を見つけています。</p>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="p-5 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5">
-                    <h3 className="font-semibold text-lg mb-4">確率予想の精度を高めるテクニック</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-background/80 p-4 rounded-lg border border-primary/10 shadow-sm hover:shadow-md transition-all duration-300">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3 mx-auto">
-                          <LineChartIcon className="h-5 w-5 text-primary" />
+                  <div className="p-2 sm:p-5 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5">
+                    <h3 className="font-semibold text-xs sm:text-lg mb-2 sm:mb-4">確率予想の精度を高めるテクニック</h3>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-4">
+                      <div className="bg-background/80 p-2 sm:p-4 rounded-lg border border-primary/10 shadow-sm hover:shadow-md transition-all duration-300">
+                        <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center mb-1 sm:mb-3 mx-auto">
+                          <LineChartIcon className="h-3 w-3 sm:h-5 sm:w-5 text-primary" />
                         </div>
-                        <p className="font-medium text-center mb-2">類似レースの分析</p>
-                        <p className="text-sm text-center">同コース・距離・クラスの過去レース結果から傾向を掴む</p>
+                        <p className="font-medium text-center mb-1 sm:mb-2 text-xs sm:text-sm">類似レース<span className="hidden sm:inline">の</span>分析</p>
+                        <p className="text-xs sm:text-sm text-center">同コース・距離<span className="hidden sm:inline">・クラス</span>の過去<span className="hidden sm:inline">レース</span>結果から傾向を掴む</p>
                       </div>
                       
-                      <div className="bg-background/80 p-4 rounded-lg border border-primary/10 shadow-sm hover:shadow-md transition-all duration-300">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3 mx-auto">
-                          <Brain className="h-5 w-5 text-primary" />
+                      <div className="bg-background/80 p-2 sm:p-4 rounded-lg border border-primary/10 shadow-sm hover:shadow-md transition-all duration-300">
+                        <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center mb-1 sm:mb-3 mx-auto">
+                          <Brain className="h-3 w-3 sm:h-5 sm:w-5 text-primary" />
                         </div>
-                        <p className="font-medium text-center mb-2">要素の数値化</p>
-                        <p className="text-sm text-center">馬の調子・騎手・枠順などを点数化して客観的に評価する</p>
+                        <p className="font-medium text-center mb-1 sm:mb-2 text-xs sm:text-sm">要素の数値化</p>
+                        <p className="text-xs sm:text-sm text-center">馬の調子・騎手・枠順などを点数化<span className="hidden sm:inline">して客観的に評価</span>する</p>
                       </div>
                       
-                      <div className="bg-background/80 p-4 rounded-lg border border-primary/10 shadow-sm hover:shadow-md transition-all duration-300">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3 mx-auto">
-                          <Flag className="h-5 w-5 text-primary" />
+                      <div className="bg-background/80 p-2 sm:p-4 rounded-lg border border-primary/10 shadow-sm hover:shadow-md transition-all duration-300">
+                        <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center mb-1 sm:mb-3 mx-auto">
+                          <Flag className="h-3 w-3 sm:h-5 sm:w-5 text-primary" />
                         </div>
-                        <p className="font-medium text-center mb-2">適性マッチング</p>
-                        <p className="text-sm text-center">馬場状態・距離・脚質などの適性を重視した確率配分</p>
+                        <p className="font-medium text-center mb-1 sm:mb-2 text-xs sm:text-sm">適性マッチング</p>
+                        <p className="text-xs sm:text-sm text-center">馬場<span className="hidden sm:inline">状態</span>・距離・脚質<span className="hidden sm:inline">などの</span>適性を<span className="hidden sm:inline">重視した確率配分</span>分析</p>
                       </div>
                     </div>
                   </div>
@@ -1882,7 +1876,7 @@ export default function Guide() {
                           </div>
                         </div>
                       </div>
-                      <p className="mt-3 text-center text-sm">予想誤差を考慮した<span className="font-semibold text-primary">安全マージン</span>を確保する基準値</p>
+                      <p className="mt-3 text-xs sm:text-sm text-center">予想誤差を考慮した<span className="font-semibold text-primary">安全マージン</span>を確保する基準値</p>
                     </div>
                     
                     <div className="sm:w-2/3">
