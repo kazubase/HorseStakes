@@ -5,11 +5,13 @@
 /* LCP最適化用クリティカルCSS */
 .critical-hidden {
   opacity: 0;
+  will-change: opacity;
+  content-visibility: auto;
 }
 
 .critical-visible {
   opacity: 1;
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity 0.1s ease-out;
 }
 
 /* 画像プレースホルダーの最適化 */
@@ -24,6 +26,7 @@ img.smart-loading {
   content-visibility: auto;
   will-change: transform;
   transform: translateZ(0);
+  contain: paint;
 }
 
 @media (max-width: 640px) {
@@ -35,6 +38,29 @@ img.smart-loading {
 /* リソース優先度のコントロール */
 .lcp-priority {
   content-visibility: auto;
+  contain: paint;
+}
+
+/* LCPコンテナの事前スペース確保 */
+[data-lcp-container="true"] {
+  min-height: 200px;
+  position: relative;
+}
+
+/* hero-image-container最適化 */
+.hero-image-container {
+  display: block;
+  width: 100%;
+  height: auto;
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.hero-image {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* パフォーマンス改善用のフォントコントロール */

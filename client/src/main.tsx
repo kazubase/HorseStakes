@@ -88,13 +88,29 @@ const loadNonCriticalResources = () => {
   }
 };
 
+// 優先読み込みリソースを事前に読み込む
+const preloadCriticalResources = () => {
+  // LCP画像をプリロード
+  const preloadLCP = document.createElement('link');
+  preloadLCP.rel = 'preload';
+  preloadLCP.as = 'image';
+  preloadLCP.href = window.innerWidth <= 640 
+    ? '/images/mobile/optimized_guide_header_mobile.webp'
+    : '/images/optimized_guide_header.webp';
+  preloadLCP.fetchPriority = 'high';
+  document.head.appendChild(preloadLCP);
+};
+
 // アプリケーション初期化時にCSRFトークンを設定
 setCsrfToken();
 
 // DOMContentLoadedイベント後に非クリティカルリソースを読み込む
 if (document.readyState === 'loading') {
+  // 最も重要なリソースをすぐに読み込む
+  preloadCriticalResources();
   document.addEventListener('DOMContentLoaded', loadNonCriticalResources);
 } else {
+  preloadCriticalResources();
   loadNonCriticalResources();
 }
 

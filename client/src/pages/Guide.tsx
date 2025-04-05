@@ -1010,14 +1010,15 @@ export default function Guide() {
       {/* ヘッダー画像を最初に大きく表示 */}
       <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 mb-8">
         {/* スマホとPCで異なるサイズの画像を使用 */}
-        <div className="hero-image-container" data-lcp-container>
+        <div className="hero-image-container" data-lcp-container="true">
           <picture>
-            {/* スマホ向け (640px以下) - 超小型サイズに最適化した画像 */}
+            {/* スマホ向け (640px以下) - より高品質なモバイル画像 */}
             <source
               media="(max-width: 640px)"
               srcSet="/images/mobile/optimized_guide_header_mobile.webp"
               sizes="100vw"
               type="image/webp"
+              {...{ fetchpriority: 'high' } as any}
             />
             {/* タブレット向け (641px-1024px) */}
             <source
@@ -1025,6 +1026,7 @@ export default function Guide() {
               srcSet="/images/optimized_guide_header.webp"
               sizes="100vw"
               type="image/webp"
+              {...{ fetchpriority: 'high' } as any}
             />
             {/* デスクトップ向け */}
             <source
@@ -1032,6 +1034,7 @@ export default function Guide() {
               srcSet="/images/optimized_guide_header.webp"
               sizes="1200px"
               type="image/webp"
+              {...{ fetchpriority: 'high' } as any}
             />
             {/* フォールバック - 最適化された画像サイズのwidthとheightを指定 */}
             <img 
@@ -1042,9 +1045,10 @@ export default function Guide() {
               height="675"
               loading="eager"
               decoding="async"
+              {...{ fetchpriority: 'high', importance: 'high' } as any}
               onLoad={(e) => {
                 if (e.currentTarget) {
-                  // フェードイン表示
+                  // 即時表示に変更（遅延フェードインを削除）
                   e.currentTarget.classList.remove('critical-hidden');
                   e.currentTarget.classList.add('critical-visible');
                   
@@ -1055,9 +1059,21 @@ export default function Guide() {
                   
                   // レイアウトシフト防止のためのマーカー
                   document.documentElement.classList.add('lcp-loaded');
+                  
+                  // パフォーマンスメトリクスをレポート（ある場合）
+                  if ('performance' in window && 'getEntriesByType' in window.performance) {
+                    // LCPのタイミングを計測
+                    setTimeout(() => {
+                      const lcpEntries = performance.getEntriesByType('paint').filter(
+                        entry => entry.name === 'largest-contentful-paint'
+                      );
+                      if (lcpEntries.length > 0) {
+                        console.log('LCP時間:', lcpEntries[0].startTime);
+                      }
+                    }, 0);
+                  }
                 }
               }}
-              {...({fetchpriority: 'high', importance: 'high'} as any)}
             />
           </picture>
           {/* オーバーレイ効果を調整 - より薄く */}
