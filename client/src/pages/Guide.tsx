@@ -776,6 +776,8 @@ export default function Guide() {
             object-position: center center;
             background-color: #f0f0f0;
             content-visibility: auto;
+            will-change: transform; /* GPU支援を有効化 */
+            transform: translateZ(0); /* GPU支援を有効化 */
           }
           .hero-image-container {
             position: relative;
@@ -788,6 +790,8 @@ export default function Guide() {
             align-items: center;
             justify-content: center;
             background-color: #f0f0f0;
+            will-change: transform; /* GPU支援を有効化 */
+            transform: translateZ(0); /* GPU支援を有効化 */
           }
           picture {
             width: 100%;
@@ -806,9 +810,11 @@ export default function Guide() {
             .hero-image-container {
               min-height: unset; /* min-heightを削除 */
               transform: translateZ(0);
+              contain: layout paint; /* パフォーマンス向上 */
             }
             .hero-image {
               transform: translateZ(0);
+              contain: layout paint; /* パフォーマンス向上 */
             }
           }
           `}
@@ -820,7 +826,7 @@ export default function Guide() {
           as="image"
           type="image/webp"
           media="(max-width: 640px)"
-          {...({'fetchpriority': 'high'} as {})}
+          {...({fetchpriority: 'high', importance: 'high'} as any)}
         />
         {/* デスクトップ向けの画像をプリロード */}
         <link
@@ -829,7 +835,7 @@ export default function Guide() {
           as="image"
           type="image/webp"
           media="(min-width: 641px)"
-          {...({'fetchpriority': 'high'} as {})}
+          {...({fetchpriority: 'high', importance: 'high'} as any)}
         />
         <meta property="og:title" content="競馬の期待値計算と回収率アップガイド | 馬券戦略" />
         <meta property="og:description" content="競馬で期待値計算を活用して回収率を上げるための完全ガイド。オッズと予想確率から期待値を算出する方法と、期待値の高い馬券を効率的に見つけるコツを解説。期待値1.4以上の馬券を狙って長期的に利益を出す戦略を学びましょう。" />
@@ -1007,19 +1013,21 @@ export default function Guide() {
               media="(max-width: 640px)"
               srcSet="/images/mobile/optimized_guide_header_mobile.webp"
               sizes="100vw"
-              {...({'fetchpriority': 'high'} as {})}
+              type="image/webp"
             />
             {/* タブレット向け (641px-1024px) */}
             <source
               media="(max-width: 1024px)"
               srcSet="/images/optimized_guide_header.webp"
               sizes="100vw"
+              type="image/webp"
             />
             {/* デスクトップ向け */}
             <source
               media="(min-width: 1025px)"
               srcSet="/images/optimized_guide_header.webp"
               sizes="1200px"
+              type="image/webp"
             />
             {/* フォールバック */}
             <img 
@@ -1033,9 +1041,13 @@ export default function Guide() {
               onLoad={(e) => {
                 if (e.currentTarget) {
                   e.currentTarget.style.backgroundColor = "transparent";
+                  // ロード完了を報告
+                  if (window.performance && window.performance.mark) {
+                    window.performance.mark('hero-image-loaded');
+                  }
                 }
               }}
-              {...({'fetchpriority': 'high'} as {})}
+              {...({fetchpriority: 'high', importance: 'high'} as any)}
             />
           </picture>
           {/* オーバーレイ効果を調整 - より薄く */}
