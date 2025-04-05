@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="format-detection" content="telephone=no"/>
-    <link rel="icon" type="image/webp" href="/images/horseshoe-icon2.webp" />
+    <link rel="icon" type="image/webp" href="/images/optimized_horseshoe-icon2.webp" />
     <link rel="icon" type="image/png" href="/images/horseshoe-icon2.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <title>馬券戦略 | 競馬予想と期待値計算ツール</title>
@@ -14,12 +14,12 @@
     <meta property="og:description" content="競馬初心者から上級者まで使える馬券戦略アプリ。的中率と期待値を計算し、回収率アップのための最適な馬券作成方法を提案。無料で使える競馬予想サポートツール。" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://horse-stakes.com" />
-    <meta property="og:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
+    <meta property="og:image" content="https://horse-stakes.com/images/optimized_horseshoe-icon2.webp" />
     <meta property="og:site_name" content="馬券戦略"/>
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="馬券戦略 | 競馬予想と期待値計算ツール">
     <meta name="twitter:description" content="競馬初心者から上級者まで使える馬券戦略アプリ。的中率と期待値を計算し、回収率アップのための最適な馬券作成方法を提案。">
-    <meta name="twitter:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp">
+    <meta name="twitter:image" content="https://horse-stakes.com/images/optimized_horseshoe-icon2.webp">
     <!-- サイト名をGoogle検索結果に表示するための構造化データ -->
     <script type="application/ld+json">
     {
@@ -49,14 +49,64 @@
     <meta name="apple-mobile-web-app-title" content="馬券戦略" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!-- DNS Prefetch と Preconnect の最適化 -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://fonts.gstatic.com">
-    <link rel="preload" href="/images/horseshoe-icon2.webp" as="image" fetchpriority="high">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- 重要なリソースのプリロード -->
+    <link rel="preload" href="/images/optimized_horseshoe-icon2.webp" as="image" fetchpriority="high">
+    <link rel="preload" href="/images/mobile/optimized_guide_header_mobile.webp" as="image" fetchpriority="high" media="(max-width: 640px)">
+    <link rel="preload" href="/images/optimized_guide_header.webp" as="image" fetchpriority="high" media="(min-width: 641px)">
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap">
+    <!-- インラインクリティカルCSS -->
     <style>
+      /* LCP最適化用の追加スタイル */
+      .critical-hidden {
+        opacity: 0;
+      }
+      .critical-visible {
+        opacity: 1;
+        transition: opacity 0.2s ease-in-out;
+      }
+      .hero-image-container {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        aspect-ratio: 16/9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: transparent;
+        will-change: transform;
+        transform: translateZ(0);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='203' viewBox='0 0 360 203' fill='none'%3E%3Crect width='360' height='203' fill='%23EAECEF'/%3E%3Cpath d='M180 101.5C191.046 101.5 200 92.5457 200 81.5C200 70.4543 191.046 61.5 180 61.5C168.954 61.5 160 70.4543 160 81.5C160 92.5457 168.954 101.5 180 101.5Z' fill='%23D4D6D9'/%3E%3Cpath d='M125 145.5L235 145.5' stroke='%23D4D6D9' stroke-width='4'/%3E%3Cpath d='M155 125.5L205 125.5' stroke='%23D4D6D9' stroke-width='4'/%3E%3C/svg%3E");
+        background-size: cover;
+        background-position: center;
+      }
+      .hero-image {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        object-position: center;
+        background-color: transparent;
+        content-visibility: auto;
+        will-change: transform;
+        transform: translateZ(0);
+      }
+      .smart-loading {
+        content-visibility: auto;
+        contain: layout paint;
+      }
+      @media (max-width: 640px) {
+        .hero-image-container, .hero-image {
+          contain: layout paint;
+        }
+      }
+      
       /* フォントの直接インポート */
       @import url('https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap');
       
@@ -90,6 +140,8 @@
         font-family: 'Yuji Syuku', serif !important;
       }
     </style>
+    <!-- フォントスタイルシート -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap">
     <noscript>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=競馬予想馬券作成アシスタント回収率アップの戦略&display=swap">
     </noscript>
@@ -115,6 +167,18 @@
           document.addEventListener('DOMContentLoaded', addMissingIdsToFormFields);
         } else {
           addMissingIdsToFormFields();
+        }
+        
+        // LCP測定
+        if (window.performance && window.performance.mark) {
+          window.performance.mark('app-start');
+          // Page Load完了時に測定
+          window.addEventListener('load', function() {
+            window.performance.mark('app-loaded');
+            if (window.performance.measure) {
+              window.performance.measure('app-to-loaded', 'app-start', 'app-loaded');
+            }
+          });
         }
       })();
     </script>
@@ -160,7 +224,7 @@
         "回収率最適化",
         "初心者向けガイド"
       ],
-      "screenshot": "https://horse-stakes.com/images/horseshoe-icon2.webp",
+      "screenshot": "https://horse-stakes.com/images/optimized_horseshoe-icon2.webp",
       "browserRequirements": "JavaScriptを有効にしてください"
     }
     </script>
@@ -222,7 +286,7 @@
       "@type": "Organization",
       "name": "馬券戦略",
       "url": "https://horse-stakes.com",
-      "logo": "https://horse-stakes.com/images/horseshoe-icon2.webp",
+      "logo": "https://horse-stakes.com/images/optimized_horseshoe-icon2.webp",
       "description": "競馬予想と馬券作成をサポートするAIアシスタント。回収率アップのための馬券戦略を立て、的中率と期待値を計算。",
       "sameAs": [
         "https://horse-stakes.com"

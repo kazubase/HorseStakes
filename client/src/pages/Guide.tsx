@@ -774,10 +774,11 @@ export default function Guide() {
             display: block;
             object-fit: cover;
             object-position: center center;
-            background-color: #f0f0f0;
+            background-color: transparent;
             content-visibility: auto;
             will-change: transform; /* GPU支援を有効化 */
             transform: translateZ(0); /* GPU支援を有効化 */
+            transition: opacity 0.2s ease-in-out;
           }
           .hero-image-container {
             position: relative;
@@ -789,9 +790,12 @@ export default function Guide() {
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #f0f0f0;
+            background-color: transparent;
             will-change: transform; /* GPU支援を有効化 */
             transform: translateZ(0); /* GPU支援を有効化 */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='203' viewBox='0 0 360 203' fill='none'%3E%3Crect width='360' height='203' fill='%23EAECEF'/%3E%3Cpath d='M180 101.5C191.046 101.5 200 92.5457 200 81.5C200 70.4543 191.046 61.5 180 61.5C168.954 61.5 160 70.4543 160 81.5C160 92.5457 168.954 101.5 180 101.5Z' fill='%23D4D6D9'/%3E%3Cpath d='M125 145.5L235 145.5' stroke='%23D4D6D9' stroke-width='4'/%3E%3Cpath d='M155 125.5L205 125.5' stroke='%23D4D6D9' stroke-width='4'/%3E%3C/svg%3E");
+            background-size: cover;
+            background-position: center;
           }
           picture {
             width: 100%;
@@ -1006,9 +1010,9 @@ export default function Guide() {
       {/* ヘッダー画像を最初に大きく表示 */}
       <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 mb-8">
         {/* スマホとPCで異なるサイズの画像を使用 */}
-        <div className="hero-image-container">
+        <div className="hero-image-container" data-lcp-container>
           <picture>
-            {/* スマホ向け (640px以下) - より小さいファイルサイズの画像 */}
+            {/* スマホ向け (640px以下) - 超小型サイズに最適化した画像 */}
             <source
               media="(max-width: 640px)"
               srcSet="/images/mobile/optimized_guide_header_mobile.webp"
@@ -1029,22 +1033,28 @@ export default function Guide() {
               sizes="1200px"
               type="image/webp"
             />
-            {/* フォールバック */}
+            {/* フォールバック - 最適化された画像サイズのwidthとheightを指定 */}
             <img 
               src="/images/optimized_guide_header.webp" 
               alt="競馬の期待値思考 - 回収率アップの秘訣" 
-              className="hero-image"
+              className="hero-image smart-loading critical-hidden lcp-priority"
               width="1200"
               height="675"
               loading="eager"
               decoding="async"
               onLoad={(e) => {
                 if (e.currentTarget) {
-                  e.currentTarget.style.backgroundColor = "transparent";
+                  // フェードイン表示
+                  e.currentTarget.classList.remove('critical-hidden');
+                  e.currentTarget.classList.add('critical-visible');
+                  
                   // ロード完了を報告
                   if (window.performance && window.performance.mark) {
                     window.performance.mark('hero-image-loaded');
                   }
+                  
+                  // レイアウトシフト防止のためのマーカー
+                  document.documentElement.classList.add('lcp-loaded');
                 }
               }}
               {...({fetchpriority: 'high', importance: 'high'} as any)}

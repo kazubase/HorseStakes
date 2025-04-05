@@ -2,7 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
+/* LCP最適化用クリティカルCSS */
+.critical-hidden {
+  opacity: 0;
+}
+
+.critical-visible {
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* 画像プレースホルダーの最適化 */
+.image-placeholder {
+  background-color: #f5f5f5;
+  display: inline-block;
+  position: relative;
+}
+
+/* スマートな画像読み込みのパフォーマンス最適化 */
+img.smart-loading {
+  content-visibility: auto;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+@media (max-width: 640px) {
+  img.smart-loading {
+    contain: layout paint;
+  }
+}
+
+/* リソース優先度のコントロール */
+.lcp-priority {
+  content-visibility: auto;
+}
+
+/* パフォーマンス改善用のフォントコントロール */
 @layer base {
+  @font-face {
+    font-family: 'Yuji Syuku';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: local('Yuji Syuku'), url(https://fonts.gstatic.com/s/yujisyuku/v5/BngNUXdTV3vO6Lw5ApOPqPfmxA.woff2) format('woff2');
+    unicode-range: U+4E00-9FFF, U+3040-309F, U+30A0-30FF;
+  }
+
   :root {
     /* 競馬場のイメージに合わせた明るい色調 */
     --background: 40 30% 99%; /* より明るい背景色 */
