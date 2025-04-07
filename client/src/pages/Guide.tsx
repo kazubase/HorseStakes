@@ -893,6 +893,67 @@ export default function Guide() {
               contain: layout paint; /* パフォーマンス向上 */
             }
           }
+
+          /* --- Added Title styles --- */
+          #title-section-wrapper .text-center {
+            text-align: center;
+          }
+          #title-section-wrapper h1 {
+            /* pb-1 md:pb-2 text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-foreground relative inline-block whitespace-nowrap */
+            padding-bottom: 0.25rem; /* pb-1 */
+            font-size: 1.875rem; /* 3xl */
+            line-height: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem; /* mb-4 */
+            /* color: hsl(var(--foreground)); Replace with actual color */
+            position: relative;
+            display: inline-block;
+            white-space: nowrap;
+          }
+          #title-section-wrapper h1 span {
+            /* absolute -bottom-3 left-0 right-0 h-1 bg-primary rounded-full transform scale-x-75 mx-auto */
+            position: absolute;
+            bottom: -0.75rem; /* -bottom-3 */
+            left: 0;
+            right: 0;
+            height: 0.25rem; /* h-1 */
+            /* background-color: hsl(var(--primary)); Replace with actual color */
+            border-radius: 9999px;
+            transform: scaleX(0.75);
+            margin-left: auto;
+            margin-right: auto;
+          }
+          #title-section-wrapper p:nth-of-type(1) { /* Subtitle */
+            /* pt-1 md:pt-2 text-xl md:text-2xl font-medium text-foreground/90 mb-4 whitespace-nowrap */
+            padding-top: 0.25rem; /* pt-1 */
+            font-size: 1.25rem; /* xl */
+            line-height: 1.75rem;
+            font-weight: 500;
+            /* color: hsla(var(--foreground), 0.9); Replace with actual color */
+            margin-bottom: 1rem; /* mb-4 */
+            white-space: nowrap;
+          }
+          #title-section-wrapper p:nth-of-type(2) { /* Description */
+            /* text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 */
+            font-size: 1rem; /* base */
+            line-height: 1.5rem;
+            /* color: hsl(var(--muted-foreground)); Replace with actual color */
+            max-width: 42rem; /* max-w-2xl */
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 1.5rem; /* mb-6 */
+          }
+
+          /* Responsive Title Styles */
+          @media (min-width: 768px) { /* md: */
+            #title-section-wrapper h1 { padding-bottom: 0.5rem; font-size: 3rem; line-height: 1; }
+            #title-section-wrapper p:nth-of-type(1) { padding-top: 0.5rem; font-size: 1.5rem; line-height: 2rem; }
+            #title-section-wrapper p:nth-of-type(2) { font-size: 1.125rem; line-height: 1.75rem; }
+          }
+          @media (min-width: 640px) { /* sm: */
+            #title-section-wrapper h1 { font-size: 2.25rem; line-height: 2.5rem; }
+          }
+          /* --- End Added Title styles --- */
           `}
         </style>
         {/* モバイル向けの画像をプリロード（優先度高） */}
@@ -1110,13 +1171,14 @@ export default function Guide() {
             />
             {/* フォールバック - 最適化された画像サイズのwidthとheightを指定 */}
             <img 
-              src="/images/optimized_guide_header.webp" 
+              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" // 軽量プレースホルダーを追加
               alt="競馬の期待値思考 - 回収率アップの秘訣" 
               className="hero-image smart-loading critical-hidden lcp-priority"
               width="1200"
               height="675"
               loading="eager"
               decoding="async"
+              sizes="(max-width: 1024px) 100vw, min(100vw, 1200px)" // sizes属性を最適化
               {...{ fetchpriority: 'high', importance: 'high' } as any}
               onLoad={(e) => {
                 if (e.currentTarget) {
@@ -1139,9 +1201,10 @@ export default function Guide() {
                       const lcpEntries = performance.getEntriesByType('paint').filter(
                         entry => entry.name === 'largest-contentful-paint'
                       );
-                      if (lcpEntries.length > 0) {
-                        console.log('LCP時間:', lcpEntries[0].startTime);
-                      }
+                      // console.logは削除
+                      // if (lcpEntries.length > 0) {
+                      //   console.log('LCP時間:', lcpEntries[0].startTime);
+                      // }
                     }, 0);
                   }
                 }
@@ -1154,7 +1217,7 @@ export default function Guide() {
       </div>
 
       {/* タイトルセクション - シンプルかつ洗練されたデザイン */}
-      <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 mb-12">
+      <div id="title-section-wrapper" className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 mb-12">
         <div className="text-center">
           <h1 className="pb-1 md:pb-2 text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-foreground relative inline-block whitespace-nowrap">
             競馬の期待値思考
@@ -1747,8 +1810,10 @@ export default function Guide() {
                           <td className="p-2 sm:p-3 text-center border-r border-primary/10">
                             <div className="flex items-center justify-center">
                               <span className="font-medium mr-1 sm:mr-2">59.2%</span>
-                              <div className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full overflow-hidden">
-                                <div className="bg-green-500 h-full" style={{ width: '59.2%' }}></div>
+                              <div 
+                                className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full"
+                                style={{ backgroundImage: 'linear-gradient(to right, #22c55e 59.2%, transparent 59.2%)' }}
+                              >
                               </div>
                             </div>
                           </td>
@@ -1759,8 +1824,10 @@ export default function Guide() {
                           <td className="p-2 sm:p-3 text-center border-r border-primary/10">
                             <div className="flex items-center justify-center">
                               <span className="font-medium mr-1 sm:mr-2">36.6%</span>
-                              <div className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full overflow-hidden">
-                                <div className="bg-green-500 h-full" style={{ width: '36.6%' }}></div>
+                              <div 
+                                className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full"
+                                style={{ backgroundImage: 'linear-gradient(to right, #22c55e 36.6%, transparent 36.6%)' }}
+                              >
                               </div>
                             </div>
                           </td>
@@ -1771,8 +1838,10 @@ export default function Guide() {
                           <td className="p-2 sm:p-3 text-center border-r border-primary/10">
                             <div className="flex items-center justify-center">
                               <span className="font-medium mr-1 sm:mr-2">17.7%</span>
-                              <div className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full overflow-hidden">
-                                <div className="bg-green-500 h-full" style={{ width: '17.7%' }}></div>
+                              <div 
+                                className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full"
+                                style={{ backgroundImage: 'linear-gradient(to right, #22c55e 17.7%, transparent 17.7%)' }}
+                              >
                               </div>
                             </div>
                           </td>
@@ -1783,8 +1852,10 @@ export default function Guide() {
                           <td className="p-2 sm:p-3 text-center border-r border-primary/10">
                             <div className="flex items-center justify-center">
                               <span className="font-medium mr-1 sm:mr-2">8.1%</span>
-                              <div className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full overflow-hidden">
-                                <div className="bg-green-500 h-full" style={{ width: '8.1%' }}></div>
+                              <div 
+                                className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full"
+                                style={{ backgroundImage: 'linear-gradient(to right, #22c55e 8.1%, transparent 8.1%)' }}
+                              >
                               </div>
                             </div>
                           </td>
@@ -1795,8 +1866,10 @@ export default function Guide() {
                           <td className="p-2 sm:p-3 text-center border-r border-primary/10">
                             <div className="flex items-center justify-center">
                               <span className="font-medium mr-1 sm:mr-2">2.6%</span>
-                              <div className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full overflow-hidden">
-                                <div className="bg-green-500 h-full" style={{ width: '2.6%' }}></div>
+                              <div 
+                                className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full"
+                                style={{ backgroundImage: 'linear-gradient(to right, #22c55e 2.6%, transparent 2.6%)' }}
+                              >
                               </div>
                             </div>
                           </td>
@@ -1807,8 +1880,10 @@ export default function Guide() {
                           <td className="p-2 sm:p-3 text-center border-r border-primary/10">
                             <div className="flex items-center justify-center">
                               <span className="font-medium mr-1 sm:mr-2">0.8%</span>
-                              <div className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full overflow-hidden">
-                                <div className="bg-green-500 h-full" style={{ width: '0.8%' }}></div>
+                              <div 
+                                className="w-12 sm:w-24 bg-gray-200 h-1.5 sm:h-2 rounded-full"
+                                style={{ backgroundImage: 'linear-gradient(to right, #22c55e 0.8%, transparent 0.8%)' }}
+                              >
                               </div>
                             </div>
                           </td>

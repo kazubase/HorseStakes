@@ -14,6 +14,24 @@
   transition: opacity 0.1s ease-out;
 }
 
+/* LCPの最適化 */
+.lcp-priority {
+  content-visibility: visible;
+  contain: style layout;
+  display: block;
+  font-display: block;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (max-width: 640px) {
+  .lcp-priority {
+    font-size: 24px !important;
+    line-height: 1.2 !important;
+  }
+}
+
 /* 画像プレースホルダーの最適化 */
 .image-placeholder {
   background-color: #f5f5f5;
@@ -33,12 +51,6 @@ img.smart-loading {
   img.smart-loading {
     contain: layout paint;
   }
-}
-
-/* リソース優先度のコントロール */
-.lcp-priority {
-  content-visibility: auto;
-  contain: paint;
 }
 
 /* LCPコンテナの事前スペース確保 */
