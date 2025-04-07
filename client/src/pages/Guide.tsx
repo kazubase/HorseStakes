@@ -1144,8 +1144,16 @@ export default function Guide() {
       <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 mb-8">
         {/* スマホとPCで異なるサイズの画像を使用 */}
         <div className="hero-image-container" data-lcp-container="true">
+          {/* LCP対策：スマホ画像の事前読み込み */}
+          <link 
+            rel="preload" 
+            href="/images/mobile/optimized_guide_header_mobile.webp" 
+            as="image" 
+            type="image/webp" 
+            media="(max-width: 640px)" 
+          />
           <picture>
-            {/* スマホ向け (640px以下) - より高品質なモバイル画像 */}
+            {/* スマホ向け (640px以下) - モバイル向け最適化画像を直接使用 */}
             <source
               media="(max-width: 640px)"
               srcSet="/images/mobile/optimized_guide_header_mobile.webp"
@@ -1169,21 +1177,20 @@ export default function Guide() {
               type="image/webp"
               {...{ fetchpriority: 'high' } as any}
             />
-            {/* フォールバック - 最適化された画像サイズのwidthとheightを指定 */}
+            {/* フォールバック - 直接最適化された画像を使用 */}
             <img 
-              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" // 軽量プレースホルダーを追加
+              src="/images/mobile/optimized_guide_header_mobile.webp" 
               alt="競馬の期待値思考 - 回収率アップの秘訣" 
-              className="hero-image smart-loading critical-hidden lcp-priority"
-              width="1200"
-              height="675"
+              className="hero-image smart-loading lcp-priority"
+              width="640"
+              height="360"
               loading="eager"
               decoding="async"
-              sizes="(max-width: 1024px) 100vw, min(100vw, 1200px)" // sizes属性を最適化
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, min(100vw, 1200px)" 
               {...{ fetchpriority: 'high', importance: 'high' } as any}
               onLoad={(e) => {
                 if (e.currentTarget) {
-                  // 即時表示に変更（遅延フェードインを削除）
-                  e.currentTarget.classList.remove('critical-hidden');
+                  // シンプルに表示のみ
                   e.currentTarget.classList.add('critical-visible');
                   
                   // ロード完了を報告
@@ -1193,20 +1200,6 @@ export default function Guide() {
                   
                   // レイアウトシフト防止のためのマーカー
                   document.documentElement.classList.add('lcp-loaded');
-                  
-                  // パフォーマンスメトリクスをレポート（ある場合）
-                  if ('performance' in window && 'getEntriesByType' in window.performance) {
-                    // LCPのタイミングを計測
-                    setTimeout(() => {
-                      const lcpEntries = performance.getEntriesByType('paint').filter(
-                        entry => entry.name === 'largest-contentful-paint'
-                      );
-                      // console.logは削除
-                      // if (lcpEntries.length > 0) {
-                      //   console.log('LCP時間:', lcpEntries[0].startTime);
-                      // }
-                    }, 0);
-                  }
                 }
               }}
             />

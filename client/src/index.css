@@ -50,6 +50,9 @@ img.smart-loading {
 @media (max-width: 640px) {
   img.smart-loading {
     contain: layout paint;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000;
   }
 }
 
@@ -57,6 +60,14 @@ img.smart-loading {
 [data-lcp-container="true"] {
   min-height: 200px;
   position: relative;
+}
+
+/* モバイル向けLCPコンテナの最適化 */
+@media (max-width: 640px) {
+  [data-lcp-container="true"] {
+    min-height: 180px;
+    contain: layout paint style;
+  }
 }
 
 /* hero-image-container最適化 */
@@ -67,6 +78,24 @@ img.smart-loading {
   position: relative;
   overflow: hidden;
   background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* モバイル向けhero-container最適化 */
+@media (max-width: 640px) {
+  .hero-image-container {
+    contain: layout paint style;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform;
+    height: auto;
+    max-height: 360px;
+  }
+  
+  .hero-image {
+    max-height: 360px;
+    object-fit: cover;
+  }
 }
 
 .hero-image {
