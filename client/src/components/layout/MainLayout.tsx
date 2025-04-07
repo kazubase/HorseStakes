@@ -37,7 +37,7 @@ const Logo = memo(() => {
             {...{ fetchpriority: "high" } as any}
           />
         )}
-        <span className="font-bold text-2xl font-yuji yuji-syuku lcp-priority">馬券戦略</span>
+        <span className="font-bold text-2xl font-yuji yuji-syuku lcp-priority important-lcp-element">馬券戦略</span>
       </div>
     </Link>
   );

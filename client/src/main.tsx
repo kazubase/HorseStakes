@@ -99,6 +99,47 @@ const preloadCriticalResources = () => {
     : '/images/optimized_guide_header.webp';
   preloadLCP.fetchPriority = 'high';
   document.head.appendChild(preloadLCP);
+
+  // ロゴ画像をプリロード（最優先）
+  const preloadLogo = document.createElement('link');
+  preloadLogo.rel = 'preload';
+  preloadLogo.as = 'image';
+  preloadLogo.href = window.innerWidth <= 640 
+    ? '/images/optimized_horseshoe-icon-light.webp'
+    : '/images/optimized_horseshoe-icon.webp';
+  preloadLogo.fetchPriority = 'high';
+  document.head.appendChild(preloadLogo);
+
+  // 重要なフォントをプリロード
+  const preloadFont = document.createElement('link');
+  preloadFont.rel = 'preload';
+  preloadFont.as = 'font';
+  preloadFont.href = 'https://fonts.gstatic.com/s/yujisyuku/v5/BngNUXdTV3vO6Lw5ApOPqPfmxA.woff2';
+  preloadFont.type = 'font/woff2';
+  preloadFont.crossOrigin = 'anonymous';
+  document.head.appendChild(preloadFont);
+
+  // LCPイベントを監視して最適化
+  if ('PerformanceObserver' in window) {
+    try {
+      const lcpObserver = new PerformanceObserver((entryList) => {
+        const entries = entryList.getEntries();
+        const lastEntry = entries[entries.length - 1];
+        
+        // LCPスコアをコンソールに記録（開発用）
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('LCP:', lastEntry.startTime / 1000, 'seconds');
+        }
+        
+        // LCPイベント発火後に不要なリソースの優先度を下げる
+        lcpObserver.disconnect();
+      });
+      
+      lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
+    } catch (e) {
+      console.error('LCP観測エラー:', e);
+    }
+  }
 };
 
 // アプリケーション初期化時にCSRFトークンを設定

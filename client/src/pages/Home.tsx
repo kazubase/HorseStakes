@@ -984,7 +984,7 @@ export default function Home() {
           theme === 'light'
             ? "overflow-hidden bg-gradient-to-br from-secondary/50 to-background relative z-10 border border-secondary/30 shadow-sm"
             : "overflow-hidden bg-gradient-to-br from-black/40 to-primary/5 relative z-10"
-        }>
+        } data-lcp-container="true">
           <CardContent className="p-3 sm:p-5">
             <div className={
               theme === 'light'
@@ -1003,8 +1003,8 @@ export default function Home() {
                   <>
                     <h1 className={
                       theme === 'light'
-                        ? "text-base sm:text-2xl font-bold mb-2 tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
-                        : "text-base sm:text-2xl font-bold mb-2 bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent"
+                        ? "text-base sm:text-2xl font-bold mb-2 tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent important-lcp-element"
+                        : "text-base sm:text-2xl font-bold mb-2 bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent important-lcp-element"
                     }>
                       {race?.name}
                     </h1>
