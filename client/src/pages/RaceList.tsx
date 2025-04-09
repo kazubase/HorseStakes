@@ -597,17 +597,17 @@ export default function RaceList() {
     <MainLayout>
       <Helmet>
         <title>馬券戦略 | 競馬予想と期待値計算ツール</title>
-        <meta name="description" content="競馬予想と期待値計算をサポートする馬券戦略アプリ。最新レース情報を確認し、的中率と期待値を計算して回収率アップを目指せます。確率計算で競馬予想の精度を向上。" />
-        <meta name="keywords" content="馬券戦略,競馬,期待値,期待値計算,期待値計算ツール,確率計算" />
+        <meta name="description" content="予想確率から馬券の的中率と期待値を計算し、回収率アップのための最適な資金配分を計算。AI馬券分析も無料で使える競馬予想サポートツール。" />
+        <meta name="keywords" content="馬券戦略,競馬,期待値計算,期待値計算ツール,回収率アップ,AI" />
         <link rel="canonical" href="https://horse-stakes.com" />
         <meta property="og:title" content="馬券戦略 | 競馬予想と期待値計算ツール" />
-        <meta property="og:description" content="競馬予想と期待値計算をサポートする馬券戦略アプリ。最新レース情報を確認し、的中率と期待値を計算して回収率アップを目指せます。確率計算で勝率向上。" />
+        <meta property="og:description" content="予想確率から馬券の的中率と期待値を計算し、回収率アップのための最適な資金配分を計算。AI馬券分析も無料で使える競馬予想サポートツール。" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://horse-stakes.com" />
         <meta property="og:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="馬券戦略 | 競馬予想と期待値計算ツール" />
-        <meta name="twitter:description" content="競馬予想と期待値計算をサポートする馬券戦略アプリ。最新レース情報を確認し、的中率と期待値を計算して回収率アップを目指せます。確率計算で競馬の勝率を向上。" />
+        <meta name="twitter:description" content="予想確率から馬券の的中率と期待値を計算し、回収率アップのための最適な資金配分を計算。AI馬券分析も無料で使える競馬予想サポートツール。" />
         <meta name="twitter:image" content="https://horse-stakes.com/images/horseshoe-icon2.webp" />
       </Helmet>
 
@@ -628,7 +628,7 @@ export default function RaceList() {
           "@context": "https://schema.org",
           "@type": "WebApplication",
           "name": "馬券戦略",
-          "description": "競馬予想と馬券作成をサポートするAIアシスタント。回収率アップのための馬券戦略を立て、的中率と期待値を計算。",
+          "description": "予想確率から馬券の的中率と期待値を計算し、回収率アップのための最適な資金配分を計算。AI馬券分析も無料で使える競馬予想サポートツール。",
           "applicationCategory": "UtilityApplication",
           "offers": {
             "@type": "Offer",
@@ -641,7 +641,7 @@ export default function RaceList() {
             "最新レース情報の表示",
             "AIによる馬券戦略の提案",
             "期待値計算",
-            "回収率最適化",
+            "回収率アップ",
             "初心者向けガイド"
           ],
           "screenshot": "https://horse-stakes.com/images/horseshoe-icon2.webp",

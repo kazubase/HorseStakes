@@ -833,7 +833,7 @@ export default function Guide() {
         />
         <meta
           name="keywords"
-          content="競馬, 期待値, 期待値計算, 期待値計算ツール, 馬券戦略"
+          content="馬券戦略, 競馬, 期待値計算, 期待値計算ツール, 回収率アップ, AI"
         />
         <link rel="canonical" href="https://horse-stakes.com/guide" />
         {/* クリティカルCSSをインライン化 */}
@@ -1007,7 +1007,7 @@ export default function Guide() {
           "@context": "https://schema.org",
           "@type": "WebApplication",
           "name": "馬券戦略",
-          "description": "競馬予想と馬券作成をサポートするAIアシスタント。回収率アップのための馬券戦略を立て、的中率と期待値を計算。",
+          "description": "予想確率から馬券の的中率と期待値を計算し、回収率アップのための最適な資金配分を計算。AI馬券分析も無料で使える競馬予想サポートツール。",
           "applicationCategory": "UtilityApplication",
           "offers": {
             "@type": "Offer",
@@ -1020,7 +1020,7 @@ export default function Guide() {
             "最新レース情報の表示",
             "AIによる馬券戦略の提案",
             "期待値計算",
-            "回収率最適化",
+            "回収率アップ",
             "初心者向けガイド"
           ],
           "screenshot": "https://horse-stakes.com/images/horseshoe-icon2.webp",
