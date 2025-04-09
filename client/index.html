@@ -41,11 +41,11 @@
     </script>
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com data:;
       img-src 'self' data: blob:;
-      connect-src 'self' https://horse-stakes.com;
+      connect-src 'self' https://horse-stakes.com https://www.google-analytics.com;
     ">
     <meta name="csrf-token" content="" id="csrf-token" />
     <meta name="geo.region" content="JP" />
