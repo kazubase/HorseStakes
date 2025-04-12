@@ -336,7 +336,7 @@ export default function Home() {
   const [excludeInitialData, setExcludeInitialData] = useState(false);
 
   // 時間軸のズームレベルを管理する状態を追加
-  const [timeZoom, setTimeZoom] = useState<'all' | 'normal'>('normal');
+  const [timeZoom, setTimeZoom] = useState<'all' | 'normal'>('all');
 
   // フィルタリングされたオッズデータ
   const filteredOddsData = useMemo(() => {
