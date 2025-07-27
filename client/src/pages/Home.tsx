@@ -324,7 +324,7 @@ export default function Home() {
           timeOnly: getTimeOnly(timestamp),
           isDateChanged,
           isFirst: index === 0, // 最初のデータポイントかどうかのフラグを追加
-          ...odds.reduce((acc, odd: any) => ({
+          ...odds.reduce((acc: Record<string, number>, odd: TanOddsHistory) => ({
             ...acc,
             [`horse${odd.horseId}`]: parseFloat(odd.odds)
           }), {})

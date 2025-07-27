@@ -28,7 +28,7 @@ app.use(compression({
   // レベル6は圧縮率とパフォーマンスのバランスが良い（範囲は0-9）
   level: 6,
   // HTMLやJavaScript、CSSやJSONなどのテキストベースのコンテンツを圧縮
-  filter: (req, res) => {
+  filter: (req: Request, res: Response) => {
     const contentType = res.getHeader('Content-Type') as string;
     if (!contentType) return false;
     return /text|javascript|json|xml|application\/.*\+json/i.test(contentType);
@@ -104,7 +104,7 @@ app.use(csrf({
 }));
 
 // CSRFトークンをレスポンスヘッダーに含める
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   res.cookie('XSRF-TOKEN', req.csrfToken(), {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict'
@@ -112,7 +112,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
