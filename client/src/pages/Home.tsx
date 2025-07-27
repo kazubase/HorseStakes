@@ -306,9 +306,9 @@ export default function Home() {
     if (!oddsHistory || oddsHistory.length === 0) return [];
     
     // 任意のタイムスタンプ型をサポートするため、配列型を維持しながらgroupByを使用
-    const groupedByTimestamp = groupBy(oddsHistory as any[], 'timestamp');
+    const groupedByTimestamp = groupBy(oddsHistory, 'timestamp');
     
-    return Object.entries(groupedByTimestamp)
+    return (Object.entries(groupedByTimestamp) as [string, TanOddsHistory[]][])
       .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
       .map(([timestamp, odds], index, array) => {
         // 現在の日付を取得
@@ -684,11 +684,11 @@ export default function Home() {
               
               // 現在表示中の馬のオッズデータだけを考慮
               const visibleOddsValues = filteredOddsData.flatMap(data => {
-                return visibleHorseIds.map(horseId => {
+                return visibleHorseIds.flatMap(horseId => {
                   const key = `horse${horseId}` as keyof typeof data;
                   const value = data[key];
-                  return typeof value === 'number' && !isNaN(value) ? value : null;
-                }).filter(Boolean) as number[];
+                  return typeof value === 'number' && !isNaN(value) ? [value] : [];
+                });
               });
               
               if (visibleOddsValues.length === 0) return [0, 100];
